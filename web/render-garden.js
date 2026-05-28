@@ -15,7 +15,14 @@ export function createGardenRenderer(options) {
   scene = options.scene;
   spriteRoot = options.spriteRoot;
   settings = options.settings || defaultSettings();
-  return { renderEverything };
+  return { renderEverything, updateSettings };
+}
+
+// Called by garden.js when the user changes settings via the panel. Re-pointing
+// the module-scoped `settings` ref means the next renderEverything picks up
+// the new time/season/motion without rebuilding the renderer.
+function updateSettings(next) {
+  settings = next || defaultSettings();
 }
 
 function renderEverything(groups, summary) {
@@ -216,7 +223,7 @@ function clearDynamicLayers() {
         width: tiers.willow === 'mature' ? 125 : 95,
         z: 21,
         opacity: 0.98,
-        className: 'object',
+        className: 'object decor-willow',
         anchor: 'bottom'
       });
     }

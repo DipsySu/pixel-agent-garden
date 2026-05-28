@@ -1,4 +1,12 @@
-import { loadSettings, loadSummary, subscribeGardenUpdates, logGardenError } from './data-source.js';
+import {
+  loadSettings,
+  loadSummary,
+  subscribeGardenUpdates,
+  subscribeGardenErrors,
+  logGardenError
+} from './data-source.js';
+import { mountErrorToast } from './error-toast.js';
+import { mountSettingsPanel } from './settings-panel.js';
 import { groupSprites } from './render-helpers.js';
 import { createGardenRenderer } from './render-garden.js';
 import { renderBaseScene } from './render-svg.js';
@@ -9,16 +17,61 @@ const spriteRoot = assetRoot + '/sprites/';
 const manifestUrl = spriteRoot + 'ivy_courtyard_manifest.json';
 const dataUrl = './data/garden-summary.json';
 
+// Wire the toast layer + backend error stream before kicking off any IO,
+// so an early failure (manifest fetch, settings invoke) still surfaces.
+mountErrorToast();
+subscribeGardenErrors();
+
 Promise.all([
   fetch(manifestUrl).then((response) => response.json()),
   loadSummary({ dataUrl }),
   loadSettings()
 ]).then(([manifest, summary, settings]) => {
   const groups = groupSprites(manifest.sprites || []);
-  const renderer = createGardenRenderer({ scene, spriteRoot, settings });
-  renderBaseScene(scene, assetRoot, { settings });
-  renderer.renderEverything(groups, summary);
-  if (settings.data.auto_rescan) {
-    subscribeGardenUpdates((summary) => renderer.renderEverything(groups, summary));
+  // Hold the latest summary + settings so the watcher-driven re-render and the
+  // settings panel both pick up whichever changed last.
+  let currentSettings = settings;
+  let lastSummary = summary;
+  const renderer = createGardenRenderer({ scene, spriteRoot, settings: currentSettings });
+  renderBaseScene(scene, assetRoot, { settings: currentSettings });
+  renderer.renderEverything(groups, lastSummary);
+
+  // Settings panel — drives both live-apply (scene re-paint) and persistence.
+  // Footer is the host; the panel inserts itself after the footer in the same
+  // parent (the frame), so it sits flush with footer content.
+  const footer = document.querySelector('.pg6-footer');
+  if (footer) {
+    mountSettingsPanel({
+      hostFooter: footer,
+      initial: currentSettings,
+      onChange: (next) => {
+        currentSettings = next;
+        // Rebuild the renderer's view of settings then repaint base + sprites.
+        // renderBaseScene replaces scene.innerHTML, so sprites get cleared —
+        // renderEverything below re-adds them.
+        renderer.updateSettings?.(currentSettings);
+        renderBaseScene(scene, assetRoot, { settings: currentSettings });
+        renderer.renderEverything(groups, lastSummary);
+      }
+    });
   }
-}).catch((err) => logGardenError('garden bootstrap failed', err));
+
+  // Watcher updates: always subscribe (cheap), gate re-render on auto_rescan
+  // so the user can toggle it from the panel without restart ceremony.
+  subscribeGardenUpdates((summary) => {
+    lastSummary = summary;
+    if (currentSettings.data.auto_rescan) {
+      renderer.renderEverything(groups, lastSummary);
+    }
+  });
+}).catch((err) => {
+  // Bootstrap failed (manifest fetch error, etc.). Best-effort: still paint
+  // the base scene with default settings so the page doesn't sit blank with
+  // dash placeholders. Sprites won't render — but at least there's a sky.
+  logGardenError('garden bootstrap failed', err);
+  try {
+    renderBaseScene(scene, assetRoot, { settings: null });
+  } catch (renderErr) {
+    logGardenError('fallback base scene render failed', renderErr);
+  }
+});

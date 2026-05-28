@@ -111,11 +111,13 @@ Heavy work runs in `spawn_blocking`; `core` remains synchronous and UI-free.
 ## Tauri Events
 
 - `garden:updated`: emitted after a debounced watcher rescan.
+- `garden:error`: emitted on watcher / scan / settings failures. Payload is
+  `{ source: "watcher" | "scan" | "settings" | ..., message: string,
+  adapter?: string }`. The frontend renders this as a bottom-right toast.
 
-Future phase 3 event:
+Reserved (defined but not yet emitted):
 
-- `garden:error`: surfaced to a toast/status area when watcher, scan, storage,
-  or settings failures would otherwise disappear into stderr.
+- `garden:scanning`: future progress signal for long-running scans.
 
 ## Frontend Contract
 
@@ -128,10 +130,15 @@ Future phase 3 event:
 Module split:
 
 - `garden.js`: entry
-- `data-source.js`: Tauri/fetch data source
+- `data-source.js`: Tauri/fetch data source (`loadSummary`, `loadSettings`,
+  `setSettings`, `subscribeGardenUpdates`, `subscribeGardenErrors`)
+- `settings-panel.js`: inline settings UI (gear button + form), debounced save
+- `error-toast.js`: bottom-right toast layer for `garden:error` events and
+  frontend `logGardenError` calls
 - `scene-config.js`: thresholds and visual settings
 - `render-svg.js`: static base scene
-- `render-garden.js`: dynamic sprite rendering
+- `render-garden.js`: dynamic sprite rendering (`renderEverything`,
+  `updateSettings`)
 - `render-helpers.js`: shared render helpers
 
 ## Privacy

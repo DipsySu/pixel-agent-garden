@@ -6,17 +6,32 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
     return x - Math.floor(x);
   }
   const time = resolveTimeScene(options.settings);
+  const season = resolveSeasonScene(options.settings);
 
   let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" role="img"><title>像素花园·' + time.label + '</title><desc>本地 agent 活动化作墙沿垂落和墙根攀爬的项目藤</desc>';
   // <defs> — soft radial gradient for the setting-sun halo. Replaces the
   // earlier rectangular halo which showed as ghost squares against the
   // mountain sprites once those went sprite-art.
+  //
+  // Sky gradient: before this lived as two solid rects (skyTop/skyBottom)
+  // meeting at y=70 with no blend, which read as a hard horizontal seam —
+  // especially obvious at dusk (gray-blue → orange). The shadeDeep stop in
+  // the middle smooths the transition without losing the warm-bottom look.
   s += '<defs>'
      + '<radialGradient id="pg6SunGlow" cx="50%" cy="50%" r="50%">'
      +   '<stop offset="0%"   stop-color="' + time.glow + '" stop-opacity="' + time.glowOpacity + '"/>'
      +   '<stop offset="45%"  stop-color="' + time.glow + '" stop-opacity="' + (time.glowOpacity * 0.42).toFixed(2) + '"/>'
      +   '<stop offset="100%" stop-color="#f8b870" stop-opacity="0"/>'
      + '</radialGradient>'
+     + '<linearGradient id="pg6Sky" x1="0" y1="0" x2="0" y2="1">'
+     +   '<stop offset="0%" stop-color="' + time.skyTop + '"/>'
+     +   '<stop offset="55%" stop-color="' + (time.skyMid || blend(time.skyTop, time.skyBottom, 0.5)) + '"/>'
+     +   '<stop offset="100%" stop-color="' + time.skyBottom + '"/>'
+     + '</linearGradient>'
+     + '<linearGradient id="pg6WoodShadow" x1="0" y1="0" x2="0" y2="1">'
+     +   '<stop offset="0%" stop-color="' + time.wood[2] + '" stop-opacity="0.85"/>'
+     +   '<stop offset="100%" stop-color="' + time.wood[2] + '" stop-opacity="0"/>'
+     + '</linearGradient>'
      + '</defs>';
 
   // === Wooden awning ============================================
@@ -24,8 +39,12 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   s += r(0, 0, W, 14, time.wood[0]);
   s += r(0, 14, W, 6, time.wood[1]);
   s += r(0, 20, W, 4, time.wood[2]);
-  s += r(0, 24, W, 46, time.skyTop);
-  s += r(0, 70, W, 40, time.skyBottom);
+  // Sky is one tall rect filled with the linear gradient defined above —
+  // no more hard y=70 seam between skyTop and skyBottom.
+  s += '<rect x="0" y="24" width="' + W + '" height="86" fill="url(#pg6Sky)"/>';
+  // Soft shadow drop from the wood eave onto the top of the sky band; this
+  // hides the otherwise-jarring wood→sky transition without losing the eave.
+  s += '<rect x="0" y="24" width="' + W + '" height="10" fill="url(#pg6WoodShadow)"/>';
   // grain: short darker pixel runs at irregular x positions
   for (let i = 0; i < 26; i++) {
     const gx = Math.floor(hash(i + 41, 9) * W);
@@ -148,19 +167,25 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   s += r(scx + 6, scy + 5, 4, 2, '#4a4842');
   s += r(scx - 1, scy + 7, 9, 1, '#3a3832');
 
+  // Ground band colors — season-driven. Spring/summer keep the lush greens;
+  // autumn shifts toward warm ochres; winter goes cool gray-green with a
+  // dusting of frost. The dirt strip at the very bottom is always dark.
   s += r(0, WB, W, H - WB, '#3a2a1a');
-  s += r(0, WB - 2, W, 6, '#4f7228');
-  s += r(0, WB + 4, W, 12, '#5e8a32');
-  s += r(0, WB + 16, W, 12, '#6e9a38');
-  s += r(0, WB + 28, W, H - WB - 28, '#5e7c2a');
+  s += r(0, WB - 2, W, 6, season.grass[0]);
+  s += r(0, WB + 4, W, 12, season.grass[1]);
+  s += r(0, WB + 16, W, 12, season.grass[2]);
+  s += r(0, WB + 28, W, H - WB - 28, season.grass[3]);
   for (let i = 0; i < 80; i++) {
     const gx = (i * 11 + 5) % W;
     const gy = WB + 6 + (i % 5) * 6;
     const gh = 2 + Math.floor(hash(i, 5) * 3);
-    s += r(gx, gy, 2, gh, '#3a5520');
+    s += r(gx, gy, 2, gh, season.grassDots);
   }
-  const flCol = ['#f0c068', '#e08aa0', '#f0e090', '#d870a0', '#e8a058', '#f8e8ec'];
-  for (let i = 0; i < 50; i++) {
+  // Flower spread varies by season — spring/summer get the full bouquet,
+  // autumn switches to warm tones, winter is sparse.
+  const flCol = season.flowers;
+  const flowerCount = season.flowerCount;
+  for (let i = 0; i < flowerCount; i++) {
     const fx = (i * 19 + 11) % W;
     const fy = WB + 12 + (i % 4) * 8;
     s += r(fx, fy, 2, 2, flCol[i % flCol.length]);
@@ -204,6 +229,29 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
     '</div>';
   scene.dataset.timeMode = time.mode;
   scene.dataset.motion = options.settings?.appearance?.motion || 'system';
+  // Season drives both the SVG ground/flower colors above AND a CSS-level
+  // hue/saturation tweak applied to sprites in index.html so the cherry,
+  // willow, vines, etc. react too.
+  scene.dataset.season = season.mode;
+}
+
+// Mix two hex colors by `t` in [0,1]. Used when a scene config doesn't ship
+// an explicit skyMid stop — gives the gradient a sensible middle anchor.
+function blend(a, b, t) {
+  const pa = parseHex(a);
+  const pb = parseHex(b);
+  if (!pa || !pb) return a;
+  const r = Math.round(pa[0] + (pb[0] - pa[0]) * t);
+  const g = Math.round(pa[1] + (pb[1] - pa[1]) * t);
+  const bl = Math.round(pa[2] + (pb[2] - pa[2]) * t);
+  return '#' + [r, g, bl].map((v) => v.toString(16).padStart(2, '0')).join('');
+}
+
+function parseHex(hex) {
+  const m = /^#([0-9a-f]{6})$/i.exec(String(hex || ''));
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
 function resolveTimeScene(settings) {
@@ -219,6 +267,7 @@ function resolveTimeScene(settings) {
       mode: 'day',
       label: '白日',
       skyTop: '#7fb7e8',
+      skyMid: '#a5cce8',
       skyBottom: '#b9d8ea',
       cloud: ['#f5efe4', '#fff4e8', '#e8ddcf'],
       glow: '#f8d078',
@@ -233,6 +282,9 @@ function resolveTimeScene(settings) {
       mode: 'dusk',
       label: '傍晚',
       skyTop: '#8ea2c8',
+      // Pinkish middle softens the gray-blue → orange jump; the old setup
+      // had a sharp seam at y=70 between these two stops.
+      skyMid: '#cba7a5',
       skyBottom: '#e4a174',
       cloud: ['#f0d0c0', '#f4d8c8', '#e8c4b8'],
       glow: '#f8b870',
@@ -247,6 +299,7 @@ function resolveTimeScene(settings) {
       mode: 'night',
       label: '夜晚',
       skyTop: '#17213a',
+      skyMid: '#1e2a44',
       skyBottom: '#273452',
       cloud: ['#56627b', '#66708a', '#4e5870'],
       glow: '#d8e6ff',
@@ -265,4 +318,52 @@ function systemTimeMode(hour) {
   if (hour >= 6 && hour < 16.5) return 'day';
   if (hour >= 16.5 && hour < 19.5) return 'dusk';
   return 'night';
+}
+
+// Resolve the season-driven palette: ground band greens, grass flecks, and
+// the wildflower carpet. The scene also writes `dataset.season` so CSS in
+// index.html can apply a per-season tint to sprites (cherry, willow, vines).
+function resolveSeasonScene(settings) {
+  const forced = settings?.appearance?.season_mode || 'system';
+  const now = new Date();
+  const mode = forced === 'system' ? systemSeasonMode(now) : forced;
+  const palettes = {
+    spring: {
+      mode: 'spring',
+      grass: ['#4f7228', '#5e8a32', '#6e9a38', '#5e7c2a'],
+      grassDots: '#3a5520',
+      flowers: ['#f4b8c8', '#f0c068', '#e08aa0', '#f0e090', '#d870a0', '#f8e8ec'],
+      flowerCount: 56
+    },
+    summer: {
+      mode: 'summer',
+      grass: ['#3f6b22', '#4f8030', '#5e9230', '#4f7022'],
+      grassDots: '#2e4a18',
+      flowers: ['#f0c068', '#e8a058', '#f0e090', '#f4b06a', '#e89048'],
+      flowerCount: 38
+    },
+    autumn: {
+      mode: 'autumn',
+      grass: ['#8a6a24', '#a07c2c', '#b08832', '#8e6628'],
+      grassDots: '#5a4218',
+      flowers: ['#d8682a', '#c4521e', '#e89c44', '#f0b860', '#a8401a'],
+      flowerCount: 32
+    },
+    winter: {
+      mode: 'winter',
+      grass: ['#6b7c64', '#7e8c76', '#8e9c84', '#73826c'],
+      grassDots: '#52604c',
+      flowers: ['#e8eef0', '#cfd6da', '#f0f4f6'],
+      flowerCount: 14
+    }
+  };
+  return palettes[mode] || palettes.spring;
+}
+
+function systemSeasonMode(date) {
+  const m = date.getMonth() + 1;
+  if (m === 12 || m <= 2) return 'winter';
+  if (m <= 5) return 'spring';
+  if (m <= 8) return 'summer';
+  return 'autumn';
 }

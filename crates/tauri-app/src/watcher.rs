@@ -7,7 +7,7 @@
 //! "something changed → here's the new summary". It does NOT parse change
 //! payloads itself.
 
-use crate::events::GARDEN_UPDATED;
+use crate::events::{ErrorPayload, GARDEN_ERROR, GARDEN_UPDATED};
 use local_agent_garden_core::adapter::AdapterContext;
 use local_agent_garden_core::aggregate;
 use local_agent_garden_core::registry;
@@ -102,7 +102,16 @@ pub fn run(app: AppHandle) -> Result<(), String> {
                     Err(err) => eprintln!("[watcher] emit failed: {err}"),
                 }
             }
-            Err(err) => eprintln!("[watcher] scan failed: {err}"),
+            Err(err) => {
+                eprintln!("[watcher] scan failed: {err}");
+                // Surface the failure to the frontend toast — the watcher
+                // path is silent otherwise and the user would just see stale
+                // data with no hint that the rescan didn't happen.
+                let payload = ErrorPayload::new("watcher", err);
+                if let Err(emit_err) = app.emit(GARDEN_ERROR, &payload) {
+                    eprintln!("[watcher] emit error event failed: {emit_err}");
+                }
+            }
         }
     }
 }

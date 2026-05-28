@@ -159,6 +159,31 @@ body {
 .pg6-scene[data-time-mode="day"] .pg6-sprite.decor-lantern.is-dim {
   filter: saturate(0.7) brightness(0.88);
 }
+
+/* === Season tints =========================================================
+   render-svg.js writes data-season onto .pg6-scene. The ground band colors,
+   wildflowers, and sky stops already shift via SVG (see resolveSeasonScene).
+   These CSS rules layer per-season tweaks onto sprites that DON'T animate
+   their filter (cherry, willow). Vines are intentionally NOT tinted here —
+   `@keyframes pg6-vine-sway` rewrites their filter every animation tick and
+   would silently override us. Vine seasonality should live inside the
+   keyframe definitions; left as a follow-up.
+
+   Spring is the neutral baseline (no override). */
+/* Cherry blossom: pink only really makes sense in spring. Summer fades the
+   blossom to a leafy look (hue-rotate to green), autumn shifts to russet,
+   winter strips it bare. The sprite stays in DOM so the layout doesn't
+   reflow; opacity + hue does the work. */
+.pg6-scene[data-season="summer"] .pg6-sprite.decor-cherry { opacity: 0.85; filter: saturate(0.75) brightness(0.94) hue-rotate(80deg); }
+.pg6-scene[data-season="autumn"] .pg6-sprite.decor-cherry { opacity: 0.7; filter: saturate(0.7) brightness(0.92) sepia(0.55) hue-rotate(-20deg); }
+.pg6-scene[data-season="winter"] .pg6-sprite.decor-cherry { opacity: 0.45; filter: saturate(0.2) brightness(0.94) contrast(0.92); }
+/* Willow: stays green-leaning but desaturates in winter and turns gold in autumn. */
+.pg6-scene[data-season="autumn"] .pg6-sprite.decor-willow { filter: saturate(0.85) brightness(0.96) sepia(0.4) hue-rotate(-8deg); }
+.pg6-scene[data-season="winter"] .pg6-sprite.decor-willow { filter: saturate(0.35) brightness(0.94) contrast(0.95); }
+/* Falling petals only make sense in spring; hide them otherwise. */
+.pg6-scene[data-season="summer"] .pg6-petal,
+.pg6-scene[data-season="autumn"] .pg6-petal,
+.pg6-scene[data-season="winter"] .pg6-petal { display: none; }
 .pg6-scene[data-motion="off"] .pg6-sprite,
 .pg6-scene[data-motion="off"] .pg6-info {
   animation: none !important;
@@ -214,6 +239,77 @@ body {
 .pg6-footer { padding: 10px 6px 0; font-size: 11px; color: var(--color-text-tertiary); display: flex; align-items: center; gap: 5px; border-top: 0.5px solid var(--color-border-tertiary); margin-top: 12px; flex-wrap: wrap; }
 .pg6-footer-freshness { color: var(--color-text-tertiary); margin-left: auto; }
 .pg6-footer-freshness.is-stale { color: #d6a258; cursor: help; }
+.pg6-footer-gear {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  display: inline-flex;
+  margin-left: 8px;
+  padding: 4px;
+  transition: color 140ms ease, background 140ms ease;
+}
+.pg6-footer-gear:hover,
+.pg6-footer-gear:focus-visible { color: var(--color-text-primary); background: rgba(255, 255, 255, 0.04); outline: none; }
+.pg6-footer-gear.is-active { color: var(--color-text-primary); background: rgba(244, 216, 120, 0.10); }
+
+.pg6-settings-panel {
+  background: rgba(20, 24, 18, 0.7);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-md);
+  color: var(--color-text-primary);
+  font-size: 12px;
+  margin-top: 10px;
+  padding: 12px 14px;
+}
+.pg6-settings-panel[hidden] { display: none; }
+.pg6-settings-section { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
+.pg6-settings-section + .pg6-settings-section { border-top: 1px dashed var(--color-border-tertiary); margin-top: 6px; padding-top: 10px; }
+.pg6-settings-title { color: var(--color-text-secondary); font-size: 11px; font-weight: 500; letter-spacing: 0.4px; margin: 0; text-transform: uppercase; }
+.pg6-settings-row { align-items: center; column-gap: 12px; display: flex; flex-wrap: wrap; row-gap: 4px; }
+.pg6-settings-label { color: var(--color-text-secondary); flex: 0 0 48px; font-size: 11px; }
+.pg6-settings-pills { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.pg6-settings-pill {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 11px;
+  padding: 3px 10px;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+  user-select: none;
+}
+.pg6-settings-pill input { display: none; }
+.pg6-settings-pill:hover { background: rgba(255, 255, 255, 0.08); }
+.pg6-settings-pill:has(input:checked) {
+  background: rgba(244, 216, 120, 0.16);
+  border-color: rgba(244, 216, 120, 0.45);
+  color: var(--color-text-primary);
+}
+.pg6-settings-pill:has(input:disabled),
+.pg6-settings-pill:has(input:disabled):hover { cursor: not-allowed; opacity: 0.55; }
+.pg6-settings-toggle { align-items: center; cursor: pointer; display: inline-flex; gap: 8px; }
+.pg6-settings-toggle input { accent-color: #d6a258; }
+.pg6-settings-toggle input:disabled { cursor: not-allowed; }
+.pg6-settings-toggle:has(input:disabled) { cursor: not-allowed; opacity: 0.55; }
+.pg6-settings-hint { color: var(--color-text-tertiary); font-size: 10px; }
+.pg6-settings-note {
+  background: rgba(214, 162, 88, 0.08);
+  border: 1px solid rgba(214, 162, 88, 0.3);
+  border-radius: 4px;
+  color: #d6a258;
+  font-size: 11px;
+  margin: 0 0 10px;
+  padding: 6px 10px;
+}
+@media (max-width: 520px) {
+  .pg6-settings-row { flex-direction: column; align-items: flex-start; }
+  .pg6-settings-label { flex-basis: auto; }
+}
 .pg6-sprite.cat-interactive { cursor: pointer; }
 .pg6-sprite.cat-interactive:hover {
   filter: saturate(1.05) brightness(1.04);
@@ -292,17 +388,17 @@ body {
     <div class="pg6-header">
       <div class="pg6-app">像素花园 · 你的数字庭院</div>
       <div class="pg6-meta">
-        <span class="pg6-meta-item"><svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7c2-5 7-3 6 2 5-1 7 4 2 6 3 4-1 8-5 5-2 5-7 3-6-2-5 1-7-4-2-6-3-4 1-8 5-5Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg><span id="meta-season">春 · 谷雨</span></span>
-        <span class="pg6-meta-item"><svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16h16M7 20h10M6 12a6 6 0 0 1 12 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span id="meta-time">傍晚 · 18:42</span></span>
+        <span class="pg6-meta-item"><svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7c2-5 7-3 6 2 5-1 7 4 2 6 3 4-1 8-5 5-2 5-7 3-6-2-5 1-7-4-2-6-3-4 1-8 5-5Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg><span id="meta-season">—</span></span>
+        <span class="pg6-meta-item"><svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16h16M7 20h10M6 12a6 6 0 0 1 12 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span id="meta-time">—</span></span>
       </div>
     </div>
     <div class="pg6-scene" id="pg6-scene"></div>
     <div class="pg6-project-strip" id="project-strip" aria-label="项目藤列表"></div>
     <div class="pg6-legend">
-      <div class="pg6-legend-item"><span class="pg6-legend-dot" style="background:#4a7235"></span><span id="legend-vines">项目藤 · 本地 agent 活动</span></div>
-      <div class="pg6-legend-item"><span class="pg6-legend-dot" style="background:#7a7068"></span><span id="legend-courtyard">庭院物件 · 等待数据</span></div>
-      <div class="pg6-legend-item"><span class="pg6-legend-dot" style="background:#e89aae"></span><span id="legend-bloom">花草 · 等待数据</span></div>
-      <div class="pg6-legend-item"><span class="pg6-legend-dot" style="background:#f0a060"></span><span id="legend-light">夕阳 · 春日 18:42</span></div>
+      <div class="pg6-legend-item"><span class="pg6-legend-dot" style="background:#4a7235"></span><span id="legend-vines">项目藤</span></div>
+      <div class="pg6-legend-item"><span class="pg6-legend-dot" style="background:#7a7068"></span><span id="legend-courtyard">庭院物件</span></div>
+      <div class="pg6-legend-item"><span class="pg6-legend-dot" style="background:#e89aae"></span><span id="legend-bloom">花草</span></div>
+      <div class="pg6-legend-item"><span class="pg6-legend-dot" style="background:#f0a060"></span><span id="legend-light">石灯</span></div>
     </div>
     <div class="pg6-footer">
       <svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6l8-3Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 12 3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>

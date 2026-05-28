@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Added inline settings panel in the footer — gear button reveals time / season / motion / auto-rescan controls with optimistic save and live scene re-paint.
+- Added `garden:error` event pipeline: watcher and scan failures now surface as bottom-right toasts instead of dying silently in stderr.
+- Made `auto_rescan` runtime-toggleable: the toggle now gates UI re-renders directly so users don't have to restart the app.
+- Cleaned up hardcoded placeholder strings (`春 · 谷雨`, `等待数据`, etc.) so loading and failure states no longer show stale demo text.
+- The base scene now renders with default settings even when bootstrap fails, so the page never sits blank on a fetch error.
+
+## v1.0.1
+
 - Removed the old Python prototype and made Rust the only product runtime.
 - Added the Rust `claude-cowork` adapter for Claude Desktop Cowork local agent sessions.
 - Added scan-level uuid dedupe so duplicate Cowork/Claude transcript rows are counted once.
