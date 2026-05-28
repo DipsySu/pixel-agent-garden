@@ -1,0 +1,32 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/core",
+    "crates/cli",
+    "crates/tauri-app",
+]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.85"
+authors = ["Local Agent Garden"]
+license = "MIT"
+repository = "https://github.com/local-agent-garden/local-agent-garden"
+
+[workspace.dependencies]
+# Shared deps — pinned at workspace level, inherited by member crates.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", default-features = false, features = ["std", "clock", "serde"] }
+thiserror = "1"
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+# Cross-crate workspace path deps
+local-agent-garden-core = { path = "crates/core" }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

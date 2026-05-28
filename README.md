@@ -21,6 +21,7 @@ python3 -m local_agent_garden garden
 python3 -m local_agent_garden scan --out ~/.local-agent-garden/events.json
 python3 -m local_agent_garden projects
 python3 -m local_agent_garden inspect --project /path/to/project
+python3 -m local_agent_garden usage
 ```
 
 Export data for the pixel garden:
@@ -31,6 +32,16 @@ python3 -m http.server 8765
 ```
 
 Then open `http://127.0.0.1:8765/web/index.html`.
+
+Daily all-agent token usage:
+
+```bash
+python3 -m local_agent_garden usage
+python3 -m local_agent_garden usage --date 2026-05-28
+python3 -m local_agent_garden usage --date yesterday --json
+python3 -m local_agent_garden usage --source codex
+python3 -m local_agent_garden usage --from-cache ~/.local-agent-garden/events.json
+```
 
 Or install the CLI locally:
 

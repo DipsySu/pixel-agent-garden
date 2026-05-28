@@ -1,0 +1,21 @@
+[package]
+name = "local-agent-garden-cli"
+version = "0.1.0"
+description = "agent-garden CLI — Rust port of the Python local_agent_garden CLI."
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "agent-garden"
+path = "src/main.rs"
+
+[dependencies]
+local-agent-garden-core = { workspace = true }
+serde_json = { workspace = true }
+# Used by ascii_wall.rs for sparkline date math and project_detail "latest"
+# field. clock feature is needed for Local timezone conversion.
+chrono = { workspace = true }
+clap = { version = "4", features = ["derive"] }

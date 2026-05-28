@@ -1,0 +1,35 @@
+[package]
+name = "local-agent-garden-tauri"
+version = "0.1.0"
+description = "Local Agent Garden — Tauri desktop shell"
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "agent-garden-app"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Domain core — same library the CLI uses. ZERO duplication.
+local-agent-garden-core = { workspace = true }
+
+# Tauri 2.x
+tauri = { version = "2", features = ["protocol-asset"] }
+
+# Shared workspace deps
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+
+# File watcher — used by watcher.rs to subscribe to adapter watch_paths
+notify = "6"
+
+# Tokio for async commands + debounce timer. Single-thread runtime to keep
+# the binary small; we only use mpsc channels and sleep, no heavy concurrency.
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "time", "macros"] }

@@ -10,3 +10,11 @@ build/
 review*.png
 pixel_garden_organic_vine.html
 web/sprite-experiment.html
+
+# Rust workspace
+target/
+**/*.rs.bk
+web/assets/
+crates/tauri-app/gen/
+# Cargo.lock is intentionally NOT ignored — workspace has bin crates, so we
+# want reproducible builds across machines.

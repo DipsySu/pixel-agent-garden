@@ -1,0 +1,24 @@
+[package]
+name = "local-agent-garden-core"
+version = "0.1.0"
+description = "Domain core for Local Agent Garden: adapter trait, AgentEvent, summarize()."
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "local_agent_garden_core"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+rusqlite = { workspace = true }
+
+[dev-dependencies]
+# Intentionally minimal — phase 1 tests use std + serde_json only.
+# pretty_assertions added when we need it.

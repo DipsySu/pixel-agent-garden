@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added `agent-garden usage` / `python3 -m local_agent_garden usage` for local-day all-agent token reporting, with source/project breakdowns and JSON output.
+
 ## v1.0.0 - 2026-05-28
 
 - Added local-only adapters for Claude Code, Codex, and manual JSONL imports.
