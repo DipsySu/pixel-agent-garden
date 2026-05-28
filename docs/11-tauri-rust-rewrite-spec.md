@@ -74,9 +74,14 @@ Rules:
 
 ## Schema Versioning
 
-`events.json` and `garden-summary.json` should carry top-level
-`schema_version: 1` before we rely on cache compatibility across releases.
-Readers that see a future version must ignore the cache and rescan.
+`GardenSummary` and the `events.json` cache envelope (`EventsCache`) both
+carry a top-level `schema_version: 1` field (see `aggregate::SCHEMA_VERSION`).
+Readers reject any cache whose version exceeds what they know and fall back
+to a fresh scan. Legacy unwrapped event arrays (pre-versioning) still load
+so existing users don't pay a forced rescan on upgrade.
+
+Bump `SCHEMA_VERSION` on any backward-incompatible shape change
+(renamed/removed field, semantic redefinition).
 
 ## Settings
 

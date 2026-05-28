@@ -13,8 +13,16 @@ use std::path::Path;
 ///
 /// The JSON shape is the contract the frontend reads. Adding a field is
 /// backward-compatible; renaming or removing one isn't — touch with care.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+///
+/// Spec §Schema Versioning: every persisted summary carries a `schema_version`
+/// so consumers can detect incompatible caches. Bump on any backward-incompat
+/// shape change (renamed/removed field, semantic redefinition).
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GardenSummary {
+    /// JSON schema version. Readers MUST refuse caches whose version exceeds
+    /// what they know how to parse.
+    #[serde(default = "current_schema_version")]
+    pub schema_version: u32,
     pub projects: Vec<ProjectGrowth>,
     pub sources: BTreeMap<String, u64>,
     pub total_events: u64,
@@ -25,6 +33,29 @@ pub struct GardenSummary {
     #[serde(default, with = "opt_ts_serde")]
     pub last_seen: Option<DateTime<Utc>>,
     pub active_projects: u64,
+}
+
+/// Current schema version for `GardenSummary` and `events.json`. Bump this
+/// when changing the on-disk shape in a non-backward-compatible way.
+pub const SCHEMA_VERSION: u32 = 1;
+
+fn current_schema_version() -> u32 {
+    SCHEMA_VERSION
+}
+
+impl Default for GardenSummary {
+    fn default() -> Self {
+        Self {
+            schema_version: SCHEMA_VERSION,
+            projects: Vec::new(),
+            sources: BTreeMap::new(),
+            total_events: 0,
+            total_tokens: 0,
+            first_seen: None,
+            last_seen: None,
+            active_projects: 0,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -204,6 +235,7 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
 
     let active_projects = projects.len() as u64;
     GardenSummary {
+        schema_version: SCHEMA_VERSION,
         projects,
         sources,
         total_events: events.len() as u64,

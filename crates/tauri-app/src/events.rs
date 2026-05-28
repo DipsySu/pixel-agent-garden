@@ -60,7 +60,10 @@ mod tests {
         let json = serde_json::to_value(&payload).unwrap();
         assert_eq!(json["source"], "watcher");
         assert_eq!(json["message"], "scan failed");
-        assert!(json.get("adapter").is_none(), "adapter should be omitted when None");
+        assert!(
+            json.get("adapter").is_none(),
+            "adapter should be omitted when None"
+        );
     }
 
     #[test]
