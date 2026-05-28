@@ -31,6 +31,8 @@ cargo run --release -p local-agent-garden-cli -- adapters
 cargo run --release -p local-agent-garden-cli -- scan --out ~/.local-agent-garden/events.json
 cargo run --release -p local-agent-garden-cli -- projects
 cargo run --release -p local-agent-garden-cli -- inspect --project pay-module
+cargo run --release -p local-agent-garden-cli -- usage
+cargo run --release -p local-agent-garden-cli -- usage --date yesterday --json
 cargo run --release -p local-agent-garden-cli -- garden
 cargo run --release -p local-agent-garden-cli -- export-web --out web/data/garden-summary.json
 ```

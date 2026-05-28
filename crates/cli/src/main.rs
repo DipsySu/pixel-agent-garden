@@ -2,12 +2,16 @@
 
 mod ascii_wall;
 
+use chrono::{Local, NaiveDate};
 use clap::{Parser, Subcommand};
 use local_agent_garden_core::adapter::AdapterContext;
 use local_agent_garden_core::aggregate::{self, GardenSummary};
+use local_agent_garden_core::event::AgentEvent;
 use local_agent_garden_core::registry;
 use local_agent_garden_core::scan;
 use local_agent_garden_core::storage;
+use serde_json::json;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -81,6 +85,19 @@ enum Command {
         #[arg(long = "from-cache")]
         from_cache: Option<PathBuf>,
     },
+
+    /// Show token usage for one local calendar day.
+    Usage {
+        /// Day to inspect: today, yesterday, or YYYY-MM-DD. Defaults to today.
+        #[arg(long, default_value = "today")]
+        date: String,
+        /// Output machine-readable JSON.
+        #[arg(long, action = clap::ArgAction::SetTrue)]
+        json: bool,
+        /// Read a cached events.json instead of scanning live.
+        #[arg(long = "from-cache")]
+        from_cache: Option<PathBuf>,
+    },
 }
 
 fn main() -> ExitCode {
@@ -105,6 +122,11 @@ fn main() -> ExitCode {
         Command::ExportWeb { out, from_cache } => {
             cmd_export_web(&ctx, sources_filter.as_deref(), out, from_cache)
         }
+        Command::Usage {
+            date,
+            json,
+            from_cache,
+        } => cmd_usage(&ctx, sources_filter.as_deref(), &date, json, from_cache),
         Command::Garden {
             width,
             height,
@@ -119,6 +141,33 @@ fn main() -> ExitCode {
             from_cache,
         ),
     }
+}
+
+fn cmd_usage(
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+    date: &str,
+    json_output: bool,
+    from_cache: Option<PathBuf>,
+) -> ExitCode {
+    let day = match parse_usage_day(date) {
+        Ok(day) => day,
+        Err(message) => {
+            eprintln!("{message}");
+            return ExitCode::from(2);
+        }
+    };
+    let events = match build_events(ctx, sources_filter, from_cache.as_deref()) {
+        Ok(events) => events,
+        Err(code) => return code,
+    };
+    let report = summarize_usage(&events, day);
+    if json_output {
+        println!("{}", usage_report_json(&report));
+    } else {
+        print_usage_report(&report);
+    }
+    ExitCode::SUCCESS
 }
 
 fn cmd_garden(
@@ -291,6 +340,15 @@ fn build_summary(
     sources_filter: Option<&[String]>,
     from_cache: Option<&std::path::Path>,
 ) -> Result<GardenSummary, ExitCode> {
+    let events = build_events(ctx, sources_filter, from_cache)?;
+    Ok(aggregate::summarize(&events))
+}
+
+fn build_events(
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+    from_cache: Option<&std::path::Path>,
+) -> Result<Vec<AgentEvent>, ExitCode> {
     let events = if let Some(cache) = from_cache {
         match storage::load_events(cache) {
             Ok(events) => events,
@@ -308,7 +366,187 @@ fn build_summary(
             }
         }
     };
-    Ok(aggregate::summarize(&events))
+    Ok(events)
+}
+
+#[derive(Default)]
+struct UsageBucket {
+    key: String,
+    label: String,
+    total_tokens: u64,
+    input_tokens: u64,
+    output_tokens: u64,
+    cache_read_tokens: u64,
+    cache_write_tokens: u64,
+    event_count: u64,
+    sessions: BTreeSet<String>,
+    sources: BTreeMap<String, u64>,
+}
+
+impl UsageBucket {
+    fn new(key: impl Into<String>, label: impl Into<String>) -> Self {
+        Self {
+            key: key.into(),
+            label: label.into(),
+            ..Default::default()
+        }
+    }
+
+    fn add(&mut self, event: &AgentEvent) {
+        self.total_tokens += event.usage.total_tokens;
+        self.input_tokens += event.usage.input_tokens;
+        self.output_tokens += event.usage.output_tokens;
+        self.cache_read_tokens += event.usage.cache_read_tokens;
+        self.cache_write_tokens += event.usage.cache_write_tokens;
+        self.event_count += 1;
+        *self.sources.entry(event.source.clone()).or_insert(0) += 1;
+        if let Some(session_id) = event.session_id.as_ref() {
+            self.sessions.insert(session_id.clone());
+        }
+    }
+}
+
+struct UsageReport {
+    day: NaiveDate,
+    total: UsageBucket,
+    by_source: Vec<UsageBucket>,
+    by_project: Vec<UsageBucket>,
+}
+
+fn summarize_usage(events: &[AgentEvent], day: NaiveDate) -> UsageReport {
+    let mut total = UsageBucket::new("all", "all agents");
+    let mut by_source: BTreeMap<String, UsageBucket> = BTreeMap::new();
+    let mut by_project: BTreeMap<String, UsageBucket> = BTreeMap::new();
+
+    for event in events {
+        if event.timestamp.with_timezone(&Local).date_naive() != day {
+            continue;
+        }
+        total.add(event);
+
+        by_source
+            .entry(event.source.clone())
+            .or_insert_with(|| UsageBucket::new(&event.source, &event.source))
+            .add(event);
+
+        let project_key = event.project_key();
+        let project_label = event
+            .project_path
+            .as_deref()
+            .map(display_name_from_path)
+            .unwrap_or_else(|| project_key.trim_start_matches("unknown:").to_string());
+        by_project
+            .entry(project_key.clone())
+            .or_insert_with(|| UsageBucket::new(project_key, project_label))
+            .add(event);
+    }
+
+    let mut by_source: Vec<_> = by_source.into_values().collect();
+    by_source.sort_by(|a, b| {
+        b.total_tokens
+            .cmp(&a.total_tokens)
+            .then(a.label.cmp(&b.label))
+    });
+    let mut by_project: Vec<_> = by_project.into_values().collect();
+    by_project.sort_by(|a, b| {
+        b.total_tokens
+            .cmp(&a.total_tokens)
+            .then(a.label.cmp(&b.label))
+    });
+
+    UsageReport {
+        day,
+        total,
+        by_source,
+        by_project,
+    }
+}
+
+fn parse_usage_day(value: &str) -> Result<NaiveDate, String> {
+    let today = Local::now().date_naive();
+    match value {
+        "" | "today" => Ok(today),
+        "yesterday" => Ok(today.pred_opt().unwrap_or(today)),
+        other => NaiveDate::parse_from_str(other, "%Y-%m-%d")
+            .map_err(|_| format!("invalid --date {other:?}; use today, yesterday, or YYYY-MM-DD")),
+    }
+}
+
+fn print_usage_report(report: &UsageReport) {
+    println!("usage for {}", report.day.format("%Y-%m-%d"));
+    println!();
+    println!("total");
+    print_bucket("all agents", &report.total);
+
+    println!();
+    println!("by source");
+    if report.by_source.is_empty() {
+        println!("  -");
+    } else {
+        for bucket in &report.by_source {
+            print_bucket(&bucket.label, bucket);
+        }
+    }
+
+    println!();
+    println!("by project");
+    if report.by_project.is_empty() {
+        println!("  -");
+    } else {
+        for bucket in report.by_project.iter().take(20) {
+            print_bucket(&bucket.label, bucket);
+        }
+        if report.by_project.len() > 20 {
+            println!("  ... {} more", report.by_project.len() - 20);
+        }
+    }
+}
+
+fn print_bucket(label: &str, bucket: &UsageBucket) {
+    println!(
+        "  {:<28} tokens={:<10} input={:<10} output={:<10} cache={:<10} events={:<5} sessions={}",
+        truncate(label, 28),
+        bucket.total_tokens,
+        bucket.input_tokens,
+        bucket.output_tokens,
+        bucket.cache_read_tokens + bucket.cache_write_tokens,
+        bucket.event_count,
+        bucket.sessions.len(),
+    );
+}
+
+fn usage_report_json(report: &UsageReport) -> String {
+    let value = json!({
+        "date": report.day.format("%Y-%m-%d").to_string(),
+        "total": bucket_json(&report.total),
+        "by_source": report.by_source.iter().map(bucket_json).collect::<Vec<_>>(),
+        "by_project": report.by_project.iter().map(bucket_json).collect::<Vec<_>>(),
+    });
+    serde_json::to_string_pretty(&value).expect("usage report JSON is serializable")
+}
+
+fn bucket_json(bucket: &UsageBucket) -> serde_json::Value {
+    json!({
+        "key": bucket.key,
+        "label": bucket.label,
+        "total_tokens": bucket.total_tokens,
+        "input_tokens": bucket.input_tokens,
+        "output_tokens": bucket.output_tokens,
+        "cache_read_tokens": bucket.cache_read_tokens,
+        "cache_write_tokens": bucket.cache_write_tokens,
+        "event_count": bucket.event_count,
+        "sessions": bucket.sessions.len(),
+        "sources": bucket.sources,
+    })
+}
+
+fn display_name_from_path(path: &str) -> String {
+    PathBuf::from(path)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+        .unwrap_or_else(|| path.to_string())
 }
 
 fn truncate(s: &str, max: usize) -> String {
