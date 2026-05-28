@@ -1,12 +1,10 @@
-//! Persistence: events.json read/write. Mirrors
-//! `local_agent_garden/core/storage.py`.
+//! Persistence: events.json read/write.
 
 use crate::error::Error;
 use crate::event::AgentEvent;
 use std::path::{Path, PathBuf};
 
-/// Default cache directory — `~/.local-agent-garden/`. Kept identical to
-/// Python so users running both CLIs share state during the migration window.
+/// Default cache directory — `~/.local-agent-garden/`.
 pub fn default_state_dir() -> PathBuf {
     let home = std::env::var_os("HOME")
         .or_else(|| std::env::var_os("USERPROFILE"))

@@ -1,9 +1,4 @@
-//! Claude Code adapter — reads `~/.claude/projects/*/*.jsonl`.
-//!
-//! Direct port of `local_agent_garden/adapters/claude_code.py`. The skip /
-//! keep rules and field mapping mirror the Python implementation; the
-//! compatibility test (Phase 1 exit gate) verifies that this adapter and the
-//! Python one produce identical JSON output on the same fixture.
+//! Claude Code adapter — reads `~/.claude/projects/**/*.jsonl`.
 
 use crate::adapter::{Adapter, AdapterContext};
 use crate::adapters::util::{
@@ -62,9 +57,9 @@ impl ClaudeCodeAdapter {
         let cache_read = as_int_opt(usage.and_then(|u| u.get("cache_read_input_tokens")));
         let cache_write = as_int_opt(usage.and_then(|u| u.get("cache_creation_input_tokens")));
 
-        // Mirror Python: if there are no usage tokens AND no tool calls,
-        // only keep the row if it's an actual user/assistant message; drop
-        // everything else (system notes, tool_result echos, etc.).
+        // If there are no usage tokens AND no tool calls, only keep the row
+        // if it's an actual user/assistant message; drop everything else
+        // (system notes, tool_result echos, etc.).
         let has_any_signal = input_tokens > 0
             || output_tokens > 0
             || cache_read > 0
@@ -115,8 +110,7 @@ impl ClaudeCodeAdapter {
         event.model = model;
         event.raw_ref = Some(format!("{}:{}", path.display(), row.line_no));
 
-        // Python uses dict literal `metadata={"git_branch": row.get("gitBranch")}`
-        // so the key is ALWAYS present — None when the source has no branch.
+        // Keep git_branch visible even when the source row has no branch.
         let branch_value = value
             .get("gitBranch")
             .and_then(|v| v.as_str())
@@ -125,6 +119,12 @@ impl ClaudeCodeAdapter {
         event
             .metadata
             .insert("git_branch".to_string(), branch_value);
+        if let Some(uuid) = value.get("uuid").and_then(|v| v.as_str()) {
+            event.metadata.insert(
+                "uuid".to_string(),
+                serde_json::Value::String(uuid.to_string()),
+            );
+        }
 
         event.normalize_totals();
         Some(event)
@@ -268,7 +268,7 @@ mod tests {
     #[test]
     fn keeps_user_or_assistant_rows_even_without_signal() {
         // A bare user/assistant ping (no tokens, no tools) still counts as
-        // an event — mirrors Python.
+        // an event.
         let tmp = std::env::temp_dir().join(format!("lag-cc-keep-{}", std::process::id()));
         std::fs::create_dir_all(&tmp).unwrap();
         let row = json!({

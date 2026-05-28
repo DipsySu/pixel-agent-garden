@@ -10,6 +10,7 @@ use local_agent_garden_core::adapter::AdapterContext;
 use local_agent_garden_core::aggregate::{self, GardenSummary};
 use local_agent_garden_core::registry;
 use local_agent_garden_core::scan;
+use local_agent_garden_core::settings::{self, Settings};
 use serde::Serialize;
 
 /// Return the current garden summary by running a fresh scan + aggregate.
@@ -63,4 +64,29 @@ pub async fn list_adapters() -> Result<Vec<AdapterStatus>, String> {
 pub async fn data_freshness() -> Result<Option<String>, String> {
     let summary = garden_summary().await?;
     Ok(summary.last_seen.map(|d| d.to_rfc3339()))
+}
+
+// ---- Settings (spec §2.4) ------------------------------------------------
+// Read/write user preferences. Both commands hit disk each call — settings
+// is not a hot path, no caching needed.
+
+#[tauri::command]
+pub async fn get_settings() -> Result<Settings, String> {
+    tokio::task::spawn_blocking(|| {
+        let path = settings::default_settings_path();
+        settings::load(&path).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("get_settings task panicked: {e}"))?
+}
+
+#[tauri::command]
+pub async fn set_settings(settings: Settings) -> Result<Settings, String> {
+    tokio::task::spawn_blocking(move || {
+        let path = local_agent_garden_core::settings::default_settings_path();
+        local_agent_garden_core::settings::save(&path, &settings).map_err(|e| e.to_string())?;
+        Ok(settings)
+    })
+    .await
+    .map_err(|e| format!("set_settings task panicked: {e}"))?
 }

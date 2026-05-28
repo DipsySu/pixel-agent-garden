@@ -1,10 +1,7 @@
-//! Project-level aggregation. Direct port of
-//! `local_agent_garden/core/aggregate.py`.
+//! Project-level aggregation.
 //!
 //! All formulas (activity_score, stage cutoffs, recent_activity window,
-//! cache_ratio, daily_activity bumping) MUST match the Python implementation
-//! byte-for-byte — the frontend (`web/index.html`) reads the JSON output and
-//! the unlock thresholds in `CONFIG` were tuned against Python numbers.
+//! cache_ratio, daily_activity bumping) are part of the frontend contract.
 
 use crate::event::AgentEvent;
 use chrono::{DateTime, Utc};
@@ -22,7 +19,7 @@ pub struct GardenSummary {
     pub sources: BTreeMap<String, u64>,
     pub total_events: u64,
     pub total_tokens: u64,
-    // Always emit (null when absent) to match Python `to_json()`.
+    // Always emit (null when absent) to keep the JSON shape stable.
     #[serde(default, with = "opt_ts_serde")]
     pub first_seen: Option<DateTime<Utc>>,
     #[serde(default, with = "opt_ts_serde")]
@@ -34,13 +31,12 @@ pub struct GardenSummary {
 pub struct ProjectGrowth {
     pub project_key: String,
     pub display_name: String,
-    // Always emit (null when absent) to match Python `to_json()`.
+    // Always emit (null when absent) to keep the JSON shape stable.
     #[serde(default)]
     pub project_path: Option<String>,
     pub sources: BTreeMap<String, u64>,
-    /// Python serializes `len(sessions)`. We mirror that — the running
-    /// builder (see `Accumulator` below) keeps the actual HashSet during
-    /// aggregation, then converts to a count for the public type.
+    /// Public summaries expose a count; the builder keeps the actual HashSet
+    /// during aggregation, then converts to a count for the public type.
     pub sessions: u64,
     #[serde(default, with = "opt_ts_serde")]
     pub first_seen: Option<DateTime<Utc>>,
@@ -172,8 +168,8 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
         total_tokens += event.usage.total_tokens;
 
         // daily_activity bump: max(1, total_tokens // 1000 + tool_calls)
-        // Mirrors Python — guarantees each event contributes at least 1 so
-        // sparse low-token chats still register on the recent_activity window.
+        // Guarantees each event contributes at least 1 so sparse low-token
+        // chats still register on the recent_activity window.
         let bump = (event.usage.total_tokens / 1000) + u64::from(event.tool_calls);
         let bump = bump.max(1);
         let day_key = event.timestamp.format("%Y-%m-%d").to_string();
@@ -198,7 +194,7 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
         })
         .collect();
 
-    // Python sort: (activity_score, last_seen or epoch) descending.
+    // Sort by activity first, latest activity second.
     let epoch = DateTime::<Utc>::from_timestamp(0, 0).expect("unix epoch is always representable");
     projects.sort_by(|a, b| {
         let a_key = (a.activity_score, a.last_seen.unwrap_or(epoch));
@@ -218,12 +214,11 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
     }
 }
 
-// ---- formulas (must match Python exactly) ---------------------------------
+// ---- formulas -------------------------------------------------------------
 
 fn activity_score(total_tokens: u64, event_count: u64, sessions: u64, tool_calls: u64) -> u64 {
     let token_score: u64 = if total_tokens > 0 {
-        // Python: int(math.log10(total + 1) * 18). f64 → u64 truncates toward 0
-        // for positive values, which matches Python int() behavior.
+        // f64 → u64 truncates toward 0 for positive values.
         let v = (((total_tokens + 1) as f64).log10() * 18.0) as i64;
         v.max(0) as u64
     } else {
@@ -439,7 +434,7 @@ mod tests {
     }
 
     #[test]
-    fn activity_score_matches_python_examples() {
+    fn activity_score_matches_reference_examples() {
         // pay-module: total_tokens=226_880_048, event_count=1724, sessions=8, tool_calls=481
         // Expected from real garden-summary.json: activity_score=610
         let score = activity_score(226_880_048, 1724, 8, 481);
@@ -447,7 +442,7 @@ mod tests {
     }
 
     #[test]
-    fn stage_buckets_match_python() {
+    fn stage_buckets_match_reference() {
         assert_eq!(stage_for_score(0), 1);
         assert_eq!(stage_for_score(34), 1);
         assert_eq!(stage_for_score(35), 2);

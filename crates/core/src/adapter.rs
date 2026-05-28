@@ -24,8 +24,7 @@ pub struct AdapterContext {
 
 impl AdapterContext {
     /// Build a context rooted at the running user's $HOME (or %USERPROFILE%
-    /// on Windows). Fallback to "/" matches Python's `Path.home()` behavior
-    /// on misconfigured systems.
+    /// on Windows). Fallback to "/" on misconfigured systems.
     pub fn from_env() -> Self {
         let home = std::env::var_os("HOME")
             .or_else(|| std::env::var_os("USERPROFILE"))
@@ -58,8 +57,8 @@ impl AdapterContext {
 /// can instantiate them eagerly.
 pub trait Adapter: Send + Sync {
     /// Stable name surfaced in CLI listings and inside `AgentEvent.source`.
-    /// Mirrors the Python `name` class attribute (`"claude-code"`, `"codex"`,
-    /// `"manual-jsonl"`).
+    /// Examples: `"claude-code"`, `"claude-cowork"`, `"codex"`,
+    /// `"manual-jsonl"`.
     fn name(&self) -> &str;
 
     /// Cheap presence check — are the files this adapter cares about even

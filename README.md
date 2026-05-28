@@ -1,74 +1,66 @@
-# Local Agent Garden
+# Pixel Agent Garden
 
 A private local garden grown from AI agent activity.
 
-Local Agent Garden turns local AI-agent work traces into a calm project garden. It reads local files only, normalizes different agents into a shared event model, then renders project-level growth in both the terminal and a desktop web prototype.
+Pixel Agent Garden reads local agent traces only, normalizes them into one Rust
+event model, and renders project growth in both a terminal wall and a Tauri
+desktop garden. It does not send telemetry or call external services.
 
-## Current adapters
+## Current Adapters
 
-- `claude-code`: reads `~/.claude/projects/*/*.jsonl`
-- `codex`: reads `~/.codex/state_5.sqlite`, `~/.codex/session_index.jsonl`, and Codex rollout JSONL files when present
-- `manual-jsonl`: optional JSONL import for other agents before native adapters exist
+- `claude-code`: `~/.claude/projects/**/*.jsonl`
+- `claude-cowork`: Claude Desktop Cowork local agent sessions under
+  `~/Library/Application Support/Claude/local-agent-mode-sessions/`
+- `codex`: `~/.codex/state_5.sqlite`, `~/.codex/session_index.jsonl`, and
+  Codex rollout JSONL files when present
+- `manual-jsonl`: optional local JSONL import for agents before native adapters
+  exist
 
-No network calls are used.
+## Quick Start
 
-## Try it
-
-Run these from the project root, the directory that contains `pyproject.toml`:
+Install Rust 1.85+ and the Tauri 2 CLI:
 
 ```bash
-python3 -m local_agent_garden garden
-python3 -m local_agent_garden scan --out ~/.local-agent-garden/events.json
-python3 -m local_agent_garden projects
-python3 -m local_agent_garden inspect --project /path/to/project
-python3 -m local_agent_garden usage
+cargo install tauri-cli --version "^2.0" --locked
 ```
 
-Export data for the pixel garden:
+Run the Rust CLI:
 
 ```bash
-python3 -m local_agent_garden export-web --out web/data/garden-summary.json
+cargo run --release -p local-agent-garden-cli -- adapters
+cargo run --release -p local-agent-garden-cli -- scan --out ~/.local-agent-garden/events.json
+cargo run --release -p local-agent-garden-cli -- projects
+cargo run --release -p local-agent-garden-cli -- inspect --project pay-module
+cargo run --release -p local-agent-garden-cli -- garden
+cargo run --release -p local-agent-garden-cli -- export-web --out web/data/garden-summary.json
+```
+
+Preview the web garden fallback:
+
+```bash
 python3 -m http.server 8765
 ```
 
 Then open `http://127.0.0.1:8765/web/index.html`.
 
-Daily all-agent token usage:
+Run the desktop app in development mode:
 
 ```bash
-python3 -m local_agent_garden usage
-python3 -m local_agent_garden usage --date 2026-05-28
-python3 -m local_agent_garden usage --date yesterday --json
-python3 -m local_agent_garden usage --source codex
-python3 -m local_agent_garden usage --from-cache ~/.local-agent-garden/events.json
+cd crates/tauri-app
+cargo tauri dev
 ```
 
-Or install the CLI locally:
+## Manual JSONL Format
 
-```bash
-python3 -m pip install -e .
-agent-garden garden
-```
-
-If you are inside the package directory itself (`local_agent_garden/`), `python3 -m local_agent_garden` will not work unless the package has been installed into that exact Python environment. Either `cd ..` first, or use the editable install command above.
-
-## Manual JSONL format
-
-Use this for Cursor, Aider, Gemini CLI, or any source before a native adapter is added:
+Use this for Cursor, Aider, Gemini CLI, or any source before a native adapter is
+added:
 
 ```json
 {"source":"aider","timestamp":"2026-05-27T09:00:00Z","project_path":"/repo","session_id":"s1","input_tokens":1200,"output_tokens":400,"tool_calls":3}
 ```
 
-Every field is optional except `source` and `timestamp`; unknown fields are ignored.
-
-## V1 Surface
-
-- Local-only adapters for Claude Code, Codex, and manual JSONL imports.
-- Normalized project growth summaries with token totals, sessions, cache ratio, recent activity, and source mix.
-- ASCII wall for quick terminal checks.
-- Sprite-based pixel garden with one vine per project, token-scaled vine size, pavilion unlocks, trinkets, stone cat, seasonal text, and local-data freshness.
-- Empty state for first run; no demo data is shown as real activity.
+Every field is optional except `source` and `timestamp`; unknown fields are
+ignored.
 
 ## Architecture
 
@@ -76,14 +68,24 @@ Every field is optional except `source` and `timestamp`; unknown fields are igno
 local agent files
       |
       v
-adapters/*.py  ->  AgentEvent
+crates/core/src/adapters/*  ->  AgentEvent
       |
       v
-core/aggregate.py  ->  GardenSummary
+crates/core/src/aggregate.rs  ->  GardenSummary
       |
-      +--> ui/ascii_wall.py
+      +--> crates/cli/src/ascii_wall.rs
+      |
+      +--> Tauri commands / watcher
       |
       +--> web/data/garden-summary.json -> web/index.html
 ```
 
-The important boundary is the adapter contract. UI code never knows whether an event came from Claude Code, Codex, or a future agent.
+The important boundary is the adapter contract. UI code never knows whether an
+event came from Claude Code, Claude Cowork, Codex, or a future local agent.
+
+## Status
+
+- Rust is the only runtime for product code.
+- The old Python prototype has been removed after the Rust CLI/Tauri port.
+- `assets/` is the canonical sprite source; `web/assets/` is generated by the
+  Tauri build script and is not committed.

@@ -40,10 +40,25 @@ pub enum Error {
     },
 
     /// A required record field was missing or had the wrong shape. Used
-    /// sparingly — most adapters skip bad rows silently to match Python
-    /// adapter behavior.
+    /// sparingly — most adapters skip bad rows silently and keep scanning.
     #[error("invalid record in {context}: {message}")]
     InvalidRecord { context: String, message: String },
+
+    /// Settings TOML failed to parse. See `core/src/settings.rs`.
+    #[error("malformed settings TOML at {path}: {source}")]
+    TomlParse {
+        path: PathBuf,
+        #[source]
+        source: toml::de::Error,
+    },
+
+    /// Settings TOML failed to serialize before writing.
+    #[error("failed to encode settings TOML for {path}: {source}")]
+    TomlSerialize {
+        path: PathBuf,
+        #[source]
+        source: toml::ser::Error,
+    },
 }
 
 impl Error {

@@ -11,7 +11,7 @@ edition = "2024"
 rust-version = "1.85"
 authors = ["Local Agent Garden"]
 license = "MIT"
-repository = "https://github.com/local-agent-garden/local-agent-garden"
+repository = "https://github.com/DipsySu/pixel-agent-garden"
 
 [workspace.dependencies]
 # Shared deps — pinned at workspace level, inherited by member crates.
@@ -20,6 +20,8 @@ serde_json = "1"
 chrono = { version = "0.4", default-features = false, features = ["std", "clock", "serde"] }
 thiserror = "1"
 rusqlite = { version = "0.31", features = ["bundled"] }
+# Settings (spec §2.4) — TOML for human-edited config files.
+toml = "0.8"
 
 # Cross-crate workspace path deps
 local-agent-garden-core = { path = "crates/core" }

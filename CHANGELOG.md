@@ -2,7 +2,10 @@
 
 ## Unreleased
 
-- Added `agent-garden usage` / `python3 -m local_agent_garden usage` for local-day all-agent token reporting, with source/project breakdowns and JSON output.
+- Removed the old Python prototype and made Rust the only product runtime.
+- Added the Rust `claude-cowork` adapter for Claude Desktop Cowork local agent sessions.
+- Added scan-level uuid dedupe so duplicate Cowork/Claude transcript rows are counted once.
+- Added settings TOML support and Tauri `get_settings` / `set_settings` commands.
 
 ## v1.0.0 - 2026-05-28
 

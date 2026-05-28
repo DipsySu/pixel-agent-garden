@@ -1,9 +1,7 @@
 //! `AgentEvent` — the cross-adapter normalized event.
 //!
-//! The on-disk JSON layout MUST stay byte-compatible with the Python
-//! implementation in `local_agent_garden/core/events.py`. The frontend
-//! (`web/index.html`) reads the same shape via `garden-summary.json`, and the
-//! phase-1 compatibility test diffs Rust vs Python output.
+//! The on-disk JSON layout is the contract consumed by the CLI, Tauri shell,
+//! and web fallback.
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -13,20 +11,16 @@ use std::path::Path;
 /// One normalized event from any agent source. Adapters emit these; the
 /// aggregator groups them by project.
 ///
-/// Field ordering and naming mirror `local_agent_garden.core.events.AgentEvent`
-/// exactly — do NOT reorder or rename without updating the compat test.
+/// Field ordering and naming are part of the cache/frontend contract.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AgentEvent {
     pub source: String,
 
-    /// Always serialized as UTC ISO 8601 with `+00:00` suffix, matching
-    /// Python's `datetime.isoformat()` output. See `ts_serde` below.
+    /// Always serialized as UTC ISO 8601 with `+00:00` suffix.
     #[serde(with = "ts_serde")]
     pub timestamp: DateTime<Utc>,
 
-    // None fields MUST serialize as `null` (not omitted) — Python's
-    // `asdict()` always emits every field, and the compat test diffs on the
-    // raw JSON. Do NOT add `skip_serializing_if` here.
+    // None fields serialize as `null` so cache shape remains stable.
     #[serde(default)]
     pub project_path: Option<String>,
 
@@ -38,7 +32,7 @@ pub struct AgentEvent {
 
     /// Token counters live at the top level of the JSON, NOT nested under
     /// `usage`. `#[serde(flatten)]` keeps the struct internally tidy while
-    /// preserving the Python wire shape.
+    /// preserving the public wire shape.
     #[serde(flatten)]
     pub usage: TokenUsage,
 
@@ -100,7 +94,7 @@ impl AgentEvent {
     }
 
     /// If `total_tokens` is zero, fall back to the sum of the individual
-    /// token counters. Mirrors Python `__post_init__`.
+    /// token counters.
     pub fn normalize_totals(&mut self) {
         if self.usage.total_tokens == 0 {
             self.usage.total_tokens = self.usage.input_tokens
@@ -110,8 +104,8 @@ impl AgentEvent {
         }
     }
 
-    /// Same key strategy as the Python aggregator: project_path when known,
-    /// otherwise `unknown:<source>` so events still aggregate sensibly.
+    /// Project key strategy: project_path when known, otherwise
+    /// `unknown:<source>` so events still aggregate sensibly.
     pub fn project_key(&self) -> String {
         match self.project_path.as_deref().filter(|p| !p.is_empty()) {
             Some(path) => normalize_path(path),
@@ -121,10 +115,8 @@ impl AgentEvent {
 }
 
 fn normalize_path(p: &str) -> String {
-    // Python does `Path(p).expanduser()` then `str(...)`. The expansion of
-    // `~` is the only meaningful normalization. Tilde-prefixed paths in our
-    // input data are rare (adapters generally read absolute paths), but
-    // matching Python's behavior here keeps the project_key identical.
+    // Tilde expansion is the only meaningful normalization. Adapters generally
+    // read absolute paths, but this keeps manual-jsonl friendly.
     if let Some(rest) = p.strip_prefix("~/") {
         if let Some(home) = dirs_home() {
             let joined = home.join(rest);
@@ -145,13 +137,12 @@ fn dirs_home() -> Option<std::path::PathBuf> {
         .or_else(|| std::env::var_os("USERPROFILE"))
         .map(Into::into)
         .or_else(|| {
-            // Fallback: drive root on weird Windows configs. Mirrors what
-            // Path::home() degrades to in Python on those systems.
+            // Fallback: drive root on weird Windows configs.
             Some(Path::new("/").to_path_buf())
         })
 }
 
-/// Custom serializer matching Python's `datetime.isoformat()`:
+/// Custom timestamp serializer:
 ///   - UTC
 ///   - `+00:00` suffix (NOT `Z`)
 ///   - Microsecond precision when fractional seconds present, omitted otherwise
@@ -275,8 +266,7 @@ mod tests {
 
     #[test]
     fn none_option_fields_serialize_as_null_not_omitted() {
-        // Python's asdict() always emits every field; the compat test diffs
-        // raw JSON, so an omitted field (vs null) breaks byte-equality.
+        // Optional fields stay visible in the raw JSON shape.
         let ev = AgentEvent::new(
             "claude-code",
             Utc.with_ymd_and_hms(2026, 5, 27, 0, 0, 0).unwrap(),

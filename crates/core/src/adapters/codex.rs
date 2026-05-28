@@ -1,4 +1,4 @@
-//! Codex adapter — full port of `local_agent_garden/adapters/codex.py`.
+//! Codex adapter.
 //!
 //! Three input sources (all under `~/.codex/`):
 //!   1. `state_5.sqlite`  — the `threads` table (canonical thread records)
@@ -8,7 +8,7 @@
 //!      (per-message logs; rows whose session_id isn't already covered)
 //!
 //! Errors from any of these are swallowed at the row level and surface as
-//! "no event" rather than a hard failure — same defensiveness as Python.
+//! "no event" rather than a hard failure.
 
 use crate::adapter::{Adapter, AdapterContext};
 use crate::adapters::util::{JsonlRow, as_int_opt, parse_rfc3339_utc, read_jsonl};
@@ -50,7 +50,7 @@ impl FromSql for FlexString {
 struct FlexInt(pub Option<i64>);
 
 /// Wrap an optional &str as a JSON value: Some → String, None → Null.
-/// Used to mirror Python dict literals that include None-valued keys.
+/// Used to keep metadata keys visible even when values are absent.
 fn str_or_null(s: Option<&str>) -> serde_json::Value {
     match s {
         Some(v) => serde_json::Value::String(v.to_string()),
@@ -88,7 +88,7 @@ impl CodexAdapter {
         }
         // SQLite errors here are intentionally swallowed: Codex's schema can
         // vary between versions and we'd rather return partial data than
-        // refuse to render the garden. Same posture as Python.
+        // refuse to render the garden.
         let uri = format!("file:{}?mode=ro", db_path.display());
         let conn = match rusqlite::Connection::open_with_flags(
             &uri,
@@ -156,9 +156,8 @@ impl CodexAdapter {
                     .unwrap_or_else(|| db_path.display().to_string()),
             );
 
-            // Python builds metadata as a literal dict — all 7 keys are
-            // always present, valued None when the source row had nothing.
-            // We mirror that so the compat diff stays clean.
+            // Keep all source metadata keys visible even when the source row
+            // had nothing for that field.
             event
                 .metadata
                 .insert("codex_source".into(), str_or_null(row.source.as_deref()));
@@ -222,8 +221,7 @@ impl CodexAdapter {
             event.session_id = Some(session_id.to_string());
             event.event_type = "session-index".to_string();
             event.raw_ref = Some(format!("{}:{}", path.display(), row.line_no));
-            // Always emit `title` key (Python uses dict literal with single
-            // entry; missing thread_name → null).
+            // Always emit `title`; missing thread_name → null.
             let title_value = v
                 .get("thread_name")
                 .and_then(|s| s.as_str())
@@ -335,12 +333,12 @@ fn parse_codex_timestamp(s: &str) -> Option<DateTime<Utc>> {
 }
 
 fn normalize_epoch(v: i64) -> i64 {
-    // Python compat: values above 1e10 are treated as millisecond-like
-    // epochs and divided by 1000.
+    // Values above 1e10 are treated as millisecond-like epochs and divided
+    // by 1000.
     if v > 10_000_000_000 { v / 1000 } else { v }
 }
 
-/// Glob equivalent to Python's `sessions/**/*.jsonl` (depth 4 — Codex stores
+/// Glob equivalent to `sessions/**/*.jsonl` (depth 4 — Codex stores
 /// `sessions/YYYY/MM/DD/<rollout>.jsonl`) and `archived_sessions/*.jsonl`
 /// (flat). Implemented as a recursive walk with a depth cap so we never
 /// descend into something pathological.
@@ -384,9 +382,7 @@ fn session_id_from_rollout(path: &Path) -> String {
     tail.join("-")
 }
 
-/// Walk a rollout JSONL file and aggregate it into ONE event. The Python
-/// equivalent accumulates token totals and tool_calls across all rows of a
-/// session, then emits a single rollout-typed event.
+/// Walk a rollout JSONL file and aggregate it into ONE event.
 fn parse_rollout(path: &Path, session_id: &str) -> Option<AgentEvent> {
     let mut last_ts: Option<String> = None;
     let mut meta_cwd: Option<String> = None;
@@ -454,7 +450,7 @@ fn parse_rollout(path: &Path, session_id: &str) -> Option<AgentEvent> {
     event.tool_calls = tool_calls;
     event.model = model;
     event.raw_ref = Some(path.display().to_string());
-    // Always emit cli_version (null when absent) to match Python's dict literal.
+    // Always emit cli_version (null when absent).
     event.metadata.insert(
         "cli_version".into(),
         meta_cli_version
@@ -464,9 +460,7 @@ fn parse_rollout(path: &Path, session_id: &str) -> Option<AgentEvent> {
     Some(event)
 }
 
-/// Recursively sum token-count keys, including a nested `usage` object.
-/// Python uses ("total_tokens", "tokens_used", "input_tokens",
-/// "output_tokens", "cached_tokens").
+/// Recursively sum common token-count keys, including a nested `usage` object.
 fn extract_token_total(data: &serde_json::Value) -> u64 {
     let Some(obj) = data.as_object() else {
         return 0;
@@ -490,7 +484,7 @@ fn extract_token_total(data: &serde_json::Value) -> u64 {
     total
 }
 
-/// Whitespace-collapse + truncate, mirrors Python `_shorten`.
+/// Whitespace-collapse + truncate.
 fn shorten(value: Option<&str>, limit: usize) -> Option<String> {
     let v = value?;
     let collapsed: String = v.split_whitespace().collect::<Vec<_>>().join(" ");
@@ -546,9 +540,8 @@ mod tests {
         );
         assert_eq!(shorten(Some(""), 120), None);
         assert_eq!(shorten(None, 120), None);
-        // Python's _shorten: `text[:limit - 1] + "..."` → total length is
-        // limit + 2 when truncating (a small off-by-2 in the upstream
-        // function we're porting verbatim for byte-equality).
+        // Historical behavior: `text[..limit - 1] + "..."`, so total length
+        // is limit + 2 when truncating.
         let long = "a".repeat(200);
         let out = shorten(Some(&long), 50).unwrap();
         assert_eq!(out.chars().count(), 52);

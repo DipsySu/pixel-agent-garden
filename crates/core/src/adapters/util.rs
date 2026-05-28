@@ -1,5 +1,4 @@
-//! Shared helpers used by multiple adapters. Direct port of
-//! `local_agent_garden/adapters/utils.py`.
+//! Shared helpers used by multiple adapters.
 
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -8,17 +7,14 @@ use std::path::{Path, PathBuf};
 use chrono::{DateTime, Utc};
 
 /// One parsed JSONL row plus its 1-indexed line number. The line number is
-/// surfaced because the Python implementation stitches it into the value as
-/// `_line_no` for downstream use (raw_ref strings, debugging). We carry it
-/// as a separate field instead of mutating the JSON to keep types tidy —
-/// callers can stitch it in if they need the Python-shape value.
+/// surfaced for downstream raw_ref strings and debugging.
 pub struct JsonlRow {
     pub line_no: usize,
     pub value: serde_json::Value,
 }
 
 /// Iterate parsed JSONL rows from `path`. Bad lines are silently skipped
-/// (matches Python). Returns an empty iterator if the file is missing.
+/// Returns an empty iterator if the file is missing.
 pub fn read_jsonl(path: &Path) -> impl Iterator<Item = JsonlRow> {
     // Materialize into a Vec rather than returning a lazy iterator that
     // borrows the file. Each adapter reads at most a few hundred MB total
@@ -75,8 +71,8 @@ pub fn as_int_opt(value: Option<&serde_json::Value>) -> u64 {
     }
 }
 
-/// Coerce any JSON-ish value to a non-negative u64. Mirrors Python `as_int`:
-/// `None`, missing keys, bad strings → 0; negatives clamped to 0.
+/// Coerce any JSON-ish value to a non-negative u64: null, missing keys, and
+/// bad strings → 0; negatives clamp to 0.
 pub fn as_int(value: &serde_json::Value) -> u64 {
     match value {
         serde_json::Value::Number(n) => {
@@ -135,8 +131,29 @@ pub fn list_session_files(dir: &Path, extension: &str) -> Vec<PathBuf> {
     paths
 }
 
-/// `~/.claude/projects/*/*.jsonl` style enumeration: list every project dir,
-/// then every `.jsonl` session file inside. Returns a flat sorted list of
+/// Recursively list every `.jsonl` file below `dir`, sorted by path.
+pub fn list_jsonl_recursive(dir: &Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    fn visit(dir: &Path, out: &mut Vec<PathBuf>) {
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            return;
+        };
+        let mut paths: Vec<PathBuf> = entries.flatten().map(|e| e.path()).collect();
+        paths.sort();
+        for path in paths {
+            if path.is_dir() {
+                visit(&path, out);
+            } else if path.extension().and_then(|s| s.to_str()) == Some("jsonl") {
+                out.push(path);
+            }
+        }
+    }
+    visit(dir, &mut out);
+    out
+}
+
+/// `~/.claude/projects/*/**/*.jsonl` style enumeration: list every project dir,
+/// then every nested `.jsonl` session file inside. Returns a flat sorted list of
 /// `(project_dir, session_file)` pairs.
 pub fn list_claude_session_files(projects_root: &Path) -> Vec<(PathBuf, PathBuf)> {
     let mut out = Vec::new();
@@ -150,7 +167,7 @@ pub fn list_claude_session_files(projects_root: &Path) -> Vec<(PathBuf, PathBuf)
         .collect();
     project_dirs.sort();
     for project_dir in project_dirs {
-        for session in list_session_files(&project_dir, "jsonl") {
+        for session in list_jsonl_recursive(&project_dir) {
             out.push((project_dir.clone(), session));
         }
     }
@@ -163,7 +180,7 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn as_int_handles_python_quirks() {
+    fn as_int_handles_json_quirks() {
         assert_eq!(as_int(&json!(42)), 42);
         assert_eq!(as_int(&json!(-7)), 0); // negatives clamp to 0
         assert_eq!(as_int(&json!(null)), 0);
@@ -177,8 +194,8 @@ mod tests {
     fn project_from_claude_dir_decodes_dashes() {
         let path = PathBuf::from("-Users-dipsy-Developer-pay-module");
         let decoded = project_from_claude_dir(Path::new(&path));
-        // NB: this is the same lossy mapping Python uses — paths with real
-        // dashes in their components get split too. Documented behavior.
+        // NB: this is the same lossy mapping Claude's dash encoding forces —
+        // paths with real dashes in their components get split too.
         assert_eq!(
             decoded,
             Some("/Users/dipsy/Developer/pay/module".to_string())

@@ -3,6 +3,7 @@
 //! in `crate::scan`.
 
 pub mod claude_code;
+pub mod claude_cowork;
 pub mod codex;
 pub mod manual_jsonl;
 pub mod util;

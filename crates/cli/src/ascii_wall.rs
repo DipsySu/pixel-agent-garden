@@ -1,9 +1,7 @@
-//! Terminal vine wall renderer. Port of `local_agent_garden/ui/ascii_wall.py`.
+//! Terminal vine wall renderer.
 //!
 //! Pure rendering — no I/O, no async. Takes a `GardenSummary`, returns a
-//! single `String` ready for stdout. The Python version's character set
-//! (box-drawing, leaf glyphs, butterflies) is preserved verbatim so the
-//! visual output matches when both implementations are run side-by-side.
+//! single `String` ready for stdout.
 
 use chrono::{Duration, Utc};
 use local_agent_garden_core::aggregate::{GardenSummary, ProjectGrowth};
@@ -377,7 +375,7 @@ fn fmt_tokens(v: u64) -> String {
 fn fmt_dt(value: Option<chrono::DateTime<chrono::Utc>>) -> String {
     match value {
         None => "-".to_string(),
-        // Render in the local timezone, matching Python's astimezone().
+        // Render in the local timezone so CLI timestamps match the shell.
         Some(dt) => dt
             .with_timezone(&chrono::Local)
             .format("%Y-%m-%d %H:%M")

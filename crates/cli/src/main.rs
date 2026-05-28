@@ -1,8 +1,4 @@
-//! `agent-garden` — Rust port of the Python `local_agent_garden` CLI.
-//!
-//! Phase 1 week 2 scope: adapters / scan / projects / inspect / export-web.
-//! `garden` (ASCII vine wall) lands in a follow-up — it's a 250-line port of
-//! `ui/ascii_wall.py` and is not on the critical path to a working desktop app.
+//! `agent-garden` — terminal interface for Pixel Agent Garden.
 
 mod ascii_wall;
 
@@ -200,7 +196,7 @@ fn cmd_projects(
         Ok(s) => s,
         Err(code) => return code,
     };
-    // Column layout mirrors the Python CLI:
+    // Compact columns:
     //   <display_name 28>  stage=<n>  events=<n 5>  tokens=<n 10>  path=...
     for p in &summary.projects {
         let path = p.project_path.clone().unwrap_or_else(|| "-".to_string());

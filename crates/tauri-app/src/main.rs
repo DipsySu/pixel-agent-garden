@@ -22,6 +22,8 @@ fn main() {
             commands::trigger_scan,
             commands::list_adapters,
             commands::data_freshness,
+            commands::get_settings,
+            commands::set_settings,
         ])
         .setup(|app| {
             // Kick off the file watcher in its own thread. It will emit

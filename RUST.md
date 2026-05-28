@@ -6,7 +6,7 @@
 
 | Phase | 范围 | 状态 |
 |---|---|---|
-| Phase 1 | core crate + CLI 完整 port + Python 兼容性 | ✅ 退出门禁过 |
+| Phase 1 | core crate + CLI 完整 port | ✅ 完工 |
 | Phase 2 | Tauri shell + notify watcher + 前端 live updates | ✅ 完工 |
 | Phase 3 | 系统集成 / 打包 / 签名 | 待办 |
 
@@ -16,8 +16,8 @@
 Cargo.toml                          ← workspace 根
 crates/
 ├── core/                           ← 纯库, 无 UI/IPC 依赖
-│   └── src/{event, adapter, error, registry, scan, aggregate, storage}.rs
-│       + adapters/{claude_code, codex, manual_jsonl, util}.rs
+│   └── src/{event, adapter, error, registry, scan, aggregate, storage, settings}.rs
+│       + adapters/{claude_code, claude_cowork, codex, manual_jsonl, util}.rs
 ├── cli/                            ← agent-garden 二进制
 │   └── src/{main, ascii_wall}.rs
 └── tauri-app/                      ← Local Agent Garden.app
@@ -29,7 +29,6 @@ web/                                ← 像素艺术前端 (HTML+CSS+JS)
 ├── data/garden-summary.json        ← 浏览器 fallback 用
 └── assets/                         ← build.rs 生成的 Tauri 资源副本 (不提交)
 assets/sprites/                     ← 像素艺术原资产 (唯一源头)
-local_agent_garden/                 ← Python 老树, 暂留作对照参考
 ```
 
 ## 上手 · Getting started
@@ -41,10 +40,10 @@ cargo install tauri-cli --version "^2.0" --locked
 
 跑测试 / dev / 桌面 app:
 ```bash
-# Library + CLI 测试 (34 个)
+# Library + CLI 测试
 cargo test --workspace
 
-# CLI 子命令 (Rust 端, 替代 python -m local_agent_garden ...)
+# CLI 子命令
 cargo run --release -p local-agent-garden-cli -- adapters
 cargo run --release -p local-agent-garden-cli -- scan --out /tmp/events.json
 cargo run --release -p local-agent-garden-cli -- projects
@@ -65,18 +64,6 @@ cd crates/tauri-app && cargo tauri dev
 AGENT_GARDEN_DEBUG=1 cargo tauri dev
 ```
 
-## Phase 1 兼容性测试 (退出门禁)
-
-Rust scan 和 Python scan 必须输出字节级一致:
-```bash
-python3 -m local_agent_garden scan --out /tmp/py-events.json
-cargo run --release -p local-agent-garden-cli -- scan --out /tmp/rs-events.json
-diff <(jq -S . /tmp/py-events.json) <(jq -S . /tmp/rs-events.json) | wc -l
-# 0 行差 = 通过
-```
-
-export-web 输出同样要求字节级一致.
-
 ## Phase 2 实时数据链路
 
 ```
@@ -95,7 +82,7 @@ window.__TAURI__.event.listen("garden:updated", ...)
 renderEverything(groups, summary) — 重画 sprite 层, base SVG 不动
 ```
 
-watcher 在 `tauri-app/src/watcher.rs`, 完全不依赖 core 内部 — 只用 `Adapter::watch_paths()` trait 方法.
+watcher 在 `tauri-app/src/watcher.rs`, 不写任何 adapter 解析逻辑 — 只用 `Adapter::watch_paths()` trait 方法.
 
 ## 模块化铁律 (spec §10)
 
@@ -112,19 +99,21 @@ watcher 在 `tauri-app/src/watcher.rs`, 完全不依赖 core 内部 — 只用 `
 - 打包: macOS `.dmg` 含签名 + 公证, Windows `.msi`, Linux AppImage
 - 真 icon set (现在 stone_cat 临时凑数)
 - 视觉真生长: vine "长" 动画 / trinket 解锁掉落动画
-- Python `local_agent_garden/` 树挪到 `legacy/` 或删除
+- CI/CD + 自动更新通道
 
 ## 测试状态
 
 ```
-34 tests passed (0 failed)
+42+ tests passed (0 failed)
 ├── adapters::claude_code    6 tests
+├── adapters::claude_cowork  3 tests
 ├── adapters::codex          5 tests
 ├── adapters::util           4 tests
 ├── aggregate                7 tests
 ├── event                    6 tests
 ├── registry                 1 test
-└── (others)                 5 tests
+├── settings                 5 tests
+└── (others)                 remaining tests
 ```
 
 Run `cargo test --workspace` to verify.

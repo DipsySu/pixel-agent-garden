@@ -14,8 +14,10 @@ pub mod error;
 pub mod event;
 pub mod registry;
 pub mod scan;
+pub mod settings;
 pub mod storage;
 
 pub use adapter::{Adapter, AdapterContext};
 pub use error::Error;
 pub use event::{AgentEvent, TokenUsage};
+pub use settings::{Appearance, DataSettings, Motion, SeasonMode, Settings, TimeMode};
