@@ -152,11 +152,23 @@ body {
   outline-offset: 1px;
   transform: var(--sprite-transform, translate(-50%, -50%)) scale(1.18);
 }
+.pg6-scene[data-time-mode="night"] .pg6-sprite.decor-lantern,
+.pg6-scene[data-time-mode="dusk"] .pg6-sprite.decor-lantern.is-lit {
+  filter: saturate(1.18) brightness(1.18) drop-shadow(0 0 5px rgba(240, 160, 96, 0.55));
+}
+.pg6-scene[data-time-mode="day"] .pg6-sprite.decor-lantern.is-dim {
+  filter: saturate(0.7) brightness(0.88);
+}
+.pg6-scene[data-motion="off"] .pg6-sprite,
+.pg6-scene[data-motion="off"] .pg6-info {
+  animation: none !important;
+  transition-duration: 0ms !important;
+}
 @media (prefers-reduced-motion: no-preference) {
   .pg6-trinket-sprite { animation: pg6-trinket-nod 3600ms ease-in-out infinite; }
   .pg6-sprite.project.hanging { animation: pg6-vine-sway 4200ms ease-in-out infinite; }
   .pg6-sprite.project.climbing { animation: pg6-vine-breathe 5200ms ease-in-out infinite; }
-  .pg6-sprite.decor-lantern { animation: pg6-lantern-pulse 2200ms ease-in-out infinite; }
+  .pg6-sprite.decor-lantern.is-lit { animation: pg6-lantern-pulse 2200ms ease-in-out infinite; }
   .pg6-petal { animation: pg6-petal-fall var(--petal-duration, 9s) linear infinite; }
   @keyframes pg6-trinket-nod {
     0%, 100% { filter: saturate(0.97) brightness(0.98); }
@@ -171,8 +183,8 @@ body {
     50%      { opacity: 0.72; }
   }
   @keyframes pg6-lantern-pulse {
-    0%, 100% { filter: saturate(1.02) brightness(0.98); }
-    50%      { filter: saturate(1.14) brightness(1.14); }
+    0%, 100% { filter: saturate(1.12) brightness(1.08) drop-shadow(0 0 4px rgba(240, 160, 96, 0.45)); }
+    50%      { filter: saturate(1.22) brightness(1.22) drop-shadow(0 0 7px rgba(240, 160, 96, 0.65)); }
   }
   @keyframes pg6-petal-fall {
     0%   { opacity: 0; transform: translate3d(0, -8px, 0) rotate(0deg); }

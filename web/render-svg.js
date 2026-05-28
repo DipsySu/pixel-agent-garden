@@ -1,28 +1,31 @@
-export function renderBaseScene(scene, assetRoot) {
+export function renderBaseScene(scene, assetRoot, options = {}) {
   const W = 680, H = 440;
   const r = (x, y, w, h, c) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + c + '"/>';
   function hash(a, b) {
     const x = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
     return x - Math.floor(x);
   }
+  const time = resolveTimeScene(options.settings);
 
-  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" role="img"><title>像素花园·春·傍晚</title><desc>本地 agent 活动化作墙沿垂落和墙根攀爬的项目藤</desc>';
+  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" role="img"><title>像素花园·' + time.label + '</title><desc>本地 agent 活动化作墙沿垂落和墙根攀爬的项目藤</desc>';
   // <defs> — soft radial gradient for the setting-sun halo. Replaces the
   // earlier rectangular halo which showed as ghost squares against the
   // mountain sprites once those went sprite-art.
   s += '<defs>'
      + '<radialGradient id="pg6SunGlow" cx="50%" cy="50%" r="50%">'
-     +   '<stop offset="0%"   stop-color="#f8b870" stop-opacity="0.62"/>'
-     +   '<stop offset="45%"  stop-color="#f8b870" stop-opacity="0.26"/>'
+     +   '<stop offset="0%"   stop-color="' + time.glow + '" stop-opacity="' + time.glowOpacity + '"/>'
+     +   '<stop offset="45%"  stop-color="' + time.glow + '" stop-opacity="' + (time.glowOpacity * 0.42).toFixed(2) + '"/>'
      +   '<stop offset="100%" stop-color="#f8b870" stop-opacity="0"/>'
      + '</radialGradient>'
      + '</defs>';
 
   // === Wooden awning ============================================
   // Top eave with subtle pixel-art grain (knots + grooves).
-  s += r(0, 0, W, 14, '#d4a070');
-  s += r(0, 14, W, 6, '#a07248');
-  s += r(0, 20, W, 4, '#604028');
+  s += r(0, 0, W, 14, time.wood[0]);
+  s += r(0, 14, W, 6, time.wood[1]);
+  s += r(0, 20, W, 4, time.wood[2]);
+  s += r(0, 24, W, 46, time.skyTop);
+  s += r(0, 70, W, 40, time.skyBottom);
   // grain: short darker pixel runs at irregular x positions
   for (let i = 0; i < 26; i++) {
     const gx = Math.floor(hash(i + 41, 9) * W);
@@ -42,59 +45,72 @@ export function renderBaseScene(scene, assetRoot) {
   // Soft cream-pink cloud silhouettes BEFORE mountains so they sit
   // farther back in z-order.
   const clouds = [
-    [60, 42, 38, 5, '#f0d0c0'],
-    [110, 38, 22, 4, '#f4d8c8'],
-    [320, 48, 30, 4, '#e8c4b8'],
-    [600, 38, 46, 5, '#f0d0c0']
+    [60, 42, 38, 5, time.cloud[0]],
+    [110, 38, 22, 4, time.cloud[1]],
+    [320, 48, 30, 4, time.cloud[2]],
+    [600, 38, 46, 5, time.cloud[0]]
   ];
-  for (const [cx, cy, cw, ch, col] of clouds) {
-    // pixel-art puff: 3 vertically stacked rects of decreasing width
-    s += r(cx, cy, cw, ch, col);
-    s += r(cx + 3, cy - 3, cw - 6, 3, col);
-    s += r(cx + 8, cy - 5, Math.max(2, cw - 16), 2, col);
+  if (time.mode !== 'night') {
+    for (const [cx, cy, cw, ch, col] of clouds) {
+      // pixel-art puff: 3 vertically stacked rects of decreasing width
+      s += r(cx, cy, cw, ch, col);
+      s += r(cx + 3, cy - 3, cw - 6, 3, col);
+      s += r(cx + 8, cy - 5, Math.max(2, cw - 16), 2, col);
+    }
+  } else {
+    for (let i = 0; i < 34; i++) {
+      if (hash(i, 92) > 0.34) {
+        const sx = Math.floor(hash(i, 17) * W);
+        const sy = 30 + Math.floor(hash(i, 29) * 60);
+        const size = hash(i, 41) > 0.82 ? 2 : 1;
+        s += r(sx, sy, size, size, hash(i, 53) > 0.72 ? '#f0e6c8' : '#d8e0f0');
+      }
+    }
   }
 
-  // === Setting sun ==============================================
+  // === Sun / moon ===============================================
   // The halo is now a single SVG circle filled with a radial gradient — old
   // rgba rectangles showed as flat ghost squares against the mountain sprites.
-  const sunX = 530, sunY = 46;
+  const sunX = time.orb.x, sunY = time.orb.y;
   // halo behind everything (will be partly covered by mountains, that's fine
   // — it pre-tints the sky so the horizon picks up dusk warmth)
   s += '<circle cx="' + (sunX + 13) + '" cy="' + (sunY + 11) + '" r="38" fill="url(#pg6SunGlow)"/>';
   // sun core (pixel-art disc)
-  s += r(sunX, sunY, 26, 22, '#f0a060');
-  s += r(sunX + 4, sunY - 4, 18, 4, '#f0a060');
-  s += r(sunX + 4, sunY + 22, 18, 3, '#e08850');
-  s += r(sunX - 3, sunY + 6, 3, 14, '#f0a060');
-  s += r(sunX + 26, sunY + 6, 3, 14, '#f0a060');
-  s += r(sunX - 8, sunY + 10, 4, 6, '#f8b870');
-  s += r(sunX + 30, sunY + 8, 4, 6, '#f8b870');
+  s += r(sunX, sunY, 26, 22, time.orb.fill);
+  s += r(sunX + 4, sunY - 4, 18, 4, time.orb.fill);
+  s += r(sunX + 4, sunY + 22, 18, 3, time.orb.shadow);
+  s += r(sunX - 3, sunY + 6, 3, 14, time.orb.fill);
+  s += r(sunX + 26, sunY + 6, 3, 14, time.orb.fill);
+  s += r(sunX - 8, sunY + 10, 4, 6, time.orb.highlight);
+  s += r(sunX + 30, sunY + 8, 4, 6, time.orb.highlight);
   // inner highlight
-  s += r(sunX + 6, sunY + 4, 6, 4, '#f8c878');
-  s += r(sunX + 14, sunY + 12, 4, 3, '#f4a458');
+  s += r(sunX + 6, sunY + 4, 6, 4, time.orb.highlight);
+  s += r(sunX + 14, sunY + 12, 4, 3, time.orb.accent);
 
   // === Mountains ================================================
-  s += '<image href="' + assetRoot + '/sprites/mountains/mountains_far.png" x="-12" y="54" width="704" height="40" preserveAspectRatio="none" opacity="0.48"/>';
+  s += '<image href="' + assetRoot + '/sprites/mountains/mountains_far.png" x="-12" y="54" width="704" height="40" preserveAspectRatio="none" opacity="' + time.mountainFarOpacity + '"/>';
   // mountains_near now reaches y=110 (wall top, WT) so the silhouette meets
   // the brick wall edge without leaving a thin sky strip. Height bumped from
   // 34 to 38.
-  s += '<image href="' + assetRoot + '/sprites/mountains/mountains_near.png" x="-10" y="72" width="700" height="38" preserveAspectRatio="none" opacity="0.56"/>';
+  s += '<image href="' + assetRoot + '/sprites/mountains/mountains_near.png" x="-10" y="72" width="700" height="38" preserveAspectRatio="none" opacity="' + time.mountainNearOpacity + '"/>';
 
   // Re-draw the sun in front of the mountain sprites; the first pass above
   // tints the horizon, this pass keeps the core readable. Halo is the same
   // radial gradient — softer than the original rectangle outlines.
-  s += '<circle cx="' + (sunX + 13) + '" cy="' + (sunY + 11) + '" r="30" fill="url(#pg6SunGlow)" opacity="0.85"/>';
-  s += r(sunX, sunY, 26, 22, '#f0a060');
-  s += r(sunX + 4, sunY - 4, 18, 4, '#f0a060');
-  s += r(sunX + 4, sunY + 22, 18, 3, '#e08850');
-  s += r(sunX - 3, sunY + 6, 3, 14, '#f0a060');
-  s += r(sunX + 26, sunY + 6, 3, 14, '#f0a060');
-  s += r(sunX + 6, sunY + 4, 6, 4, '#f8c878');
+  s += '<circle cx="' + (sunX + 13) + '" cy="' + (sunY + 11) + '" r="30" fill="url(#pg6SunGlow)" opacity="' + time.frontGlowOpacity + '"/>';
+  s += r(sunX, sunY, 26, 22, time.orb.fill);
+  s += r(sunX + 4, sunY - 4, 18, 4, time.orb.fill);
+  s += r(sunX + 4, sunY + 22, 18, 3, time.orb.shadow);
+  s += r(sunX - 3, sunY + 6, 3, 14, time.orb.fill);
+  s += r(sunX + 26, sunY + 6, 3, 14, time.orb.fill);
+  s += r(sunX + 6, sunY + 4, 6, 4, time.orb.highlight);
 
   // birds — kept; they're tiny accents
-  s += '<polyline points="285,68 290,65 295,68" stroke="#2a1d10" stroke-width="1" fill="none"/>';
-  s += '<polyline points="300,72 305,69 310,72" stroke="#2a1d10" stroke-width="1" fill="none"/>';
-  s += '<polyline points="430,60 437,56 444,60" stroke="#2a1d10" stroke-width="1" fill="none"/>';
+  if (time.mode !== 'night') {
+    s += '<polyline points="285,68 290,65 295,68" stroke="#2a1d10" stroke-width="1" fill="none"/>';
+    s += '<polyline points="300,72 305,69 310,72" stroke="#2a1d10" stroke-width="1" fill="none"/>';
+    s += '<polyline points="430,60 437,56 444,60" stroke="#2a1d10" stroke-width="1" fill="none"/>';
+  }
 
   const WT = 110, WB = 380;
   const BW = 40, BH = 20;
@@ -186,4 +202,67 @@ export function renderBaseScene(scene, assetRoot) {
       '<div class="pg6-info-row"><span id="garden-info-total">累计 580k</span><span id="garden-info-stage">阶段 4 / 6</span></div>' +
       '<div class="pg6-info-bar"><div class="pg6-info-fill" id="garden-info-fill"></div></div>' +
     '</div>';
+  scene.dataset.timeMode = time.mode;
+  scene.dataset.motion = options.settings?.appearance?.motion || 'system';
+}
+
+function resolveTimeScene(settings) {
+  const forced = settings?.appearance?.time_mode || 'system';
+  const now = new Date();
+  const hour = now.getHours() + now.getMinutes() / 60;
+  const mode = forced === 'system' ? systemTimeMode(hour) : forced;
+  const dayProgress = Math.max(0, Math.min(1, (hour - 6) / 12));
+  const sunArcY = Math.round(72 - Math.sin(dayProgress * Math.PI) * 42);
+  const sunArcX = Math.round(-20 + dayProgress * 720);
+  const scenes = {
+    day: {
+      mode: 'day',
+      label: '白日',
+      skyTop: '#7fb7e8',
+      skyBottom: '#b9d8ea',
+      cloud: ['#f5efe4', '#fff4e8', '#e8ddcf'],
+      glow: '#f8d078',
+      glowOpacity: 0.42,
+      frontGlowOpacity: 0.55,
+      orb: { x: forced === 'system' ? sunArcX : 330, y: forced === 'system' ? sunArcY : 34, fill: '#f0c868', shadow: '#d8a34f', highlight: '#ffe090', accent: '#f0b460' },
+      wood: ['#d4a070', '#a07248', '#604028'],
+      mountainFarOpacity: 0.42,
+      mountainNearOpacity: 0.52
+    },
+    dusk: {
+      mode: 'dusk',
+      label: '傍晚',
+      skyTop: '#8ea2c8',
+      skyBottom: '#e4a174',
+      cloud: ['#f0d0c0', '#f4d8c8', '#e8c4b8'],
+      glow: '#f8b870',
+      glowOpacity: 0.62,
+      frontGlowOpacity: 0.85,
+      orb: { x: forced === 'system' ? Math.max(500, sunArcX) : 530, y: forced === 'system' ? Math.max(42, sunArcY) : 46, fill: '#f0a060', shadow: '#e08850', highlight: '#f8b870', accent: '#f4a458' },
+      wood: ['#c69062', '#8e623e', '#4d3322'],
+      mountainFarOpacity: 0.50,
+      mountainNearOpacity: 0.58
+    },
+    night: {
+      mode: 'night',
+      label: '夜晚',
+      skyTop: '#17213a',
+      skyBottom: '#273452',
+      cloud: ['#56627b', '#66708a', '#4e5870'],
+      glow: '#d8e6ff',
+      glowOpacity: 0.34,
+      frontGlowOpacity: 0.46,
+      orb: { x: 520, y: 34, fill: '#dbe4f0', shadow: '#a8b3c6', highlight: '#f0f4ff', accent: '#c8d4e8' },
+      wood: ['#8f6748', '#5e432e', '#2f241e'],
+      mountainFarOpacity: 0.38,
+      mountainNearOpacity: 0.48
+    }
+  };
+  return scenes[mode] || scenes.day;
+}
+
+function systemTimeMode(hour) {
+  if (hour >= 6 && hour < 16.5) return 'day';
+  if (hour >= 16.5 && hour < 19.5) return 'dusk';
+  return 'night';
 }

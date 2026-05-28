@@ -3,6 +3,7 @@ import { fmtLocal, escapeHtml, pick, pickByToken, namedSprite, jitter } from './
 
 let scene;
 let spriteRoot;
+let settings;
 const dynamicLayerSelector = [
   '.pg6-sprite',
   '.pg6-wall-edge-cover',
@@ -13,6 +14,7 @@ const dynamicLayerSelector = [
 export function createGardenRenderer(options) {
   scene = options.scene;
   spriteRoot = options.spriteRoot;
+  settings = options.settings || defaultSettings();
   return { renderEverything };
 }
 
@@ -25,7 +27,7 @@ function renderEverything(groups, summary) {
   // The base SVG stays put — it's static.
   clearDynamicLayers();
 
-  updateHeaderMeta();
+  updateHeaderMeta(settings);
   updateDataFreshness(summary);
   updateDefaultInfo(summary, wallProjects);
   updateLegend(tiers, wallProjects);
@@ -70,7 +72,7 @@ function clearDynamicLayers() {
     el.textContent = '· 更新于 ' + label;
     if (diff > 24 * 3_600_000) {
       el.classList.add('is-stale');
-      el.title = '运行 python3 -m local_agent_garden scan 刷新';
+      el.title = '运行 agent-garden scan 刷新';
     } else {
       el.classList.remove('is-stale');
       el.removeAttribute('title');
@@ -113,16 +115,27 @@ function clearDynamicLayers() {
     if (h < 22) return '夜晚';
     return '深夜';
   }
-  function updateHeaderMeta() {
+  function updateHeaderMeta(settings) {
     const now = new Date();
     const season = document.getElementById('meta-season');
     const time = document.getElementById('meta-time');
-    if (season) season.textContent = currentSeason(now) + ' · ' + currentSolarTerm(now);
+    const seasonMode = settings?.appearance?.season_mode || 'system';
+    const timeMode = settings?.appearance?.time_mode || 'system';
+    if (season) season.textContent = seasonLabel(seasonMode, now) + ' · ' + currentSolarTerm(now);
     if (time) {
       const hh = String(now.getHours()).padStart(2, '0');
       const mm = String(now.getMinutes()).padStart(2, '0');
-      time.textContent = currentTimeOfDay(now) + ' · ' + hh + ':' + mm;
+      const label = timeMode === 'system' ? currentTimeOfDay(now) : forcedTimeLabel(timeMode);
+      time.textContent = label + ' · ' + hh + ':' + mm;
     }
+  }
+
+  function seasonLabel(mode, date) {
+    return ({ spring: '春', summer: '夏', autumn: '秋', winter: '冬' })[mode] || currentSeason(date);
+  }
+
+  function forcedTimeLabel(mode) {
+    return ({ day: '白日', dusk: '傍晚', night: '夜晚' })[mode] || '系统';
   }
 
   // ==========================================================================
@@ -243,13 +256,15 @@ function clearDynamicLayers() {
     }
     if (lanterns.length) {
       const sprite = namedSprite(lanterns, tiers.lamp === 'lit' ? 'stone_lantern_lit' : 'stone_lantern_unlit') || pickByToken(lanterns, tiers.lamp === 'lit' ? 5 : 1);
+      const timeMode = effectiveTimeMode(settings);
+      const lampLit = tiers.lamp === 'lit' || timeMode === 'night' || timeMode === 'dusk';
       addSprite(sprite, {
         x: 60,
         y: 91.5,
         width: 31,
         z: 25,
-        opacity: 1.0,
-        className: 'object decor-lantern',
+        opacity: lampLit ? 1.0 : 0.82,
+        className: 'object decor-lantern ' + (lampLit ? 'is-lit' : 'is-dim'),
         anchor: 'bottom'
       });
     }
@@ -478,6 +493,8 @@ function clearDynamicLayers() {
   }
 
   function addAmbientMotion(tiers) {
+    const motion = settings?.appearance?.motion || 'system';
+    if (motion === 'off' || motion === 'reduced') return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     if (tiers.cherry !== 'bloom' && tiers.cherry !== 'petal') return;
     const count = tiers.cherry === 'petal' ? 12 : 6;
@@ -498,7 +515,7 @@ function clearDynamicLayers() {
     empty.className = 'pg6-empty';
     empty.innerHTML =
       '<div class="pg6-empty-title">还没有本地 agent 记录</div>' +
-      '<div class="pg6-empty-code">python3 -m local_agent_garden scan</div>';
+      '<div class="pg6-empty-code">agent-garden scan</div>';
     scene.append(empty);
   }
 
@@ -917,7 +934,12 @@ function clearDynamicLayers() {
     if (vine) vine.textContent = '项目藤 · ' + projects.length + ' 个本地项目';
     if (courtyard) courtyard.textContent = '亭子 · ' + tierLabel(tiers.pavilion) + (trinketCount ? ' · 陈列 ' + trinketCount + ' 件' : '');
     if (bloom) bloom.textContent = '花草 · ' + cherryLabel(tiers.cherry) + ' / ' + willowLabel(tiers.willow);
-    if (light) light.textContent = tiers.lamp === 'lit' ? '石灯 · 今日活动已点亮' : '石灯 · 今日尚未点亮';
+    const timeMode = effectiveTimeMode(settings);
+    if (light) {
+      if (timeMode === 'night') light.textContent = '石灯 · 夜间长明';
+      else if (timeMode === 'dusk') light.textContent = tiers.lamp === 'lit' ? '石灯 · 傍晚已点亮' : '石灯 · 傍晚微光';
+      else light.textContent = tiers.lamp === 'lit' ? '石灯 · 今日活动已点亮' : '石灯 · 今日尚未点亮';
+    }
   }
 
   function tierLabel(value) {
@@ -965,3 +987,26 @@ function clearDynamicLayers() {
       });
     });
   }
+
+function defaultSettings() {
+  return {
+    appearance: {
+      time_mode: 'system',
+      season_mode: 'system',
+      motion: 'system'
+    },
+    data: {
+      auto_rescan: true
+    }
+  };
+}
+
+function effectiveTimeMode(settings) {
+  const mode = settings?.appearance?.time_mode || 'system';
+  if (mode !== 'system') return mode;
+  const now = new Date();
+  const hour = now.getHours() + now.getMinutes() / 60;
+  if (hour >= 6 && hour < 16.5) return 'day';
+  if (hour >= 16.5 && hour < 19.5) return 'dusk';
+  return 'night';
+}

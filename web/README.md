@@ -5,7 +5,7 @@ This desktop web prototype uses generated sprite assets and local garden summary
 Refresh data:
 
 ```bash
-python3 -m local_agent_garden export-web --out web/data/garden-summary.json
+cargo run --release -p local-agent-garden-cli -- export-web --out web/data/garden-summary.json
 ```
 
 Run locally from the project root:
