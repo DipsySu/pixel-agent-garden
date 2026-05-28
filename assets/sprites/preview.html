@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ivy Courtyard Sprite Preview</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        background: #151713;
+        color: #e8ecd8;
+      }
+
+      body {
+        margin: 0;
+        padding: 24px;
+      }
+
+      h1 {
+        font-size: 18px;
+        margin: 0 0 16px;
+      }
+
+      h2 {
+        color: #a9c66d;
+        font-size: 14px;
+        margin: 28px 0 12px;
+        text-transform: uppercase;
+      }
+
+      .atlas {
+        background:
+          linear-gradient(45deg, #222 25%, transparent 25%),
+          linear-gradient(-45deg, #222 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #222 75%),
+          linear-gradient(-45deg, transparent 75%, #222 75%);
+        background-color: #111;
+        background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+        background-size: 16px 16px;
+        border: 1px solid #34382f;
+        image-rendering: pixelated;
+        max-width: 100%;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+      }
+
+      .sprite {
+        align-items: center;
+        background: #1e211b;
+        border: 1px solid #34382f;
+        display: grid;
+        gap: 8px;
+        justify-items: center;
+        min-height: 150px;
+        padding: 10px;
+      }
+
+      .sprite img {
+        image-rendering: pixelated;
+        max-height: 112px;
+        max-width: 128px;
+      }
+
+      .sprite span {
+        color: #b8bfa9;
+        font-size: 11px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Ivy Courtyard Sprite Preview</h1>
+    <img class="atlas" src="./ivy_courtyard_spritesheet.png" alt="sprite atlas" />
+    <main id="groups"></main>
+
+    <script>
+      fetch("./ivy_courtyard_manifest.json")
+        .then((response) => response.json())
+        .then((manifest) => {
+          const groups = new Map();
+          for (const sprite of manifest.sprites) {
+            if (!groups.has(sprite.group)) groups.set(sprite.group, []);
+            groups.get(sprite.group).push(sprite);
+          }
+
+          const root = document.querySelector("#groups");
+          for (const [group, sprites] of groups) {
+            const title = document.createElement("h2");
+            title.textContent = group.replaceAll("_", " ");
+            root.append(title);
+
+            const grid = document.createElement("section");
+            grid.className = "grid";
+            for (const sprite of sprites) {
+              const item = document.createElement("div");
+              item.className = "sprite";
+              item.innerHTML = `<img src="./${sprite.file}" alt="${sprite.name}" /><span>${sprite.name} · ${sprite.size[0]}x${sprite.size[1]}</span>`;
+              grid.append(item);
+            }
+            root.append(grid);
+          }
+        });
+    </script>
+  </body>
+</html>
+

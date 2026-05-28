@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "local-agent-garden"
+version = "1.0.0"
+description = "A private local garden grown from AI agent activity."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Local Agent Garden" }]
+license = { text = "MIT" }
+dependencies = []
+
+[project.scripts]
+agent-garden = "local_agent_garden.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["local_agent_garden*"]

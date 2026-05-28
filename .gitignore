@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+dist/
+build/
+*.egg-info/
+.DS_Store
+review*.png
+pixel_garden_organic_vine.html
+web/sprite-experiment.html

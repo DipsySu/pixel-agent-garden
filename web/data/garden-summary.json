@@ -1,0 +1,520 @@
+{
+  "projects": [
+    {
+      "project_key": "/Users/dipsy/Developer/tool-lib/pay-module",
+      "display_name": "pay-module",
+      "project_path": "/Users/dipsy/Developer/tool-lib/pay-module",
+      "sources": {
+        "claude-code": 1717,
+        "codex": 7
+      },
+      "sessions": 8,
+      "first_seen": "2026-05-05T02:31:26.518000+00:00",
+      "last_seen": "2026-05-26T06:25:28+00:00",
+      "total_tokens": 226880048,
+      "input_tokens": 644816,
+      "output_tokens": 197552,
+      "cache_read_tokens": 97500672,
+      "cache_write_tokens": 0,
+      "tool_calls": 481,
+      "event_count": 1724,
+      "daily_activity": {
+        "2026-05-05": 45584,
+        "2026-05-06": 53522,
+        "2026-05-19": 3321,
+        "2026-05-21": 145,
+        "2026-05-22": 27116,
+        "2026-05-25": 59639,
+        "2026-05-26": 38312
+      },
+      "models": {
+        "mimo-v2.5-pro": 1173,
+        "gpt-5.5": 5,
+        "codex-auto-review": 2
+      },
+      "activity_score": 610,
+      "stage": 6,
+      "recent_activity": 125067,
+      "cache_ratio": 0.9934299985344207
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/xiaowo/xiaowo_sport",
+      "display_name": "xiaowo_sport",
+      "project_path": "/Users/dipsy/Documents/xiaowo/xiaowo_sport",
+      "sources": {
+        "claude-code": 1186,
+        "codex": 1
+      },
+      "sessions": 2,
+      "first_seen": "2026-05-02T00:57:53.770000+00:00",
+      "last_seen": "2026-05-03T04:35:41+00:00",
+      "total_tokens": 87163938,
+      "input_tokens": 2233950,
+      "output_tokens": 179299,
+      "cache_read_tokens": 71173376,
+      "cache_write_tokens": 0,
+      "tool_calls": 363,
+      "event_count": 1187,
+      "daily_activity": {
+        "2026-05-02": 72969,
+        "2026-05-03": 14735
+      },
+      "models": {
+        "glm-4.7": 361,
+        "<synthetic>": 4,
+        "mimo-v2.5-pro": 425,
+        "gpt-5.5": 1
+      },
+      "activity_score": 542,
+      "stage": 6,
+      "recent_activity": 0,
+      "cache_ratio": 0.96956775131681
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/xiaowo",
+      "display_name": "xiaowo",
+      "project_path": "/Users/dipsy/Documents/xiaowo",
+      "sources": {
+        "claude-code": 396,
+        "codex": 1
+      },
+      "sessions": 2,
+      "first_seen": "2026-04-30T13:47:52.012000+00:00",
+      "last_seen": "2026-05-02T13:40:27+00:00",
+      "total_tokens": 75038804,
+      "input_tokens": 1007291,
+      "output_tokens": 58584,
+      "cache_read_tokens": 15505920,
+      "cache_write_tokens": 0,
+      "tool_calls": 117,
+      "event_count": 397,
+      "daily_activity": {
+        "2026-04-30": 4129,
+        "2026-05-01": 7583,
+        "2026-05-02": 63466
+      },
+      "models": {
+        "glm-4.7": 217,
+        "<synthetic>": 1,
+        "mimo-v2.5-pro": 48,
+        "gpt-5.4-mini": 1
+      },
+      "activity_score": 541,
+      "stage": 6,
+      "recent_activity": 0,
+      "cache_ratio": 0.9390009005516855
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/test",
+      "display_name": "test",
+      "project_path": "/Users/dipsy/Developer/test",
+      "sources": {
+        "codex": 4,
+        "claude-code": 23
+      },
+      "sessions": 7,
+      "first_seen": "2026-05-08T06:03:19+00:00",
+      "last_seen": "2026-05-27T02:49:35.655000+00:00",
+      "total_tokens": 6234229,
+      "input_tokens": 127836,
+      "output_tokens": 220,
+      "cache_read_tokens": 54016,
+      "cache_write_tokens": 0,
+      "tool_calls": 1,
+      "event_count": 27,
+      "daily_activity": {
+        "2026-05-08": 661,
+        "2026-05-12": 5375,
+        "2026-05-20": 14,
+        "2026-05-22": 199,
+        "2026-05-26": 1,
+        "2026-05-27": 3
+      },
+      "models": {
+        "gpt-5.5": 3,
+        "mimo-v2.5-pro": 4,
+        "<synthetic>": 2
+      },
+      "activity_score": 249,
+      "stage": 5,
+      "recent_activity": 203,
+      "cache_ratio": 0.2970327519081451
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/test/gcp",
+      "display_name": "gcp",
+      "project_path": "/Users/dipsy/Developer/test/gcp",
+      "sources": {
+        "codex": 3
+      },
+      "sessions": 3,
+      "first_seen": "2026-05-21T08:18:32+00:00",
+      "last_seen": "2026-05-22T07:54:37+00:00",
+      "total_tokens": 22267086,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 3,
+      "daily_activity": {
+        "2026-05-21": 6889,
+        "2026-05-22": 15377
+      },
+      "models": {
+        "gpt-5.5": 3
+      },
+      "activity_score": 168,
+      "stage": 4,
+      "recent_activity": 15377,
+      "cache_ratio": 0.0
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/other/ar-sky",
+      "display_name": "ar-sky",
+      "project_path": "/Users/dipsy/Developer/other/ar-sky",
+      "sources": {
+        "codex": 3
+      },
+      "sessions": 3,
+      "first_seen": "2026-05-07T09:17:16+00:00",
+      "last_seen": "2026-05-25T09:37:07+00:00",
+      "total_tokens": 18491277,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 3,
+      "daily_activity": {
+        "2026-05-07": 2869,
+        "2026-05-25": 15621
+      },
+      "models": {
+        "gpt-5.5": 3
+      },
+      "activity_score": 166,
+      "stage": 4,
+      "recent_activity": 15621,
+      "cache_ratio": 0.0
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Codex/2026-05-20/http-tomatogenetics-cau-edu-cn-download",
+      "display_name": "http-tomatogenetics-cau-edu-cn-download",
+      "project_path": "/Users/dipsy/Documents/Codex/2026-05-20/http-tomatogenetics-cau-edu-cn-download",
+      "sources": {
+        "codex": 2
+      },
+      "sessions": 2,
+      "first_seen": "2026-05-20T03:56:37+00:00",
+      "last_seen": "2026-05-20T03:56:50+00:00",
+      "total_tokens": 10114667,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 2,
+      "daily_activity": {
+        "2026-05-20": 10114
+      },
+      "models": {
+        "codex-auto-review": 1,
+        "gpt-5.5": 1
+      },
+      "activity_score": 150,
+      "stage": 4,
+      "recent_activity": 0,
+      "cache_ratio": 0.0
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/不知道叫什么",
+      "display_name": "不知道叫什么",
+      "project_path": "/Users/dipsy/Documents/不知道叫什么",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-05-28T02:23:04+00:00",
+      "last_seen": "2026-05-28T02:23:04+00:00",
+      "total_tokens": 45386732,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-05-28": 45386
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 149,
+      "stage": 4,
+      "recent_activity": 45386,
+      "cache_ratio": 0.0
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/xiaowo/xiaowo_sport_server",
+      "display_name": "xiaowo_sport_server",
+      "project_path": "/Users/dipsy/Documents/xiaowo/xiaowo_sport_server",
+      "sources": {
+        "claude-code": 11
+      },
+      "sessions": 1,
+      "first_seen": "2026-05-02T00:57:52.222000+00:00",
+      "last_seen": "2026-05-02T00:58:31.089000+00:00",
+      "total_tokens": 685163,
+      "input_tokens": 1061,
+      "output_tokens": 582,
+      "cache_read_tokens": 683520,
+      "cache_write_tokens": 0,
+      "tool_calls": 3,
+      "event_count": 11,
+      "daily_activity": {
+        "2026-05-02": 686
+      },
+      "models": {
+        "glm-4.7": 7
+      },
+      "activity_score": 146,
+      "stage": 4,
+      "recent_activity": 0,
+      "cache_ratio": 0.9984501468781635
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Obsidian Vault",
+      "display_name": "Obsidian Vault",
+      "project_path": "/Users/dipsy/Documents/Obsidian Vault",
+      "sources": {
+        "codex": 2
+      },
+      "sessions": 2,
+      "first_seen": "2026-05-22T00:49:39+00:00",
+      "last_seen": "2026-05-22T05:35:10+00:00",
+      "total_tokens": 2934995,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 2,
+      "daily_activity": {
+        "2026-05-22": 2934
+      },
+      "models": {
+        "gpt-5.5": 2
+      },
+      "activity_score": 140,
+      "stage": 4,
+      "recent_activity": 2934,
+      "cache_ratio": 0.0
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/ppt-master",
+      "display_name": "ppt-master",
+      "project_path": "/Users/dipsy/Documents/ppt-master",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-05-12T04:30:38+00:00",
+      "last_seen": "2026-05-12T04:30:38+00:00",
+      "total_tokens": 6870747,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-05-12": 6870
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 135,
+      "stage": 4,
+      "recent_activity": 0,
+      "cache_ratio": 0.0
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/8-bit",
+      "display_name": "8-bit",
+      "project_path": "/Users/dipsy/Documents/8-bit",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-05-22T13:40:22+00:00",
+      "last_seen": "2026-05-22T13:40:22+00:00",
+      "total_tokens": 6203445,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-05-22": 6203
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 134,
+      "stage": 4,
+      "recent_activity": 6203,
+      "cache_ratio": 0.0
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/backend",
+      "display_name": "backend",
+      "project_path": "/Users/dipsy/Developer/backend",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-05-25T01:18:03+00:00",
+      "last_seen": "2026-05-25T01:18:03+00:00",
+      "total_tokens": 763219,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-05-25": 763
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 117,
+      "stage": 3,
+      "recent_activity": 763,
+      "cache_ratio": 0.0
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Codex/2026-05-26/08-24-37-ls-developer-backend",
+      "display_name": "08-24-37-ls-developer-backend",
+      "project_path": "/Users/dipsy/Documents/Codex/2026-05-26/08-24-37-ls-developer-backend",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-05-26T07:55:53+00:00",
+      "last_seen": "2026-05-26T07:55:53+00:00",
+      "total_tokens": 319839,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-05-26": 319
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 111,
+      "stage": 3,
+      "recent_activity": 319,
+      "cache_ratio": 0.0
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Codex/2026-05-20/new-chat",
+      "display_name": "new-chat",
+      "project_path": "/Users/dipsy/Documents/Codex/2026-05-20/new-chat",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-05-20T01:13:16+00:00",
+      "last_seen": "2026-05-20T01:13:16+00:00",
+      "total_tokens": 110699,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-05-20": 110
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 102,
+      "stage": 3,
+      "recent_activity": 0,
+      "cache_ratio": 0.0
+    },
+    {
+      "project_key": "/Users/dipsy/Downloads/LSPosed-v2.0.2-7668-release",
+      "display_name": "LSPosed-v2.0.2-7668-release",
+      "project_path": "/Users/dipsy/Downloads/LSPosed-v2.0.2-7668-release",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-05-15T03:09:32+00:00",
+      "last_seen": "2026-05-15T03:09:32+00:00",
+      "total_tokens": 69547,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-05-15": 69
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 99,
+      "stage": 3,
+      "recent_activity": 0,
+      "cache_ratio": 0.0
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Codex/2026-05-21/new-chat",
+      "display_name": "new-chat",
+      "project_path": "/Users/dipsy/Documents/Codex/2026-05-21/new-chat",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-05-21T08:00:58+00:00",
+      "last_seen": "2026-05-21T08:00:58+00:00",
+      "total_tokens": 19743,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-05-21": 19
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 89,
+      "stage": 3,
+      "recent_activity": 0,
+      "cache_ratio": 0.0
+    }
+  ],
+  "sources": {
+    "claude-code": 3333,
+    "codex": 31
+  },
+  "total_events": 3364,
+  "total_tokens": 509554178,
+  "first_seen": "2026-04-30T13:47:52.012000+00:00",
+  "last_seen": "2026-05-28T02:23:04+00:00",
+  "active_projects": 17
+}

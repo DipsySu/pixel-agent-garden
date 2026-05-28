@@ -1,0 +1,1213 @@
+{
+  "image": "../ivy_courtyard_spritesheet.png",
+  "source_chroma": "../ivy_courtyard_spritesheet_chroma.png",
+  "tile_style": "original 16-bit pixel art, transparent PNG crops",
+  "sprites": [
+    {
+      "name": "vertical_vine_01",
+      "group": "vertical_vine",
+      "file": "ivy_courtyard/vertical_vine/vertical_vine_01.png",
+      "source_box": [
+        0,
+        315,
+        192,
+        520
+      ],
+      "trim_box": [
+        73,
+        6,
+        149,
+        205
+      ],
+      "size": [
+        76,
+        199
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "vertical_vine_02",
+      "group": "vertical_vine",
+      "file": "ivy_courtyard/vertical_vine/vertical_vine_02.png",
+      "source_box": [
+        192,
+        315,
+        384,
+        520
+      ],
+      "trim_box": [
+        67,
+        10,
+        146,
+        205
+      ],
+      "size": [
+        79,
+        195
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "vertical_vine_03",
+      "group": "vertical_vine",
+      "file": "ivy_courtyard/vertical_vine/vertical_vine_03.png",
+      "source_box": [
+        384,
+        315,
+        576,
+        520
+      ],
+      "trim_box": [
+        64,
+        6,
+        140,
+        205
+      ],
+      "size": [
+        76,
+        199
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "vertical_vine_04",
+      "group": "vertical_vine",
+      "file": "ivy_courtyard/vertical_vine/vertical_vine_04.png",
+      "source_box": [
+        576,
+        315,
+        768,
+        520
+      ],
+      "trim_box": [
+        50,
+        11,
+        137,
+        205
+      ],
+      "size": [
+        87,
+        194
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "vertical_vine_05",
+      "group": "vertical_vine",
+      "file": "ivy_courtyard/vertical_vine/vertical_vine_05.png",
+      "source_box": [
+        768,
+        315,
+        960,
+        520
+      ],
+      "trim_box": [
+        52,
+        6,
+        126,
+        205
+      ],
+      "size": [
+        74,
+        199
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "vertical_vine_06",
+      "group": "vertical_vine",
+      "file": "ivy_courtyard/vertical_vine/vertical_vine_06.png",
+      "source_box": [
+        960,
+        315,
+        1152,
+        520
+      ],
+      "trim_box": [
+        40,
+        6,
+        118,
+        205
+      ],
+      "size": [
+        78,
+        199
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "vertical_vine_07",
+      "group": "vertical_vine",
+      "file": "ivy_courtyard/vertical_vine/vertical_vine_07.png",
+      "source_box": [
+        1152,
+        315,
+        1344,
+        520
+      ],
+      "trim_box": [
+        16,
+        8,
+        103,
+        205
+      ],
+      "size": [
+        87,
+        197
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "vertical_vine_08",
+      "group": "vertical_vine",
+      "file": "ivy_courtyard/vertical_vine/vertical_vine_08.png",
+      "source_box": [
+        1344,
+        315,
+        1536,
+        520
+      ],
+      "trim_box": [
+        5,
+        6,
+        79,
+        205
+      ],
+      "size": [
+        74,
+        199
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "leaf_cluster_01",
+      "group": "leaf_cluster",
+      "file": "ivy_courtyard/leaf_cluster/leaf_cluster_01.png",
+      "source_box": [
+        0,
+        520,
+        192,
+        650
+      ],
+      "trim_box": [
+        42,
+        27,
+        192,
+        119
+      ],
+      "size": [
+        150,
+        92
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "leaf_cluster_02",
+      "group": "leaf_cluster",
+      "file": "ivy_courtyard/leaf_cluster/leaf_cluster_02.png",
+      "source_box": [
+        192,
+        520,
+        384,
+        650
+      ],
+      "trim_box": [
+        0,
+        15,
+        168,
+        119
+      ],
+      "size": [
+        168,
+        104
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "leaf_cluster_03",
+      "group": "leaf_cluster",
+      "file": "ivy_courtyard/leaf_cluster/leaf_cluster_03.png",
+      "source_box": [
+        384,
+        520,
+        576,
+        650
+      ],
+      "trim_box": [
+        11,
+        27,
+        173,
+        119
+      ],
+      "size": [
+        162,
+        92
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "leaf_cluster_04",
+      "group": "leaf_cluster",
+      "file": "ivy_courtyard/leaf_cluster/leaf_cluster_04.png",
+      "source_box": [
+        576,
+        520,
+        768,
+        650
+      ],
+      "trim_box": [
+        9,
+        24,
+        192,
+        119
+      ],
+      "size": [
+        183,
+        95
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "leaf_cluster_05",
+      "group": "leaf_cluster",
+      "file": "ivy_courtyard/leaf_cluster/leaf_cluster_05.png",
+      "source_box": [
+        768,
+        520,
+        960,
+        650
+      ],
+      "trim_box": [
+        0,
+        23,
+        192,
+        111
+      ],
+      "size": [
+        192,
+        88
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "leaf_cluster_06",
+      "group": "leaf_cluster",
+      "file": "ivy_courtyard/leaf_cluster/leaf_cluster_06.png",
+      "source_box": [
+        960,
+        520,
+        1152,
+        650
+      ],
+      "trim_box": [
+        0,
+        11,
+        192,
+        119
+      ],
+      "size": [
+        192,
+        108
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "leaf_cluster_07",
+      "group": "leaf_cluster",
+      "file": "ivy_courtyard/leaf_cluster/leaf_cluster_07.png",
+      "source_box": [
+        1152,
+        520,
+        1344,
+        650
+      ],
+      "trim_box": [
+        0,
+        21,
+        192,
+        108
+      ],
+      "size": [
+        192,
+        87
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "leaf_cluster_08",
+      "group": "leaf_cluster",
+      "file": "ivy_courtyard/leaf_cluster/leaf_cluster_08.png",
+      "source_box": [
+        1344,
+        520,
+        1536,
+        650
+      ],
+      "trim_box": [
+        0,
+        19,
+        142,
+        105
+      ],
+      "size": [
+        142,
+        86
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "flower_cluster_01",
+      "group": "flower_cluster",
+      "file": "ivy_courtyard/flower_cluster/flower_cluster_01.png",
+      "source_box": [
+        0,
+        650,
+        192,
+        760
+      ],
+      "trim_box": [
+        46,
+        6,
+        187,
+        90
+      ],
+      "size": [
+        141,
+        84
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "flower_cluster_02",
+      "group": "flower_cluster",
+      "file": "ivy_courtyard/flower_cluster/flower_cluster_02.png",
+      "source_box": [
+        192,
+        650,
+        384,
+        760
+      ],
+      "trim_box": [
+        30,
+        6,
+        167,
+        99
+      ],
+      "size": [
+        137,
+        93
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "flower_cluster_03",
+      "group": "flower_cluster",
+      "file": "ivy_courtyard/flower_cluster/flower_cluster_03.png",
+      "source_box": [
+        384,
+        650,
+        576,
+        760
+      ],
+      "trim_box": [
+        9,
+        11,
+        192,
+        98
+      ],
+      "size": [
+        183,
+        87
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "flower_cluster_04",
+      "group": "flower_cluster",
+      "file": "ivy_courtyard/flower_cluster/flower_cluster_04.png",
+      "source_box": [
+        576,
+        650,
+        768,
+        760
+      ],
+      "trim_box": [
+        0,
+        3,
+        192,
+        99
+      ],
+      "size": [
+        192,
+        96
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "plaster_patch_01",
+      "group": "plaster_patch",
+      "file": "ivy_courtyard/plaster_patch/plaster_patch_01.png",
+      "source_box": [
+        0,
+        760,
+        192,
+        885
+      ],
+      "trim_box": [
+        45,
+        9,
+        192,
+        120
+      ],
+      "size": [
+        147,
+        111
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "plaster_patch_02",
+      "group": "plaster_patch",
+      "file": "ivy_courtyard/plaster_patch/plaster_patch_02.png",
+      "source_box": [
+        192,
+        760,
+        384,
+        885
+      ],
+      "trim_box": [
+        34,
+        9,
+        168,
+        120
+      ],
+      "size": [
+        134,
+        111
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "plaster_patch_03",
+      "group": "plaster_patch",
+      "file": "ivy_courtyard/plaster_patch/plaster_patch_03.png",
+      "source_box": [
+        384,
+        760,
+        576,
+        885
+      ],
+      "trim_box": [
+        4,
+        9,
+        192,
+        120
+      ],
+      "size": [
+        188,
+        111
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "plaster_patch_04",
+      "group": "plaster_patch",
+      "file": "ivy_courtyard/plaster_patch/plaster_patch_04.png",
+      "source_box": [
+        576,
+        760,
+        768,
+        885
+      ],
+      "trim_box": [
+        0,
+        9,
+        192,
+        120
+      ],
+      "size": [
+        192,
+        111
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "stone_base_01",
+      "group": "stone_base",
+      "file": "ivy_courtyard/stone_base/stone_base_01.png",
+      "source_box": [
+        768,
+        760,
+        960,
+        885
+      ],
+      "trim_box": [
+        0,
+        23,
+        192,
+        115
+      ],
+      "size": [
+        192,
+        92
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "stone_base_02",
+      "group": "stone_base",
+      "file": "ivy_courtyard/stone_base/stone_base_02.png",
+      "source_box": [
+        960,
+        760,
+        1152,
+        885
+      ],
+      "trim_box": [
+        0,
+        24,
+        192,
+        117
+      ],
+      "size": [
+        192,
+        93
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "stone_base_03",
+      "group": "stone_base",
+      "file": "ivy_courtyard/stone_base/stone_base_03.png",
+      "source_box": [
+        1152,
+        760,
+        1344,
+        885
+      ],
+      "trim_box": [
+        0,
+        23,
+        192,
+        118
+      ],
+      "size": [
+        192,
+        95
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "stone_base_04",
+      "group": "stone_base",
+      "file": "ivy_courtyard/stone_base/stone_base_04.png",
+      "source_box": [
+        1344,
+        760,
+        1536,
+        885
+      ],
+      "trim_box": [
+        0,
+        23,
+        135,
+        117
+      ],
+      "size": [
+        135,
+        94
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "grass_tuft_01",
+      "group": "grass_tuft",
+      "file": "ivy_courtyard/grass_tuft/grass_tuft_01.png",
+      "source_box": [
+        0,
+        885,
+        192,
+        1024
+      ],
+      "trim_box": [
+        38,
+        17,
+        192,
+        113
+      ],
+      "size": [
+        154,
+        96
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "grass_tuft_02",
+      "group": "grass_tuft",
+      "file": "ivy_courtyard/grass_tuft/grass_tuft_02.png",
+      "source_box": [
+        192,
+        885,
+        384,
+        1024
+      ],
+      "trim_box": [
+        0,
+        22,
+        190,
+        105
+      ],
+      "size": [
+        190,
+        83
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "grass_tuft_03",
+      "group": "grass_tuft",
+      "file": "ivy_courtyard/grass_tuft/grass_tuft_03.png",
+      "source_box": [
+        384,
+        885,
+        576,
+        1024
+      ],
+      "trim_box": [
+        16,
+        12,
+        192,
+        112
+      ],
+      "size": [
+        176,
+        100
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "grass_tuft_04",
+      "group": "grass_tuft",
+      "file": "ivy_courtyard/grass_tuft/grass_tuft_04.png",
+      "source_box": [
+        576,
+        885,
+        768,
+        1024
+      ],
+      "trim_box": [
+        0,
+        16,
+        142,
+        109
+      ],
+      "size": [
+        142,
+        93
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "rock_01",
+      "group": "rock",
+      "file": "ivy_courtyard/rock/rock_01.png",
+      "source_box": [
+        768,
+        885,
+        960,
+        1024
+      ],
+      "trim_box": [
+        7,
+        26,
+        163,
+        103
+      ],
+      "size": [
+        156,
+        77
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "rock_02",
+      "group": "rock",
+      "file": "ivy_courtyard/rock/rock_02.png",
+      "source_box": [
+        960,
+        885,
+        1152,
+        1024
+      ],
+      "trim_box": [
+        6,
+        30,
+        144,
+        105
+      ],
+      "size": [
+        138,
+        75
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "rock_03",
+      "group": "rock",
+      "file": "ivy_courtyard/rock/rock_03.png",
+      "source_box": [
+        1152,
+        885,
+        1344,
+        1024
+      ],
+      "trim_box": [
+        0,
+        38,
+        162,
+        100
+      ],
+      "size": [
+        162,
+        62
+      ],
+      "anchor": "bottom"
+    },
+    {
+      "name": "hanging_vine_01",
+      "group": "hanging_vine",
+      "file": "ivy_courtyard/hanging_vine/hanging_vine_01.png",
+      "source_box": null,
+      "trim_box": null,
+      "size": [
+        117,
+        188
+      ],
+      "anchor": "top",
+      "notes": "trimmed no-roof hanging ivy; top is intended to tuck into the wall edge"
+    },
+    {
+      "name": "hanging_vine_02",
+      "group": "hanging_vine",
+      "file": "ivy_courtyard/hanging_vine/hanging_vine_02.png",
+      "source_box": null,
+      "trim_box": null,
+      "size": [
+        140,
+        188
+      ],
+      "anchor": "top",
+      "notes": "trimmed no-roof hanging ivy; top is intended to tuck into the wall edge"
+    },
+    {
+      "name": "hanging_vine_03",
+      "group": "hanging_vine",
+      "file": "ivy_courtyard/hanging_vine/hanging_vine_03.png",
+      "source_box": null,
+      "trim_box": null,
+      "size": [
+        126,
+        188
+      ],
+      "anchor": "top",
+      "notes": "trimmed no-roof hanging ivy; top is intended to tuck into the wall edge"
+    },
+    {
+      "name": "hanging_vine_04",
+      "group": "hanging_vine",
+      "file": "ivy_courtyard/hanging_vine/hanging_vine_04.png",
+      "source_box": null,
+      "trim_box": null,
+      "size": [
+        116,
+        187
+      ],
+      "anchor": "top",
+      "notes": "trimmed no-roof hanging ivy; top is intended to tuck into the wall edge"
+    },
+    {
+      "name": "hanging_vine_05",
+      "group": "hanging_vine",
+      "file": "ivy_courtyard/hanging_vine/hanging_vine_05.png",
+      "source_box": null,
+      "trim_box": null,
+      "size": [
+        142,
+        175
+      ],
+      "anchor": "top",
+      "notes": "trimmed no-roof hanging ivy; top is intended to tuck into the wall edge"
+    },
+    {
+      "name": "hanging_vine_06",
+      "group": "hanging_vine",
+      "file": "ivy_courtyard/hanging_vine/hanging_vine_06.png",
+      "source_box": null,
+      "trim_box": null,
+      "size": [
+        124,
+        176
+      ],
+      "anchor": "top",
+      "notes": "trimmed no-roof hanging ivy; top is intended to tuck into the wall edge"
+    },
+    {
+      "name": "hanging_vine_07",
+      "group": "hanging_vine",
+      "file": "ivy_courtyard/hanging_vine/hanging_vine_07.png",
+      "source_box": null,
+      "trim_box": null,
+      "size": [
+        175,
+        177
+      ],
+      "anchor": "top",
+      "notes": "trimmed no-roof hanging ivy; top is intended to tuck into the wall edge"
+    },
+    {
+      "name": "hanging_vine_08",
+      "group": "hanging_vine",
+      "file": "ivy_courtyard/hanging_vine/hanging_vine_08.png",
+      "source_box": null,
+      "trim_box": null,
+      "size": [
+        121,
+        187
+      ],
+      "anchor": "top",
+      "notes": "trimmed no-roof hanging ivy; top is intended to tuck into the wall edge"
+    },
+    {
+      "name": "pavilion_compact_small",
+      "group": "pavilion_compact",
+      "file": "courtyard_objects/pavilion_compact_small.png",
+      "size": [
+        152,
+        223
+      ],
+      "anchor": "bottom",
+      "source_box": [
+        217,
+        166,
+        369,
+        389
+      ]
+    },
+    {
+      "name": "pavilion_compact_mid",
+      "group": "pavilion_compact",
+      "file": "courtyard_objects/pavilion_compact_mid.png",
+      "size": [
+        289,
+        257
+      ],
+      "anchor": "bottom",
+      "source_box": [
+        503,
+        133,
+        792,
+        390
+      ]
+    },
+    {
+      "name": "pavilion_compact_full",
+      "group": "pavilion_compact",
+      "file": "courtyard_objects/pavilion_compact_full.png",
+      "size": [
+        383,
+        324
+      ],
+      "anchor": "bottom",
+      "source_box": [
+        913,
+        65,
+        1296,
+        389
+      ]
+    },
+    {
+      "name": "bamboo_cluster_01",
+      "group": "bamboo_cluster",
+      "file": "courtyard_objects/bamboo_cluster_01.png",
+      "size": [
+        198,
+        265
+      ],
+      "anchor": "bottom",
+      "source_box": [
+        188,
+        509,
+        386,
+        774
+      ]
+    },
+    {
+      "name": "bamboo_cluster_02",
+      "group": "bamboo_cluster",
+      "file": "courtyard_objects/bamboo_cluster_02.png",
+      "size": [
+        270,
+        348
+      ],
+      "anchor": "bottom",
+      "source_box": [
+        522,
+        429,
+        792,
+        777
+      ]
+    },
+    {
+      "name": "bamboo_cluster_03",
+      "group": "bamboo_cluster",
+      "file": "courtyard_objects/bamboo_cluster_03.png",
+      "size": [
+        161,
+        289
+      ],
+      "anchor": "bottom",
+      "source_box": [
+        912,
+        483,
+        1073,
+        772
+      ]
+    },
+    {
+      "name": "path_stones_01",
+      "group": "path_stones",
+      "file": "courtyard_objects/path_stones_01.png",
+      "size": [
+        714,
+        70
+      ],
+      "anchor": "bottom",
+      "source_box": [
+        52,
+        876,
+        766,
+        946
+      ]
+    },
+    {
+      "name": "stone_stool_01",
+      "group": "stone_stool",
+      "file": "courtyard_objects/stone_stool_01.png",
+      "size": [
+        83,
+        71
+      ],
+      "anchor": "bottom",
+      "source_box": [
+        811,
+        875,
+        894,
+        946
+      ]
+    },
+    {
+      "name": "cushion_01",
+      "group": "cushion",
+      "file": "courtyard_objects/cushion_01.png",
+      "size": [
+        110,
+        59
+      ],
+      "anchor": "bottom",
+      "source_box": [
+        938,
+        894,
+        1048,
+        953
+      ]
+    },
+    {
+      "name": "ground_tuft_01",
+      "group": "object_ground_tuft",
+      "file": "courtyard_objects/ground_tuft_01.png",
+      "size": [
+        89,
+        77
+      ],
+      "anchor": "bottom",
+      "source_box": [
+        1092,
+        873,
+        1181,
+        950
+      ]
+    },
+    {
+      "name": "rock_large_01",
+      "group": "object_rock",
+      "file": "courtyard_objects/rock_large_01.png",
+      "size": [
+        108,
+        77
+      ],
+      "anchor": "bottom",
+      "source_box": [
+        1209,
+        875,
+        1317,
+        952
+      ]
+    },
+    {
+      "name": "rock_small_01",
+      "group": "object_rock",
+      "file": "courtyard_objects/rock_small_01.png",
+      "size": [
+        63,
+        44
+      ],
+      "anchor": "bottom",
+      "source_box": [
+        1362,
+        901,
+        1425,
+        945
+      ]
+    },
+    {
+      "group": "cherry_tree",
+      "name": "cherry_tree_bud",
+      "file": "courtyard_style/cherry_tree_bud.png",
+      "w": 223,
+      "h": 254
+    },
+    {
+      "group": "cherry_tree",
+      "name": "cherry_tree_bloom",
+      "file": "courtyard_style/cherry_tree_bloom.png",
+      "w": 313,
+      "h": 315
+    },
+    {
+      "group": "willow",
+      "name": "willow_young",
+      "file": "courtyard_style/willow_young.png",
+      "w": 209,
+      "h": 280
+    },
+    {
+      "group": "willow",
+      "name": "willow_mature",
+      "file": "courtyard_style/willow_mature.png",
+      "w": 304,
+      "h": 333
+    },
+    {
+      "group": "shrine",
+      "name": "shrine_small",
+      "file": "courtyard_style/shrine_small.png",
+      "w": 228,
+      "h": 230
+    },
+    {
+      "group": "shrine",
+      "name": "shrine_full",
+      "file": "courtyard_style/shrine_full.png",
+      "w": 294,
+      "h": 283
+    },
+    {
+      "group": "stone_lantern",
+      "name": "stone_lantern_unlit",
+      "file": "courtyard_style/stone_lantern_unlit.png",
+      "w": 180,
+      "h": 281
+    },
+    {
+      "group": "stone_lantern",
+      "name": "stone_lantern_lit",
+      "file": "courtyard_style/stone_lantern_lit.png",
+      "w": 184,
+      "h": 287
+    },
+    {
+      "group": "stone_cairn",
+      "name": "stone_cairn_small",
+      "file": "courtyard_style/stone_cairn_small.png",
+      "w": 197,
+      "h": 236
+    },
+    {
+      "group": "stone_cairn",
+      "name": "stone_cairn_full",
+      "file": "courtyard_style/stone_cairn_full.png",
+      "w": 227,
+      "h": 321
+    },
+    {
+      "group": "stone_cat",
+      "name": "stone_cat_small",
+      "file": "stone_cat/stone_cat_small.png",
+      "w": 338,
+      "h": 408
+    },
+    {
+      "group": "stone_cat",
+      "name": "stone_cat_full",
+      "file": "stone_cat/stone_cat_full.png",
+      "w": 486,
+      "h": 606
+    },
+    {
+      "group": "mountains",
+      "name": "mountains_far",
+      "file": "mountains/mountains_far.png",
+      "w": 2112,
+      "h": 162
+    },
+    {
+      "group": "mountains",
+      "name": "mountains_near",
+      "file": "mountains/mountains_near.png",
+      "w": 2102,
+      "h": 188
+    },
+    {
+      "group": "pavilion_trinket",
+      "name": "trinket_scroll",
+      "file": "pavilion_trinkets/trinket_scroll.png",
+      "w": 187,
+      "h": 315
+    },
+    {
+      "group": "pavilion_trinket",
+      "name": "trinket_tea_set",
+      "file": "pavilion_trinkets/trinket_tea_set.png",
+      "w": 276,
+      "h": 190
+    },
+    {
+      "group": "pavilion_trinket",
+      "name": "trinket_lucky_cat",
+      "file": "pavilion_trinkets/trinket_lucky_cat.png",
+      "w": 196,
+      "h": 278
+    },
+    {
+      "group": "pavilion_trinket",
+      "name": "trinket_wind_chime",
+      "file": "pavilion_trinkets/trinket_wind_chime.png",
+      "w": 129,
+      "h": 307
+    },
+    {
+      "group": "pavilion_trinket",
+      "name": "trinket_incense",
+      "file": "pavilion_trinkets/trinket_incense.png",
+      "w": 227,
+      "h": 250
+    },
+    {
+      "group": "pavilion_trinket",
+      "name": "trinket_sleeping_cat",
+      "file": "pavilion_trinkets/trinket_sleeping_cat.png",
+      "w": 206,
+      "h": 159
+    }
+  ]
+}
