@@ -87,6 +87,94 @@ python3 -m http.server 8765
 5. JS 只住 `web/`
 6. 公开 Rust API 返回 typed `Error`(enum),不要 `Box<dyn Error>`
 
+## 设计约束(代码结构 / 解耦 / 扩展)
+
+上面 6 条是**红线**;这一节是**设计哲学**。两者互补:铁律告诉你"不能做什么",
+这里告诉你"该往哪种形状写"。改代码前先对照一下。
+
+### 1. 单向数据流
+
+源 → `AgentEvent` → `GardenSummary` → UI。**这个流向不能反**:
+- UI 不能改 `AgentEvent` 的 schema 假设
+- `scan.rs` / `aggregate.rs` 不能往源目录回写(隐私契约也禁了)
+- adapter 不能依赖前端形状(比如不能在 adapter 里塞"前端用的颜色")
+
+如果某个改动需要"下游回头查上游",大概率抽象切错了——先回去把边界修对。
+
+### 2. 关注点分离 = 文件分工
+
+一个文件**只干一件事**。这个项目已有的好范例:
+
+| 文件 | 唯一职责 |
+|---|---|
+| `crates/core/src/adapters/<name>.rs` | 读一种 source,产 `AgentEvent` |
+| `crates/core/src/scan.rs` | 跨 source 编排 + dedupe |
+| `crates/core/src/aggregate.rs` | event → project summary 的纯数学 |
+| `crates/core/src/storage.rs` | events.json 的读写 + schema version |
+| `crates/core/src/settings.rs` | settings.toml 的读写 |
+| `crates/tauri-app/src/watcher.rs` | 文件变化 → 触发 rescan(不解析任何文件内容) |
+| `crates/tauri-app/src/commands.rs` | Tauri 命令薄壳,业务调用 core |
+| `web/data-source.js` | 数据访问层(Tauri / fetch 抽象) |
+| `web/settings-panel.js` | 设置 UI(只管渲染 + 派发 onChange) |
+| `web/render-*.js` | 渲染层,纯函数(数据 → DOM) |
+
+**如果一个文件同时干两件事,拆开它。** 例如:不要在 `watcher.rs` 里解析 JSONL;
+不要在 adapter 里调别的 adapter;不要在 `render-svg.js` 里发 Tauri invoke。
+
+### 3. 可替换性(Substitutability)
+
+任何**具体实现**应该可以被换掉,caller 不需要动:
+
+- 换底层 watcher 库(`notify` → 别的)?只改 `watcher.rs`
+- 换 settings 持久化(TOML → JSON / SQLite)?只改 `settings.rs`,public API 不变
+- 删 `claude-cowork` adapter?删文件 + registry 摘一行,**零**其他文件影响
+- 换错误 toast 实现?只改 `error-toast.js`,`data-source.js` 不变
+
+**"删一个模块要改 N 个文件" = 抽象漏了。** 先把抽象修对再做改动,
+不要图省事就让 caller 知道实现细节。
+
+### 4. 扩展性 = 默认值 + 可选
+
+新增能力**不应破坏现有调用方**。已有的几个好模式:
+
+- `Settings` 全部字段 `#[serde(default)]`,加新字段时老 config 文件继续 work
+- `AgentEvent.metadata: BTreeMap<String, Value>` 收 source 特有字段,不污染顶层
+- `schema_version` 兜底字段语义不兼容的变更
+- Adapter trait 用 `Vec<PathBuf>` 而不是 `&[&str]`,新 adapter 想返回啥都行
+
+加一个 `Option<T>` 字段比之后回头改 trait 容易;加一个新 method 加 default 实现
+比要求所有 impl 同步改容易。**为兼容留口子,别为兼容留架构。**
+
+### 5. 奥卡姆 / 不过度抽象
+
+没有用户场景就不抽象:
+
+- adapter trait 现在 4 个 impl,所以值得抽象;**只剩 1 个时把 trait 删了直接写函数**
+- "为以后预留扩展点"几乎总是错的——以后真有需要时再抽,YAGNI
+- `Vec<Box<dyn Adapter>>` 就够了,不需要 "PluginManager" / "AdapterRegistryBuilder" / 等
+- `Settings` 是 struct 不是 `HashMap<String, dyn Any>`——结构化 + serde 就行
+- 不要为了"灵活"加 trait object,如果当前只有一个实现就用具体类型
+
+### 6. 测试也要解耦
+
+- 每个 adapter 的测试**只测自己**,用 fixture(临时目录 + 写 JSON 字符串),
+  不依赖真实 home 目录,不依赖其他 adapter
+- 跨 adapter 的行为(dedupe)测在 `scan.rs` 的测试里,不在 adapter 里
+- 测试**不**应该 mock `chrono::Utc::now`——用 `summarize_at(events, now)` 这种
+  参数化的接口,把"现在"明确传进去
+- 看到一个测试要 mock 多个东西才能跑,大概率是被测代码耦合过紧的信号
+
+### 7. 改动前的 checklist
+
+提交前自问:
+
+- [ ] 这个改动**最多触及几个文件**?如果 > 5,边界对吗?
+- [ ] 我有没有让 `core` 知道 UI 的存在?(import 检查)
+- [ ] 我加的字段是不是 `#[serde(default)]` / `Option<T>`?(兼容性)
+- [ ] 如果将来要**删**这个功能,是改一处还是 N 处?
+- [ ] 我有没有为"以后可能"做抽象?如果是,**删掉它**,以后真需要时再抽
+- [ ] 测试是不是只依赖被测模块?有没有偷偷拉进真实 home / 真实网络?
+
 ## 数据 schema
 
 `GardenSummary` 和 `EventsCache` 都带 `schema_version: u32`(当前 `1`,
