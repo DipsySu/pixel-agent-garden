@@ -316,14 +316,22 @@ Done:
 
 - UI error surface (`garden:error` → toast).
 - Settings UI (inline footer panel backed by `settings.toml`).
+- Bundling enabled: `tauri.conf.json#bundle.active = true` with
+  `targets: "all"`, an explicit `icon` list, and macOS metadata
+  (`category`, `copyright`, short/long description,
+  `macOS.minimumSystemVersion`). Full icon set now ships — `icon.icns`
+  (16→512@2x) and `icon.ico` (16→256) generated from the 512px source,
+  replacing the PNG-only placeholders.
+- First local unsigned macOS build verified: `cargo tauri build`
+  produces `Local Agent Garden.app` and
+  `Local Agent Garden_0.1.0_x64.dmg`; `hdiutil verify` passes.
 
 Next:
 
-- `tauri.conf.json#bundle.active = true` and full icon set
-  (`.icns` / `.ico`) — currently only placeholder PNGs ship.
+- Signing / notarization for macOS distribution; Windows installer and
+  Linux AppImage follow on their hosts.
 - App menu and tray (`tauri::tray` + `tauri::menu`): show/hide window,
   trigger scan, open `settings.toml`, quit.
-- Signed macOS `.dmg`, Windows installer, Linux AppImage.
 
 ### Phase 3.1: CI/CD + Auto-Update
 
