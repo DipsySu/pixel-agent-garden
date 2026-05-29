@@ -30,7 +30,7 @@ calls.
 Grab the latest build for your platform from the
 [Releases page](https://github.com/DipsySu/pixel-agent-garden/releases):
 
-- **macOS** — `Local Agent Garden_<version>_x64.dmg`. Builds are currently
+- **macOS** — the `.dmg` build attached to the release. Builds are currently
   **unsigned**, so on first launch right-click the app and choose _Open_ (or
   allow it under System Settings → Privacy & Security).
 - **Linux** — `.AppImage` (make it executable: `chmod +x *.AppImage`) or the
