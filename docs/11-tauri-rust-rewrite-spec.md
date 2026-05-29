@@ -335,11 +335,27 @@ Next:
 
 ### Phase 3.1: CI/CD + Auto-Update
 
-- GitHub Actions matrix for macOS, Windows, Linux.
-- `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
-  and `cargo test --workspace`.
-- Release artifacts uploaded to GitHub Releases.
-- Tauri updater plugin once signing is ready.
+In progress.
+
+Done:
+
+- GitHub Actions CI (`.github/workflows/ci.yml`): a `rustfmt` gate plus a
+  `clippy + test` matrix across macOS, Windows, and Linux running
+  `cargo clippy --workspace --all-targets -- -D warnings` and
+  `cargo test --workspace` on the declared MSRV (`1.85.0`). The Linux job
+  installs the Tauri 2 webkit2gtk-4.1 + GTK/appindicator/pkg-config stack;
+  builds are cached with `Swatinem/rust-cache`.
+- Release workflow (`.github/workflows/release.yml`): a `v*` tag (or manual
+  dispatch with `release_tag`) drives a three-platform
+  `tauri-apps/tauri-action` build that attaches `.dmg` / `.deb` + AppImage /
+  NSIS bundles to a draft GitHub Release. Manual dispatch without
+  `release_tag` is a bundle validation run. Per-OS `--bundles` keep each host
+  to the formats it can produce.
+
+Next:
+
+- Tauri updater plugin once signing is ready (CI release job is the hook
+  point: add signing keys + the `updater` artifact target there).
 
 ## Modularity Rules
 

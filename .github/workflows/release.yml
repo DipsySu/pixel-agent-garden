@@ -1,0 +1,83 @@
+name: Release
+
+# Tag-driven releases (push a v* tag) build signed-able bundles on all three
+# desktop platforms and attach them to a draft GitHub Release. Manual dispatch
+# can validate bundles without a release, or create a draft release when
+# `release_tag` is provided.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Optional release tag for a draft release, e.g. v0.1.0'
+        required: false
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+  RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || github.event.inputs.release_tag }}
+
+jobs:
+  build:
+    name: build (${{ matrix.platform }})
+    runs-on: ${{ matrix.platform }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: '--bundles app,dmg'
+          - platform: ubuntu-22.04
+            args: '--bundles deb,appimage'
+          - platform: windows-latest
+            args: '--bundles nsis'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            pkg-config \
+            patchelf \
+            libfuse2 \
+            build-essential \
+            libxdo-dev \
+            libssl-dev \
+            file
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.platform }}
+
+      # tauri-action runs `tauri build`, finds the config under projectPath,
+      # and uploads bundles only when a tag name is provided.
+      - name: Build and attach draft release
+        if: env.RELEASE_TAG != ''
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: crates/tauri-app
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: Local Agent Garden ${{ env.RELEASE_TAG || github.sha }}
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+
+      - name: Build bundles only
+        if: env.RELEASE_TAG == ''
+        uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: crates/tauri-app
+          args: ${{ matrix.args }}
