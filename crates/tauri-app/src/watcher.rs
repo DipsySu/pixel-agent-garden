@@ -129,7 +129,7 @@ fn debounce_drain(rx: &Receiver<notify::Event>, window: Duration) {
     }
 }
 
-fn run_summary_blocking() -> Result<aggregate::GardenSummary, String> {
+pub(crate) fn run_summary_blocking() -> Result<aggregate::GardenSummary, String> {
     let ctx = AdapterContext::from_env();
     let result = scan::collect_events(&ctx, None).map_err(|e| e.to_string())?;
     Ok(aggregate::summarize(&result.events))

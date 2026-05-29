@@ -13,10 +13,14 @@
 
 mod commands;
 mod events;
+mod tray;
 mod watcher;
 
 fn main() {
     tauri::Builder::default()
+        .menu(tray::build_app_menu)
+        .on_menu_event(tray::handle_menu_event)
+        .on_window_event(tray::handle_window_event)
         .invoke_handler(tauri::generate_handler![
             commands::garden_summary,
             commands::trigger_scan,
@@ -26,6 +30,8 @@ fn main() {
             commands::set_settings,
         ])
         .setup(|app| {
+            tray::setup(app)?;
+
             // Kick off the file watcher in its own thread. It will emit
             // `garden:updated` to the frontend whenever an adapter watch path
             // changes (debounced — see watcher.rs).

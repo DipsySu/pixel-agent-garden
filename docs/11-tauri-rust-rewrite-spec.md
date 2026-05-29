@@ -325,13 +325,15 @@ Done:
 - First local unsigned macOS build verified: `cargo tauri build`
   produces `Local Agent Garden.app` and
   `Local Agent Garden_0.1.0_x64.dmg`; `hdiutil verify` passes.
+- App menu and tray controls (`tauri::tray` + `tauri::menu`): show/hide
+  the garden window, trigger a fresh scan, open `settings.toml`, open the
+  local data folder, and quit. Closing the main window now hides it to the
+  tray instead of exiting.
 
 Next:
 
 - Signing / notarization for macOS distribution; Windows installer and
   Linux AppImage follow on their hosts.
-- App menu and tray (`tauri::tray` + `tauri::menu`): show/hide window,
-  trigger scan, open `settings.toml`, quit.
 
 ### Phase 3.1: CI/CD + Auto-Update
 
