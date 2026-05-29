@@ -10,6 +10,47 @@ const dynamicLayerSelector = [
   '.pg6-empty'
 ].join(', ');
 
+// --- S1/S2 entrance-animation bookkeeping ---------------------------------
+// `.is-new` is applied only the first time a project_key / trinket id is seen,
+// diffed against a persisted seen-set so grow-in / drop-in never replay on a
+// data re-render (settings toggle, watcher tick). The CSS keyframes are
+// one-shot and gated by `data-motion`; JS only adds the class + a stagger
+// delay. Falls back to an in-memory mirror when localStorage is unavailable
+// (private mode / sandboxed webview), in which case entrances may replay on
+// reload — acceptable degradation, never an error.
+const SEEN_STORE = { projects: 'pg6.seen.projects', trinkets: 'pg6.seen.trinkets' };
+const seenMemory = { projects: null, trinkets: null };
+let newProjectKeys = new Set();
+let newTrinketIds = new Set();
+
+function loadSeen(kind) {
+  if (seenMemory[kind]) return seenMemory[kind];
+  let set = new Set();
+  try {
+    const raw = window.localStorage && window.localStorage.getItem(SEEN_STORE[kind]);
+    if (raw) set = new Set(JSON.parse(raw));
+  } catch (_) { /* storage blocked — memory mirror only */ }
+  seenMemory[kind] = set;
+  return set;
+}
+
+// Records `ids` as seen and returns the subset that was NOT seen before.
+function diffNew(kind, ids) {
+  const seen = loadSeen(kind);
+  const fresh = new Set();
+  (ids || []).forEach((id) => {
+    if (id && !seen.has(id)) { fresh.add(id); seen.add(id); }
+  });
+  if (fresh.size) {
+    try {
+      if (window.localStorage) {
+        window.localStorage.setItem(SEEN_STORE[kind], JSON.stringify([...seen]));
+      }
+    } catch (_) { /* persist failure is non-fatal */ }
+  }
+  return fresh;
+}
+
 export function createGardenRenderer(options) {
   scene = options.scene;
   spriteRoot = options.spriteRoot;
@@ -20,6 +61,12 @@ function renderEverything(groups, summary) {
   const projects = summary?.projects?.length ? summary.projects : [];
   const wallProjects = projectsForWall(projects);
   const tiers = unlockTier(summary, projects);
+
+  // S1/S2: diff this render's projects + unlocked trinkets against the
+  // persisted seen-set BEFORE rendering, so addSprite / addTrinketSprite can
+  // tag only the genuinely-new ones with `.is-new`.
+  newProjectKeys = diffNew('projects', wallProjects.map((p) => p.project_key));
+  newTrinketIds = diffNew('trinkets', tiers.pavilionTrinkets);
 
   // Clear previously-rendered sprite layers so re-renders don't stack.
   // The base SVG stays put — it's static.
@@ -427,6 +474,13 @@ function clearDynamicLayers() {
     });
     img.addEventListener('mouseleave', hideInfoCard);
     img.addEventListener('blur', hideInfoCard);
+    // S2: one-shot drop-in when this trinket's threshold is unlocked for the
+    // first time. Stagger by trinket index so multiple simultaneous unlocks
+    // land in sequence. CSS gates the actual motion.
+    if (newTrinketIds.has(trinket.id)) {
+      img.classList.add('is-new');
+      img.style.setProperty('--drop-delay', (Math.min(idx, 6) * 90) + 'ms');
+    }
     scene.append(img);
   }
 
@@ -755,6 +809,14 @@ function clearDynamicLayers() {
       img.addEventListener('keydown', handleVineKey);
       // Roving tabindex: first vine is tab-stop; siblings reachable via arrows.
       img.tabIndex = scene.querySelector('.roving-vine') ? -1 : 0;
+      // S1: one-shot grow-in for a project_key seen for the first time. Stagger
+      // by strip order so a first-run reveal (everything new) cascades instead
+      // of all vines popping at once. CSS gates the actual motion.
+      if (newProjectKeys.has(options.project.project_key)) {
+        img.classList.add('is-new');
+        const order = Math.min(options.projectIndex ?? 0, 12);
+        img.style.setProperty('--grow-delay', (order * 55) + 'ms');
+      }
     }
     scene.append(img);
     return img;

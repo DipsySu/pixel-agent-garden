@@ -222,13 +222,17 @@ Concrete animations defined today (all gated by
 | `pg6-vine-breathe`    | `.pg6-sprite.project.climbing`  | 5.2s     |
 | `pg6-lantern-pulse`   | `.pg6-sprite.decor-lantern.is-lit` | 2.2s  |
 | `pg6-petal-fall`      | `.pg6-petal` (spring only)      | 7–12s    |
+| `pg6-vine-grow-in`    | newly-seen project vines        | 700–760ms |
+| `pg6-trinket-drop-in` | newly-unlocked pavilion trinkets | 640ms   |
 
 Petals are gated on `[data-season="spring"]` via `display: none` for
 the other seasons, so the cherry tree drops its blossom only when it
-makes sense. Future Phase 3+ entrance animations (vine grow-in for new
-projects, trinket drop-in for newly-unlocked thresholds) must respect
-the same `data-motion` rules and degrade to a static state when motion
-is off.
+makes sense. Entrance animations are one-shot: `render-garden.js`
+diffs `project_key`s and unlocked trinket ids against a persisted
+localStorage seen-set, applies `.is-new` only on first sighting, then
+lets CSS run the grow/drop keyframes. `data-motion="reduced"` skips
+the entrance transform and keeps only slowed ambient loops;
+`data-motion="off"` disables animation entirely.
 
 ### Lantern brightness
 
@@ -283,9 +287,9 @@ Done.
 
 ### Phase 2.5: Visual Evolution
 
-In progress. The base time / season / motion contract from
-§Visual Scene Contract is shipped; what remains is entrance
-animation and season-specific particles.
+In progress. The base time / season / motion contract and one-shot
+entrance animations are shipped; what remains is season-specific
+particles.
 
 Done:
 
@@ -294,12 +298,13 @@ Done:
 - Five ambient keyframes (`pg6-trinket-nod`, `pg6-vine-sway`,
   `pg6-vine-breathe`, `pg6-lantern-pulse`, `pg6-petal-fall`) gated by
   `data-motion` and `prefers-reduced-motion`.
+- Vine grow-in for newly-seen `project_key`s, one-shot and persisted
+  across settings toggles / watcher re-renders.
+- Trinket drop-in for newly-unlocked pavilion thresholds, one-shot and
+  persisted across settings toggles / watcher re-renders.
 
 Next:
 
-- vine grow-in for newly-seen `project_key`s (one-shot, gate by
-  `data-motion`).
-- trinket drop-in for newly-unlocked thresholds.
 - Season particles: autumn maple leaves, summer-night fireflies,
   winter snowflakes. Requires new sprite assets.
 

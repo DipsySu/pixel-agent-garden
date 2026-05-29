@@ -195,12 +195,55 @@ body {
 .pg6-scene[data-motion="reduced"] .pg6-sprite.decor-lantern.is-lit {
   animation-duration: 5s !important;
 }
+/* Reduced motion drops the S1/S2 entrance scale/drop entirely (a large
+   transform) and keeps only the slowed ambient loop. data-motion="off" is
+   already covered by the blanket `.pg6-sprite { animation: none }` rule above. */
+.pg6-scene[data-motion="reduced"] .pg6-sprite.project.hanging.is-new { animation: pg6-vine-sway 8s ease-in-out infinite; }
+.pg6-scene[data-motion="reduced"] .pg6-sprite.project.climbing.is-new { animation: pg6-vine-breathe 8s ease-in-out infinite; }
+.pg6-scene[data-motion="reduced"] .pg6-sprite.project.climbing.is-new { transform-origin: bottom center; }
+.pg6-scene[data-motion="reduced"] .pg6-trinket-sprite.is-new { animation: pg6-trinket-nod 8s ease-in-out infinite; }
 @media (prefers-reduced-motion: no-preference) {
   .pg6-trinket-sprite { animation: pg6-trinket-nod 3600ms ease-in-out infinite; }
   .pg6-sprite.project.hanging { animation: pg6-vine-sway 4200ms ease-in-out infinite; }
   .pg6-sprite.project.climbing { animation: pg6-vine-breathe 5200ms ease-in-out infinite; }
   .pg6-sprite.decor-lantern.is-lit { animation: pg6-lantern-pulse 2200ms ease-in-out infinite; }
   .pg6-petal { animation: pg6-petal-fall var(--petal-duration, 9s) linear infinite; }
+  /* S1/S2 one-shot entrances. render-garden.js adds `.is-new` only on a
+     project_key / trinket id's first sighting (persisted diff), so these never
+     replay on data re-renders. Each composes the entrance with the element's
+     normal ambient loop, delayed to start once the entrance finishes; the
+     `--grow-delay` / `--drop-delay` vars stagger a multi-item first-run reveal.
+     `backwards` fill holds the collapsed start state through the stagger delay
+     and reverts to the inline opacity/transform afterward (no end-state pop). */
+  .pg6-sprite.project.hanging.is-new {
+    animation:
+      pg6-vine-grow-in 700ms cubic-bezier(0.22, 0.61, 0.36, 1) var(--grow-delay, 0ms) backwards,
+      pg6-vine-sway 4200ms ease-in-out calc(var(--grow-delay, 0ms) + 700ms) infinite;
+  }
+  .pg6-sprite.project.climbing.is-new {
+    animation:
+      pg6-vine-grow-in 760ms cubic-bezier(0.22, 0.61, 0.36, 1) var(--grow-delay, 0ms) backwards,
+      pg6-vine-breathe 5200ms ease-in-out calc(var(--grow-delay, 0ms) + 760ms) infinite;
+  }
+  .pg6-trinket-sprite.is-new {
+    animation:
+      pg6-trinket-drop-in 640ms cubic-bezier(0.34, 1.56, 0.64, 1) var(--drop-delay, 0ms) backwards,
+      pg6-trinket-nod 3600ms ease-in-out calc(var(--drop-delay, 0ms) + 640ms) infinite;
+  }
+  /* Vines grow on their own anchor: hanging vines hang from the top (default
+     top-center origin), climbing vines rise from the ground. scaleY only, so
+     the inline token-scaled opacity is never overridden. */
+  .pg6-sprite.project.climbing.is-new { transform-origin: bottom center; }
+  @keyframes pg6-vine-grow-in {
+    0%   { transform: var(--sprite-transform, translate(-50%, 0)) scaleY(0.05); }
+    100% { transform: var(--sprite-transform, translate(-50%, 0)) scaleY(1); }
+  }
+  @keyframes pg6-trinket-drop-in {
+    0%   { opacity: 0; transform: var(--sprite-transform, translate(-50%, -50%)) translateY(-20px) scale(0.82); }
+    55%  { opacity: 1; }
+    76%  { transform: var(--sprite-transform, translate(-50%, -50%)) translateY(3px) scale(1.03); }
+    100% { opacity: 1; transform: var(--sprite-transform, translate(-50%, -50%)) translateY(0) scale(1); }
+  }
   @keyframes pg6-trinket-nod {
     0%, 100% { filter: saturate(0.97) brightness(0.98); }
     50%      { filter: saturate(1.05) brightness(1.06); }
