@@ -49,7 +49,7 @@ pub enum Error {
     TomlParse {
         path: PathBuf,
         #[source]
-        source: toml::de::Error,
+        source: Box<toml::de::Error>,
     },
 
     /// Settings TOML failed to serialize before writing.
@@ -57,7 +57,7 @@ pub enum Error {
     TomlSerialize {
         path: PathBuf,
         #[source]
-        source: toml::ser::Error,
+        source: Box<toml::ser::Error>,
     },
 }
 

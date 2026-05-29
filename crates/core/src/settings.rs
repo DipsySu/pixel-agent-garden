@@ -105,7 +105,7 @@ pub fn load(path: &Path) -> Result<Settings, Error> {
     };
     toml::from_str::<Settings>(&text).map_err(|source| Error::TomlParse {
         path: path.to_path_buf(),
-        source,
+        source: Box::new(source),
     })
 }
 
@@ -117,7 +117,7 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), Error> {
     }
     let text = toml::to_string_pretty(settings).map_err(|source| Error::TomlSerialize {
         path: path.to_path_buf(),
-        source,
+        source: Box::new(source),
     })?;
     std::fs::write(path, text).map_err(|e| Error::io(path, e))?;
     Ok(())
