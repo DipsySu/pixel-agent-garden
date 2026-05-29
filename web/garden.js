@@ -32,7 +32,7 @@ Promise.all([
   // settings panel both pick up whichever changed last.
   let currentSettings = settings;
   let lastSummary = summary;
-  const renderer = createGardenRenderer({ scene, spriteRoot, settings: currentSettings });
+  const renderer = createGardenRenderer({ scene, spriteRoot });
   renderBaseScene(scene, assetRoot, { settings: currentSettings });
   renderer.renderEverything(groups, lastSummary);
 
@@ -46,10 +46,8 @@ Promise.all([
       initial: currentSettings,
       onChange: (next) => {
         currentSettings = next;
-        // Rebuild the renderer's view of settings then repaint base + sprites.
-        // renderBaseScene replaces scene.innerHTML, so sprites get cleared —
-        // renderEverything below re-adds them.
-        renderer.updateSettings?.(currentSettings);
+        // renderBaseScene replaces scene.innerHTML and updates scene.dataset;
+        // renderEverything then rebuilds sprites from that dataset.
         renderBaseScene(scene, assetRoot, { settings: currentSettings });
         renderer.renderEverything(groups, lastSummary);
       }

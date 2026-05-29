@@ -189,6 +189,12 @@ body {
   animation: none !important;
   transition-duration: 0ms !important;
 }
+.pg6-scene[data-motion="reduced"] .pg6-sprite {
+  animation-duration: 8s !important;
+}
+.pg6-scene[data-motion="reduced"] .pg6-sprite.decor-lantern.is-lit {
+  animation-duration: 5s !important;
+}
 @media (prefers-reduced-motion: no-preference) {
   .pg6-trinket-sprite { animation: pg6-trinket-nod 3600ms ease-in-out infinite; }
   .pg6-sprite.project.hanging { animation: pg6-vine-sway 4200ms ease-in-out infinite; }

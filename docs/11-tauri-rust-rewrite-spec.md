@@ -142,9 +142,116 @@ Module split:
   frontend `logGardenError` calls
 - `scene-config.js`: thresholds and visual settings
 - `render-svg.js`: static base scene
-- `render-garden.js`: dynamic sprite rendering (`renderEverything`,
-  `updateSettings`)
+- `render-garden.js`: dynamic sprite rendering (`renderEverything`)
 - `render-helpers.js`: shared render helpers
+
+## Visual Scene Contract
+
+The scene is a single SVG (`pg6-scene`) plus an absolutely-positioned
+sprite layer. The base SVG is rebuilt by `render-svg.js#renderBaseScene`
+on every settings change; sprite layers are rebuilt by
+`render-garden.js#renderEverything` on every data change. Both functions
+read the same `Settings` shape (see §Settings).
+
+### Time resolution
+
+`render-svg.js#resolveTimeScene(settings)` returns a palette for one of
+three modes:
+
+| Mode  | System hour range (local)            |
+|-------|--------------------------------------|
+| day   | `06:00 ≤ hour < 16:30`               |
+| dusk  | `16:30 ≤ hour < 19:30`               |
+| night | everything else                      |
+
+If `settings.appearance.time_mode` is `system`, the mode comes from the
+table above and the sun arcs along
+`y = 72 − sin(((hour−6)/12) · π) · 42`,
+`x = −20 + ((hour−6)/12) · 720`,
+clamped to a reasonable horizon for `dusk`. If `time_mode` is one of
+`day | dusk | night`, the sun/moon position is pinned to a fixed point
+so the user sees a stable scene regardless of clock.
+
+Each mode contributes: a three-stop sky linear gradient (top/mid/bottom),
+cloud palette (day) or star field (night), wood-eave wood triplet,
+sun/moon orb colors, and `mountain{Far,Near}Opacity`. The `skyMid` stop
+is mandatory — without it the gradient ends up a visible seam at the old
+y=70 boundary.
+
+### Season resolution
+
+`render-svg.js#resolveSeasonScene(settings)` returns a palette for one
+of four modes. If `settings.appearance.season_mode` is `system`:
+
+| Mode   | Months (local)            |
+|--------|---------------------------|
+| spring | 3 – 5                     |
+| summer | 6 – 8                     |
+| autumn | 9 – 11                    |
+| winter | 12, 1, 2                  |
+
+Each palette contributes: a four-stop ground band, a grass-dot color, a
+wildflower color list, and a flower count. The scene writes
+`scene.dataset.season` and `scene.dataset.seasonLabel` so CSS in
+`index.html` can tint the cherry, willow, and vine sprites without
+rebuilding the sprite layer, while the header can display the resolved
+season without re-deriving it.
+
+### Motion policy
+
+`settings.appearance.motion` controls ambient animation. The scene
+writes `scene.dataset.motion` so all CSS rules can pivot off it.
+It also writes `scene.dataset.timeMode` and `scene.dataset.timeLabel`;
+dynamic sprite logic reads those resolved values instead of reading
+settings directly.
+
+| Setting   | Behavior                                                |
+|-----------|---------------------------------------------------------|
+| `system`  | follow `prefers-reduced-motion`                         |
+| `reduced` | slow keyframes, no large translations                   |
+| `off`     | no keyframes at all                                     |
+
+Concrete animations defined today (all gated by
+`@media (prefers-reduced-motion: no-preference)` and overridden by
+`[data-motion="off"]` / `[data-motion="reduced"]` selectors):
+
+| Keyframe              | Target                          | Duration |
+|-----------------------|---------------------------------|----------|
+| `pg6-trinket-nod`     | `.pg6-trinket-sprite`           | 3.6s     |
+| `pg6-vine-sway`       | `.pg6-sprite.project.hanging`   | 4.2s     |
+| `pg6-vine-breathe`    | `.pg6-sprite.project.climbing`  | 5.2s     |
+| `pg6-lantern-pulse`   | `.pg6-sprite.decor-lantern.is-lit` | 2.2s  |
+| `pg6-petal-fall`      | `.pg6-petal` (spring only)      | 7–12s    |
+
+Petals are gated on `[data-season="spring"]` via `display: none` for
+the other seasons, so the cherry tree drops its blossom only when it
+makes sense. Future Phase 3+ entrance animations (vine grow-in for new
+projects, trinket drop-in for newly-unlocked thresholds) must respect
+the same `data-motion` rules and degrade to a static state when motion
+is off.
+
+### Lantern brightness
+
+The lantern sprite has two states. The lit state applies when **either**:
+
+- `tiers.lamp === 'lit'` (any activity today), or
+- `time_mode` resolves to `dusk` or `night`.
+
+Lit lanterns get full opacity and the `pg6-lantern-pulse` animation;
+unlit lanterns render at 0.82 opacity with no animation. This double
+trigger keeps the lantern lit at night even on quiet days.
+
+### Empty / failure states
+
+- No projects in `summary`: `renderEmptyState()` paints a single
+  dashed placeholder vine and the info card switches to a
+  "waiting for activity" label. No sprites are loaded.
+- Bootstrap failure (manifest fetch, settings invoke): the base scene
+  still renders with `settings: null` defaults so the page never sits
+  blank. The failure is surfaced as a toast via `logGardenError`.
+- Watcher / scan / settings errors from Rust surface via
+  `garden:error` → `error-toast.js`. Toasts collapse by `source` so a
+  burst from one call site does not flood the UI.
 
 ## Privacy
 
@@ -174,14 +281,43 @@ Done.
 - Modular web frontend.
 - Basic settings commands.
 
-### Phase 3: Distribution
+### Phase 2.5: Visual Evolution
 
-Next.
+In progress. The base time / season / motion contract from
+§Visual Scene Contract is shipped; what remains is entrance
+animation and season-specific particles.
 
-- App menu and system integration.
-- Status/menu bar behavior.
-- UI error surface.
-- Settings UI.
+Done:
+
+- Day / dusk / night palette with sun arc and star field at night.
+- Spring / summer / autumn / winter ground band + flowers + sprite tint.
+- Five ambient keyframes (`pg6-trinket-nod`, `pg6-vine-sway`,
+  `pg6-vine-breathe`, `pg6-lantern-pulse`, `pg6-petal-fall`) gated by
+  `data-motion` and `prefers-reduced-motion`.
+
+Next:
+
+- vine grow-in for newly-seen `project_key`s (one-shot, gate by
+  `data-motion`).
+- trinket drop-in for newly-unlocked thresholds.
+- Season particles: autumn maple leaves, summer-night fireflies,
+  winter snowflakes. Requires new sprite assets.
+
+### Phase 3: Desktop Integration + Distribution
+
+In progress.
+
+Done:
+
+- UI error surface (`garden:error` → toast).
+- Settings UI (inline footer panel backed by `settings.toml`).
+
+Next:
+
+- `tauri.conf.json#bundle.active = true` and full icon set
+  (`.icns` / `.ico`) — currently only placeholder PNGs ship.
+- App menu and tray (`tauri::tray` + `tauri::menu`): show/hide window,
+  trigger scan, open `settings.toml`, quit.
 - Signed macOS `.dmg`, Windows installer, Linux AppImage.
 
 ### Phase 3.1: CI/CD + Auto-Update
@@ -201,3 +337,12 @@ Next.
    rescans; it does not parse agent files.
 5. JS stays in `web/`.
 6. Public Rust APIs return typed `Error`, not `Box<dyn Error>`.
+7. Visual scene resolution (`resolveTimeScene` / `resolveSeasonScene`)
+   lives only in `render-svg.js`. `render-garden.js` reads
+   `scene.dataset.{timeMode,season,motion}` if it needs to branch — it
+   never re-derives the mode from `settings` or `Date.now()`. This keeps
+   the source of truth single and the two layers in sync.
+8. Animation rules are CSS-only and gated by
+   `[data-motion="reduced|off"]` selectors plus
+   `@media (prefers-reduced-motion: reduce)`. JS never spawns
+   `requestAnimationFrame` loops for ambient motion.

@@ -228,11 +228,13 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
       '<div class="pg6-info-bar"><div class="pg6-info-fill" id="garden-info-fill"></div></div>' +
     '</div>';
   scene.dataset.timeMode = time.mode;
+  scene.dataset.timeLabel = time.label;
   scene.dataset.motion = options.settings?.appearance?.motion || 'system';
   // Season drives both the SVG ground/flower colors above AND a CSS-level
   // hue/saturation tweak applied to sprites in index.html so the cherry,
   // willow, vines, etc. react too.
   scene.dataset.season = season.mode;
+  scene.dataset.seasonLabel = season.label;
 }
 
 // Mix two hex colors by `t` in [0,1]. Used when a scene config doesn't ship
@@ -330,6 +332,7 @@ function resolveSeasonScene(settings) {
   const palettes = {
     spring: {
       mode: 'spring',
+      label: '春',
       grass: ['#4f7228', '#5e8a32', '#6e9a38', '#5e7c2a'],
       grassDots: '#3a5520',
       flowers: ['#f4b8c8', '#f0c068', '#e08aa0', '#f0e090', '#d870a0', '#f8e8ec'],
@@ -337,6 +340,7 @@ function resolveSeasonScene(settings) {
     },
     summer: {
       mode: 'summer',
+      label: '夏',
       grass: ['#3f6b22', '#4f8030', '#5e9230', '#4f7022'],
       grassDots: '#2e4a18',
       flowers: ['#f0c068', '#e8a058', '#f0e090', '#f4b06a', '#e89048'],
@@ -344,6 +348,7 @@ function resolveSeasonScene(settings) {
     },
     autumn: {
       mode: 'autumn',
+      label: '秋',
       grass: ['#8a6a24', '#a07c2c', '#b08832', '#8e6628'],
       grassDots: '#5a4218',
       flowers: ['#d8682a', '#c4521e', '#e89c44', '#f0b860', '#a8401a'],
@@ -351,6 +356,7 @@ function resolveSeasonScene(settings) {
     },
     winter: {
       mode: 'winter',
+      label: '冬',
       grass: ['#6b7c64', '#7e8c76', '#8e9c84', '#73826c'],
       grassDots: '#52604c',
       flowers: ['#e8eef0', '#cfd6da', '#f0f4f6'],

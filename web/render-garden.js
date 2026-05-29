@@ -3,7 +3,6 @@ import { fmtLocal, escapeHtml, pick, pickByToken, namedSprite, jitter } from './
 
 let scene;
 let spriteRoot;
-let settings;
 const dynamicLayerSelector = [
   '.pg6-sprite',
   '.pg6-wall-edge-cover',
@@ -14,15 +13,7 @@ const dynamicLayerSelector = [
 export function createGardenRenderer(options) {
   scene = options.scene;
   spriteRoot = options.spriteRoot;
-  settings = options.settings || defaultSettings();
-  return { renderEverything, updateSettings };
-}
-
-// Called by garden.js when the user changes settings via the panel. Re-pointing
-// the module-scoped `settings` ref means the next renderEverything picks up
-// the new time/season/motion without rebuilding the renderer.
-function updateSettings(next) {
-  settings = next || defaultSettings();
+  return { renderEverything };
 }
 
 function renderEverything(groups, summary) {
@@ -34,7 +25,7 @@ function renderEverything(groups, summary) {
   // The base SVG stays put — it's static.
   clearDynamicLayers();
 
-  updateHeaderMeta(settings);
+  updateHeaderMeta();
   updateDataFreshness(summary);
   updateDefaultInfo(summary, wallProjects);
   updateLegend(tiers, wallProjects);
@@ -98,51 +89,26 @@ function clearDynamicLayers() {
     [907, '白露'], [923, '秋分'], [1008, '寒露'], [1023, '霜降'],
     [1107, '立冬'], [1122, '小雪'], [1207, '大雪'], [1222, '冬至']
   ];
-  function currentSeason(d) {
-    const m = d.getMonth() + 1;
-    if (m === 12 || m <= 2) return '冬';
-    if (m <= 5) return '春';
-    if (m <= 8) return '夏';
-    return '秋';
-  }
   function currentSolarTerm(d) {
     const md = (d.getMonth() + 1) * 100 + d.getDate();
     let term = '冬至';   // wrap-around for early Jan before 小寒
     for (const [cut, t] of TERMS_24) if (md >= cut) term = t;
     return term;
   }
-  function currentTimeOfDay(d) {
-    const h = d.getHours();
-    if (h < 5)  return '深夜';
-    if (h < 10) return '清晨';
-    if (h < 12) return '上午';
-    if (h < 14) return '正午';
-    if (h < 17) return '午后';
-    if (h < 19) return '傍晚';
-    if (h < 22) return '夜晚';
-    return '深夜';
-  }
-  function updateHeaderMeta(settings) {
+  function updateHeaderMeta() {
     const now = new Date();
     const season = document.getElementById('meta-season');
     const time = document.getElementById('meta-time');
-    const seasonMode = settings?.appearance?.season_mode || 'system';
-    const timeMode = settings?.appearance?.time_mode || 'system';
-    if (season) season.textContent = seasonLabel(seasonMode, now) + ' · ' + currentSolarTerm(now);
+    if (season) season.textContent = sceneLabel('seasonLabel', '春') + ' · ' + currentSolarTerm(now);
     if (time) {
       const hh = String(now.getHours()).padStart(2, '0');
       const mm = String(now.getMinutes()).padStart(2, '0');
-      const label = timeMode === 'system' ? currentTimeOfDay(now) : forcedTimeLabel(timeMode);
-      time.textContent = label + ' · ' + hh + ':' + mm;
+      time.textContent = sceneLabel('timeLabel', '白日') + ' · ' + hh + ':' + mm;
     }
   }
 
-  function seasonLabel(mode, date) {
-    return ({ spring: '春', summer: '夏', autumn: '秋', winter: '冬' })[mode] || currentSeason(date);
-  }
-
-  function forcedTimeLabel(mode) {
-    return ({ day: '白日', dusk: '傍晚', night: '夜晚' })[mode] || '系统';
+  function sceneLabel(key, fallback) {
+    return scene?.dataset?.[key] || fallback;
   }
 
   // ==========================================================================
@@ -263,7 +229,7 @@ function clearDynamicLayers() {
     }
     if (lanterns.length) {
       const sprite = namedSprite(lanterns, tiers.lamp === 'lit' ? 'stone_lantern_lit' : 'stone_lantern_unlit') || pickByToken(lanterns, tiers.lamp === 'lit' ? 5 : 1);
-      const timeMode = effectiveTimeMode(settings);
+      const timeMode = sceneTimeMode();
       const lampLit = tiers.lamp === 'lit' || timeMode === 'night' || timeMode === 'dusk';
       addSprite(sprite, {
         x: 60,
@@ -500,7 +466,7 @@ function clearDynamicLayers() {
   }
 
   function addAmbientMotion(tiers) {
-    const motion = settings?.appearance?.motion || 'system';
+    const motion = sceneMotionMode();
     if (motion === 'off' || motion === 'reduced') return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     if (tiers.cherry !== 'bloom' && tiers.cherry !== 'petal') return;
@@ -941,7 +907,7 @@ function clearDynamicLayers() {
     if (vine) vine.textContent = '项目藤 · ' + projects.length + ' 个本地项目';
     if (courtyard) courtyard.textContent = '亭子 · ' + tierLabel(tiers.pavilion) + (trinketCount ? ' · 陈列 ' + trinketCount + ' 件' : '');
     if (bloom) bloom.textContent = '花草 · ' + cherryLabel(tiers.cherry) + ' / ' + willowLabel(tiers.willow);
-    const timeMode = effectiveTimeMode(settings);
+    const timeMode = sceneTimeMode();
     if (light) {
       if (timeMode === 'night') light.textContent = '石灯 · 夜间长明';
       else if (timeMode === 'dusk') light.textContent = tiers.lamp === 'lit' ? '石灯 · 傍晚已点亮' : '石灯 · 傍晚微光';
@@ -995,25 +961,10 @@ function clearDynamicLayers() {
     });
   }
 
-function defaultSettings() {
-  return {
-    appearance: {
-      time_mode: 'system',
-      season_mode: 'system',
-      motion: 'system'
-    },
-    data: {
-      auto_rescan: true
-    }
-  };
+function sceneTimeMode() {
+  return scene?.dataset?.timeMode || 'day';
 }
 
-function effectiveTimeMode(settings) {
-  const mode = settings?.appearance?.time_mode || 'system';
-  if (mode !== 'system') return mode;
-  const now = new Date();
-  const hour = now.getHours() + now.getMinutes() / 60;
-  if (hour >= 6 && hour < 16.5) return 'day';
-  if (hour >= 16.5 && hour < 19.5) return 'dusk';
-  return 'night';
+function sceneMotionMode() {
+  return scene?.dataset?.motion || 'system';
 }
