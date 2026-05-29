@@ -289,8 +289,6 @@ Done.
 
 Done.
 
-Done:
-
 - Day / dusk / night palette with sun arc and star field at night.
 - Spring / summer / autumn / winter ground band + flowers + sprite tint.
 - Five ambient keyframes (`pg6-trinket-nod`, `pg6-vine-sway`,
