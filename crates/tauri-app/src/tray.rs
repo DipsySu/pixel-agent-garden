@@ -168,9 +168,10 @@ fn show_main_window<R: Runtime>(app: &AppHandle<R>) {
 }
 
 fn hide_main_window<R: Runtime>(app: &AppHandle<R>) {
-    if let Some(window) = app.get_webview_window(WINDOW_LABEL)
-        && let Err(err) = window.hide()
-    {
+    let Some(window) = app.get_webview_window(WINDOW_LABEL) else {
+        return;
+    };
+    if let Err(err) = window.hide() {
         emit_error(app, "tray", format!("hide window: {err}"));
     }
 }
@@ -194,9 +195,11 @@ fn trigger_scan<R: Runtime>(app: &AppHandle<R>) {
 
 fn open_settings<R: Runtime>(app: &AppHandle<R>) {
     let path = settings::default_settings_path();
-    if !path.exists()
-        && let Err(err) = settings::save(&path, &Settings::default())
-    {
+    if path.exists() {
+        open_path(app, &path, "settings.toml");
+        return;
+    }
+    if let Err(err) = settings::save(&path, &Settings::default()) {
         emit_error(app, "tray", format!("create settings.toml: {err}"));
         return;
     }
