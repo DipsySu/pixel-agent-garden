@@ -184,10 +184,30 @@ body {
 .pg6-scene[data-season="summer"] .pg6-petal,
 .pg6-scene[data-season="autumn"] .pg6-petal,
 .pg6-scene[data-season="winter"] .pg6-petal { display: none; }
+.pg6-season-particle {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  transform: translate3d(0, 0, 0);
+  user-select: none;
+}
+.pg6-season-particle.maple {
+  filter: saturate(0.96) brightness(0.96);
+}
+.pg6-season-particle.firefly {
+  filter: saturate(1.15) brightness(1.18) drop-shadow(0 0 5px rgba(214, 232, 112, 0.68));
+}
+.pg6-season-particle.snow {
+  filter: saturate(0.45) brightness(1.08);
+}
 .pg6-scene[data-motion="off"] .pg6-sprite,
-.pg6-scene[data-motion="off"] .pg6-info {
+.pg6-scene[data-motion="off"] .pg6-info,
+.pg6-scene[data-motion="off"] .pg6-season-particle {
   animation: none !important;
   transition-duration: 0ms !important;
+  display: none !important;
 }
 .pg6-scene[data-motion="reduced"] .pg6-sprite {
   animation-duration: 8s !important;
@@ -208,6 +228,9 @@ body {
   .pg6-sprite.project.climbing { animation: pg6-vine-breathe 5200ms ease-in-out infinite; }
   .pg6-sprite.decor-lantern.is-lit { animation: pg6-lantern-pulse 2200ms ease-in-out infinite; }
   .pg6-petal { animation: pg6-petal-fall var(--petal-duration, 9s) linear infinite; }
+  .pg6-season-particle.maple { animation: pg6-maple-fall var(--particle-duration, 14s) linear infinite; }
+  .pg6-season-particle.firefly { animation: pg6-firefly-drift var(--particle-duration, 5s) ease-in-out infinite; }
+  .pg6-season-particle.snow { animation: pg6-snow-fall var(--particle-duration, 18s) linear infinite; }
   /* S1/S2 one-shot entrances. render-garden.js adds `.is-new` only on a
      project_key / trinket id's first sighting (persisted diff), so these never
      replay on data re-renders. Each composes the entrance with the element's
@@ -265,6 +288,34 @@ body {
     10%  { opacity: 0.65; }
     90%  { opacity: 0.55; }
     100% { opacity: 0; transform: translate3d(var(--petal-drift, 18px), 120px, 0) rotate(160deg); }
+  }
+  @keyframes pg6-maple-fall {
+    0%   { opacity: 0; transform: translate3d(0, 0, 0) rotate(0deg); }
+    12%  { opacity: 0.88; }
+    82%  { opacity: 0.82; }
+    100% { opacity: 0; transform: translate3d(var(--particle-drift, 48px), 500px, 0) rotate(260deg); }
+  }
+  @keyframes pg6-firefly-drift {
+    0%, 100% {
+      opacity: 0.22;
+      transform: translate3d(0, 0, 0) scale(0.78);
+      filter: saturate(1.05) brightness(0.92) drop-shadow(0 0 2px rgba(214, 232, 112, 0.42));
+    }
+    45% {
+      opacity: 0.95;
+      transform: translate3d(var(--particle-drift, 16px), var(--particle-lift, -8px), 0) scale(1.16);
+      filter: saturate(1.3) brightness(1.32) drop-shadow(0 0 8px rgba(214, 232, 112, 0.78));
+    }
+    70% {
+      opacity: 0.46;
+      transform: translate3d(calc(var(--particle-drift, 16px) * -0.35), calc(var(--particle-lift, -8px) * 0.6), 0) scale(0.9);
+    }
+  }
+  @keyframes pg6-snow-fall {
+    0%   { opacity: 0; transform: translate3d(0, 0, 0) rotate(0deg); }
+    16%  { opacity: 0.76; }
+    88%  { opacity: 0.64; }
+    100% { opacity: 0; transform: translate3d(var(--particle-drift, 24px), 520px, 0) rotate(110deg); }
   }
 }
 .pg6-info-label { opacity: 0.65; font-size: 11px; }
@@ -398,6 +449,22 @@ body {
   width: 2px;
   z-index: 45;
 }
+.pg6-season-particle.maple:not(img) {
+  background: #d8682a;
+  height: var(--particle-size, 6px);
+  width: var(--particle-size, 6px);
+}
+.pg6-season-particle.firefly:not(img) {
+  background: #f7f4b0;
+  border-radius: 50%;
+  height: var(--particle-size, 5px);
+  width: var(--particle-size, 5px);
+}
+.pg6-season-particle.snow:not(img) {
+  background: #f0f4f6;
+  height: var(--particle-size, 4px);
+  width: var(--particle-size, 4px);
+}
 @media (max-width: 520px) {
   body { display: block; min-width: 0; }
   .pg6-wrap { margin: 0 auto; max-width: none; width: calc(100vw - 20px); }
@@ -421,7 +488,8 @@ body {
 /* Respect users who don't want motion. Filter/opacity changes still happen instantly. */
 @media (prefers-reduced-motion: reduce) {
   .pg6-sprite,
-  .pg6-info {
+  .pg6-info,
+  .pg6-season-particle {
     animation: none !important;
     transition-duration: 0ms !important;
   }

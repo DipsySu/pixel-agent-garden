@@ -287,9 +287,7 @@ Done.
 
 ### Phase 2.5: Visual Evolution
 
-In progress. The base time / season / motion contract and one-shot
-entrance animations are shipped; what remains is season-specific
-particles.
+Done.
 
 Done:
 
@@ -302,11 +300,12 @@ Done:
   across settings toggles / watcher re-renders.
 - Trinket drop-in for newly-unlocked pavilion thresholds, one-shot and
   persisted across settings toggles / watcher re-renders.
-
-Next:
-
 - Season particles: autumn maple leaves, summer-night fireflies,
-  winter snowflakes. Requires new sprite assets.
+  winter snowflakes. Particle sprites live in
+  `assets/sprites/season_particles/`, render from the manifest groups
+  `maple_leaf` / `firefly` / `snowflake`, and are gated by
+  `data-season`, `data-time-mode`, `data-motion`, and
+  `prefers-reduced-motion`.
 
 ### Phase 3: Desktop Integration + Distribution
 

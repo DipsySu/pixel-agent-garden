@@ -7,6 +7,7 @@ const dynamicLayerSelector = [
   '.pg6-sprite',
   '.pg6-wall-edge-cover',
   '.pg6-petal',
+  '.pg6-season-particle',
   '.pg6-empty'
 ].join(', ');
 
@@ -83,7 +84,7 @@ function renderEverything(groups, summary) {
   addGroundOverlay(groups);
   addCourtyardObjects(groups, tiers);
   addPavilionTrinkets(tiers.pavilion, tiers.pavilionTrinkets);
-  addAmbientMotion(tiers);
+  addAmbientMotion(groups, tiers);
   if (!projects.length) renderEmptyState();
 }
 
@@ -519,10 +520,18 @@ function clearDynamicLayers() {
     };
   }
 
-  function addAmbientMotion(tiers) {
+  function addAmbientMotion(groups, tiers) {
     const motion = sceneMotionMode();
     if (motion === 'off' || motion === 'reduced') return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const season = sceneSeason();
+    if (season === 'spring') addSpringPetals(tiers);
+    else if (season === 'summer') addSummerFireflies(groups.firefly || []);
+    else if (season === 'autumn') addAutumnMapleLeaves(groups.maple_leaf || []);
+    else if (season === 'winter') addWinterSnowflakes(groups.snowflake || []);
+  }
+
+  function addSpringPetals(tiers) {
     if (tiers.cherry !== 'bloom' && tiers.cherry !== 'petal') return;
     const count = tiers.cherry === 'petal' ? 12 : 6;
     for (let i = 0; i < count; i++) {
@@ -535,6 +544,84 @@ function clearDynamicLayers() {
       petal.style.animationDelay = (-jitter(i, 66) * 9) + 's';
       scene.append(petal);
     }
+  }
+
+  function addAutumnMapleLeaves(sprites) {
+    const count = 14;
+    for (let i = 0; i < count; i++) {
+      addSeasonParticle(pickParticleSprite(sprites, i), {
+        className: 'maple',
+        x: 4 + jitter(i, 14) * 94,
+        y: -8 - jitter(i, 15) * 22,
+        width: 11 + jitter(i, 16) * 8,
+        drift: (-70 + jitter(i, 17) * 150) + 'px',
+        duration: (11 + jitter(i, 18) * 9) + 's',
+        delay: (-jitter(i, 19) * 18) + 's',
+        z: 74 + i
+      });
+    }
+  }
+
+  function addSummerFireflies(sprites) {
+    const timeMode = sceneTimeMode();
+    if (timeMode !== 'dusk' && timeMode !== 'night') return;
+    const count = timeMode === 'night' ? 14 : 9;
+    for (let i = 0; i < count; i++) {
+      addSeasonParticle(pickParticleSprite(sprites, i), {
+        className: 'firefly',
+        x: 8 + jitter(i, 31) * 84,
+        y: 42 + jitter(i, 32) * 44,
+        width: 4 + jitter(i, 33) * 3,
+        drift: (-24 + jitter(i, 34) * 48) + 'px',
+        lift: (-10 + jitter(i, 35) * 20) + 'px',
+        duration: (3.5 + jitter(i, 36) * 3.5) + 's',
+        delay: (-jitter(i, 37) * 7) + 's',
+        z: 76 + i
+      });
+    }
+  }
+
+  function addWinterSnowflakes(sprites) {
+    const count = 18;
+    for (let i = 0; i < count; i++) {
+      addSeasonParticle(pickParticleSprite(sprites, i), {
+        className: 'snow',
+        x: 2 + jitter(i, 51) * 96,
+        y: -10 - jitter(i, 52) * 30,
+        width: 7 + jitter(i, 53) * 7,
+        drift: (-36 + jitter(i, 54) * 72) + 'px',
+        duration: (13 + jitter(i, 55) * 11) + 's',
+        delay: (-jitter(i, 56) * 20) + 's',
+        z: 72 + i
+      });
+    }
+  }
+
+  function pickParticleSprite(sprites, index) {
+    if (!sprites || !sprites.length) return null;
+    return pick(sprites, index);
+  }
+
+  function addSeasonParticle(sprite, options) {
+    const el = sprite ? document.createElement('img') : document.createElement('span');
+    el.className = 'pg6-season-particle ' + options.className;
+    if (sprite) {
+      el.src = spriteRoot + sprite.file;
+      el.alt = '';
+      el.decoding = 'async';
+      el.loading = 'eager';
+      el.style.width = (options.width / 680 * 100) + '%';
+    } else {
+      el.style.setProperty('--particle-size', Math.max(3, Math.round(options.width)) + 'px');
+    }
+    el.style.left = options.x + '%';
+    el.style.top = options.y + '%';
+    el.style.zIndex = String(options.z || 70);
+    el.style.setProperty('--particle-drift', options.drift || '0px');
+    el.style.setProperty('--particle-lift', options.lift || '0px');
+    el.style.setProperty('--particle-duration', options.duration || '10s');
+    el.style.animationDelay = options.delay || '0s';
+    scene.append(el);
   }
 
   function renderEmptyState() {
@@ -1025,6 +1112,10 @@ function clearDynamicLayers() {
 
 function sceneTimeMode() {
   return scene?.dataset?.timeMode || 'day';
+}
+
+function sceneSeason() {
+  return scene?.dataset?.season || 'spring';
 }
 
 function sceneMotionMode() {

@@ -1208,6 +1208,96 @@
       "file": "pavilion_trinkets/trinket_sleeping_cat.png",
       "w": 206,
       "h": 159
+    },
+    {
+      "name": "maple_leaf_01",
+      "group": "maple_leaf",
+      "file": "season_particles/maple_leaf_01.png",
+      "size": [
+        44,
+        44
+      ],
+      "anchor": "center"
+    },
+    {
+      "name": "maple_leaf_02",
+      "group": "maple_leaf",
+      "file": "season_particles/maple_leaf_02.png",
+      "size": [
+        44,
+        44
+      ],
+      "anchor": "center"
+    },
+    {
+      "name": "maple_leaf_03",
+      "group": "maple_leaf",
+      "file": "season_particles/maple_leaf_03.png",
+      "size": [
+        44,
+        44
+      ],
+      "anchor": "center"
+    },
+    {
+      "name": "maple_leaf_04",
+      "group": "maple_leaf",
+      "file": "season_particles/maple_leaf_04.png",
+      "size": [
+        44,
+        44
+      ],
+      "anchor": "center"
+    },
+    {
+      "name": "firefly_glow_01",
+      "group": "firefly",
+      "file": "season_particles/firefly_glow_01.png",
+      "size": [
+        20,
+        20
+      ],
+      "anchor": "center"
+    },
+    {
+      "name": "firefly_glow_02",
+      "group": "firefly",
+      "file": "season_particles/firefly_glow_02.png",
+      "size": [
+        20,
+        20
+      ],
+      "anchor": "center"
+    },
+    {
+      "name": "snowflake_01",
+      "group": "snowflake",
+      "file": "season_particles/snowflake_01.png",
+      "size": [
+        40,
+        40
+      ],
+      "anchor": "center"
+    },
+    {
+      "name": "snowflake_02",
+      "group": "snowflake",
+      "file": "season_particles/snowflake_02.png",
+      "size": [
+        40,
+        40
+      ],
+      "anchor": "center"
+    },
+    {
+      "name": "snowflake_03",
+      "group": "snowflake",
+      "file": "season_particles/snowflake_03.png",
+      "size": [
+        40,
+        40
+      ],
+      "anchor": "center"
     }
   ]
 }
