@@ -119,7 +119,8 @@ Each file should do one job:
 | `crates/core/src/adapters/<name>.rs` | Read one source type and emit `AgentEvent` |
 | `crates/core/src/scan.rs` | Run adapters, dedupe, combine events |
 | `crates/core/src/aggregate.rs` | Pure event -> summary math |
-| `crates/core/src/storage.rs` | Versioned `events.json` cache |
+| `crates/core/src/cache.rs` | Cache-first summary load and forced refresh |
+| `crates/core/src/storage.rs` | Versioned `events.json` read/write |
 | `crates/core/src/settings.rs` | `settings.toml` load/save |
 | `crates/tauri-app/src/commands.rs` | Tauri command wrappers |
 | `crates/tauri-app/src/watcher.rs` | File changes -> scan -> events |
@@ -342,7 +343,8 @@ agent 本地数据 -> Adapter -> AgentEvent -> scan/dedupe -> GardenSummary -> U
 | `crates/core/src/adapters/<name>.rs` | 读取一种数据源并产出 `AgentEvent` |
 | `crates/core/src/scan.rs` | 运行 adapters、去重、合并 events |
 | `crates/core/src/aggregate.rs` | 纯 event -> summary 计算 |
-| `crates/core/src/storage.rs` | 版本化 `events.json` 缓存 |
+| `crates/core/src/cache.rs` | 缓存优先的 summary 加载和强制刷新 |
+| `crates/core/src/storage.rs` | 版本化 `events.json` 读写 |
 | `crates/core/src/settings.rs` | `settings.toml` 读写 |
 | `crates/tauri-app/src/commands.rs` | Tauri command wrappers |
 | `crates/tauri-app/src/watcher.rs` | 文件变化 -> scan -> events |

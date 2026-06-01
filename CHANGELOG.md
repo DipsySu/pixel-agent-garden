@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added cache-first desktop summary loading: Tauri startup now reads
+  `~/.local-agent-garden/events.json` when possible, falls back to a fresh
+  scan when the cache is missing or incompatible, and both Scan Now plus
+  watcher updates refresh the cache.
+
 ## v0.1.0 - 2026-05-29
 
 - Added season particles (Phase 2.5): autumn maple leaves, summer dusk/night fireflies, and winter snowflakes now spawn from manifest-driven transparent PNG sprites in `assets/sprites/season_particles/`. The particle layer is CSS-keyframed, cleared on re-render, and respects `data-season`, `data-time-mode`, `data-motion`, and `prefers-reduced-motion`.

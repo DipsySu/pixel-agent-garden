@@ -6,7 +6,7 @@
 
 - Keep all product logic in Rust.
 - Use `crates/core` as the single source for adapters, scan orchestration,
-  aggregation, settings, and storage.
+  aggregation, cached summary loading, settings, and storage.
 - Use `crates/cli` as the terminal interface.
 - Use `crates/tauri-app` as the desktop shell and file watcher.
 - Keep `web/` as the pixel garden frontend, with no scanner logic in JS.
@@ -33,6 +33,7 @@ crates/
 │       │   ├── manual_jsonl.rs
 │       │   └── util.rs
 │       ├── aggregate.rs
+│       ├── cache.rs
 │       ├── event.rs
 │       ├── registry.rs
 │       ├── scan.rs
@@ -104,8 +105,11 @@ auto_rescan = true
 
 ## Tauri Commands
 
-- `garden_summary() -> GardenSummary`
-- `trigger_scan() -> GardenSummary`
+- `garden_summary() -> GardenSummary`: load `~/.local-agent-garden/events.json`
+  when possible; if it is missing, malformed, or from an incompatible future
+  schema, run a fresh scan and replace the cache.
+- `trigger_scan() -> GardenSummary`: force a fresh scan, write
+  `~/.local-agent-garden/events.json`, and return the new summary.
 - `list_adapters() -> Vec<AdapterStatus>`
 - `data_freshness() -> Option<String>`
 - `get_settings() -> Settings`

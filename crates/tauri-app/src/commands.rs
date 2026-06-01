@@ -7,31 +7,33 @@
 //! the wrapping.
 
 use local_agent_garden_core::adapter::AdapterContext;
-use local_agent_garden_core::aggregate::{self, GardenSummary};
+use local_agent_garden_core::aggregate::GardenSummary;
+use local_agent_garden_core::cache;
 use local_agent_garden_core::registry;
-use local_agent_garden_core::scan;
 use local_agent_garden_core::settings::{self, Settings};
 use serde::Serialize;
 
-/// Return the current garden summary by running a fresh scan + aggregate.
-/// Frontend calls this on startup and on demand.
+/// Return the current garden summary from cache when possible, falling back to
+/// a fresh scan that writes `~/.local-agent-garden/events.json`.
 #[tauri::command]
 pub async fn garden_summary() -> Result<GardenSummary, String> {
     tokio::task::spawn_blocking(|| {
         let ctx = AdapterContext::from_env();
-        let result = scan::collect_events(&ctx, None).map_err(|e| e.to_string())?;
-        Ok(aggregate::summarize(&result.events))
+        cache::summary_from_cache_or_scan(&ctx, None).map_err(|e| e.to_string())
     })
     .await
-    .map_err(|e| format!("scan task panicked: {e}"))?
+    .map_err(|e| format!("garden_summary task panicked: {e}"))?
 }
 
-/// Force a fresh scan + summary. Same code path as `garden_summary` for
-/// phase 2 day 1 (we don't cache yet). When caching lands, this bypasses
-/// the cache; `garden_summary` reuses the cached value.
+/// Force a fresh scan, update the cache, and return the new summary.
 #[tauri::command]
 pub async fn trigger_scan() -> Result<GardenSummary, String> {
-    garden_summary().await
+    tokio::task::spawn_blocking(|| {
+        let ctx = AdapterContext::from_env();
+        cache::refresh_summary(&ctx, None).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("trigger_scan task panicked: {e}"))?
 }
 
 #[derive(Serialize)]

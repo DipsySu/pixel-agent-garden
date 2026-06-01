@@ -11,20 +11,25 @@
   --color-text-secondary: #b9af9b;
   --color-text-tertiary: #8f8778;
   --color-border-tertiary: rgba(255,255,255,0.12);
+  --edge-pad: clamp(10px, 1.2vw, 18px);
   --border-radius-lg: 10px;
   --border-radius-md: 8px;
 }
 * { box-sizing: border-box; }
+html {
+  height: 100%;
+  width: 100%;
+}
 body {
   margin: 0;
+  height: 100%;
   min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: clamp(10px, 3vw, 20px);
+  min-height: 100dvh;
+  padding: 0;
   background: #10140f;
   color: var(--color-text-primary);
   font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 .sr-only {
   position: absolute;
@@ -37,16 +42,67 @@ body {
   white-space: nowrap;
   border: 0;
 }
-.pg6-wrap { max-width: 980px; min-width: 0; width: 100%; }
-.pg6-wrap { padding: 0.5rem 0; }
-.pg6-frame { background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 14px; }
-.pg6-header { display: flex; justify-content: space-between; align-items: center; gap: 8px 14px; padding: 2px 6px 12px; flex-wrap: wrap; }
-.pg6-app { font-size: 13px; font-weight: 500; color: var(--color-text-primary); letter-spacing: 0.3px; min-width: 0; }
-.pg6-meta { font-size: 12px; color: var(--color-text-secondary); display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-width: 0; }
+.pg6-wrap { height: 100vh; height: 100dvh; min-width: 0; overflow: hidden; width: 100vw; }
+.pg6-frame {
+  background:
+    linear-gradient(90deg, #0d130e 0%, var(--color-background-secondary) 18%, var(--color-background-secondary) 82%, #0d130e 100%);
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+.pg6-frame::before,
+.pg6-frame::after {
+  content: "";
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  z-index: 70;
+}
+.pg6-frame::before {
+  background: linear-gradient(180deg, rgba(13, 18, 12, 0.78), rgba(13, 18, 12, 0));
+  height: 86px;
+  top: 0;
+}
+.pg6-frame::after {
+  background: linear-gradient(0deg, rgba(13, 18, 12, 0.9), rgba(13, 18, 12, 0));
+  bottom: 0;
+  height: 122px;
+}
+.pg6-header {
+  align-items: center;
+  display: flex;
+  gap: 8px 14px;
+  justify-content: space-between;
+  left: var(--edge-pad);
+  min-height: 32px;
+  min-width: 0;
+  position: absolute;
+  right: var(--edge-pad);
+  top: 8px;
+  z-index: 120;
+}
+.pg6-app { color: var(--color-text-primary); font-size: 13px; font-weight: 600; letter-spacing: 0; min-width: 0; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55); }
+.pg6-meta { align-items: center; color: var(--color-text-secondary); display: flex; flex-wrap: wrap; font-size: 12px; gap: 14px; justify-content: flex-end; min-width: 0; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55); }
 .pg6-meta-item { display: flex; align-items: center; gap: 5px; }
 .pg6-icon { color: currentColor; flex: 0 0 auto; height: 13px; width: 13px; }
-.pg6-scene { position: relative; border-radius: var(--border-radius-md); overflow: hidden; line-height: 0; }
-.pg6-scene svg { display: block; width: 100%; height: auto; }
+.pg6-scene {
+  aspect-ratio: 680 / 440;
+  left: 50%;
+  line-height: 0;
+  max-height: 100vh;
+  max-height: 100dvh;
+  max-width: 154.545vh;
+  max-width: 154.545dvh;
+  overflow: hidden;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 100vw;
+  z-index: 10;
+}
+.pg6-scene svg { display: block; height: 100%; width: 100%; }
 .pg6-sprite {
   /* --vine-hue-shift is set per-project via JS to tint each vine by primary
      source (claude-code = 0deg / default; codex = bluer; mixed = somewhere
@@ -170,13 +226,11 @@ body {
    keyframe definitions; left as a follow-up.
 
    Spring is the neutral baseline (no override). */
-/* Cherry blossom: pink only really makes sense in spring. Summer fades the
-   blossom to a leafy look (hue-rotate to green), autumn shifts to russet,
-   winter strips it bare. The sprite stays in DOM so the layout doesn't
-   reflow; opacity + hue does the work. */
-.pg6-scene[data-season="summer"] .pg6-sprite.decor-cherry { opacity: 0.85; filter: saturate(0.75) brightness(0.94) hue-rotate(80deg); }
-.pg6-scene[data-season="autumn"] .pg6-sprite.decor-cherry { opacity: 0.7; filter: saturate(0.7) brightness(0.92) sepia(0.55) hue-rotate(-20deg); }
-.pg6-scene[data-season="winter"] .pg6-sprite.decor-cherry { opacity: 0.45; filter: saturate(0.2) brightness(0.94) contrast(0.92); }
+/* Cherry blossom keeps its native sprite palette. Earlier season-wide hue
+   rotation made the trunk turn green; season changes now only soften it. */
+.pg6-scene[data-season="summer"] .pg6-sprite.decor-cherry { opacity: 0.92; filter: saturate(0.9) brightness(0.96); }
+.pg6-scene[data-season="autumn"] .pg6-sprite.decor-cherry { opacity: 0.86; filter: saturate(0.78) brightness(0.93); }
+.pg6-scene[data-season="winter"] .pg6-sprite.decor-cherry { opacity: 0.62; filter: saturate(0.36) brightness(0.92) contrast(0.96); }
 /* Willow: stays green-leaning but desaturates in winter and turns gold in autumn. */
 .pg6-scene[data-season="autumn"] .pg6-sprite.decor-willow { filter: saturate(0.85) brightness(0.96) sepia(0.4) hue-rotate(-8deg); }
 .pg6-scene[data-season="winter"] .pg6-sprite.decor-willow { filter: saturate(0.35) brightness(0.94) contrast(0.95); }
@@ -323,20 +377,37 @@ body {
 .pg6-info-row { display: flex; justify-content: space-between; font-size: 11px; opacity: 0.85; }
 .pg6-info-bar { margin-top: 7px; height: 3px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; }
 .pg6-info-fill { width: 62%; height: 100%; background: #7ac46e; }
-.pg6-project-strip { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 6px 0; }
-.pg6-project-chip { align-items: center; background: none; border: 0; color: var(--color-text-secondary); cursor: pointer; display: inline-flex; flex: 0 1 180px; font: inherit; font-size: 11px; gap: 5px; max-width: 180px; min-width: 0; overflow: hidden; padding: 0; }
+.pg6-project-strip {
+  align-items: center;
+  bottom: 42px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 6px;
+  left: var(--edge-pad);
+  min-height: 28px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0 6px;
+  position: absolute;
+  right: var(--edge-pad);
+  scrollbar-width: thin;
+  z-index: 130;
+}
+.pg6-project-strip::-webkit-scrollbar { height: 6px; }
+.pg6-project-strip::-webkit-scrollbar-thumb { background: rgba(244, 234, 216, 0.18); border-radius: 999px; }
+.pg6-project-chip { align-items: center; background: rgba(14, 19, 12, 0.58); border: 1px solid rgba(244, 234, 216, 0.1); border-radius: 5px; color: var(--color-text-secondary); cursor: pointer; display: inline-flex; flex: 0 0 auto; font: inherit; font-size: 11px; gap: 5px; height: 24px; max-width: 190px; min-width: 0; overflow: hidden; padding: 0 8px; }
 .pg6-project-chip::before { background: #6f9b48; content: ""; display: inline-block; flex: 0 0 auto; height: 8px; width: 8px; }
 .pg6-project-chip strong { color: var(--color-text-primary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg6-project-chip span:first-child { color: #a7c27c; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+.pg6-project-chip span:last-child { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
 .pg6-project-chip:hover,
 .pg6-project-chip:focus-visible,
-.pg6-project-chip.is-active { color: var(--color-text-primary); outline: none; }
+.pg6-project-chip.is-active { background: rgba(27, 35, 21, 0.78); border-color: rgba(244, 216, 120, 0.24); color: var(--color-text-primary); outline: none; }
 .pg6-project-chip:hover::before,
 .pg6-project-chip:focus-visible::before,
 .pg6-project-chip.is-active::before { background: #9fd36d; box-shadow: 0 0 0 1px rgba(244, 216, 120, 0.35); }
-.pg6-legend { display: flex; gap: 14px; padding: 12px 6px 2px; font-size: 11px; color: var(--color-text-secondary); flex-wrap: wrap; }
-.pg6-legend-item { display: flex; align-items: center; gap: 6px; }
-.pg6-legend-dot { width: 9px; height: 9px; border-radius: 1px; flex-shrink: 0; }
-.pg6-footer { padding: 10px 6px 0; font-size: 11px; color: var(--color-text-tertiary); display: flex; align-items: center; gap: 5px; border-top: 0.5px solid var(--color-border-tertiary); margin-top: 12px; flex-wrap: wrap; }
+.pg6-footer { align-items: center; bottom: 10px; color: var(--color-text-tertiary); display: flex; flex-wrap: wrap; font-size: 11px; gap: 5px; left: var(--edge-pad); margin-top: 0; padding: 0; position: absolute; right: var(--edge-pad); z-index: 130; }
 .pg6-footer-freshness { color: var(--color-text-tertiary); margin-left: auto; }
 .pg6-footer-freshness.is-stale { color: #d6a258; cursor: help; }
 .pg6-footer-gear {
@@ -356,13 +427,21 @@ body {
 .pg6-footer-gear.is-active { color: var(--color-text-primary); background: rgba(244, 216, 120, 0.10); }
 
 .pg6-settings-panel {
-  background: rgba(20, 24, 18, 0.7);
+  background: rgba(20, 24, 18, 0.92);
   border: 1px solid var(--color-border-tertiary);
   border-radius: var(--border-radius-md);
+  bottom: 76px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3);
   color: var(--color-text-primary);
   font-size: 12px;
-  margin-top: 10px;
+  left: var(--edge-pad);
+  margin-top: 0;
+  max-height: min(60vh, 420px);
+  overflow: auto;
   padding: 12px 14px;
+  position: absolute;
+  width: min(680px, calc(100vw - var(--edge-pad) * 2));
+  z-index: 150;
 }
 .pg6-settings-panel[hidden] { display: none; }
 .pg6-settings-section { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
@@ -465,14 +544,16 @@ body {
   height: var(--particle-size, 4px);
   width: var(--particle-size, 4px);
 }
+@media (max-width: 900px) {
+  .pg6-header { align-items: flex-start; flex-direction: column; gap: 4px; top: 8px; }
+  .pg6-meta { justify-content: flex-start; }
+  .pg6-project-strip { bottom: 48px; }
+  .pg6-project-chip { max-width: 170px; }
+}
 @media (max-width: 520px) {
-  body { display: block; min-width: 0; }
-  .pg6-wrap { margin: 0 auto; max-width: none; width: calc(100vw - 20px); }
-  .pg6-frame { max-width: 100%; overflow: hidden; padding: 10px; width: 100%; }
-  .pg6-header { align-items: flex-start; display: block; }
+  .pg6-header { display: flex; }
   .pg6-meta { gap: 8px; justify-content: flex-start; margin-top: 8px; }
-  .pg6-project-strip { gap: 6px 10px; }
-  .pg6-project-chip { flex-basis: calc(50% - 6px); max-width: calc(50% - 6px); }
+  .pg6-project-chip { max-width: 150px; }
   /* On narrow screens, the bottom-left info card covers most of the wall.
      Move it to the top edge as a thin strip — it overlays the sky area
      which has less critical detail. */
@@ -498,11 +579,11 @@ body {
 </head>
 <body>
 
-<h2 class="sr-only">像素花园·春·傍晚:本机 AI agent 活动化作墙沿垂落或墙根攀爬的项目藤。使用 Tab 进入项目藤列表,左右方向键在藤之间切换。</h2>
+<h2 class="sr-only">像素花园:本机 AI agent 活动化作墙沿垂落或墙根攀爬的项目藤。使用 Tab 进入项目藤列表,左右方向键在藤之间切换。</h2>
 
 <div class="pg6-wrap">
   <div class="pg6-frame">
-    <div class="pg6-header">
+    <div class="pg6-header" data-tauri-drag-region>
       <div class="pg6-app">像素花园 · 你的数字庭院</div>
       <div class="pg6-meta">
         <span class="pg6-meta-item"><svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7c2-5 7-3 6 2 5-1 7 4 2 6 3 4-1 8-5 5-2 5-7 3-6-2-5 1-7-4-2-6-3-4 1-8 5-5Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg><span id="meta-season">—</span></span>
@@ -511,12 +592,6 @@ body {
     </div>
     <div class="pg6-scene" id="pg6-scene"></div>
     <div class="pg6-project-strip" id="project-strip" aria-label="项目藤列表"></div>
-    <div class="pg6-legend">
-      <div class="pg6-legend-item"><span class="pg6-legend-dot" style="background:#4a7235"></span><span id="legend-vines">项目藤</span></div>
-      <div class="pg6-legend-item"><span class="pg6-legend-dot" style="background:#7a7068"></span><span id="legend-courtyard">庭院物件</span></div>
-      <div class="pg6-legend-item"><span class="pg6-legend-dot" style="background:#e89aae"></span><span id="legend-bloom">花草</span></div>
-      <div class="pg6-legend-item"><span class="pg6-legend-dot" style="background:#f0a060"></span><span id="legend-light">石灯</span></div>
-    </div>
     <div class="pg6-footer">
       <svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6l8-3Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 12 3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>仅读取本机 agent 数据 · 零网络请求</span>

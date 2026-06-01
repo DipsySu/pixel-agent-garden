@@ -14,7 +14,7 @@ use tauri::menu::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{App, AppHandle, Emitter, Manager, Runtime, Window, WindowEvent};
 
-const WINDOW_LABEL: &str = "main";
+pub const WINDOW_LABEL: &str = "main";
 const TRAY_ID: &str = "local-agent-garden";
 
 const MENU_SHOW: &str = "garden-show";

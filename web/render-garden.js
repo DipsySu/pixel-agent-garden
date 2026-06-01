@@ -76,7 +76,6 @@ function renderEverything(groups, summary) {
   updateHeaderMeta();
   updateDataFreshness(summary);
   updateDefaultInfo(summary, wallProjects);
-  updateLegend(tiers, wallProjects);
   renderProjectStrip(wallProjects);
   addIvyOverlay(groups, wallProjects);
   addWallEdgeCover();
@@ -1045,35 +1044,6 @@ function clearDynamicLayers() {
     const app = document.querySelector('.pg6-app');
     const total = summary ? summary.total_tokens : projects.reduce((sum, item) => sum + (item.total_tokens || 0), 0);
     if (app) app.textContent = '像素花园 · ' + fmtLocal(total) + ' local tokens';
-  }
-
-  function updateLegend(tiers, projects) {
-    const vine = document.getElementById('legend-vines');
-    const courtyard = document.getElementById('legend-courtyard');
-    const bloom = document.getElementById('legend-bloom');
-    const light = document.getElementById('legend-light');
-    const trinketCount = tiers.pavilionTrinkets.length;
-    if (vine) vine.textContent = '项目藤 · ' + projects.length + ' 个本地项目';
-    if (courtyard) courtyard.textContent = '亭子 · ' + tierLabel(tiers.pavilion) + (trinketCount ? ' · 陈列 ' + trinketCount + ' 件' : '');
-    if (bloom) bloom.textContent = '花草 · ' + cherryLabel(tiers.cherry) + ' / ' + willowLabel(tiers.willow);
-    const timeMode = sceneTimeMode();
-    if (light) {
-      if (timeMode === 'night') light.textContent = '石灯 · 夜间长明';
-      else if (timeMode === 'dusk') light.textContent = tiers.lamp === 'lit' ? '石灯 · 傍晚已点亮' : '石灯 · 傍晚微光';
-      else light.textContent = tiers.lamp === 'lit' ? '石灯 · 今日活动已点亮' : '石灯 · 今日尚未点亮';
-    }
-  }
-
-  function tierLabel(value) {
-    return ({ small: '初建', mid: '成形', full: '完整' })[value] || value;
-  }
-
-  function cherryLabel(value) {
-    return ({ bud: '花苞', bloom: '盛开', petal: '落樱' })[value] || value;
-  }
-
-  function willowLabel(value) {
-    return ({ young: '新柳', mature: '成荫' })[value] || value;
   }
 
   function renderProjectStrip(projects) {

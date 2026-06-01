@@ -16,6 +16,8 @@ mod events;
 mod tray;
 mod watcher;
 
+use tauri::Manager;
+
 fn main() {
     tauri::Builder::default()
         .menu(tray::build_app_menu)
@@ -31,6 +33,9 @@ fn main() {
         ])
         .setup(|app| {
             tray::setup(app)?;
+            if let Some(window) = app.get_webview_window(tray::WINDOW_LABEL) {
+                window.set_decorations(false)?;
+            }
 
             // Kick off the file watcher in its own thread. It will emit
             // `garden:updated` to the frontend whenever an adapter watch path

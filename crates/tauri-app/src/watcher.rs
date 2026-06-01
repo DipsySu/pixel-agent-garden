@@ -9,9 +9,9 @@
 
 use crate::events::{ErrorPayload, GARDEN_ERROR, GARDEN_UPDATED};
 use local_agent_garden_core::adapter::AdapterContext;
-use local_agent_garden_core::aggregate;
+use local_agent_garden_core::aggregate::GardenSummary;
+use local_agent_garden_core::cache;
 use local_agent_garden_core::registry;
-use local_agent_garden_core::scan;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use std::sync::mpsc::{Receiver, Sender, channel};
 use std::time::{Duration, Instant};
@@ -129,10 +129,9 @@ fn debounce_drain(rx: &Receiver<notify::Event>, window: Duration) {
     }
 }
 
-pub(crate) fn run_summary_blocking() -> Result<aggregate::GardenSummary, String> {
+pub(crate) fn run_summary_blocking() -> Result<GardenSummary, String> {
     let ctx = AdapterContext::from_env();
-    let result = scan::collect_events(&ctx, None).map_err(|e| e.to_string())?;
-    Ok(aggregate::summarize(&result.events))
+    cache::refresh_summary(&ctx, None).map_err(|e| e.to_string())
 }
 
 // Keep `RecommendedWatcher` type referenced for clarity in docs. Without
