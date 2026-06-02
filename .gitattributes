@@ -1,0 +1,34 @@
+# Line-ending policy: the repo is canonically LF (every committed blob already
+# is). Pin it so a Windows checkout/editor can't reintroduce CRLF and pollute
+# every diff. `text=auto` lets Git treat files as text by content sniffing;
+# `eol=lf` forces LF in the working tree too, which all three CI platforms and
+# modern editors handle fine.
+* text=auto eol=lf
+
+# Explicit text types (defensive; survives even if auto-detection is unsure).
+*.rs     text eol=lf
+*.toml   text eol=lf
+*.lock   text eol=lf
+*.json   text eol=lf
+*.js     text eol=lf
+*.mjs    text eol=lf
+*.html   text eol=lf
+*.css    text eol=lf
+*.md     text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.sh     text eol=lf
+*.conf   text eol=lf
+
+# Binary assets: never normalize or diff as text.
+*.png    binary -eol
+*.jpg    binary -eol
+*.jpeg   binary -eol
+*.gif    binary -eol
+*.webp   binary -eol
+*.ico    binary -eol
+*.icns   binary -eol
+*.woff   binary -eol
+*.woff2  binary -eol
+*.ttf    binary -eol
+*.otf    binary -eol
