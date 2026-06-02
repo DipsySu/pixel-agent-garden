@@ -21,4 +21,6 @@ pub mod storage;
 pub use adapter::{Adapter, AdapterContext};
 pub use error::Error;
 pub use event::{AgentEvent, TokenUsage};
-pub use settings::{Appearance, DataSettings, Motion, SeasonMode, Settings, TimeMode};
+pub use settings::{
+    Appearance, DataSettings, Integrations, Motion, SeasonMode, Settings, TerminalKind, TimeMode,
+};

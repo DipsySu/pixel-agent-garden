@@ -13,6 +13,7 @@
 
 mod commands;
 mod events;
+mod terminal;
 mod tray;
 mod watcher;
 
@@ -30,6 +31,7 @@ fn main() {
             commands::data_freshness,
             commands::get_settings,
             commands::set_settings,
+            commands::open_in_terminal,
         ])
         .setup(|app| {
             tray::setup(app)?;

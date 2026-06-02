@@ -55,6 +55,23 @@ export async function setSettings(value) {
     }
   }
 
+/**
+ * Open a project root in the user's configured terminal. No-op in browser
+ * fallback mode (no backend). Returns true when the invoke was dispatched.
+ */
+export async function openInTerminal(path) {
+    const api = tauriApi();
+    if (!api?.core?.invoke) return false;
+    if (!path) return false;
+    try {
+      await api.core.invoke('open_in_terminal', { path });
+      return true;
+    } catch (err) {
+      logGardenError('open_in_terminal invoke failed', err);
+      return false;
+    }
+  }
+
 export function subscribeGardenUpdates(onSummary) {
     const api = tauriApi();
     if (!api?.event || typeof api.event.listen !== 'function') return;
@@ -98,6 +115,11 @@ function defaultSettings() {
       },
       data: {
         auto_rescan: true
+      },
+      integrations: {
+        terminal: 'iterm',
+        terminal_command: '',
+        tray_top_n: 5
       }
     };
   }
@@ -106,6 +128,10 @@ function normalizeSettings(value) {
     const base = defaultSettings();
     const appearance = value && typeof value.appearance === 'object' ? value.appearance : {};
     const data = value && typeof value.data === 'object' ? value.data : {};
+    // Preserve integrations verbatim (terminal launcher config). The settings
+    // UI doesn't edit these yet, so we must round-trip them untouched —
+    // dropping the section would reset the user's terminal choice on every save.
+    const integrations = value && typeof value.integrations === 'object' ? value.integrations : {};
     return {
       appearance: {
         time_mode: validChoice(appearance.time_mode, ['system', 'day', 'dusk', 'night'], base.appearance.time_mode),
@@ -114,12 +140,21 @@ function normalizeSettings(value) {
       },
       data: {
         auto_rescan: typeof data.auto_rescan === 'boolean' ? data.auto_rescan : base.data.auto_rescan
+      },
+      integrations: {
+        terminal: validChoice(integrations.terminal, ['system', 'iterm', 'warp', 'custom'], base.integrations.terminal),
+        terminal_command: typeof integrations.terminal_command === 'string' ? integrations.terminal_command : base.integrations.terminal_command,
+        tray_top_n: validPositiveInteger(integrations.tray_top_n, base.integrations.tray_top_n)
       }
     };
   }
 
 function validChoice(value, allowed, fallback) {
     return allowed.includes(value) ? value : fallback;
+  }
+
+function validPositiveInteger(value, fallback) {
+    return Number.isInteger(value) && value > 0 ? value : fallback;
   }
 
 export function logGardenError(message, err) {

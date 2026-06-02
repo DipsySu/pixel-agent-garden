@@ -16,6 +16,21 @@
 - Added gentle token insight UI: project info cards show a 14-day token
   sparkline, and a footer Insight panel lists top token projects with their own
   sparklines without turning the garden into a dashboard.
+- Moved the token→vine size mapping into core as `size_level` / `size_strength`
+  on each project (computed from the whole token distribution, schema v3). The
+  port is a bit-exact replica of the former render-garden.js formula, so vine
+  sizing is unchanged; the frontend now reads these fields and only maps them to
+  pixel width/opacity, falling back to the local formula for summaries without
+  the fields.
+- Added a terminal launcher: a `[integrations]` settings section
+  (`terminal` = system/iterm/warp/custom with a `{path}` template,
+  `terminal_command`, `tray_top_n`, defaulting to iTerm / top 5), an
+  `open_in_terminal` command, and a replaceable `terminal.rs` whose
+  command-building is a pure, per-OS unit-tested function. The tray gained a
+  "Top Token Projects" submenu (rebuilt on `garden:updated`) and the Insight
+  panel rows gained an open-terminal button — both open the project root in the
+  configured terminal. The frontend settings round-trip now preserves the
+  `integrations` section instead of resetting it on save.
 
 ## v0.1.0 - 2026-05-29
 

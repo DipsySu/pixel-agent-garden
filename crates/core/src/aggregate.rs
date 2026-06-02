@@ -52,8 +52,9 @@ pub struct GardenSummary {
 /// events cache (`storage::EVENTS_SCHEMA_VERSION`) so the summary shape can
 /// evolve without invalidating cached raw events. Bump on any
 /// backward-incompatible summary change (renamed/removed field, semantic
-/// redefinition). Bumped to 2 when `daily_tokens` was added.
-pub const SUMMARY_SCHEMA_VERSION: u32 = 2;
+/// redefinition). Bumped to 2 for `daily_tokens`, to 3 for `size_level` /
+/// `size_strength`.
+pub const SUMMARY_SCHEMA_VERSION: u32 = 3;
 
 fn current_schema_version() -> u32 {
     SUMMARY_SCHEMA_VERSION
@@ -108,6 +109,19 @@ pub struct ProjectGrowth {
     pub stage: u8,
     pub recent_activity: u64,
     pub cache_ratio: f64,
+    /// Token→sprite size bucket (1..=5), distribution-relative on a log scale.
+    /// A data abstraction the garden reads to size each project's vine; the
+    /// frontend maps it (plus `size_strength`) to pixel width/opacity. Was
+    /// computed in render-garden.js; moved here so it is testable and the
+    /// rule lives in one place. Additive — defaults to 0 for older summaries,
+    /// which signals the frontend to fall back to its own computation.
+    #[serde(default)]
+    pub size_level: u8,
+    /// Normalized magnitude strength (0.0..=1.0) blending the project's log
+    /// token mass with its rank in the distribution. Frontend turns this into
+    /// vine width/opacity. Additive — defaults to 0.0 (frontend falls back).
+    #[serde(default)]
+    pub size_strength: f64,
 }
 
 /// Internal accumulator — holds the HashSet of session IDs during the build
@@ -170,6 +184,10 @@ impl Accumulator {
             stage,
             recent_activity,
             cache_ratio,
+            // Distribution-relative — filled by summarize_at once every
+            // project's token total is known. Left at defaults here.
+            size_level: 0,
+            size_strength: 0.0,
         }
     }
 }
@@ -265,6 +283,27 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
         b_key.cmp(&a_key)
     });
 
+    // Distribution-aware sprite sizing (formerly render-garden.js). `level`
+    // and `strength` depend on the whole project set, so they are computed
+    // here once all token totals are known. The frontend maps them to pixel
+    // width/opacity — those presentation details stay out of core.
+    let max_tokens = projects
+        .iter()
+        .map(|p| p.total_tokens)
+        .max()
+        .unwrap_or(0)
+        .max(1);
+    let mut sorted_tokens: Vec<u64> = projects
+        .iter()
+        .map(|p| p.total_tokens)
+        .filter(|&t| t > 0)
+        .collect();
+    sorted_tokens.sort_unstable_by(|a, b| b.cmp(a));
+    for p in &mut projects {
+        p.size_level = size_level(p.total_tokens, max_tokens);
+        p.size_strength = size_strength(p.total_tokens, max_tokens, &sorted_tokens);
+    }
+
     let active_projects = projects.len() as u64;
     GardenSummary {
         schema_version: SUMMARY_SCHEMA_VERSION,
@@ -325,6 +364,40 @@ fn stage_for_score(score: u64) -> u8 {
     } else {
         6
     }
+}
+
+/// Token→sprite size bucket (1..=5), distribution-relative on a log scale.
+/// Bit-exact port of the former render-garden.js `tokenSizeLevel`, so vine
+/// sizing is identical whether computed here or in the JS fallback. Both use
+/// IEEE-754 f64 with the same operation order. `max_tokens` is the largest
+/// project's token total, floored at 1 by the caller.
+fn size_level(tokens: u64, max_tokens: u64) -> u8 {
+    if tokens == 0 {
+        return 1;
+    }
+    let min_log = 3.0_f64;
+    let max_log = (min_log + 1.0).max(((max_tokens + 1) as f64).log10());
+    let ratio = (((tokens + 1) as f64).log10() - min_log) / (max_log - min_log);
+    (ratio * 5.0).ceil().clamp(1.0, 5.0) as u8
+}
+
+/// Normalized magnitude strength (0.0..=1.0): blends the project's log token
+/// mass (68%) with its rank in the non-zero token distribution (32%). Bit-exact
+/// port of the former render-garden.js strength formula. `sorted_tokens` is the
+/// non-zero token totals sorted descending; a zero-token project is absent from
+/// it, so its rank resolves to 0 (rank_strength 1.0) — a quirk preserved
+/// deliberately to keep rendering identical.
+fn size_strength(tokens: u64, max_tokens: u64, sorted_tokens: &[u64]) -> f64 {
+    let count = sorted_tokens.len().max(1);
+    let rank = sorted_tokens.iter().position(|&v| v == tokens).unwrap_or(0);
+    let rank_strength = 1.0 - (rank as f64) / (count.saturating_sub(1).max(1) as f64);
+    let log_strength = if tokens > 0 && max_tokens > 0 {
+        ((((tokens + 1) as f64).log10() - 4.0) / (((max_tokens + 1) as f64).log10() - 4.0))
+            .clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+    (log_strength * 0.68 + rank_strength * 0.32).clamp(0.0, 1.0)
 }
 
 fn cache_ratio(input_tokens: u64, cache_read_tokens: u64, cache_write_tokens: u64) -> f64 {
@@ -703,5 +776,60 @@ mod tests {
         assert_eq!(top_by_tokens(&s, 10).len(), 3);
         // n = 0 yields an empty ranking.
         assert!(top_by_tokens(&s, 0).is_empty());
+    }
+
+    #[test]
+    fn size_level_and_strength_match_js_reference() {
+        // Reference values produced by running the former render-garden.js
+        // formulas (tokenSizeLevel / strength) against this exact token set, so
+        // the Rust port stays bit-for-bit visually identical.
+        let ts = Utc.with_ymd_and_hms(2026, 5, 27, 10, 0, 0).unwrap();
+        let mk = |proj: &'static str, input: u64| EventFixture {
+            source: "claude-code",
+            ts,
+            project: Some(proj),
+            session: Some(proj),
+            input,
+            output: 0,
+            cache_read: 0,
+            tool_calls: 0,
+            model: None,
+        };
+        let events = vec![
+            make_event(mk("/x/big", 226_880_048)),
+            make_event(mk("/x/mid", 5000)),
+            make_event(mk("/x/small", 100)),
+            make_event(mk("/x/zero", 0)),
+        ];
+        let s = summarize(&events);
+        let find = |name: &str| s.projects.iter().find(|p| p.display_name == name).unwrap();
+
+        let big = find("big");
+        assert_eq!(big.size_level, 5);
+        assert!((big.size_strength - 1.0).abs() < 1e-12);
+
+        let mid = find("mid");
+        assert_eq!(mid.size_level, 1);
+        assert!((mid.size_strength - 0.16).abs() < 1e-12);
+
+        let small = find("small");
+        assert_eq!(small.size_level, 1);
+        assert!(small.size_strength.abs() < 1e-12);
+
+        // Zero-token project: absent from the non-zero distribution, so its
+        // rank resolves to 0 → rank_strength 1.0 → 0.32. Quirk preserved.
+        let zero = find("zero");
+        assert_eq!(zero.size_level, 1);
+        assert!((zero.size_strength - 0.32).abs() < 1e-12);
+    }
+
+    #[test]
+    fn size_helpers_handle_degenerate_distribution() {
+        // Single project, max floored at 1: must not divide by zero or NaN.
+        assert_eq!(size_level(0, 1), 1);
+        let only = [42u64];
+        let strength = size_strength(42, 42, &only);
+        assert!(strength.is_finite());
+        assert!((0.0..=1.0).contains(&strength));
     }
 }

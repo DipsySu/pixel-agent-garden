@@ -124,16 +124,36 @@ export function insightPanelHTML(summary, opts = {}) {
 
 function insightRowHTML(project, index, opts) {
   const recent = windowTotal(project.daily_tokens, opts.days, opts.now);
+  const name = project.display_name || 'unknown';
+  const path = project.project_path || '';
+  // Open-terminal button only when we know the project root. Nested <button>s
+  // are invalid, so the select-row button and the terminal button are siblings
+  // inside a flex line; the panel controller routes clicks by closest().
+  const term = path
+    ? '<button class="pg6-insight-term" type="button" data-project-path="' + escapeAttr(path) +
+      '" title="在终端打开" aria-label="在终端打开 ' + escapeAttr(name) + '">' + terminalSvg() + '</button>'
+    : '';
   return (
-    '<button class="pg6-insight-row" type="button" role="listitem" data-project-key="' + escapeAttr(project.project_key || '') + '">' +
-      '<span class="pg6-insight-rank">' + String(index + 1).padStart(2, '0') + '</span>' +
-      '<span class="pg6-insight-main">' +
-        '<strong>' + escapeHtml(project.display_name || 'unknown') + '</strong>' +
-        '<small>近 ' + opts.days + ' 天 ' + escapeHtml(opts.format(recent)) + '</small>' +
-      '</span>' +
-      '<span class="pg6-insight-spark" aria-hidden="true">' + sparklineSVG(project.daily_tokens, { days: opts.days, now: opts.now, format: opts.format }) + '</span>' +
-      '<span class="pg6-insight-total">' + escapeHtml(opts.format(project.total_tokens || 0)) + '</span>' +
-    '</button>'
+    '<div class="pg6-insight-row-line" role="listitem">' +
+      '<button class="pg6-insight-row" type="button" data-project-key="' + escapeAttr(project.project_key || '') + '">' +
+        '<span class="pg6-insight-rank">' + String(index + 1).padStart(2, '0') + '</span>' +
+        '<span class="pg6-insight-main">' +
+          '<strong>' + escapeHtml(name) + '</strong>' +
+          '<small>近 ' + opts.days + ' 天 ' + escapeHtml(opts.format(recent)) + '</small>' +
+        '</span>' +
+        '<span class="pg6-insight-spark" aria-hidden="true">' + sparklineSVG(project.daily_tokens, { days: opts.days, now: opts.now, format: opts.format }) + '</span>' +
+        '<span class="pg6-insight-total">' + escapeHtml(opts.format(project.total_tokens || 0)) + '</span>' +
+      '</button>' +
+      term +
+    '</div>'
+  );
+}
+
+function terminalSvg() {
+  return (
+    '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">' +
+    '<path d="M4 5h16v14H4zM7 9l3 3-3 3M13 15h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>'
   );
 }
 

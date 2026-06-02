@@ -92,3 +92,18 @@ pub async fn set_settings(settings: Settings) -> Result<Settings, String> {
     .await
     .map_err(|e| format!("set_settings task panicked: {e}"))?
 }
+
+/// Open `path` in the user's configured terminal (tray row / insight panel
+/// click). Thin shim: reads settings, delegates the platform-specific spawn to
+/// `terminal::open`. The path comes from `ProjectGrowth.project_path`; an empty
+/// path is rejected rather than opening a terminal at an unknown location.
+#[tauri::command]
+pub async fn open_in_terminal(path: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        let settings_path = settings::default_settings_path();
+        let settings = settings::load(&settings_path).map_err(|e| e.to_string())?;
+        crate::terminal::open(&settings.integrations, &path)
+    })
+    .await
+    .map_err(|e| format!("open_in_terminal task panicked: {e}"))?
+}

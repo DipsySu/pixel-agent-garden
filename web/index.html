@@ -502,6 +502,7 @@ body {
 .pg6-insight-summary b { display: block; font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pg6-insight-summary small { color: var(--color-text-tertiary); display: block; font-size: 10px; margin-top: 1px; }
 .pg6-insight-list { display: flex; flex-direction: column; gap: 2px; }
+.pg6-insight-row-line { align-items: stretch; display: flex; gap: 2px; }
 .pg6-insight-row {
   align-items: center;
   background: transparent;
@@ -510,12 +511,28 @@ body {
   color: var(--color-text-secondary);
   cursor: pointer;
   display: grid;
+  flex: 1 1 auto;
   font: inherit;
   grid-template-columns: 28px minmax(120px, 1fr) 104px 58px;
   min-height: 38px;
+  min-width: 0;
   padding: 4px 6px;
   text-align: left;
 }
+.pg6-insight-term {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  padding: 0 8px;
+}
+.pg6-insight-term:hover,
+.pg6-insight-term:focus-visible { background: rgba(244, 216, 120, 0.10); border-color: rgba(244, 216, 120, 0.28); color: var(--color-text-primary); outline: none; }
 .pg6-insight-row:hover,
 .pg6-insight-row:focus-visible,
 .pg6-insight-row.is-active { background: rgba(255, 255, 255, 0.045); border-color: rgba(244, 216, 120, 0.20); color: var(--color-text-primary); outline: none; }

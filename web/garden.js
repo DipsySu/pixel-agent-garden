@@ -4,7 +4,8 @@ import {
   subscribeGardenScanning,
   subscribeGardenUpdates,
   subscribeGardenErrors,
-  logGardenError
+  logGardenError,
+  openInTerminal
 } from './data-source.js';
 import { mountErrorToast } from './error-toast.js';
 import { mountInsightPanel } from './insight-panel.js';
@@ -47,7 +48,8 @@ Promise.all([
     insightPanel = mountInsightPanel({
       hostFooter: footer,
       initialSummary: lastSummary,
-      onProjectSelect: (projectKey) => renderer.selectProjectByKey(projectKey)
+      onProjectSelect: (projectKey) => renderer.selectProjectByKey(projectKey),
+      onOpenTerminal: (path) => openInTerminal(path)
     });
     mountSettingsPanel({
       hostFooter: footer,

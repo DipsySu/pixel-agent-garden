@@ -22,6 +22,7 @@ use std::path::{Path, PathBuf};
 pub struct Settings {
     pub appearance: Appearance,
     pub data: DataSettings,
+    pub integrations: Integrations,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -46,6 +47,53 @@ impl Default for DataSettings {
     fn default() -> Self {
         Self { auto_rescan: true }
     }
+}
+
+/// Launcher integration settings (spec §Deferred — launcher integration).
+/// Controls which terminal the tray / insight panel opens at a project root,
+/// and how many top-token projects the tray lists. All additive over the
+/// phase-1 schema; absent `[integrations]` falls back to these defaults.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Integrations {
+    /// Which terminal app to launch.
+    pub terminal: TerminalKind,
+    /// Command template used only when `terminal == Custom`. `{path}` is
+    /// replaced with the project root. Empty string = unset (Custom then
+    /// errors at launch). A plain `String` (not `Option`) keeps TOML simple.
+    pub terminal_command: String,
+    /// How many top-token projects the tray lists.
+    pub tray_top_n: usize,
+}
+
+// Explicit Default: terminal defaults to iTerm (project owner's choice), the
+// custom template is empty, and the tray lists the top 5. `#[derive(Default)]`
+// would give tray_top_n = 0 and the wrong terminal.
+impl Default for Integrations {
+    fn default() -> Self {
+        Self {
+            terminal: TerminalKind::ITerm,
+            terminal_command: String::new(),
+            tray_top_n: 5,
+        }
+    }
+}
+
+/// Terminal application to open a project root in. Unit variants serialize as
+/// lowercase strings (`"iterm"`, `"warp"`, …); the custom command lives in
+/// `Integrations::terminal_command`, so this stays a simple string enum in TOML.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TerminalKind {
+    /// macOS Terminal.app / platform default terminal.
+    System,
+    /// iTerm2 (macOS). Project default.
+    #[default]
+    ITerm,
+    /// Warp (macOS).
+    Warp,
+    /// Use `Integrations::terminal_command` as a `{path}` template.
+    Custom,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -160,6 +208,11 @@ mod tests {
                 motion: Motion::Reduced,
             },
             data: DataSettings { auto_rescan: false },
+            integrations: Integrations {
+                terminal: TerminalKind::Warp,
+                terminal_command: String::new(),
+                tray_top_n: 8,
+            },
         };
         save(&path, &s).unwrap();
         let back = load(&path).unwrap();
@@ -196,12 +249,53 @@ mod tests {
                 motion: Motion::Off,
             },
             data: DataSettings { auto_rescan: true },
+            integrations: Integrations {
+                terminal: TerminalKind::ITerm,
+                terminal_command: String::new(),
+                tray_top_n: 5,
+            },
         };
         let text = toml::to_string(&s).unwrap();
         assert!(text.contains("time_mode = \"dusk\""), "got: {text}");
         assert!(text.contains("season_mode = \"autumn\""), "got: {text}");
         assert!(text.contains("motion = \"off\""), "got: {text}");
         assert!(text.contains("auto_rescan = true"), "got: {text}");
+        assert!(text.contains("terminal = \"iterm\""), "got: {text}");
+    }
+
+    #[test]
+    fn integrations_default_is_iterm_top5() {
+        let d = Integrations::default();
+        assert_eq!(d.terminal, TerminalKind::ITerm);
+        assert!(d.terminal_command.is_empty());
+        assert_eq!(d.tray_top_n, 5);
+    }
+
+    #[test]
+    fn missing_integrations_section_uses_defaults() {
+        // A phase-1 settings.toml has no [integrations]; it must load cleanly
+        // and fall back to the defaults rather than erroring.
+        let path = tmp_settings_path("no-integrations");
+        std::fs::write(&path, "[appearance]\ntime_mode = \"day\"\n").unwrap();
+        let got = load(&path).unwrap();
+        assert_eq!(got.integrations, Integrations::default());
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn custom_terminal_round_trips() {
+        let path = tmp_settings_path("custom-term");
+        let s = Settings {
+            integrations: Integrations {
+                terminal: TerminalKind::Custom,
+                terminal_command: "alacritty --working-directory {path}".to_string(),
+                tray_top_n: 10,
+            },
+            ..Settings::default()
+        };
+        save(&path, &s).unwrap();
+        assert_eq!(load(&path).unwrap(), s);
+        std::fs::remove_file(&path).ok();
     }
 
     #[test]

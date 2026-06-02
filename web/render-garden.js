@@ -708,7 +708,7 @@ function clearDynamicLayers() {
       .filter(Boolean)
       .sort((a, b) => b - a);
     const entries = ordered.map((project, projectIndex) => {
-      const profile = tokenSizeProfile(project.total_tokens || 0, maxTokens, sortedTokens);
+      const profile = tokenSizeProfile(project, maxTokens, sortedTokens);
       const useHanging = profile.level >= 3 && hanging.length;
       return { project, projectIndex, profile, useHanging };
     });
@@ -809,15 +809,30 @@ function clearDynamicLayers() {
     return Math.max(1, Math.min(5, Math.ceil(ratio * 5)));
   }
 
-  function tokenSizeProfile(tokens, maxTokens, sortedTokens) {
-    const level = tokenSizeLevel(tokens, maxTokens);
+  // Fallback strength computation, identical to the core `size_strength` port
+  // (crates/core/src/aggregate.rs). Used only when a summary lacks the
+  // core-computed fields (older caches, browser fallback data).
+  function tokenSizeStrength(tokens, maxTokens, sortedTokens) {
     const rank = Math.max(0, sortedTokens.findIndex((value) => value === tokens));
     const count = Math.max(1, sortedTokens.length);
     const rankStrength = 1 - rank / Math.max(1, count - 1);
     const logStrength = tokens > 0 && maxTokens > 0
       ? Math.max(0, Math.min(1, (Math.log10(tokens + 1) - 4) / (Math.log10(maxTokens + 1) - 4)))
       : 0;
-    const strength = Math.max(0, Math.min(1, logStrength * 0.68 + rankStrength * 0.32));
+    return Math.max(0, Math.min(1, logStrength * 0.68 + rankStrength * 0.32));
+  }
+
+  // Magnitude → vine size. Prefers the core-computed `size_level` /
+  // `size_strength` (single source of truth); falls back to the identical local
+  // formula when those fields are absent. The pixel width/opacity mapping is
+  // presentation and deliberately stays in the frontend, not in core.
+  function tokenSizeProfile(project, maxTokens, sortedTokens) {
+    const tokens = project.total_tokens || 0;
+    const hasCore = Number.isInteger(project.size_level) && project.size_level >= 1;
+    const level = hasCore ? project.size_level : tokenSizeLevel(tokens, maxTokens);
+    const strength = hasCore && Number.isFinite(project.size_strength)
+      ? project.size_strength
+      : tokenSizeStrength(tokens, maxTokens, sortedTokens);
 
     if (level >= 3) {
       return {

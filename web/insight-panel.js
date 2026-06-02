@@ -4,7 +4,7 @@ import { insightPanelHTML } from './render-insight.js';
 const DAYS = 14;
 const LIMIT = 10;
 
-export function mountInsightPanel({ hostFooter, initialSummary, onProjectSelect }) {
+export function mountInsightPanel({ hostFooter, initialSummary, onProjectSelect, onOpenTerminal }) {
   let currentSummary = initialSummary || null;
 
   const button = document.createElement('button');
@@ -30,6 +30,12 @@ export function mountInsightPanel({ hostFooter, initialSummary, onProjectSelect 
     if (close) {
       togglePanel(false);
       button.focus();
+      return;
+    }
+    const term = target.closest('.pg6-insight-term');
+    if (term) {
+      const path = term.dataset.projectPath;
+      if (path && typeof onOpenTerminal === 'function') onOpenTerminal(path);
       return;
     }
     const row = target.closest('.pg6-insight-row');

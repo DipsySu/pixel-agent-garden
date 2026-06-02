@@ -24,14 +24,17 @@ numbers are one gesture away, never permanently pinned on screen.
 
 ## Goals / 目标
 
-- Make daily token data **honest** (true tokens, not an activity proxy).
+(All four shipped as of schema v3 / 四项均已落地,schema v3。)
+
+- ✅ Make daily token data **honest** (true tokens, not an activity proxy).
   让每日 token 数据**诚实**(真 token,不是活动代理量)。
-- Provide a reusable `core` ranking primitive (`top_by_tokens`).
+- ✅ Provide a reusable `core` ranking primitive (`top_by_tokens`).
   在 `core` 提供可复用的排名原语 `top_by_tokens`。
-- Surface insight **gently**: a 14-day sparkline in the existing info card + a
+- ✅ Surface insight **gently**: a 14-day sparkline in the existing info card + a
   restrained, opt-in insight panel. 轻量露出:信息卡里加 14 天 sparkline + 一个克制的、点开才有的 insight 面板。
-- Consolidate the token→sprite size mapping from JS into testable `core` rules.
-  把 token→植株大小的映射从 JS 收敛成 `core` 里可测的规则。
+- ✅ Consolidate the token→sprite size mapping from JS into testable `core` rules
+  (`size_level` / `size_strength`).
+  把 token→植株大小的映射从 JS 收敛成 `core` 里可测的规则(`size_level` / `size_strength`)。
 
 ## Non-Goals (this pass) / 本轮非目标
 
@@ -127,13 +130,20 @@ tray** — design it general, not tray-shaped. UI display format (K/M) stays
 front-end. 排序在这。它服务 **insight 面板、README/demo 数据、以及未来的 tray**——按通用设计,
 别按 tray 形状设计。UI 显示格式(K/M)留前端。
 
-### Magnitude → sprite mapping / 数量级 → 植株映射
+### Magnitude → sprite mapping / 数量级 → 植株映射 ✅ done
 
-Extract the existing JS sizing into a pure `core` function (log-scaled or
-bucketed by order of magnitude) so a 200M project is clearly biggest without
-dwarfing a 30K project to nothing. Testable; UI just reads the stage/size it
-returns. 把现有 JS 的尺寸逻辑抽成 `core` 纯函数(对数 / 按数量级分桶),让 200M 明显最大、
-又不把 30K 压没。可测;UI 只读它给的阶段 / 大小。
+Done: the JS sizing logic is ported to `core` as `size_level: u8` (1..=5,
+log-scaled) and `size_strength: f64` (0.0..=1.0, log mass + rank blend),
+computed in `summarize_at` from the whole project distribution. The port is a
+bit-exact replica of the former JS formula (Rust tests assert the JS reference
+values), so rendering is unchanged. The frontend reads these two fields and maps
+them to pixel width/opacity — those presentation details stay out of `core`. JS
+keeps the identical formula as a fallback for summaries lacking the fields
+(older caches / browser fallback data).
+已完成:JS 尺寸逻辑搬到 `core`,新增 `size_level`(1..=5,对数)和 `size_strength`
+(0..=1,对数质量 + 排名混合),在 `summarize_at` 里按全体项目分布计算。该移植与原 JS 公式
+逐位一致(Rust 测试断言 JS 参考值),渲染不变。前端读这两个字段映射成像素宽度/透明度——
+这些展示细节留在前端。JS 保留同一公式作为缺字段时的 fallback(老缓存 / 浏览器降级数据)。
 
 ## Schema Versioning — split the constant / Schema 版本——拆常量
 
@@ -235,22 +245,29 @@ Shipped in the first token-insight cut / 第一刀已完成:
   button opens a ranked top-project overview and can select the matching vine.
   现有项目信息卡已加 sparkline;footer 的 Insight 按钮打开项目排名概览,并能选中对应藤蔓。
 
-## Deferred — launcher integration / 推迟——launcher 集成
+## Launcher integration / launcher 集成 ✅ done
 
-Useful, but **not the first foundation** of token insight, and it crosses a new
-boundary (the app starts launching external processes). Ship as its own phase:
-有用,但**不是 token insight 的第一块地基**,且越过新边界(app 开始启动外部进程)。单独成阶段:
+Shipped as its own phase. It crosses a new boundary (the app now launches an
+external process), confined to one replaceable module and triggered only by an
+explicit user click. 作为独立阶段完成。越过了新边界(app 现在会启动外部进程),但关在一个可替换模块里、
+且只由用户显式点击触发。
 
-- Tray dropdown listing top-N by tokens (via `top_by_tokens`), rank + name +
-  K/M, no bars. tray 下拉按 token 列 top-N,序号 + 名 + K/M,不画条。
-- Click a row → open a terminal at `project_path` (disabled when `None`).
-  点行 → 在 `project_path` 开终端(`None` 时禁用)。
-- New Tauri command `open_in_terminal(path)` (thin shim) + a replaceable
-  `crates/tauri-app/src/terminal.rs` holding all cross-platform spawn logic.
-  新命令(薄壳)+ 可替换的 `terminal.rs` 收全部跨平台 spawn 逻辑。
-- Settings: `terminal: TerminalChoice` and `tray_top_n: usize`, both
-  `#[serde(default)]`. 设置项两枚,带默认。
+- Tray dropdown lists top-N by tokens (via `top_by_tokens`), rank + name + K/M,
+  no bars; rebuilt on `garden:updated`. tray 下拉按 token 列 top-N(序号 + 名 + K/M,不画条),
+  随 `garden:updated` 重建。
+- Clicking a row → opens a terminal at `project_path` (disabled when `None`).
+  The Insight panel rows gained the same per-row open-terminal button.
+  点行 → 在 `project_path` 开终端(`None` 时禁用);Insight 面板每行也加了同样的开终端按钮。
+- `open_in_terminal(path)` Tauri command (thin shim) + replaceable
+  `crates/tauri-app/src/terminal.rs`. The command-building is a pure function
+  (`build_command(kind, custom, path, os)`) unit-tested for macOS/Windows/Linux;
+  only `open()` spawns. 命令是薄壳;`terminal.rs` 的 `build_command` 是纯函数、按三平台测试,只有 `open()` 真正 spawn。
+- Settings: `Integrations { terminal: TerminalKind, terminal_command: String,
+  tray_top_n: usize }`, all `#[serde(default)]`. Resolved the open question by
+  doing **both**: an allowlist (`system`/`iterm`/`warp`, default `iterm`) **and**
+  a `custom` template using a `{path}` placeholder. 设置用 `Integrations`;待定问题最终**两个都做**:
+  白名单(默认 `iterm`)+ `custom` 的 `{path}` 模板。
 
-Open question for that phase / 该阶段待定: fixed terminal allowlist
-(iTerm/Warp/Terminal) vs a free-form command template with a `{path}` placeholder.
-固定白名单 vs 带 `{path}` 占位符的自由命令模板。
+Privacy note / 隐私:terminal launch is local, user-initiated, confined to
+`terminal.rs`, and never runs during scan or render. 终端启动纯本地、用户发起、关在
+`terminal.rs`,绝不在扫描/渲染时跑。

@@ -6,13 +6,21 @@
 
 use crate::events::{ErrorPayload, GARDEN_ERROR, GARDEN_SCANNING, GARDEN_UPDATED, ScanningPayload};
 use crate::watcher;
+use local_agent_garden_core::adapter::AdapterContext;
+use local_agent_garden_core::aggregate::{GardenSummary, top_by_tokens};
+use local_agent_garden_core::cache;
 use local_agent_garden_core::settings::{self, Settings};
 use local_agent_garden_core::storage;
 use std::path::Path;
 use std::process::Command;
-use tauri::menu::{Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::menu::{IsMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{App, AppHandle, Emitter, Manager, Runtime, Window, WindowEvent};
+use tauri::{App, AppHandle, Emitter, Listener, Manager, Runtime, Window, WindowEvent};
+
+/// Menu-id prefix for a "open project in terminal" row. The project root is
+/// encoded after the prefix so `handle_menu_event` can recover it without a
+/// side table — the menu is rebuilt on every summary, so ids stay in sync.
+const MENU_TERM_PREFIX: &str = "garden-term::";
 
 pub const WINDOW_LABEL: &str = "main";
 const TRAY_ID: &str = "local-agent-garden";
@@ -25,7 +33,8 @@ const MENU_OPEN_DATA_DIR: &str = "garden-open-data-dir";
 const MENU_QUIT: &str = "garden-quit";
 
 pub fn setup(app: &mut App) -> tauri::Result<()> {
-    let tray_menu = build_control_menu(app.handle())?;
+    // Initial menu has no project rows yet (the watcher only emits on change).
+    let tray_menu = build_tray_menu(app.handle(), None)?;
     TrayIconBuilder::with_id(TRAY_ID)
         .tooltip("Local Agent Garden")
         .icon(tauri::include_image!("./icons/32x32.png"))
@@ -48,7 +57,47 @@ pub fn setup(app: &mut App) -> tauri::Result<()> {
         })
         .build(app)?;
 
+    // Rebuild the "Top Token Projects" section whenever a fresh summary lands
+    // (watcher / manual scan emit `garden:updated` with the full summary).
+    let listen_handle = app.handle().clone();
+    app.handle().listen(GARDEN_UPDATED, move |event| {
+        if let Ok(summary) = serde_json::from_str::<GardenSummary>(event.payload()) {
+            refresh_tray_menu(&listen_handle, summary);
+        }
+    });
+
+    // Populate once at startup from the cache, since the watcher stays quiet
+    // until something changes. Runs off-thread; the menu mutation hops back to
+    // the main thread inside refresh_tray_menu.
+    let init_handle = app.handle().clone();
+    std::thread::spawn(move || {
+        let ctx = AdapterContext::from_env();
+        if let Ok(summary) = cache::summary_from_cache_or_scan(&ctx, None) {
+            refresh_tray_menu(&init_handle, summary);
+        }
+    });
+
     Ok(())
+}
+
+/// Rebuild the tray menu from a new summary and swap it in. Menu mutation must
+/// happen on the main thread, so the actual rebuild hops there via
+/// `run_on_main_thread` regardless of which thread called us.
+fn refresh_tray_menu(app: &AppHandle, summary: GardenSummary) {
+    let handle = app.clone();
+    let result = app.run_on_main_thread(move || match build_tray_menu(&handle, Some(&summary)) {
+        Ok(menu) => {
+            if let Some(tray) = handle.tray_by_id(TRAY_ID) {
+                if let Err(err) = tray.set_menu(Some(menu)) {
+                    eprintln!("[tray] set_menu failed: {err}");
+                }
+            }
+        }
+        Err(err) => eprintln!("[tray] rebuild menu failed: {err}"),
+    });
+    if let Err(err) = result {
+        eprintln!("[tray] run_on_main_thread failed: {err}");
+    }
 }
 
 pub fn build_app_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
@@ -57,7 +106,12 @@ pub fn build_app_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> 
 }
 
 pub fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
-    match event.id().as_ref() {
+    let id = event.id().as_ref();
+    if let Some(path) = id.strip_prefix(MENU_TERM_PREFIX) {
+        open_project_terminal(app, path);
+        return;
+    }
+    match id {
         MENU_SHOW => show_main_window(app),
         MENU_HIDE => hide_main_window(app),
         MENU_SCAN => trigger_scan(app),
@@ -66,6 +120,19 @@ pub fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
         MENU_QUIT => app.exit(0),
         _ => {}
     }
+}
+
+/// Open a project root in the user's configured terminal. Spawned off-thread so
+/// the menu handler returns immediately; failures surface via the error toast.
+fn open_project_terminal(app: &AppHandle, path: &str) {
+    let app = app.clone();
+    let path = path.to_string();
+    std::thread::spawn(move || {
+        let settings = settings::load(&settings::default_settings_path()).unwrap_or_default();
+        if let Err(err) = crate::terminal::open(&settings.integrations, &path) {
+            emit_error(&app, "tray", format!("open terminal: {err}"));
+        }
+    });
 }
 
 pub fn handle_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) {
@@ -81,7 +148,12 @@ pub fn handle_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) 
     }
 }
 
-fn build_control_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
+fn build_tray_menu<R: Runtime>(
+    app: &AppHandle<R>,
+    summary: Option<&GardenSummary>,
+) -> tauri::Result<Menu<R>> {
+    let top = build_top_projects_submenu(app, summary)?;
+    let sep0 = PredefinedMenuItem::separator(app)?;
     let show = MenuItem::with_id(
         app,
         MENU_SHOW,
@@ -107,6 +179,8 @@ fn build_control_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> 
     Menu::with_items(
         app,
         &[
+            &top,
+            &sep0,
             &show,
             &hide,
             &sep1,
@@ -117,6 +191,69 @@ fn build_control_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> 
             &quit,
         ],
     )
+}
+
+/// Build the "Top Token Projects" submenu. Each row opens that project's root
+/// in a terminal (id = `MENU_TERM_PREFIX` + path); a project without a known
+/// path is shown disabled. Count is `integrations.tray_top_n`. Ranking is the
+/// core `top_by_tokens` primitive — no leaderboard logic lives here.
+fn build_top_projects_submenu<R: Runtime>(
+    app: &AppHandle<R>,
+    summary: Option<&GardenSummary>,
+) -> tauri::Result<Submenu<R>> {
+    let top_n = settings::load(&settings::default_settings_path())
+        .map(|s| s.integrations.tray_top_n)
+        .unwrap_or(5);
+
+    let mut items: Vec<MenuItem<R>> = Vec::new();
+    if let Some(summary) = summary {
+        for (i, project) in top_by_tokens(summary, top_n).into_iter().enumerate() {
+            let label = format!(
+                "{} · {}",
+                project.display_name,
+                fmt_tokens(project.total_tokens)
+            );
+            match project.project_path.as_deref() {
+                Some(path) if !path.is_empty() => {
+                    let id = format!("{MENU_TERM_PREFIX}{path}");
+                    items.push(MenuItem::with_id(app, id, label, true, None::<&str>)?);
+                }
+                // No known root → show it, but disabled (can't open a terminal).
+                // Index keeps the id unique so the menu has no id collisions.
+                _ => items.push(MenuItem::with_id(
+                    app,
+                    format!("garden-term-disabled-{i}"),
+                    label,
+                    false,
+                    None::<&str>,
+                )?),
+            }
+        }
+    }
+    if items.is_empty() {
+        items.push(MenuItem::with_id(
+            app,
+            "garden-term-empty",
+            "No token activity yet",
+            false,
+            None::<&str>,
+        )?);
+    }
+
+    let refs: Vec<&dyn IsMenuItem<R>> = items.iter().map(|i| i as &dyn IsMenuItem<R>).collect();
+    Submenu::with_items(app, "Top Token Projects", true, &refs)
+}
+
+/// Compact token count for menu labels (e.g. `213.4M`, `45.0k`). Display-only;
+/// the canonical formatting also exists in the frontend `fmtLocal`.
+fn fmt_tokens(tokens: u64) -> String {
+    if tokens >= 1_000_000 {
+        format!("{:.1}M", tokens as f64 / 1_000_000.0)
+    } else if tokens >= 1_000 {
+        format!("{:.1}k", tokens as f64 / 1_000.0)
+    } else {
+        tokens.to_string()
+    }
 }
 
 fn build_control_submenu<R: Runtime>(app: &AppHandle<R>, title: &str) -> tauri::Result<Submenu<R>> {
