@@ -63,6 +63,14 @@ export function subscribeGardenUpdates(onSummary) {
       .catch((err) => logGardenError('garden:updated listen failed', err));
   }
 
+export function subscribeGardenScanning(onScanning) {
+    const api = tauriApi();
+    if (!api?.event || typeof api.event.listen !== 'function') return;
+    api.event
+      .listen('garden:scanning', (event) => onScanning(event.payload || {}))
+      .catch((err) => logGardenError('garden:scanning listen failed', err));
+  }
+
 /**
  * Subscribe to backend `garden:error` events and forward them to the toast
  * layer. Safe to call in browser mode — it's a no-op there.

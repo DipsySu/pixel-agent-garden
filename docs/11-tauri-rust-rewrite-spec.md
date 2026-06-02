@@ -119,14 +119,13 @@ Heavy work runs in `spawn_blocking`; `core` remains synchronous and UI-free.
 
 ## Tauri Events
 
+- `garden:scanning`: emitted before tray-triggered and watcher-triggered
+  rescans. Payload is `{ adapter?: string }`. The frontend uses this as a
+  lightweight status signal, not a progress bar.
 - `garden:updated`: emitted after a debounced watcher rescan.
 - `garden:error`: emitted on watcher / scan / settings failures. Payload is
   `{ source: "watcher" | "scan" | "settings" | ..., message: string,
   adapter?: string }`. The frontend renders this as a bottom-right toast.
-
-Reserved (defined but not yet emitted):
-
-- `garden:scanning`: future progress signal for long-running scans.
 
 ## Frontend Contract
 
@@ -260,6 +259,10 @@ trigger keeps the lantern lit at night even on quiet days.
 - Watcher / scan / settings errors from Rust surface via
   `garden:error` → `error-toast.js`. Toasts collapse by `source` so a
   burst from one call site does not flood the UI.
+- Watcher / tray rescans surface `garden:scanning` before work starts.
+  The footer switches to a pulsing scanning state and clears on the next
+  `garden:updated`; if auto-rescan is off, the footer says the cache was
+  updated while visual repaint remains paused.
 
 ## Privacy
 
@@ -330,6 +333,8 @@ Done:
   the garden window, trigger a fresh scan, open `settings.toml`, open the
   local data folder, and quit. Closing the main window now hides it to the
   tray instead of exiting.
+- Footer freshness state: cached summaries show relative data freshness;
+  manual and watcher rescans show a pulsing scanning state.
 
 Next:
 

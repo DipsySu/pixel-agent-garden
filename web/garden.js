@@ -1,6 +1,7 @@
 import {
   loadSettings,
   loadSummary,
+  subscribeGardenScanning,
   subscribeGardenUpdates,
   subscribeGardenErrors,
   logGardenError
@@ -56,10 +57,15 @@ Promise.all([
 
   // Watcher updates: always subscribe (cheap), gate re-render on auto_rescan
   // so the user can toggle it from the panel without restart ceremony.
+  subscribeGardenScanning(() => {
+    renderer.showScanning();
+  });
   subscribeGardenUpdates((summary) => {
     lastSummary = summary;
     if (currentSettings.data.auto_rescan) {
       renderer.renderEverything(groups, lastSummary);
+    } else {
+      renderer.showCached(lastSummary);
     }
   });
 }).catch((err) => {

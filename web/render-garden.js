@@ -55,7 +55,7 @@ function diffNew(kind, ids) {
 export function createGardenRenderer(options) {
   scene = options.scene;
   spriteRoot = options.spriteRoot;
-  return { renderEverything };
+  return { renderEverything, showScanning, showCached };
 }
 
 function renderEverything(groups, summary) {
@@ -87,6 +87,25 @@ function renderEverything(groups, summary) {
   if (!projects.length) renderEmptyState();
 }
 
+function showScanning() {
+  const el = document.getElementById('data-freshness');
+  if (!el) return;
+  el.textContent = '· 正在扫描...';
+  el.classList.remove('is-stale', 'is-paused');
+  el.classList.add('is-scanning');
+  el.title = '正在读取本机 agent 数据';
+}
+
+function showCached(summary) {
+  updateDataFreshness(summary);
+  const el = document.getElementById('data-freshness');
+  if (!el) return;
+  el.textContent = '· 已扫描 · 自动刷新已关闭';
+  el.classList.remove('is-scanning', 'is-stale');
+  el.classList.add('is-paused');
+  el.title = '缓存已更新，打开自动刷新或手动切换视图后会重绘花园';
+}
+
 
 function clearDynamicLayers() {
   scene.querySelectorAll(dynamicLayerSelector).forEach((el) => el.remove());
@@ -101,6 +120,8 @@ function clearDynamicLayers() {
     const stamp = summary && summary.last_seen;
     if (!stamp) {
       el.textContent = '';
+      el.classList.remove('is-scanning', 'is-stale', 'is-paused');
+      el.removeAttribute('title');
       return;
     }
     const last = new Date(stamp);
@@ -115,6 +136,7 @@ function clearDynamicLayers() {
     else if (days < 30)  label = days + ' 天前';
     else                 label = '一个月以上之前';
     el.textContent = '· 更新于 ' + label;
+    el.classList.remove('is-scanning', 'is-paused');
     if (diff > 24 * 3_600_000) {
       el.classList.add('is-stale');
       el.title = '运行 agent-garden scan 刷新';

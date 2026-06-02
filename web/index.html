@@ -285,6 +285,7 @@ body {
   .pg6-season-particle.maple { animation: pg6-maple-fall var(--particle-duration, 14s) linear infinite; }
   .pg6-season-particle.firefly { animation: pg6-firefly-drift var(--particle-duration, 5s) ease-in-out infinite; }
   .pg6-season-particle.snow { animation: pg6-snow-fall var(--particle-duration, 18s) linear infinite; }
+  .pg6-footer-freshness.is-scanning { animation: pg6-freshness-pulse 1100ms ease-in-out infinite; }
   /* S1/S2 one-shot entrances. render-garden.js adds `.is-new` only on a
      project_key / trinket id's first sighting (persisted diff), so these never
      replay on data re-renders. Each composes the entrance with the element's
@@ -371,6 +372,10 @@ body {
     88%  { opacity: 0.64; }
     100% { opacity: 0; transform: translate3d(var(--particle-drift, 24px), 520px, 0) rotate(110deg); }
   }
+  @keyframes pg6-freshness-pulse {
+    0%, 100% { opacity: 0.68; }
+    50%      { opacity: 1; }
+  }
 }
 .pg6-info-label { opacity: 0.65; font-size: 11px; }
 .pg6-info-name { font-weight: 500; margin: 2px 0 6px; font-size: 13px; }
@@ -410,6 +415,8 @@ body {
 .pg6-footer { align-items: center; bottom: 10px; color: var(--color-text-tertiary); display: flex; flex-wrap: wrap; font-size: 11px; gap: 5px; left: var(--edge-pad); margin-top: 0; padding: 0; position: absolute; right: var(--edge-pad); z-index: 130; }
 .pg6-footer-freshness { color: var(--color-text-tertiary); margin-left: auto; }
 .pg6-footer-freshness.is-stale { color: #d6a258; cursor: help; }
+.pg6-footer-freshness.is-scanning { color: #d6c58a; }
+.pg6-footer-freshness.is-paused { color: #aeb78a; cursor: help; }
 .pg6-footer-gear {
   align-items: center;
   background: transparent;

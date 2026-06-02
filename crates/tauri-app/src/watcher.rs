@@ -7,7 +7,7 @@
 //! "something changed → here's the new summary". It does NOT parse change
 //! payloads itself.
 
-use crate::events::{ErrorPayload, GARDEN_ERROR, GARDEN_UPDATED};
+use crate::events::{ErrorPayload, GARDEN_ERROR, GARDEN_SCANNING, GARDEN_UPDATED, ScanningPayload};
 use local_agent_garden_core::adapter::AdapterContext;
 use local_agent_garden_core::aggregate::GardenSummary;
 use local_agent_garden_core::cache;
@@ -86,6 +86,10 @@ pub fn run(app: AppHandle) -> Result<(), String> {
             return Ok(());
         };
         debounce_drain(&rx, Duration::from_millis(DEBOUNCE_MS));
+
+        if let Err(err) = app.emit(GARDEN_SCANNING, &ScanningPayload { adapter: None }) {
+            eprintln!("[watcher] emit scanning failed: {err}");
+        }
 
         match run_summary_blocking() {
             Ok(summary) => {

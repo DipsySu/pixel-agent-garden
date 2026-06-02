@@ -6,6 +6,10 @@
   `~/.local-agent-garden/events.json` when possible, falls back to a fresh
   scan when the cache is missing or incompatible, and both Scan Now plus
   watcher updates refresh the cache.
+- Added visible scan/freshness feedback in the desktop footer: watcher and
+  tray-triggered scans emit `garden:scanning`, the footer pulses while local
+  data is being read, and auto-rescan-disabled updates now show a clear
+  "scanned, refresh paused" state instead of silently doing nothing.
 
 ## v0.1.0 - 2026-05-29
 
