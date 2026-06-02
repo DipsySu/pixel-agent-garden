@@ -226,6 +226,7 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
       '<div class="pg6-info-name" id="garden-info-name">枝繁叶茂期</div>' +
       '<div class="pg6-info-row"><span id="garden-info-total">累计 580k</span><span id="garden-info-stage">阶段 4 / 6</span></div>' +
       '<div class="pg6-info-bar"><div class="pg6-info-fill" id="garden-info-fill"></div></div>' +
+      '<div class="pg6-info-spark" id="garden-info-spark" aria-hidden="true"></div>' +
     '</div>';
   scene.dataset.timeMode = time.mode;
   scene.dataset.timeLabel = time.label;

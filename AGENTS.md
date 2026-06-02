@@ -144,9 +144,10 @@ If one file starts doing two unrelated jobs, split it.
 
 ## Schema And Compatibility
 
-`GardenSummary` and the `events.json` envelope have `schema_version` fields.
-Any incompatible on-disk JSON shape change must bump
-`aggregate::SCHEMA_VERSION`.
+`GardenSummary` and the `events.json` envelope have separate `schema_version`
+fields. Incompatible summary-shape changes bump
+`aggregate::SUMMARY_SCHEMA_VERSION`; incompatible raw event cache changes bump
+`storage::EVENTS_SCHEMA_VERSION`.
 
 Compatibility defaults matter:
 
@@ -366,8 +367,9 @@ agent 本地数据 -> Adapter -> AgentEvent -> scan/dedupe -> GardenSummary -> U
 
 ### Schema 与兼容
 
-`GardenSummary` 和 `events.json` envelope 都有 `schema_version`。任何不兼容的
-磁盘 JSON 结构变更都必须 bump `aggregate::SCHEMA_VERSION`。
+`GardenSummary` 和 `events.json` envelope 都有各自的 `schema_version`。不兼容的
+summary 结构变更 bump `aggregate::SUMMARY_SCHEMA_VERSION`;不兼容的原始事件缓存结构变更
+bump `storage::EVENTS_SCHEMA_VERSION`。
 
 兼容默认值很重要：
 

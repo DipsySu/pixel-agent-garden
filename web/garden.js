@@ -7,6 +7,7 @@ import {
   logGardenError
 } from './data-source.js';
 import { mountErrorToast } from './error-toast.js';
+import { mountInsightPanel } from './insight-panel.js';
 import { mountSettingsPanel } from './settings-panel.js';
 import { groupSprites } from './render-helpers.js';
 import { createGardenRenderer } from './render-garden.js';
@@ -41,7 +42,13 @@ Promise.all([
   // Footer is the host; the panel inserts itself after the footer in the same
   // parent (the frame), so it sits flush with footer content.
   const footer = document.querySelector('.pg6-footer');
+  let insightPanel = null;
   if (footer) {
+    insightPanel = mountInsightPanel({
+      hostFooter: footer,
+      initialSummary: lastSummary,
+      onProjectSelect: (projectKey) => renderer.selectProjectByKey(projectKey)
+    });
     mountSettingsPanel({
       hostFooter: footer,
       initial: currentSettings,
@@ -51,6 +58,7 @@ Promise.all([
         // renderEverything then rebuilds sprites from that dataset.
         renderBaseScene(scene, assetRoot, { settings: currentSettings });
         renderer.renderEverything(groups, lastSummary);
+        insightPanel?.update(lastSummary);
       }
     });
   }
@@ -62,6 +70,7 @@ Promise.all([
   });
   subscribeGardenUpdates((summary) => {
     lastSummary = summary;
+    insightPanel?.update(lastSummary);
     if (currentSettings.data.auto_rescan) {
       renderer.renderEverything(groups, lastSummary);
     } else {

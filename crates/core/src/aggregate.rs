@@ -2,6 +2,13 @@
 //!
 //! All formulas (activity_score, stage cutoffs, recent_activity window,
 //! cache_ratio, daily_activity bumping) are part of the frontend contract.
+//!
+//! Two distinct per-day maps exist, do not conflate them:
+//! - `daily_activity`: an activity-intensity proxy (`max(1, tokens/1000 +
+//!   tool_calls)`), used for the recent_activity window / liveliness.
+//! - `daily_tokens`: honest per-day token totals, used for token
+//!   heatmaps/sparklines. A dark `daily_activity` cell can mean "many tool
+//!   calls", not "many tokens" — only `daily_tokens` answers the token question.
 
 use crate::event::AgentEvent;
 use chrono::{DateTime, Utc};
@@ -33,20 +40,29 @@ pub struct GardenSummary {
     #[serde(default, with = "opt_ts_serde")]
     pub last_seen: Option<DateTime<Utc>>,
     pub active_projects: u64,
+    /// Honest per-day token totals across all projects (UTC date "YYYY-MM-DD"
+    /// → tokens). Distinct from per-project `daily_activity` (an intensity
+    /// proxy); use this for token heatmaps/sparklines. Additive field —
+    /// defaults to empty so older summaries still deserialize.
+    #[serde(default)]
+    pub daily_tokens: BTreeMap<String, u64>,
 }
 
-/// Current schema version for `GardenSummary` and `events.json`. Bump this
-/// when changing the on-disk shape in a non-backward-compatible way.
-pub const SCHEMA_VERSION: u32 = 1;
+/// Schema version for the `GardenSummary` JSON shape. Independent from the
+/// events cache (`storage::EVENTS_SCHEMA_VERSION`) so the summary shape can
+/// evolve without invalidating cached raw events. Bump on any
+/// backward-incompatible summary change (renamed/removed field, semantic
+/// redefinition). Bumped to 2 when `daily_tokens` was added.
+pub const SUMMARY_SCHEMA_VERSION: u32 = 2;
 
 fn current_schema_version() -> u32 {
-    SCHEMA_VERSION
+    SUMMARY_SCHEMA_VERSION
 }
 
 impl Default for GardenSummary {
     fn default() -> Self {
         Self {
-            schema_version: SCHEMA_VERSION,
+            schema_version: SUMMARY_SCHEMA_VERSION,
             projects: Vec::new(),
             sources: BTreeMap::new(),
             total_events: 0,
@@ -54,6 +70,7 @@ impl Default for GardenSummary {
             first_seen: None,
             last_seen: None,
             active_projects: 0,
+            daily_tokens: BTreeMap::new(),
         }
     }
 }
@@ -81,6 +98,11 @@ pub struct ProjectGrowth {
     pub tool_calls: u32,
     pub event_count: u64,
     pub daily_activity: BTreeMap<String, u64>,
+    /// Honest per-day token totals for this project (UTC date → tokens).
+    /// Unlike `daily_activity` (intensity proxy), this is real tokens summed
+    /// from `AgentEvent.usage.total_tokens`. Additive — defaults to empty.
+    #[serde(default)]
+    pub daily_tokens: BTreeMap<String, u64>,
     pub models: BTreeMap<String, u64>,
     pub activity_score: u64,
     pub stage: u8,
@@ -107,6 +129,7 @@ struct Accumulator {
     tool_calls: u32,
     event_count: u64,
     daily_activity: BTreeMap<String, u64>,
+    daily_tokens: BTreeMap<String, u64>,
     models: BTreeMap<String, u64>,
 }
 
@@ -141,6 +164,7 @@ impl Accumulator {
             tool_calls: self.tool_calls,
             event_count: self.event_count,
             daily_activity: self.daily_activity,
+            daily_tokens: self.daily_tokens,
             models: self.models,
             activity_score,
             stage,
@@ -165,6 +189,7 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
     let mut first_seen: Option<DateTime<Utc>> = None;
     let mut last_seen: Option<DateTime<Utc>> = None;
     let mut total_tokens: u64 = 0;
+    let mut daily_tokens: BTreeMap<String, u64> = BTreeMap::new();
 
     let mut sorted: Vec<&AgentEvent> = events.iter().collect();
     sorted.sort_by_key(|e| e.timestamp);
@@ -200,11 +225,18 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
 
         // daily_activity bump: max(1, total_tokens // 1000 + tool_calls)
         // Guarantees each event contributes at least 1 so sparse low-token
-        // chats still register on the recent_activity window.
+        // chats still register on the recent_activity window. This is an
+        // intensity PROXY — not tokens. For honest token series see below.
         let bump = (event.usage.total_tokens / 1000) + u64::from(event.tool_calls);
         let bump = bump.max(1);
         let day_key = event.timestamp.format("%Y-%m-%d").to_string();
-        *accum.daily_activity.entry(day_key).or_insert(0) += bump;
+        *accum.daily_activity.entry(day_key.clone()).or_insert(0) += bump;
+
+        // daily_tokens: honest per-day tokens, per-project and rolled up across
+        // all projects. Drives token heatmaps/sparklines without the tool_call
+        // contamination baked into daily_activity.
+        *accum.daily_tokens.entry(day_key.clone()).or_insert(0) += event.usage.total_tokens;
+        *daily_tokens.entry(day_key).or_insert(0) += event.usage.total_tokens;
 
         if let Some(model) = event.model.as_ref() {
             if !model.is_empty() {
@@ -235,7 +267,7 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
 
     let active_projects = projects.len() as u64;
     GardenSummary {
-        schema_version: SCHEMA_VERSION,
+        schema_version: SUMMARY_SCHEMA_VERSION,
         projects,
         sources,
         total_events: events.len() as u64,
@@ -243,7 +275,24 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
         first_seen,
         last_seen,
         active_projects,
+        daily_tokens,
     }
+}
+
+/// Top `n` projects by total tokens, descending, with a deterministic
+/// `project_key` tie-break. A reusable ranking primitive — it serves the
+/// insight panel, README/demo data, and a future tray menu, so it is kept
+/// general rather than tray-shaped. Sorting lives here; display formatting
+/// (K/M) stays in the frontend.
+pub fn top_by_tokens(summary: &GardenSummary, n: usize) -> Vec<&ProjectGrowth> {
+    let mut ranked: Vec<&ProjectGrowth> = summary.projects.iter().collect();
+    ranked.sort_by(|a, b| {
+        b.total_tokens
+            .cmp(&a.total_tokens)
+            .then_with(|| a.project_key.cmp(&b.project_key))
+    });
+    ranked.truncate(n);
+    ranked
 }
 
 // ---- formulas -------------------------------------------------------------
@@ -545,5 +594,114 @@ mod tests {
         // Timestamp shape: must end with "+00:00" not "Z"
         let first_seen = parsed["first_seen"].as_str().unwrap();
         assert!(first_seen.ends_with("+00:00"), "got: {}", first_seen);
+    }
+
+    #[test]
+    fn daily_tokens_record_real_tokens_not_activity() {
+        let day1 = Utc.with_ymd_and_hms(2026, 5, 26, 10, 0, 0).unwrap();
+        let day2 = Utc.with_ymd_and_hms(2026, 5, 27, 10, 0, 0).unwrap();
+        let events = vec![
+            make_event(EventFixture {
+                source: "claude-code",
+                ts: day1,
+                project: Some("/a/pay"),
+                session: Some("s1"),
+                input: 1000,
+                output: 500,
+                cache_read: 0,
+                tool_calls: 9,
+                model: Some("m1"),
+            }),
+            make_event(EventFixture {
+                source: "claude-code",
+                ts: day2,
+                project: Some("/a/pay"),
+                session: Some("s1"),
+                input: 200,
+                output: 100,
+                cache_read: 0,
+                tool_calls: 0,
+                model: Some("m1"),
+            }),
+        ];
+        let s = summarize(&events);
+        let p = &s.projects[0];
+        // Honest tokens: day1 = 1500, day2 = 300.
+        assert_eq!(p.daily_tokens["2026-05-26"], 1500);
+        assert_eq!(p.daily_tokens["2026-05-27"], 300);
+        // Top-level rollup mirrors the single project.
+        assert_eq!(s.daily_tokens["2026-05-26"], 1500);
+        assert_eq!(s.daily_tokens["2026-05-27"], 300);
+        // daily_activity is the intensity proxy: day1 = 1500/1000 + 9 = 10,
+        // day2 = max(1, 300/1000 + 0) = 1 — provably NOT the token value.
+        assert_eq!(p.daily_activity["2026-05-26"], 10);
+        assert_eq!(p.daily_activity["2026-05-27"], 1);
+        assert_ne!(p.daily_tokens["2026-05-26"], p.daily_activity["2026-05-26"]);
+    }
+
+    #[test]
+    fn daily_tokens_rollup_sums_across_projects() {
+        let day = Utc.with_ymd_and_hms(2026, 5, 27, 10, 0, 0).unwrap();
+        let events = vec![
+            make_event(EventFixture {
+                source: "claude-code",
+                ts: day,
+                project: Some("/a/one"),
+                session: Some("s1"),
+                input: 1000,
+                output: 0,
+                cache_read: 0,
+                tool_calls: 0,
+                model: None,
+            }),
+            make_event(EventFixture {
+                source: "codex",
+                ts: day,
+                project: Some("/a/two"),
+                session: Some("s2"),
+                input: 500,
+                output: 0,
+                cache_read: 0,
+                tool_calls: 0,
+                model: None,
+            }),
+        ];
+        let s = summarize(&events);
+        assert_eq!(s.daily_tokens["2026-05-27"], 1500);
+        // Each project keeps its own honest share.
+        let one = s.projects.iter().find(|p| p.display_name == "one").unwrap();
+        let two = s.projects.iter().find(|p| p.display_name == "two").unwrap();
+        assert_eq!(one.daily_tokens["2026-05-27"], 1000);
+        assert_eq!(two.daily_tokens["2026-05-27"], 500);
+    }
+
+    #[test]
+    fn top_by_tokens_ranks_and_truncates() {
+        let ts = Utc.with_ymd_and_hms(2026, 5, 27, 10, 0, 0).unwrap();
+        let mk = |proj: &'static str, input: u64| EventFixture {
+            source: "claude-code",
+            ts,
+            project: Some(proj),
+            session: Some(proj),
+            input,
+            output: 0,
+            cache_read: 0,
+            tool_calls: 0,
+            model: None,
+        };
+        let events = vec![
+            make_event(mk("/a/big", 5000)),
+            make_event(mk("/a/mid", 2000)),
+            make_event(mk("/a/small", 100)),
+        ];
+        let s = summarize(&events);
+        let top2 = top_by_tokens(&s, 2);
+        assert_eq!(top2.len(), 2);
+        assert_eq!(top2[0].display_name, "big");
+        assert_eq!(top2[1].display_name, "mid");
+        // n larger than the project count is clamped, not an error.
+        assert_eq!(top_by_tokens(&s, 10).len(), 3);
+        // n = 0 yields an empty ranking.
+        assert!(top_by_tokens(&s, 0).is_empty());
     }
 }

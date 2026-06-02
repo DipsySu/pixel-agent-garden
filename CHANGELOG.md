@@ -10,6 +10,12 @@
   tray-triggered scans emit `garden:scanning`, the footer pulses while local
   data is being read, and auto-rescan-disabled updates now show a clear
   "scanned, refresh paused" state instead of silently doing nothing.
+- Added token insight foundations: `daily_tokens` now records honest per-day
+  token totals separately from `daily_activity`, summary/events schema versions
+  are split, and `top_by_tokens` provides a reusable core ranking primitive.
+- Added gentle token insight UI: project info cards show a 14-day token
+  sparkline, and a footer Insight panel lists top token projects with their own
+  sparklines without turning the garden into a dashboard.
 
 ## v0.1.0 - 2026-05-29
 

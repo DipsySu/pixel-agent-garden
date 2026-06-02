@@ -6,11 +6,16 @@
 //! leaves room for adding sibling metadata (cache mtime, source hashes,
 //! etc.) without renaming the events array.
 
-use crate::aggregate::SCHEMA_VERSION;
 use crate::error::Error;
 use crate::event::AgentEvent;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+
+/// Schema version for the on-disk events cache (`events.json`). Deliberately
+/// independent from `aggregate::SUMMARY_SCHEMA_VERSION`: the summary JSON shape
+/// can change without invalidating cached raw events, and vice-versa. Bump only
+/// when the `EventsCache` / `AgentEvent` on-disk shape changes incompatibly.
+pub const EVENTS_SCHEMA_VERSION: u32 = 1;
 
 /// Versioned events cache envelope. Saved as JSON to `events.json`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,7 +39,7 @@ pub fn save_events(events: &[AgentEvent], path: &Path) -> Result<(), Error> {
         std::fs::create_dir_all(parent).map_err(|e| Error::io(parent, e))?;
     }
     let cache = EventsCache {
-        schema_version: SCHEMA_VERSION,
+        schema_version: EVENTS_SCHEMA_VERSION,
         events: events.to_vec(),
     };
     let json = serde_json::to_string_pretty(&cache).map_err(|e| Error::json(path, e))?;
@@ -51,13 +56,13 @@ pub fn load_events(path: &Path) -> Result<Vec<AgentEvent>, Error> {
     // Try the wrapped form first; fall back to a bare array.
     match serde_json::from_str::<EventsCache>(&text) {
         Ok(cache) => {
-            if cache.schema_version > SCHEMA_VERSION {
+            if cache.schema_version > EVENTS_SCHEMA_VERSION {
                 return Err(Error::InvalidRecord {
                     context: path.display().to_string(),
                     message: format!(
                         "cache schema_version {} exceeds reader version {}; \
                          delete the cache to rescan",
-                        cache.schema_version, SCHEMA_VERSION
+                        cache.schema_version, EVENTS_SCHEMA_VERSION
                     ),
                 });
             }

@@ -1,8 +1,10 @@
 import { CONFIG } from './scene-config.js';
 import { fmtLocal, escapeHtml, pick, pickByToken, namedSprite, jitter } from './render-helpers.js';
+import { sparklineSVG } from './render-insight.js';
 
 let scene;
 let spriteRoot;
+let currentWallProjects = [];
 const dynamicLayerSelector = [
   '.pg6-sprite',
   '.pg6-wall-edge-cover',
@@ -55,12 +57,13 @@ function diffNew(kind, ids) {
 export function createGardenRenderer(options) {
   scene = options.scene;
   spriteRoot = options.spriteRoot;
-  return { renderEverything, showScanning, showCached };
+  return { renderEverything, showScanning, showCached, selectProjectByKey };
 }
 
 function renderEverything(groups, summary) {
   const projects = summary?.projects?.length ? summary.projects : [];
   const wallProjects = projectsForWall(projects);
+  currentWallProjects = wallProjects;
   const tiers = unlockTier(summary, projects);
 
   // S1/S2: diff this render's projects + unlocked trinkets against the
@@ -665,6 +668,7 @@ function clearDynamicLayers() {
     if (token) token.textContent = trinket.hint;
     if (stageEl) stageEl.textContent = '阈值 ' + fmtLocal(trinket.threshold);
     if (fill) fill.style.width = '100%';
+    setInfoSpark(null);
     showInfoCard();
   }
 
@@ -683,6 +687,7 @@ function clearDynamicLayers() {
     if (token) token.textContent = '累计 ' + sessions + ' 次会话';
     if (stageEl) stageEl.textContent = isFull ? '满级' : '初阶';
     if (fill) fill.style.width = isFull ? '100%' : '40%';
+    setInfoSpark(null);
     showInfoCard();
   }
 
@@ -890,6 +895,7 @@ function clearDynamicLayers() {
     if (options.project) {
       img.classList.add('roving-vine');
       img.dataset.projectIndex = String(options.projectIndex ?? 0);
+      img.dataset.projectKey = options.project.project_key || '';
       // #D2 tint vine by primary source. codex-heavy projects skew blue-green,
       // claude-code-heavy stay default green, mixed lands in between.
       const hue = vineHueShift(options.project);
@@ -964,9 +970,25 @@ function clearDynamicLayers() {
     if (token) token.textContent = '累计 ' + fmtLocal(total);
     if (stageEl) stageEl.textContent = '阶段 ' + stage + ' / 6';
     if (fill) fill.style.width = Math.max(8, Math.min(100, stage / 6 * 100)) + '%';
+    // Honest per-project 14-day token sparkline. Absent daily_tokens (older
+    // caches / fallback data) degrades to a flat baseline, never an error.
+    setInfoSpark(project.daily_tokens);
     if (reveal) {
       showInfoCard(options && options.event);
     }
+  }
+
+  // Inject or clear the info-card sparkline. Pass a daily_tokens map to show a
+  // series; pass null/undefined to clear it (trinket / cat cards have no token
+  // history). Rendering is delegated to the pure render-insight module.
+  function setInfoSpark(dailyTokens) {
+    const spark = document.getElementById('garden-info-spark');
+    if (!spark) return;
+    if (!dailyTokens) {
+      spark.innerHTML = '';
+      return;
+    }
+    spark.innerHTML = sparklineSVG(dailyTokens, { days: 14, format: fmtLocal });
   }
 
   function showInfoCard(event) {
@@ -1056,6 +1078,23 @@ function clearDynamicLayers() {
     });
   }
 
+  function selectProjectByKey(projectKey) {
+    const index = currentWallProjects.findIndex((project) => project.project_key === projectKey);
+    if (index < 0) return false;
+    const project = currentWallProjects[index];
+    const vine = scene.querySelector('.roving-vine[data-project-index="' + index + '"]');
+    const chip = document.querySelector('.pg6-project-chip[data-project-index="' + index + '"]');
+    setActiveProject(index);
+    updateInfoFromProject(project);
+    positionInfoCardFromElement(vine || chip);
+    if (vine) {
+      document.querySelectorAll('.roving-vine').forEach((item) => { item.tabIndex = -1; });
+      vine.tabIndex = 0;
+      vine.focus({ preventScroll: true });
+    }
+    return true;
+  }
+
 
 
   function updateDefaultInfo(summary, projects) {
@@ -1076,7 +1115,7 @@ function clearDynamicLayers() {
       return;
     }
     strip.innerHTML = projects.map((project, index) => {
-      return '<button class="pg6-project-chip" type="button" data-project-index="' + index + '"><span>' + (index + 1) + '</span><strong>' + escapeHtml(project.display_name || 'unknown') + '</strong><span>' + fmtLocal(project.total_tokens || 0) + '</span></button>';
+      return '<button class="pg6-project-chip" type="button" data-project-index="' + index + '" data-project-key="' + escapeHtml(project.project_key || '') + '"><span>' + (index + 1) + '</span><strong>' + escapeHtml(project.display_name || 'unknown') + '</strong><span>' + fmtLocal(project.total_tokens || 0) + '</span></button>';
     }).join('');
     strip.querySelectorAll('.pg6-project-chip').forEach((chip, index) => {
       const project = projects[index];

@@ -76,13 +76,20 @@ Rules:
 ## Schema Versioning
 
 `GardenSummary` and the `events.json` cache envelope (`EventsCache`) both
-carry a top-level `schema_version: 1` field (see `aggregate::SCHEMA_VERSION`).
-Readers reject any cache whose version exceeds what they know and fall back
-to a fresh scan. Legacy unwrapped event arrays (pre-versioning) still load
+carry a top-level `schema_version`, but their version constants are deliberately
+split:
+
+- `aggregate::SUMMARY_SCHEMA_VERSION` tracks the serialized `GardenSummary`
+  shape.
+- `storage::EVENTS_SCHEMA_VERSION` tracks the on-disk raw event cache.
+
+Readers reject any event cache whose version exceeds what they know and fall
+back to a fresh scan. Legacy unwrapped event arrays (pre-versioning) still load
 so existing users don't pay a forced rescan on upgrade.
 
-Bump `SCHEMA_VERSION` on any backward-incompatible shape change
-(renamed/removed field, semantic redefinition).
+Bump the matching version constant on any backward-incompatible shape change
+(renamed/removed field, semantic redefinition). Additive summary fields should
+use `#[serde(default)]` so older summaries still deserialize.
 
 ## Settings
 

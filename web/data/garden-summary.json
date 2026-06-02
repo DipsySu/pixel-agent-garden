@@ -1,4 +1,5 @@
 {
+  "schema_version": 2,
   "projects": [
     {
       "project_key": "/Users/dipsy/Developer/tool-lib/pay-module",
@@ -35,7 +36,16 @@
       "activity_score": 610,
       "stage": 6,
       "recent_activity": 125067,
-      "cache_ratio": 0.9934299985344207
+      "cache_ratio": 0.9934299985344207,
+      "daily_tokens": {
+        "2026-05-05": 45432022,
+        "2026-05-06": 53343556,
+        "2026-05-19": 3309927,
+        "2026-05-21": 144516,
+        "2026-05-22": 27025594,
+        "2026-05-25": 59440166,
+        "2026-05-26": 38184267
+      }
     },
     {
       "project_key": "/Users/dipsy/Documents/xiaowo/xiaowo_sport",
@@ -68,7 +78,11 @@
       "activity_score": 542,
       "stage": 6,
       "recent_activity": 0,
-      "cache_ratio": 0.96956775131681
+      "cache_ratio": 0.96956775131681,
+      "daily_tokens": {
+        "2026-05-02": 72519673,
+        "2026-05-03": 14644265
+      }
     },
     {
       "project_key": "/Users/dipsy/Documents/xiaowo",
@@ -102,7 +116,12 @@
       "activity_score": 541,
       "stage": 6,
       "recent_activity": 0,
-      "cache_ratio": 0.9390009005516855
+      "cache_ratio": 0.9390009005516855,
+      "daily_tokens": {
+        "2026-04-30": 4121354,
+        "2026-05-01": 7568959,
+        "2026-05-02": 63348491
+      }
     },
     {
       "project_key": "/Users/dipsy/Developer/test",
@@ -138,7 +157,15 @@
       "activity_score": 249,
       "stage": 5,
       "recent_activity": 203,
-      "cache_ratio": 0.2970327519081451
+      "cache_ratio": 0.2970327519081451,
+      "daily_tokens": {
+        "2026-05-08": 659015,
+        "2026-05-12": 5358869,
+        "2026-05-20": 13957,
+        "2026-05-22": 198402,
+        "2026-05-26": 996,
+        "2026-05-27": 2990
+      }
     },
     {
       "project_key": "/Users/dipsy/Developer/test/gcp",
@@ -167,7 +194,11 @@
       "activity_score": 168,
       "stage": 4,
       "recent_activity": 15377,
-      "cache_ratio": 0.0
+      "cache_ratio": 0.0,
+      "daily_tokens": {
+        "2026-05-21": 6889336,
+        "2026-05-22": 15377750
+      }
     },
     {
       "project_key": "/Users/dipsy/Developer/other/ar-sky",
@@ -196,7 +227,11 @@
       "activity_score": 166,
       "stage": 4,
       "recent_activity": 15621,
-      "cache_ratio": 0.0
+      "cache_ratio": 0.0,
+      "daily_tokens": {
+        "2026-05-07": 2869198,
+        "2026-05-25": 15622079
+      }
     },
     {
       "project_key": "/Users/dipsy/Documents/Codex/2026-05-20/http-tomatogenetics-cau-edu-cn-download",
@@ -225,7 +260,10 @@
       "activity_score": 150,
       "stage": 4,
       "recent_activity": 0,
-      "cache_ratio": 0.0
+      "cache_ratio": 0.0,
+      "daily_tokens": {
+        "2026-05-20": 10114667
+      }
     },
     {
       "project_key": "/Users/dipsy/Documents/不知道叫什么",
@@ -253,7 +291,10 @@
       "activity_score": 149,
       "stage": 4,
       "recent_activity": 45386,
-      "cache_ratio": 0.0
+      "cache_ratio": 0.0,
+      "daily_tokens": {
+        "2026-05-28": 45386732
+      }
     },
     {
       "project_key": "/Users/dipsy/Documents/xiaowo/xiaowo_sport_server",
@@ -281,7 +322,10 @@
       "activity_score": 146,
       "stage": 4,
       "recent_activity": 0,
-      "cache_ratio": 0.9984501468781635
+      "cache_ratio": 0.9984501468781635,
+      "daily_tokens": {
+        "2026-05-02": 685163
+      }
     },
     {
       "project_key": "/Users/dipsy/Documents/Obsidian Vault",
@@ -309,7 +353,10 @@
       "activity_score": 140,
       "stage": 4,
       "recent_activity": 2934,
-      "cache_ratio": 0.0
+      "cache_ratio": 0.0,
+      "daily_tokens": {
+        "2026-05-22": 2934995
+      }
     },
     {
       "project_key": "/Users/dipsy/Documents/ppt-master",
@@ -337,7 +384,10 @@
       "activity_score": 135,
       "stage": 4,
       "recent_activity": 0,
-      "cache_ratio": 0.0
+      "cache_ratio": 0.0,
+      "daily_tokens": {
+        "2026-05-12": 6870747
+      }
     },
     {
       "project_key": "/Users/dipsy/Documents/8-bit",
@@ -365,7 +415,10 @@
       "activity_score": 134,
       "stage": 4,
       "recent_activity": 6203,
-      "cache_ratio": 0.0
+      "cache_ratio": 0.0,
+      "daily_tokens": {
+        "2026-05-22": 6203445
+      }
     },
     {
       "project_key": "/Users/dipsy/Developer/backend",
@@ -393,7 +446,10 @@
       "activity_score": 117,
       "stage": 3,
       "recent_activity": 763,
-      "cache_ratio": 0.0
+      "cache_ratio": 0.0,
+      "daily_tokens": {
+        "2026-05-25": 763219
+      }
     },
     {
       "project_key": "/Users/dipsy/Documents/Codex/2026-05-26/08-24-37-ls-developer-backend",
@@ -421,7 +477,10 @@
       "activity_score": 111,
       "stage": 3,
       "recent_activity": 319,
-      "cache_ratio": 0.0
+      "cache_ratio": 0.0,
+      "daily_tokens": {
+        "2026-05-26": 319839
+      }
     },
     {
       "project_key": "/Users/dipsy/Documents/Codex/2026-05-20/new-chat",
@@ -449,7 +508,10 @@
       "activity_score": 102,
       "stage": 3,
       "recent_activity": 0,
-      "cache_ratio": 0.0
+      "cache_ratio": 0.0,
+      "daily_tokens": {
+        "2026-05-20": 110699
+      }
     },
     {
       "project_key": "/Users/dipsy/Downloads/LSPosed-v2.0.2-7668-release",
@@ -477,7 +539,10 @@
       "activity_score": 99,
       "stage": 3,
       "recent_activity": 0,
-      "cache_ratio": 0.0
+      "cache_ratio": 0.0,
+      "daily_tokens": {
+        "2026-05-15": 69547
+      }
     },
     {
       "project_key": "/Users/dipsy/Documents/Codex/2026-05-21/new-chat",
@@ -505,7 +570,10 @@
       "activity_score": 89,
       "stage": 3,
       "recent_activity": 0,
-      "cache_ratio": 0.0
+      "cache_ratio": 0.0,
+      "daily_tokens": {
+        "2026-05-21": 19743
+      }
     }
   ],
   "sources": {
@@ -516,5 +584,25 @@
   "total_tokens": 509554178,
   "first_seen": "2026-04-30T13:47:52.012000+00:00",
   "last_seen": "2026-05-28T02:23:04+00:00",
-  "active_projects": 17
+  "active_projects": 17,
+  "daily_tokens": {
+    "2026-04-30": 4121354,
+    "2026-05-01": 7568959,
+    "2026-05-02": 136553327,
+    "2026-05-03": 14644265,
+    "2026-05-05": 45432022,
+    "2026-05-06": 53343556,
+    "2026-05-07": 2869198,
+    "2026-05-08": 659015,
+    "2026-05-12": 12229616,
+    "2026-05-15": 69547,
+    "2026-05-19": 3309927,
+    "2026-05-20": 10239323,
+    "2026-05-21": 7053595,
+    "2026-05-22": 51740186,
+    "2026-05-25": 75825464,
+    "2026-05-26": 38505102,
+    "2026-05-27": 2990,
+    "2026-05-28": 45386732
+  }
 }
