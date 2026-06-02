@@ -103,8 +103,23 @@ export function insightPanelHTML(summary, opts = {}) {
   const total = Number(summary?.total_tokens || 0);
   const recent = windowTotal(summary?.daily_tokens, days, now);
 
+  // Same project basename can appear on several rows because aggregation keys
+  // on full path, not display name (two real dirs named "xiaowo_sport" are
+  // legitimately distinct). Count names so we can surface a disambiguating
+  // path line only where it's actually needed.
+  const nameCounts = new Map();
+  projects.forEach((project) => {
+    const name = project.display_name || 'unknown';
+    nameCounts.set(name, (nameCounts.get(name) || 0) + 1);
+  });
+
   const rows = projects.length
-    ? projects.map((project, index) => insightRowHTML(project, index, { format, days, now })).join('')
+    ? projects.map((project, index) => insightRowHTML(project, index, {
+        format,
+        days,
+        now,
+        ambiguous: (nameCounts.get(project.display_name || 'unknown') || 0) > 1
+      })).join('')
     : '<div class="pg6-insight-empty">等待本地 agent 活动</div>';
 
   return (
@@ -133,13 +148,21 @@ function insightRowHTML(project, index, opts) {
     ? '<button class="pg6-insight-term" type="button" data-project-path="' + escapeAttr(path) +
       '" title="在终端打开" aria-label="在终端打开 ' + escapeAttr(name) + '">' + terminalSvg() + '</button>'
     : '';
+  // Full path as a hover tooltip on every row (cheap discoverability), plus a
+  // visible path line only when the name is ambiguous (duplicate basename) and
+  // we actually have a path to show.
+  const rowTitle = path ? ' title="' + escapeAttr(path) + '"' : '';
+  const pathLine = opts.ambiguous && path
+    ? '<small class="pg6-insight-path" title="' + escapeAttr(path) + '">' + escapeHtml(path) + '</small>'
+    : '';
   return (
     '<div class="pg6-insight-row-line" role="listitem">' +
-      '<button class="pg6-insight-row" type="button" data-project-key="' + escapeAttr(project.project_key || '') + '">' +
+      '<button class="pg6-insight-row" type="button"' + rowTitle + ' data-project-key="' + escapeAttr(project.project_key || '') + '">' +
         '<span class="pg6-insight-rank">' + String(index + 1).padStart(2, '0') + '</span>' +
         '<span class="pg6-insight-main">' +
           '<strong>' + escapeHtml(name) + '</strong>' +
           '<small>近 ' + opts.days + ' 天 ' + escapeHtml(opts.format(recent)) + '</small>' +
+          pathLine +
         '</span>' +
         '<span class="pg6-insight-spark" aria-hidden="true">' + sparklineSVG(project.daily_tokens, { days: opts.days, now: opts.now, format: opts.format }) + '</span>' +
         '<span class="pg6-insight-total">' + escapeHtml(opts.format(project.total_tokens || 0)) + '</span>' +

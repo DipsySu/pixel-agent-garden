@@ -114,13 +114,33 @@ impl AgentEvent {
     }
 }
 
+/// Normalize a project path into a stable aggregation key.
+///
+/// Two passes, both *lossless* with respect to which on-disk directory the
+/// path points at — we only collapse spellings that provably name the same
+/// location, never merge distinct directories:
+///   1. tilde expansion (`~` / `~/…`), so manual-jsonl entries line up with
+///      adapter-emitted absolute paths.
+///   2. safe Windows normalization: strip the `\\?\` verbatim prefix, unify
+///      `/`→`\`, drop trailing separators, upper-case the drive letter. This
+///      merges e.g. `\\?\D:\code\x`, `D:/code/x/`, and `d:\code\x` into one
+///      key. POSIX paths and the dash-decoded Claude fallback (`/a/b`) are
+///      left untouched.
+///
+/// Deliberately NOT done here: lower/upper-casing path *components* (would be
+/// correct on Windows' case-insensitive FS but risks merging genuinely
+/// distinct dirs on case-sensitive FSes) and any guessing at the lossy
+/// `-Users-foo-` directory-name fallback. Those need separate, source-aware
+/// handling — see CHANGELOG.
 fn normalize_path(p: &str) -> String {
-    // Tilde expansion is the only meaningful normalization. Adapters generally
-    // read absolute paths, but this keeps manual-jsonl friendly.
+    let expanded = expand_tilde(p);
+    normalize_windows_path(&expanded)
+}
+
+fn expand_tilde(p: &str) -> String {
     if let Some(rest) = p.strip_prefix("~/") {
         if let Some(home) = dirs_home() {
-            let joined = home.join(rest);
-            return joined.to_string_lossy().into_owned();
+            return home.join(rest).to_string_lossy().into_owned();
         }
     }
     if p == "~" {
@@ -129,6 +149,43 @@ fn normalize_path(p: &str) -> String {
         }
     }
     p.to_string()
+}
+
+/// Canonicalize a Windows drive-letter path's *spelling* without changing
+/// which directory it names. No-op for anything that doesn't start with a
+/// drive letter (POSIX paths, UNC shares, the `/a/b` dash fallback).
+fn normalize_windows_path(p: &str) -> String {
+    // Strip the `\\?\` verbatim prefix only when it wraps a drive-letter path
+    // (`\\?\D:\…`); leave `\\?\UNC\…` and everything else alone.
+    let stripped = match p.strip_prefix(r"\\?\") {
+        Some(rest) if is_drive_prefixed(rest) => rest,
+        _ => p,
+    };
+
+    if !is_drive_prefixed(stripped) {
+        return stripped.to_string();
+    }
+
+    let bytes = stripped.as_bytes();
+    let drive = (bytes[0] as char).to_ascii_uppercase();
+    // Everything after "X:" — unify separators, then trim trailing ones.
+    let rest = stripped[2..].replace('/', "\\");
+    let trimmed = rest.trim_end_matches('\\');
+    // Keep a single root separator (`D:\`) but don't invent one for a bare
+    // `D:` with no path.
+    let tail = if trimmed.is_empty() {
+        if rest.is_empty() { "" } else { "\\" }
+    } else {
+        trimmed
+    };
+    format!("{drive}:{tail}")
+}
+
+/// True when `p` starts with an ASCII drive letter followed by a colon
+/// (`C:`, `d:`), the marker of a Windows drive path.
+fn is_drive_prefixed(p: &str) -> bool {
+    let b = p.as_bytes();
+    b.len() >= 2 && b[0].is_ascii_alphabetic() && b[1] == b':'
 }
 
 fn dirs_home() -> Option<std::path::PathBuf> {
@@ -293,5 +350,57 @@ mod tests {
     fn project_key_falls_back_to_unknown_source() {
         let ev = AgentEvent::new("codex", Utc.with_ymd_and_hms(2026, 5, 27, 0, 0, 0).unwrap());
         assert_eq!(ev.project_key(), "unknown:codex");
+    }
+
+    #[test]
+    fn normalize_windows_path_canonicalizes_spellings() {
+        // The three spellings from the bug report collapse to one key.
+        assert_eq!(normalize_path(r"\\?\D:\code\xiaowo"), r"D:\code\xiaowo");
+        assert_eq!(normalize_path("D:/code/xiaowo/"), r"D:\code\xiaowo");
+        assert_eq!(normalize_path(r"d:\code\xiaowo"), r"D:\code\xiaowo");
+        // All identical → one aggregation key.
+        let a = normalize_path(r"\\?\D:\code\xiaowo");
+        let b = normalize_path("D:/code/xiaowo/");
+        let c = normalize_path(r"d:\code\xiaowo");
+        assert_eq!(a, b);
+        assert_eq!(b, c);
+    }
+
+    #[test]
+    fn normalize_windows_path_handles_roots_and_bare_drive() {
+        assert_eq!(normalize_path(r"d:\"), r"D:\");
+        assert_eq!(normalize_path("d:/"), r"D:\");
+        assert_eq!(normalize_path("d:"), "D:");
+    }
+
+    #[test]
+    fn normalize_path_leaves_posix_and_fallback_untouched() {
+        // POSIX absolute paths keep forward slashes — no Windows mangling.
+        assert_eq!(normalize_path("/Users/dipsy/xiaowo"), "/Users/dipsy/xiaowo");
+        // Trailing slash on POSIX is NOT stripped (would change a real key
+        // shape we don't own); only drive paths are trimmed.
+        assert_eq!(
+            normalize_path("/Users/dipsy/xiaowo/"),
+            "/Users/dipsy/xiaowo/"
+        );
+        // The dash-decoded Claude fallback shape is passed through verbatim.
+        assert_eq!(normalize_path("/a/b/c"), "/a/b/c");
+    }
+
+    #[test]
+    fn normalize_path_does_not_merge_distinct_dirs() {
+        // Same basename, different parents must stay distinct keys — the whole
+        // point of keying on full path, not display name.
+        assert_ne!(
+            normalize_path(r"D:\dev\xiaowo_sport"),
+            normalize_path(r"D:\work\xiaowo_sport"),
+        );
+    }
+
+    #[test]
+    fn normalize_windows_path_leaves_unc_verbatim_prefix_alone() {
+        // `\\?\UNC\…` is not a drive path; we don't touch it.
+        let unc = r"\\?\UNC\server\share\proj";
+        assert_eq!(normalize_path(unc), unc);
     }
 }

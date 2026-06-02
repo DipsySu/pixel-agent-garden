@@ -386,36 +386,6 @@ body {
 .pg6-info-spark:empty { display: none; }
 .pg6-info-spark .pg6-spark-svg { display: block; width: 100%; height: 24px; }
 .pg6-info-spark .pg6-spark-svg rect { fill: currentColor; }
-.pg6-project-strip {
-  align-items: center;
-  bottom: 42px;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  gap: 6px;
-  left: var(--edge-pad);
-  min-height: 28px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 2px 0 6px;
-  position: absolute;
-  right: var(--edge-pad);
-  scrollbar-width: thin;
-  z-index: 130;
-}
-.pg6-project-strip::-webkit-scrollbar { height: 6px; }
-.pg6-project-strip::-webkit-scrollbar-thumb { background: rgba(244, 234, 216, 0.18); border-radius: 999px; }
-.pg6-project-chip { align-items: center; background: rgba(14, 19, 12, 0.58); border: 1px solid rgba(244, 234, 216, 0.1); border-radius: 5px; color: var(--color-text-secondary); cursor: pointer; display: inline-flex; flex: 0 0 auto; font: inherit; font-size: 11px; gap: 5px; height: 24px; max-width: 190px; min-width: 0; overflow: hidden; padding: 0 8px; }
-.pg6-project-chip::before { background: #6f9b48; content: ""; display: inline-block; flex: 0 0 auto; height: 8px; width: 8px; }
-.pg6-project-chip strong { color: var(--color-text-primary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pg6-project-chip span:first-child { color: #a7c27c; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-.pg6-project-chip span:last-child { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-.pg6-project-chip:hover,
-.pg6-project-chip:focus-visible,
-.pg6-project-chip.is-active { background: rgba(27, 35, 21, 0.78); border-color: rgba(244, 216, 120, 0.24); color: var(--color-text-primary); outline: none; }
-.pg6-project-chip:hover::before,
-.pg6-project-chip:focus-visible::before,
-.pg6-project-chip.is-active::before { background: #9fd36d; box-shadow: 0 0 0 1px rgba(244, 216, 120, 0.35); }
 .pg6-footer { align-items: center; bottom: 10px; color: var(--color-text-tertiary); display: flex; flex-wrap: wrap; font-size: 11px; gap: 5px; left: var(--edge-pad); margin-top: 0; padding: 0; position: absolute; right: var(--edge-pad); z-index: 130; }
 .pg6-footer-freshness { color: var(--color-text-tertiary); margin-left: auto; }
 .pg6-footer-freshness.is-stale { color: #d6a258; cursor: help; }
@@ -474,6 +444,26 @@ body {
   z-index: 156;
 }
 .pg6-insight-panel[hidden] { display: none; }
+/* Scoped dark scrollbar for the two scrollable popovers, so the OS default
+   (light, chunky) bar never shows through the pixel theme. Kept off the
+   global scope on purpose — only these two containers scroll. */
+.pg6-insight-panel,
+.pg6-settings-panel { scrollbar-width: thin; scrollbar-color: var(--color-border-tertiary) transparent; }
+.pg6-insight-panel::-webkit-scrollbar,
+.pg6-settings-panel::-webkit-scrollbar { width: 10px; height: 10px; }
+.pg6-insight-panel::-webkit-scrollbar-track,
+.pg6-settings-panel::-webkit-scrollbar-track { background: transparent; }
+.pg6-insight-panel::-webkit-scrollbar-thumb,
+.pg6-settings-panel::-webkit-scrollbar-thumb {
+  background: var(--color-border-tertiary);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 6px;
+}
+.pg6-insight-panel::-webkit-scrollbar-thumb:hover,
+.pg6-settings-panel::-webkit-scrollbar-thumb:hover { background: var(--color-text-tertiary); background-clip: padding-box; }
+.pg6-insight-panel::-webkit-scrollbar-corner,
+.pg6-settings-panel::-webkit-scrollbar-corner { background: transparent; }
 .pg6-insight-head { align-items: center; display: flex; justify-content: space-between; margin-bottom: 10px; }
 .pg6-insight-label { color: var(--color-text-tertiary); font-size: 10px; letter-spacing: 0.3px; text-transform: uppercase; }
 .pg6-insight-title { color: var(--color-text-primary); font-size: 13px; font-weight: 600; margin-top: 1px; }
@@ -540,6 +530,7 @@ body {
 .pg6-insight-main { min-width: 0; }
 .pg6-insight-main strong { color: currentColor; display: block; font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pg6-insight-main small { color: var(--color-text-tertiary); display: block; font-size: 10px; margin-top: 1px; }
+.pg6-insight-path { color: var(--color-text-tertiary); font-size: 9px; opacity: 0.72; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pg6-insight-spark { color: #7ac46e; height: 22px; min-width: 0; padding: 0 8px; }
 .pg6-insight-spark .pg6-spark-svg { display: block; height: 22px; width: 100%; }
 .pg6-insight-spark .pg6-spark-svg rect { fill: currentColor; }
@@ -667,14 +658,11 @@ body {
 @media (max-width: 900px) {
   .pg6-header { align-items: flex-start; flex-direction: column; gap: 4px; top: 8px; }
   .pg6-meta { justify-content: flex-start; }
-  .pg6-project-strip { bottom: 48px; }
-  .pg6-project-chip { max-width: 170px; }
   .pg6-insight-row { grid-template-columns: 26px minmax(100px, 1fr) 86px 52px; }
 }
 @media (max-width: 520px) {
   .pg6-header { display: flex; }
   .pg6-meta { gap: 8px; justify-content: flex-start; margin-top: 8px; }
-  .pg6-project-chip { max-width: 150px; }
   /* On narrow screens, the bottom-left info card covers most of the wall.
      Move it to the top edge as a thin strip — it overlays the sky area
      which has less critical detail. */
@@ -712,7 +700,6 @@ body {
       </div>
     </div>
     <div class="pg6-scene" id="pg6-scene"></div>
-    <div class="pg6-project-strip" id="project-strip" aria-label="项目藤列表"></div>
     <div class="pg6-footer">
       <svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6l8-3Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 12 3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>仅读取本机 agent 数据 · 零网络请求</span>

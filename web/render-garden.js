@@ -79,7 +79,6 @@ function renderEverything(groups, summary) {
   updateHeaderMeta();
   updateDataFreshness(summary);
   updateDefaultInfo(summary, wallProjects);
-  renderProjectStrip(wallProjects);
   addIvyOverlay(groups, wallProjects);
   addWallEdgeCover();
   addWallMarks(groups.plaster_patch || []);
@@ -1035,10 +1034,9 @@ function clearDynamicLayers() {
   }
 
   // Position the card NEXT TO a DOM element (vs. next to the cursor).
-  // Used by: keyboard focus, chip hover (anchors to the corresponding vine),
-  // trinket hover, cat hover. If the anchor is outside the scene (e.g. a
-  // chip below it), we pin the card to the scene's top and pick a side based
-  // on the anchor's horizontal position.
+  // Used by: keyboard focus, Insight project selection, trinket hover,
+  // cat hover. If the anchor is outside the scene, we pin the card to the
+  // scene's top and pick a side based on the anchor's horizontal position.
   function positionInfoCardFromElement(anchor) {
     const card = document.querySelector('.pg6-info');
     if (!card || !anchor) return;
@@ -1082,13 +1080,13 @@ function clearDynamicLayers() {
   }
 
   function setActiveProject(index) {
-    document.querySelectorAll('.roving-vine, .pg6-project-chip').forEach((el) => {
+    document.querySelectorAll('.roving-vine').forEach((el) => {
       el.classList.toggle('is-active', el.dataset.projectIndex === String(index));
     });
   }
 
   function clearActiveProject() {
-    document.querySelectorAll('.roving-vine, .pg6-project-chip').forEach((el) => {
+    document.querySelectorAll('.roving-vine').forEach((el) => {
       el.classList.remove('is-active');
     });
   }
@@ -1098,10 +1096,9 @@ function clearDynamicLayers() {
     if (index < 0) return false;
     const project = currentWallProjects[index];
     const vine = scene.querySelector('.roving-vine[data-project-index="' + index + '"]');
-    const chip = document.querySelector('.pg6-project-chip[data-project-index="' + index + '"]');
     setActiveProject(index);
     updateInfoFromProject(project);
-    positionInfoCardFromElement(vine || chip);
+    positionInfoCardFromElement(vine);
     if (vine) {
       document.querySelectorAll('.roving-vine').forEach((item) => { item.tabIndex = -1; });
       vine.tabIndex = 0;
@@ -1120,40 +1117,6 @@ function clearDynamicLayers() {
     const app = document.querySelector('.pg6-app');
     const total = summary ? summary.total_tokens : projects.reduce((sum, item) => sum + (item.total_tokens || 0), 0);
     if (app) app.textContent = '像素花园 · ' + fmtLocal(total) + ' local tokens';
-  }
-
-  function renderProjectStrip(projects) {
-    const strip = document.getElementById('project-strip');
-    if (!strip) return;
-    if (!projects.length) {
-      strip.innerHTML = '';
-      return;
-    }
-    strip.innerHTML = projects.map((project, index) => {
-      return '<button class="pg6-project-chip" type="button" data-project-index="' + index + '" data-project-key="' + escapeHtml(project.project_key || '') + '"><span>' + (index + 1) + '</span><strong>' + escapeHtml(project.display_name || 'unknown') + '</strong><span>' + fmtLocal(project.total_tokens || 0) + '</span></button>';
-    }).join('');
-    strip.querySelectorAll('.pg6-project-chip').forEach((chip, index) => {
-      const project = projects[index];
-      // Chip hover/focus anchors the info card to the corresponding vine on
-      // the wall — the chip itself lives below the scene, so cursor-based
-      // positioning would push the card out of bounds.
-      const anchorToVine = () => {
-        setActiveProject(index);
-        updateInfoFromProject(project);
-        const vine = scene.querySelector('.roving-vine[data-project-index="' + index + '"]');
-        positionInfoCardFromElement(vine || chip);
-      };
-      chip.addEventListener('mouseenter', anchorToVine);
-      chip.addEventListener('focus', anchorToVine);
-      chip.addEventListener('mouseleave', () => {
-        clearActiveProject();
-        hideInfoCard();
-      });
-      chip.addEventListener('blur', () => {
-        clearActiveProject();
-        hideInfoCard();
-      });
-    });
   }
 
 function sceneTimeMode() {

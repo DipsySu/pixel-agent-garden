@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- Fixed duplicate project rows in the Insight panel caused by the same
+  directory being recorded under different path spellings. `event.rs`
+  `normalize_path()` now also does safe Windows normalization — strips the
+  `\\?\` verbatim prefix, unifies `/`→`\`, drops trailing separators, and
+  upper-cases the drive letter — so `\\?\D:\code\x`, `D:/code/x/`, and
+  `d:\code\x` collapse to one aggregation key. This is spelling-only: it never
+  merges genuinely distinct directories (two real dirs named `xiaowo_sport`
+  stay separate), keeps POSIX paths and the dash-decoded Claude fallback
+  untouched, and does not change any on-disk JSON shape (no `schema_version`
+  bump). The lossy `-Users-foo-` directory-name fallback is intentionally left
+  for separate, source-aware handling.
+- Made the Insight panel disambiguate same-named projects: every row now
+  carries its full path as a hover tooltip, and rows whose basename is
+  duplicated show a muted path subtitle so distinct directories are
+  distinguishable at a glance.
+- Styled the Insight and Settings popovers' scrollbars to match the dark pixel
+  theme (scoped `::-webkit-scrollbar` + Firefox `scrollbar-color`), so the
+  light OS-default scrollbar no longer shows through. Scoped to those two
+  containers — no global scrollbar override.
 - Added cache-first desktop summary loading: Tauri startup now reads
   `~/.local-agent-garden/events.json` when possible, falls back to a fresh
   scan when the cache is missing or incompatible, and both Scan Now plus
