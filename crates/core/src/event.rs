@@ -73,6 +73,17 @@ fn default_event_type() -> String {
     "activity".to_string()
 }
 
+/// Metadata key recording how `project_path` was derived.
+///
+/// Absent → the path is trustworthy (a real `cwd`, or a user-selected folder).
+/// Value [`PATH_SOURCE_INFERRED`] → the path was reverse-engineered from the
+/// Claude project *directory name*, an encoding that maps `/`→`-` and is thus
+/// lossy and ambiguous (`-a-b-c` could be `/a/b/c` or `/a-b/c`). Such a path may
+/// not name a real location, so downstream MUST NOT treat it as one (no
+/// "open in terminal"; surface it as a best-effort guess).
+pub const PATH_SOURCE_KEY: &str = "path_source";
+pub const PATH_SOURCE_INFERRED: &str = "inferred";
+
 impl AgentEvent {
     /// Convenience builder: fill in the required fields, leave the rest
     /// defaulted. Used heavily by adapter code.
@@ -102,6 +113,23 @@ impl AgentEvent {
                 + self.usage.cache_read_tokens
                 + self.usage.cache_write_tokens;
         }
+    }
+
+    /// Mark `project_path` as reverse-decoded from a Claude project directory
+    /// name (see [`PATH_SOURCE_INFERRED`]). Adapters call this only on the
+    /// lossy fallback path; trustworthy `cwd`/selected-folder paths stay
+    /// unmarked.
+    pub fn mark_path_inferred(&mut self) {
+        self.metadata.insert(
+            PATH_SOURCE_KEY.to_string(),
+            serde_json::Value::String(PATH_SOURCE_INFERRED.to_string()),
+        );
+    }
+
+    /// True when `project_path` was reverse-decoded from a directory name and
+    /// may not be a real filesystem path.
+    pub fn path_is_inferred(&self) -> bool {
+        self.metadata.get(PATH_SOURCE_KEY).and_then(|v| v.as_str()) == Some(PATH_SOURCE_INFERRED)
     }
 
     /// Project key strategy: project_path when known, otherwise

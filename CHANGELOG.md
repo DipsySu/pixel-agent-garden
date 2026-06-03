@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Marked reverse-decoded project paths as inferred instead of treating them as
+  real. When a Claude Code / Cowork session has no trustworthy `cwd` (or
+  user-selected folder), the project path is reverse-engineered from the
+  encoded directory name — a `/`→`-` mapping that is lossy and ambiguous, and
+  on Windows often produces garbled names. Such events now carry
+  `metadata["path_source"]="inferred"`, aggregation rolls this up into a new
+  `ProjectGrowth.path_inferred` flag (true only when NO contributing event had
+  a trustworthy path; `#[serde(default)]`, summary schema bumped 3 → 4), and the
+  Insight panel hides the "open in terminal" action for such rows and tags them
+  "≈ 推测路径". Deliberately conservative: this does NOT change `project_key`,
+  does NOT merge or auto-correct paths, and does NOT attempt smarter Windows
+  decoding — that needs source-aware handling and is left as a follow-up.
 - Fixed duplicate project rows in the Insight panel caused by the same
   directory being recorded under different path spellings. `event.rs`
   `normalize_path()` now also does safe Windows normalization — strips the

@@ -53,8 +53,8 @@ pub struct GardenSummary {
 /// evolve without invalidating cached raw events. Bump on any
 /// backward-incompatible summary change (renamed/removed field, semantic
 /// redefinition). Bumped to 2 for `daily_tokens`, to 3 for `size_level` /
-/// `size_strength`.
-pub const SUMMARY_SCHEMA_VERSION: u32 = 3;
+/// `size_strength`, to 4 for `path_inferred`.
+pub const SUMMARY_SCHEMA_VERSION: u32 = 4;
 
 fn current_schema_version() -> u32 {
     SUMMARY_SCHEMA_VERSION
@@ -122,6 +122,15 @@ pub struct ProjectGrowth {
     /// vine width/opacity. Additive — defaults to 0.0 (frontend falls back).
     #[serde(default)]
     pub size_strength: f64,
+    /// True when EVERY contributing event's `project_path` was reverse-decoded
+    /// from a Claude directory name (lossy/ambiguous; see
+    /// `event::PATH_SOURCE_INFERRED`), i.e. no event carried a trustworthy
+    /// `cwd`/selected-folder path. The `project_key` may therefore be a wrong
+    /// or garbled guess: the frontend uses this to hide the "open in terminal"
+    /// action and flag the row as approximate. Additive — defaults to false so
+    /// older summaries deserialize as "trustworthy", matching prior behavior.
+    #[serde(default)]
+    pub path_inferred: bool,
 }
 
 /// Internal accumulator — holds the HashSet of session IDs during the build
@@ -142,6 +151,10 @@ struct Accumulator {
     cache_write_tokens: u64,
     tool_calls: u32,
     event_count: u64,
+    /// Count of contributing events whose path was reverse-decoded (inferred).
+    /// A project is flagged `path_inferred` only when this equals
+    /// `event_count` — i.e. NOT a single event had a trustworthy path.
+    inferred_events: u64,
     daily_activity: BTreeMap<String, u64>,
     daily_tokens: BTreeMap<String, u64>,
     models: BTreeMap<String, u64>,
@@ -188,6 +201,8 @@ impl Accumulator {
             // project's token total is known. Left at defaults here.
             size_level: 0,
             size_strength: 0.0,
+            // Inferred only if no contributing event had a trustworthy path.
+            path_inferred: self.event_count > 0 && self.inferred_events == self.event_count,
         }
     }
 }
@@ -239,6 +254,9 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
         accum.cache_write_tokens += event.usage.cache_write_tokens;
         accum.tool_calls += event.tool_calls;
         accum.event_count += 1;
+        if event.path_is_inferred() {
+            accum.inferred_events += 1;
+        }
         total_tokens += event.usage.total_tokens;
 
         // daily_activity bump: max(1, total_tokens // 1000 + tool_calls)
@@ -821,6 +839,68 @@ mod tests {
         let zero = find("zero");
         assert_eq!(zero.size_level, 1);
         assert!((zero.size_strength - 0.32).abs() < 1e-12);
+    }
+
+    #[test]
+    fn path_inferred_true_only_when_all_events_inferred() {
+        let ts = Utc.with_ymd_and_hms(2026, 5, 27, 10, 0, 0).unwrap();
+        // Project A: both events inferred → path_inferred = true.
+        let mut a1 = make_event(EventFixture {
+            source: "claude-code",
+            ts,
+            project: Some("/decoded/guess"),
+            session: Some("s1"),
+            input: 100,
+            output: 0,
+            cache_read: 0,
+            tool_calls: 0,
+            model: None,
+        });
+        a1.mark_path_inferred();
+        let mut a2 = make_event(EventFixture {
+            source: "claude-code",
+            ts: ts + chrono::Duration::seconds(1),
+            project: Some("/decoded/guess"),
+            session: Some("s1"),
+            input: 50,
+            output: 0,
+            cache_read: 0,
+            tool_calls: 0,
+            model: None,
+        });
+        a2.mark_path_inferred();
+        // Project B: trustworthy cwd events → path_inferred = false.
+        let b1 = make_event(EventFixture {
+            source: "claude-code",
+            ts,
+            project: Some("/real/project"),
+            session: Some("s2"),
+            input: 100,
+            output: 0,
+            cache_read: 0,
+            tool_calls: 0,
+            model: None,
+        });
+
+        let s = summarize(&[a1, a2, b1]);
+        let a = s
+            .projects
+            .iter()
+            .find(|p| p.project_key == "/decoded/guess")
+            .unwrap();
+        let b = s
+            .projects
+            .iter()
+            .find(|p| p.project_key == "/real/project")
+            .unwrap();
+        assert!(a.path_inferred, "all-inferred project must be flagged");
+        assert!(
+            !b.path_inferred,
+            "trustworthy-cwd project must not be flagged"
+        );
+        // Schema carries the new field.
+        let json = serde_json::to_value(&s).unwrap();
+        assert!(json["projects"][0].get("path_inferred").is_some());
     }
 
     #[test]

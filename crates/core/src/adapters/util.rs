@@ -49,6 +49,15 @@ pub fn read_jsonl(path: &Path) -> impl Iterator<Item = JsonlRow> {
 /// Claude encodes `/Users/dipsy/Developer/foo` as `-Users-dipsy-Developer-foo`
 /// (leading `-`, slashes → `-`). We reverse the encoding. Returns None when
 /// the directory name doesn't look encoded (e.g. tests, scratch dirs).
+///
+/// LOSSY/AMBIGUOUS: the `/`→`-` mapping can't be reversed unambiguously
+/// (`pay-module` decodes to `pay/module`), and Windows-encoded names (drive
+/// letter, no leading `-`) aren't handled here at all. Callers therefore mark
+/// any path that comes from this fallback as inferred (see
+/// `event::PATH_SOURCE_INFERRED`) rather than trusting it. TODO: proper,
+/// source-aware Windows decoding is deferred until we can validate against real
+/// `%USERPROFILE%\.claude\projects` directory names — do NOT add speculative
+/// auto-correction here, it risks merging genuinely distinct projects.
 pub fn project_from_claude_dir(path: &Path) -> Option<String> {
     let name = path.file_name()?.to_str()?;
     if !name.starts_with('-') {

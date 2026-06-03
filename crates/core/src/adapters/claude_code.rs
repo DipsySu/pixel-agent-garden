@@ -89,17 +89,24 @@ impl ClaudeCodeAdapter {
             .and_then(|v| v.as_str())
             .map(str::to_string);
 
-        // cwd on the row overrides the inferred project_path. Empty string
-        // falls through to the inferred path.
-        let effective_project_path = value
+        // A real `cwd` on the row is trustworthy and overrides the inferred
+        // path. When it's missing/empty we fall back to `project_path`, which
+        // was reverse-decoded from the directory name (lossy) — track that so
+        // the event can be marked inferred below.
+        let cwd_path = value
             .get("cwd")
             .and_then(|v| v.as_str())
-            .filter(|s| !s.is_empty())
-            .map(str::to_string)
-            .or_else(|| project_path.map(str::to_string));
+            .filter(|s| !s.is_empty());
+        let (effective_project_path, path_inferred) = match cwd_path {
+            Some(cwd) => (Some(cwd.to_string()), false),
+            None => (project_path.map(str::to_string), project_path.is_some()),
+        };
 
         let mut event = AgentEvent::new(Self::NAME, timestamp);
         event.project_path = effective_project_path;
+        if path_inferred {
+            event.mark_path_inferred();
+        }
         event.session_id = Some(session_id);
         event.event_type = event_type;
         event.usage.input_tokens = input_tokens;
@@ -245,6 +252,47 @@ mod tests {
             ev.metadata.get("git_branch"),
             Some(&serde_json::Value::String("main".to_string()))
         );
+        // A real cwd is trustworthy — must NOT be flagged inferred.
+        assert!(!ev.path_is_inferred());
+        std::fs::remove_dir_all(&tmp).ok();
+    }
+
+    #[test]
+    fn inferred_path_marked_when_no_cwd() {
+        // No cwd on the row → we fall back to the directory-name decode, which
+        // is lossy. That event must be flagged inferred.
+        let tmp = std::env::temp_dir().join(format!("lag-cc-inf-{}", std::process::id()));
+        std::fs::create_dir_all(&tmp).unwrap();
+        let row = json!({
+            "timestamp": "2026-05-27T04:05:25Z",
+            "type": "assistant",
+            "message": { "usage": { "input_tokens": 1 } }
+        });
+        let path = write_fixture(&tmp, &format!("{}\n", row));
+        let adapter = ClaudeCodeAdapter;
+        let events = adapter.collect_session(&path, Some("/inferred/path"), "s");
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0].project_path.as_deref(), Some("/inferred/path"));
+        assert!(events[0].path_is_inferred());
+        std::fs::remove_dir_all(&tmp).ok();
+    }
+
+    #[test]
+    fn no_path_at_all_is_not_inferred() {
+        // No cwd AND no inferred dir path → project_path is None; nothing to
+        // flag (absence of a path isn't an inferred path).
+        let tmp = std::env::temp_dir().join(format!("lag-cc-none-{}", std::process::id()));
+        std::fs::create_dir_all(&tmp).unwrap();
+        let row = json!({
+            "timestamp": "2026-05-27T04:05:25Z",
+            "type": "user"
+        });
+        let path = write_fixture(&tmp, &format!("{}\n", row));
+        let adapter = ClaudeCodeAdapter;
+        let events = adapter.collect_session(&path, None, "s");
+        assert_eq!(events.len(), 1);
+        assert!(events[0].project_path.is_none());
+        assert!(!events[0].path_is_inferred());
         std::fs::remove_dir_all(&tmp).ok();
     }
 
@@ -322,6 +370,8 @@ mod tests {
         let events = adapter.collect_session(&path, Some("/inferred"), "s");
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].project_path.as_deref(), Some("/inferred"));
+        // Empty cwd → inferred fallback used → flagged.
+        assert!(events[0].path_is_inferred());
         std::fs::remove_dir_all(&tmp).ok();
     }
 }

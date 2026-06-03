@@ -177,9 +177,11 @@ python3 -m http.server 8765
 
 ## 数据 schema
 
-`GardenSummary` 和 `EventsCache` 都带 `schema_version: u32`(当前 `1`,
-见 [`aggregate::SCHEMA_VERSION`](crates/core/src/aggregate.rs))。
-**任何改 on-disk JSON shape 的改动都要 bump 这个常量**。reader 看到比自己高的版本会拒绝缓存。
+`GardenSummary` 和 `EventsCache` 各带独立的 `schema_version: u32`:
+summary 用 [`aggregate::SUMMARY_SCHEMA_VERSION`](crates/core/src/aggregate.rs)(当前 `4`),
+events 缓存用 [`storage::EVENTS_SCHEMA_VERSION`](crates/core/src/storage.rs)(当前 `1`)。
+两者分开,好处是 summary 形状演进不会作废已缓存的原始 events。
+**任何改对应 on-disk JSON shape 的改动都要 bump 对应常量**。reader 看到比自己高的版本会拒绝缓存。
 
 时间戳一律 `DateTime<Utc>`。前端用 `last_seen?.toISOString()` 等。
 
@@ -237,12 +239,17 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 
 ## 当前阶段
 
-`CHANGELOG.md` 的 `## Unreleased` 反映最新工作。Phase 1/2 完工,Phase 3 进行中:
+`CHANGELOG.md` 的 `## Unreleased` 反映最新工作。Phase 1/2 完工,Phase 3 大部分落地:
 
 - ✅ Settings 内嵌面板 + 错误 toast + schema versioning
-- ⏳ 系统菜单 / 状态栏 / Tray
-- ⏳ 签名打包(macOS DMG / Windows MSI / Linux AppImage)
-- ⏳ CI/CD(GHA matrix + Tauri updater)
+- ✅ 系统菜单 / 状态栏 / Tray(含 "Top Token Projects" 子菜单 + Scan Now)
+- ✅ CI/CD GHA matrix(rustfmt + clippy + test,mac/win/linux,MSRV 1.85)
+- ✅ Token Insight(per-day `daily_tokens`、sparkline、Insight 面板、core 端 `size_level`/`size_strength`)
+- ✅ 打包产物(`tauri-action` 出 dmg / deb+AppImage / NSIS,挂 draft release)
+- ⏳ 代码签名(目前是 unsigned bundle)
+- ⏳ Tauri updater(自动更新尚未接线)
+
+最近的零散修复见 `## Unreleased`:安全路径归一化、Insight 同名项目消歧、inferred 路径标记、深色滚动条、`.gitattributes` 行尾治理。
 
 ## 如果你不确定
 

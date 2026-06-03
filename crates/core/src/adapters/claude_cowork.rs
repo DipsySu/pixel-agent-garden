@@ -189,12 +189,23 @@ fn row_to_event(
         .and_then(|v| v.as_str())
         .map(str::to_string);
 
-    let project_path = value
+    // Preference order, trustworthy first: a real (mapped) `cwd`, then the
+    // user-selected folder / space root, and only as a last resort the
+    // directory-name decode (`fallback_project_path`), which is lossy — mark
+    // that case inferred so downstream won't treat it as a real path.
+    let cwd_mapped = value
         .get("cwd")
         .and_then(|v| v.as_str())
-        .and_then(|cwd| map_cowork_cwd(cwd, meta))
-        .or_else(|| meta.preferred_root().map(str::to_string))
-        .or_else(|| fallback_project_path.map(str::to_string));
+        .and_then(|cwd| map_cowork_cwd(cwd, meta));
+    let (project_path, path_inferred) = if cwd_mapped.is_some() {
+        (cwd_mapped, false)
+    } else if let Some(root) = meta.preferred_root() {
+        (Some(root.to_string()), false)
+    } else {
+        let fallback = fallback_project_path.map(str::to_string);
+        let inferred = fallback.is_some();
+        (fallback, inferred)
+    };
 
     let mut event = AgentEvent::new(ClaudeCoworkAdapter::NAME, timestamp);
     event.project_path = project_path;
@@ -208,6 +219,10 @@ fn row_to_event(
     event.model = model;
     event.raw_ref = Some(format!("{}:{}", path.display(), row.line_no));
     event.metadata = metadata_for_row(&value, meta);
+    // After metadata assignment (which replaces the map), so the marker sticks.
+    if path_inferred {
+        event.mark_path_inferred();
+    }
     event.normalize_totals();
     Some(event)
 }

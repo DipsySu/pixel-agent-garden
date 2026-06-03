@@ -141,26 +141,39 @@ function insightRowHTML(project, index, opts) {
   const recent = windowTotal(project.daily_tokens, opts.days, opts.now);
   const name = project.display_name || 'unknown';
   const path = project.project_path || '';
-  // Open-terminal button only when we know the project root. Nested <button>s
-  // are invalid, so the select-row button and the terminal button are siblings
-  // inside a flex line; the panel controller routes clicks by closest().
-  const term = path
+  // path_inferred means the path was reverse-decoded from a directory name
+  // (lossy/ambiguous), so it may not be a real location. We must NOT offer to
+  // open it in a terminal, and we flag the row as approximate.
+  const inferred = !!project.path_inferred;
+  // Open-terminal button only when we have a TRUSTWORTHY project root. Nested
+  // <button>s are invalid, so the select-row button and the terminal button are
+  // siblings inside a flex line; the panel controller routes clicks by closest().
+  const term = (path && !inferred)
     ? '<button class="pg6-insight-term" type="button" data-project-path="' + escapeAttr(path) +
       '" title="在终端打开" aria-label="在终端打开 ' + escapeAttr(name) + '">' + terminalSvg() + '</button>'
     : '';
-  // Full path as a hover tooltip on every row (cheap discoverability), plus a
-  // visible path line only when the name is ambiguous (duplicate basename) and
-  // we actually have a path to show.
-  const rowTitle = path ? ' title="' + escapeAttr(path) + '"' : '';
-  const pathLine = opts.ambiguous && path
-    ? '<small class="pg6-insight-path" title="' + escapeAttr(path) + '">' + escapeHtml(path) + '</small>'
+  // "≈ 推测路径" badge marks an inferred (best-effort) path so the user knows
+  // the name is a guess, not a verified directory.
+  const approxBadge = inferred
+    ? '<span class="pg6-insight-approx" title="路径由 Claude 目录名反推,可能不准确">≈ 推测路径</span>'
+    : '';
+  // Full path as a hover tooltip on every row (cheap discoverability). For
+  // inferred paths the tooltip is explicitly marked approximate.
+  const rowTitle = path
+    ? ' title="' + escapeAttr(inferred ? '≈ ' + path + '(推测路径,可能不准)' : path) + '"'
+    : '';
+  // Show the path line when the basename is ambiguous (duplicate) OR the path
+  // is inferred; prefix inferred ones with ≈ to keep the "guess" signal.
+  const showPath = (opts.ambiguous || inferred) && path;
+  const pathLine = showPath
+    ? '<small class="pg6-insight-path" title="' + escapeAttr(path) + '">' + (inferred ? '≈ ' : '') + escapeHtml(path) + '</small>'
     : '';
   return (
     '<div class="pg6-insight-row-line" role="listitem">' +
       '<button class="pg6-insight-row" type="button"' + rowTitle + ' data-project-key="' + escapeAttr(project.project_key || '') + '">' +
         '<span class="pg6-insight-rank">' + String(index + 1).padStart(2, '0') + '</span>' +
         '<span class="pg6-insight-main">' +
-          '<strong>' + escapeHtml(name) + '</strong>' +
+          '<strong>' + escapeHtml(name) + '</strong>' + approxBadge +
           '<small>近 ' + opts.days + ' 天 ' + escapeHtml(opts.format(recent)) + '</small>' +
           pathLine +
         '</span>' +
