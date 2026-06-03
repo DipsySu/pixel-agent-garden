@@ -7,6 +7,7 @@ use crate::adapters::util::{
 };
 use crate::error::Error;
 use crate::event::AgentEvent;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 pub struct ClaudeCodeAdapter;
@@ -150,8 +151,18 @@ impl Adapter for ClaudeCodeAdapter {
     fn collect(&self, ctx: &AdapterContext) -> Result<Vec<AgentEvent>, Error> {
         let root = Self::root(ctx);
         let mut events = Vec::new();
+        // Decode each project directory name at most once. `list_claude_session_files`
+        // yields one (dir, session) pair per session, but the directory→path
+        // decode is invariant across a project's sessions and now probes the
+        // filesystem (up to a few thousand `exists()` calls for hyphen-rich
+        // Windows names). Recomputing it per session would repeat that work on
+        // every rescan, so memoize by directory.
+        let mut inferred_by_dir: HashMap<PathBuf, Option<String>> = HashMap::new();
         for (project_dir, session_path) in list_claude_session_files(&root) {
-            let inferred_project_path = project_from_claude_dir(&project_dir);
+            let inferred_project_path = inferred_by_dir
+                .entry(project_dir.clone())
+                .or_insert_with(|| project_from_claude_dir(&project_dir))
+                .clone();
             let session_id = session_path
                 .file_stem()
                 .and_then(|s| s.to_str())

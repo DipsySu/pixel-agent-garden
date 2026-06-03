@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Decoded each Claude project directory name at most once per scan. The
+  directory→path decode is invariant across a project's session files but now
+  probes the filesystem (up to ~4096 `exists()` calls for hyphen-rich Windows
+  names); `ClaudeCodeAdapter::collect` previously recomputed it per session, so
+  it is memoized by directory to avoid repeating that work on every rescan.
+- Routed the Cowork directory-name fallback through the shared
+  `project_from_claude_dir` decoder instead of a second inline dash-split, so
+  Cowork sessions also benefit from Windows drive-name decoding and the POSIX
+  logic lives in one place.
 - Added best-effort Windows decoding for Claude project directory fallbacks.
   Directory names like `D--code-xiaowo` now decode to `D:\code\xiaowo`; when a
   component may contain literal hyphens, the decoder chooses a single existing

@@ -9,7 +9,8 @@
 
 use crate::adapter::{Adapter, AdapterContext};
 use crate::adapters::util::{
-    JsonlRow, as_int_opt, list_jsonl_recursive, parse_rfc3339_utc, read_jsonl,
+    JsonlRow, as_int_opt, list_jsonl_recursive, parse_rfc3339_utc, project_from_claude_dir,
+    read_jsonl,
 };
 use crate::error::Error;
 use crate::event::AgentEvent;
@@ -389,15 +390,11 @@ fn map_cowork_cwd(cwd: &str, meta: &CoworkSessionMeta) -> Option<String> {
 fn project_path_for_cowork_jsonl(root: &Path, path: &Path) -> Option<String> {
     let relative = path.strip_prefix(root).ok()?;
     let first = relative.components().next()?.as_os_str().to_str()?;
-    if !first.starts_with('-') {
-        return None;
-    }
-    let parts: Vec<&str> = first.split('-').filter(|p| !p.is_empty()).collect();
-    if parts.is_empty() {
-        None
-    } else {
-        Some(format!("/{}", parts.join("/")))
-    }
+    // Reuse the shared decoder so Cowork gets the same POSIX dash-split AND the
+    // Windows drive-name decoding, instead of maintaining a second copy here.
+    // The first relative component is the encoded project directory name, which
+    // is exactly what `project_from_claude_dir` expects via `file_name()`.
+    project_from_claude_dir(Path::new(first))
 }
 
 #[cfg(test)]
@@ -575,5 +572,22 @@ mod tests {
         assert!(paths.contains(&"/Users/me/one"));
         assert!(paths.contains(&"/Users/me/two"));
         std::fs::remove_dir_all(&home).ok();
+    }
+
+    #[test]
+    fn cowork_fallback_delegates_to_shared_decoder() {
+        // The fallback now reuses `project_from_claude_dir`. POSIX names decode
+        // deterministically (no filesystem probing), confirming the delegation
+        // and that the old inline behavior is preserved. Windows drive decoding
+        // is covered by the shared decoder's own unit tests.
+        let root = Path::new("/tmp/projects");
+        let session = root.join("-Users-me-demo").join("session.jsonl");
+        assert_eq!(
+            project_path_for_cowork_jsonl(root, &session).as_deref(),
+            Some("/Users/me/demo")
+        );
+        // A non-encoded first component still yields None.
+        let plain = root.join("plain_name").join("session.jsonl");
+        assert!(project_path_for_cowork_jsonl(root, &plain).is_none());
     }
 }

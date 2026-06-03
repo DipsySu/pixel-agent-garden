@@ -57,6 +57,13 @@ pub fn read_jsonl(path: &Path) -> impl Iterator<Item = JsonlRow> {
 /// than trusting it. Windows decoding improves the common drive-letter shape
 /// and uses an existing-path candidate as a best-effort disambiguator, but it
 /// still remains an inferred path.
+///
+/// ENVIRONMENT-DEPENDENT: the Windows branch reads the filesystem
+/// (`Path::exists`) to disambiguate literal hyphens, so the result depends on
+/// what is present on disk. On a host where the candidate dirs don't exist
+/// (CI, a different machine), it deterministically returns the separator-split
+/// form. The decode logic is unit-tested through the injectable
+/// `decode_windows_claude_project_name_with` variant.
 pub fn project_from_claude_dir(path: &Path) -> Option<String> {
     let name = path.file_name()?.to_str()?;
     decode_windows_claude_project_name(name).or_else(|| decode_posix_claude_project_name(name))
@@ -115,12 +122,16 @@ where
     }
 }
 
+/// Exclusive upper bound `2^boundary_count` on the hyphen-boundary masks to
+/// brute-force when disambiguating a Windows name. Capped at 12 boundaries
+/// (4096 candidates) so a pathological hyphen-rich name can't trigger an
+/// unbounded number of `exists()` probes — longer names skip disambiguation and
+/// take the separator-split fallback. The `usize::BITS` guard is subsumed by the
+/// 12 cap but documents that the `1 << boundary_count` shift can never overflow.
 fn candidate_mask_limit(part_count: usize) -> Option<usize> {
-    if part_count == 0 {
-        return None;
-    }
-    let boundary_count = part_count - 1;
-    if boundary_count >= usize::BITS as usize || boundary_count > 12 {
+    const MAX_BOUNDARIES: usize = 12;
+    let boundary_count = part_count.checked_sub(1)?;
+    if boundary_count > MAX_BOUNDARIES || boundary_count >= usize::BITS as usize {
         return None;
     }
     Some(1usize << boundary_count)
