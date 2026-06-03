@@ -46,20 +46,23 @@ pub fn read_jsonl(path: &Path) -> impl Iterator<Item = JsonlRow> {
 
 /// Convert a Claude project directory name back to its absolute path.
 ///
-/// Claude encodes `/Users/dipsy/Developer/foo` as `-Users-dipsy-Developer-foo`
-/// (leading `-`, slashes → `-`). We reverse the encoding. Returns None when
-/// the directory name doesn't look encoded (e.g. tests, scratch dirs).
+/// Claude encodes POSIX `/Users/dipsy/Developer/foo` as
+/// `-Users-dipsy-Developer-foo` and Windows `D:\code\xiaowo` as
+/// `D--code-xiaowo`. Returns None when the directory name doesn't look encoded
+/// (e.g. tests, scratch dirs).
 ///
-/// LOSSY/AMBIGUOUS: the `/`→`-` mapping can't be reversed unambiguously
-/// (`pay-module` decodes to `pay/module`), and Windows-encoded names (drive
-/// letter, no leading `-`) aren't handled here at all. Callers therefore mark
-/// any path that comes from this fallback as inferred (see
-/// `event::PATH_SOURCE_INFERRED`) rather than trusting it. TODO: proper,
-/// source-aware Windows decoding is deferred until we can validate against real
-/// `%USERPROFILE%\.claude\projects` directory names — do NOT add speculative
-/// auto-correction here, it risks merging genuinely distinct projects.
+/// LOSSY/AMBIGUOUS: both encodings collapse path separators and literal `-`
+/// characters into the same byte. Callers therefore mark any path that comes
+/// from this fallback as inferred (see `event::PATH_SOURCE_INFERRED`) rather
+/// than trusting it. Windows decoding improves the common drive-letter shape
+/// and uses an existing-path candidate as a best-effort disambiguator, but it
+/// still remains an inferred path.
 pub fn project_from_claude_dir(path: &Path) -> Option<String> {
     let name = path.file_name()?.to_str()?;
+    decode_windows_claude_project_name(name).or_else(|| decode_posix_claude_project_name(name))
+}
+
+fn decode_posix_claude_project_name(name: &str) -> Option<String> {
     if !name.starts_with('-') {
         return None;
     }
@@ -68,6 +71,80 @@ pub fn project_from_claude_dir(path: &Path) -> Option<String> {
         return None;
     }
     Some(format!("/{}", parts.join("/")))
+}
+
+fn decode_windows_claude_project_name(name: &str) -> Option<String> {
+    decode_windows_claude_project_name_with(name, |candidate| Path::new(candidate).exists())
+}
+
+fn decode_windows_claude_project_name_with<F>(name: &str, path_exists: F) -> Option<String>
+where
+    F: Fn(&str) -> bool,
+{
+    let mut chars = name.chars();
+    let drive = chars.next()?.to_ascii_uppercase();
+    if !drive.is_ascii_alphabetic() {
+        return None;
+    }
+    let rest = name.get(1..)?.strip_prefix("--")?;
+    let parts: Vec<&str> = rest.split('-').filter(|p| !p.is_empty()).collect();
+    if parts.is_empty() {
+        return None;
+    }
+
+    let fallback = windows_candidate_from_mask(drive, &parts, all_separator_mask(parts.len()));
+    let Some(max_mask) = candidate_mask_limit(parts.len()) else {
+        return Some(fallback);
+    };
+
+    let mut existing = Vec::new();
+    for mask in 0..max_mask {
+        let candidate = windows_candidate_from_mask(drive, &parts, mask);
+        if path_exists(&candidate) {
+            existing.push(candidate);
+            if existing.len() > 1 {
+                break;
+            }
+        }
+    }
+
+    if existing.len() == 1 {
+        existing.pop()
+    } else {
+        Some(fallback)
+    }
+}
+
+fn candidate_mask_limit(part_count: usize) -> Option<usize> {
+    if part_count == 0 {
+        return None;
+    }
+    let boundary_count = part_count - 1;
+    if boundary_count >= usize::BITS as usize || boundary_count > 12 {
+        return None;
+    }
+    Some(1usize << boundary_count)
+}
+
+fn all_separator_mask(part_count: usize) -> usize {
+    candidate_mask_limit(part_count)
+        .map(|limit| limit - 1)
+        .unwrap_or(usize::MAX)
+}
+
+fn windows_candidate_from_mask(drive: char, parts: &[&str], mask: usize) -> String {
+    let mut decoded = format!("{drive}:\\{}", parts[0]);
+    for (idx, part) in parts.iter().enumerate().skip(1) {
+        let boundary = idx - 1;
+        let separator = boundary >= usize::BITS as usize || (mask & (1usize << boundary)) != 0;
+        if separator {
+            decoded.push('\\');
+        } else {
+            decoded.push('-');
+        }
+        decoded.push_str(part);
+    }
+    decoded
 }
 
 /// Like `as_int` but accepts `Option<&Value>` directly. Returns 0 for None
@@ -212,9 +289,41 @@ mod tests {
     }
 
     #[test]
+    fn project_from_claude_dir_decodes_windows_drive_names() {
+        let path = PathBuf::from("D--code-xiaowo");
+        let decoded = project_from_claude_dir(Path::new(&path));
+        assert_eq!(decoded, Some(r"D:\code\xiaowo".to_string()));
+    }
+
+    #[test]
+    fn project_from_claude_dir_decodes_lowercase_windows_drive_names() {
+        let decoded = decode_windows_claude_project_name_with("d--code-xiaowo", |_| false);
+        assert_eq!(decoded, Some(r"D:\code\xiaowo".to_string()));
+    }
+
+    #[test]
+    fn windows_claude_decode_uses_single_existing_candidate_for_hyphenated_names() {
+        let decoded =
+            decode_windows_claude_project_name_with("D--code-lody-title-agent", |candidate| {
+                candidate == r"D:\code\lody-title-agent"
+            });
+        assert_eq!(decoded, Some(r"D:\code\lody-title-agent".to_string()));
+    }
+
+    #[test]
+    fn windows_claude_decode_falls_back_when_candidates_are_ambiguous() {
+        let decoded =
+            decode_windows_claude_project_name_with("D--code-lody-title-agent", |candidate| {
+                candidate == r"D:\code\lody-title-agent" || candidate == r"D:\code\lody\title-agent"
+            });
+        assert_eq!(decoded, Some(r"D:\code\lody\title\agent".to_string()));
+    }
+
+    #[test]
     fn project_from_claude_dir_rejects_non_dash_names() {
         let path = PathBuf::from("plain_name");
         assert!(project_from_claude_dir(Path::new(&path)).is_none());
+        assert!(project_from_claude_dir(Path::new("1--code-x")).is_none());
     }
 
     #[test]
