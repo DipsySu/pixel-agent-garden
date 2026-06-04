@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.1 - 2026-06-04
+
 - Decoded each Claude project directory name at most once per scan. The
   directory→path decode is invariant across a project's session files but now
   probes the filesystem (up to ~4096 `exists()` calls for hyphen-rich Windows
