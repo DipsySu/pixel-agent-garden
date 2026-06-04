@@ -904,6 +904,65 @@ mod tests {
     }
 
     #[test]
+    fn windows_path_spellings_collapse_to_one_project() {
+        // Regression: the same Windows directory recorded under three different
+        // spellings must aggregate into ONE project (one key), not three rows.
+        // Only the merge (key + count) is asserted — display_name derives from
+        // `Path::file_name`, which is separator-aware per build target, so it
+        // differs between a Windows host and a Unix CI runner and isn't a stable
+        // cross-platform assertion.
+        let ts = Utc.with_ymd_and_hms(2026, 5, 27, 10, 0, 0).unwrap();
+        let mk = |proj: &'static str| EventFixture {
+            source: "claude-code",
+            ts,
+            project: Some(proj),
+            session: Some(proj),
+            input: 100,
+            output: 0,
+            cache_read: 0,
+            tool_calls: 0,
+            model: None,
+        };
+        let events = vec![
+            make_event(mk(r"\\?\D:\code\xiaowo")),
+            make_event(mk("D:/code/xiaowo/")),
+            make_event(mk(r"d:\code\xiaowo")),
+        ];
+        let s = summarize(&events);
+        assert_eq!(
+            s.projects.len(),
+            1,
+            "all spellings must collapse to one key"
+        );
+        assert_eq!(s.projects[0].project_key, r"D:\code\xiaowo");
+    }
+
+    #[test]
+    fn same_basename_different_parents_stay_distinct() {
+        // Regression: distinct directories that merely share a basename
+        // (`xiaowo_sport`) must NOT be merged — keying is on full path, never on
+        // display name. Guards against an over-eager "merge by name" fix.
+        let ts = Utc.with_ymd_and_hms(2026, 5, 27, 10, 0, 0).unwrap();
+        let mk = |proj: &'static str| EventFixture {
+            source: "claude-code",
+            ts,
+            project: Some(proj),
+            session: Some(proj),
+            input: 100,
+            output: 0,
+            cache_read: 0,
+            tool_calls: 0,
+            model: None,
+        };
+        let events = vec![
+            make_event(mk("/Users/me/dev/xiaowo_sport")),
+            make_event(mk("/Users/me/work/xiaowo_sport")),
+        ];
+        let s = summarize(&events);
+        assert_eq!(s.projects.len(), 2, "different parents must stay distinct");
+    }
+
+    #[test]
     fn size_helpers_handle_degenerate_distribution() {
         // Single project, max floored at 1: must not divide by zero or NaN.
         assert_eq!(size_level(0, 1), 1);
