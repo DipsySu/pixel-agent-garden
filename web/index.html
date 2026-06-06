@@ -119,6 +119,17 @@ body {
 }
 .pg6-sprite.project {
   cursor: pointer;
+  /* Resting filter for project vines. --vine-health-* default to 1 (JS sets them
+     per-vine only when cache_ratio>0), so this matches the base .pg6-sprite look
+     unless a project is tinted. Covers climbing vines (pg6-vine-breathe animates
+     opacity only) and any vine when motion is off; pg6-vine-sway carries the
+     multipliers for animated hanging vines. */
+  filter: saturate(calc(0.78 * var(--vine-health-sat, 1))) brightness(calc(0.90 * var(--vine-health-bright, 1))) contrast(0.96) hue-rotate(var(--vine-hue-shift, 0deg));
+}
+.pg6-sprite.vine-decorative {
+  /* Extra session-driven strands: visible + animated + tinted, but never
+     interactive — kept out of the roving-vine / focus / chip-select model. */
+  pointer-events: none;
 }
 .pg6-sprite.vine-cap {
   filter: saturate(0.76) brightness(0.86) contrast(0.94) hue-rotate(var(--vine-hue-shift, 0deg));
@@ -133,16 +144,16 @@ body {
   transform-origin: bottom center;
 }
 .pg6-sprite.project:hover {
-  filter: saturate(0.92) brightness(0.98) contrast(0.98) hue-rotate(var(--vine-hue-shift, 0deg));
+  filter: saturate(calc(0.92 * var(--vine-health-sat, 1))) brightness(calc(0.98 * var(--vine-health-bright, 1))) contrast(0.98) hue-rotate(var(--vine-hue-shift, 0deg));
   opacity: 0.92 !important;
   transform: var(--sprite-transform, translate(-50%, 0)) translateY(-3px) scale(1.04);
 }
 .pg6-sprite.project.is-active {
-  filter: saturate(1.02) brightness(1.05) contrast(1.02) hue-rotate(var(--vine-hue-shift, 0deg));
+  filter: saturate(calc(1.02 * var(--vine-health-sat, 1))) brightness(calc(1.05 * var(--vine-health-bright, 1))) contrast(1.02) hue-rotate(var(--vine-hue-shift, 0deg));
   opacity: 0.96 !important;
 }
 .pg6-sprite.project:focus-visible {
-  filter: saturate(0.98) brightness(1.03) contrast(1) hue-rotate(var(--vine-hue-shift, 0deg));
+  filter: saturate(calc(0.98 * var(--vine-health-sat, 1))) brightness(calc(1.03 * var(--vine-health-bright, 1))) contrast(1) hue-rotate(var(--vine-hue-shift, 0deg));
   outline: 2px solid rgba(244, 216, 120, 0.9);
   outline-offset: 2px;
   opacity: 0.95 !important;
@@ -162,6 +173,8 @@ body {
 }
 .pg6-sprite.flower {
   filter: saturate(0.82) brightness(0.92) contrast(0.96);
+  pointer-events: none;          /* accents must never block vine / cat / trinket hover */
+  transform-origin: bottom center;
 }
 .pg6-sprite.mark {
   mix-blend-mode: multiply;
@@ -327,8 +340,8 @@ body {
     50%      { filter: saturate(1.05) brightness(1.06); }
   }
   @keyframes pg6-vine-sway {
-    0%, 100% { filter: saturate(0.78) brightness(0.90) contrast(0.96) hue-rotate(var(--vine-hue-shift, 0deg)); }
-    50%      { filter: saturate(0.88) brightness(0.96) contrast(0.98) hue-rotate(var(--vine-hue-shift, 0deg)); }
+    0%, 100% { filter: saturate(calc(0.78 * var(--vine-health-sat, 1))) brightness(calc(0.90 * var(--vine-health-bright, 1))) contrast(0.96) hue-rotate(var(--vine-hue-shift, 0deg)); }
+    50%      { filter: saturate(calc(0.88 * var(--vine-health-sat, 1))) brightness(calc(0.96 * var(--vine-health-bright, 1))) contrast(0.98) hue-rotate(var(--vine-hue-shift, 0deg)); }
   }
   @keyframes pg6-vine-breathe {
     0%, 100% { opacity: 0.62; }

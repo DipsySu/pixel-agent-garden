@@ -1084,6 +1084,13 @@
       "h": 315
     },
     {
+      "group": "cherry_tree",
+      "name": "cherry_tree_petal",
+      "file": "courtyard_style/cherry_tree_petal.png",
+      "w": 313,
+      "h": 315
+    },
+    {
       "group": "willow",
       "name": "willow_young",
       "file": "courtyard_style/willow_young.png",

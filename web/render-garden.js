@@ -84,6 +84,7 @@ function renderEverything(groups, summary) {
   addWallMarks(groups.plaster_patch || []);
   addGroundOverlay(groups);
   addCourtyardObjects(groups, tiers);
+  addFlowerAccents(groups, tiers);
   addPavilionTrinkets(tiers.pavilion, tiers.pavilionTrinkets);
   addAmbientMotion(groups, tiers);
   if (!projects.length) renderEmptyState();
@@ -238,12 +239,25 @@ function clearDynamicLayers() {
     if (cherries.length) {
       // Cherry is one of two visual anchors (with the pavilion). Sized to
       // roughly 60% of the pavilion full width so it reads as a peer object,
-      // not a small accent.
-      const sprite = namedSprite(cherries, tiers.cherry === 'bud' ? 'cherry_tree_bud' : 'cherry_tree_bloom') || pickByToken(cherries, 5);
+      // not a small accent. Three recent_activity tiers — bud → bloom → petal
+      // (peak). The petal frame is a fuller/more-saturated bloom; if it's
+      // absent from the manifest we fall back to bloom so older asset sets keep
+      // rendering (addSprite has no null guard, so the fallback chain matters).
+      const cherryTier = tiers.cherry;
+      const sprite =
+        cherryTier === 'petal'
+          ? (namedSprite(cherries, 'cherry_tree_petal') || namedSprite(cherries, 'cherry_tree_bloom') || pickByToken(cherries, 5))
+          : cherryTier === 'bloom'
+            ? (namedSprite(cherries, 'cherry_tree_bloom') || pickByToken(cherries, 5))
+            : (namedSprite(cherries, 'cherry_tree_bud') || pickByToken(cherries, 2));
+      // Peak (petal) reads as the climax via a slightly wider footprint plus the
+      // denser sprite + 12 falling petals — kept ≤110 so it doesn't out-scale
+      // the pavilion anchor.
+      const cherryWidth = cherryTier === 'bud' ? 78 : cherryTier === 'petal' ? 108 : 100;
       addSprite(sprite, {
         x: 23,
         y: 91.4,
-        width: tiers.cherry === 'bud' ? 78 : 100,
+        width: cherryWidth,
         z: 22,
         opacity: 0.98,
         className: 'object decor-cherry',
@@ -382,6 +396,35 @@ function clearDynamicLayers() {
         z: 26,
         opacity: 1.0,
         className: 'object',
+        anchor: 'bottom'
+      });
+    }
+  }
+
+  // Activity-driven flower accents at the cherry base. Count tracks the cherry
+  // tier so flowers and the cherry peak together: bud→0, bloom→2, petal→4. Max
+  // 4 == the number of flower_cluster variants, so a full pass never repeats a
+  // sprite. A growing-season accent — spring/summer only, hidden in
+  // autumn/winter (same spirit as addSpringPetals being spring-only). Clustered
+  // tightly around the cherry trunk (x:23, ~17..30) so it never collides with
+  // bamboo (≤12.5) / stone_cat (34) / lantern / pavilion. Deterministic via
+  // jitter — no Math.random — so re-renders don't reshuffle. Flowers are
+  // pointer-events:none in CSS so they never block vine/cat/trinket hover.
+  function addFlowerAccents(groups, tiers) {
+    const flowers = groups.flower_cluster || [];
+    if (!flowers.length) return;
+    const season = sceneSeason();
+    if (season !== 'spring' && season !== 'summer') return;
+    const count = tiers.cherry === 'petal' ? 4 : tiers.cherry === 'bloom' ? 2 : 0;
+    for (let i = 0; i < count; i++) {
+      const spread = count > 1 ? i / (count - 1) : 0.5;
+      addSprite(pick(flowers, i), {
+        x: 18 + spread * 11 + (jitter(i, 71) - 0.5) * 2.2,  // ~17..30, hugs the cherry base
+        y: 91.6 + jitter(i, 72) * 2.2,                       // 91.6..~93.8 on the ground band
+        width: 25 + jitter(i, 73) * 9,                       // 25..34, small accent
+        z: 23,
+        opacity: 0.92,
+        className: 'flower',
         anchor: 'bottom'
       });
     }
@@ -697,9 +740,10 @@ function clearDynamicLayers() {
     if (!hanging.length && !vertical.length) return;
 
     // Keep the order the strip uses (token desc). Chip #N then visually
-    // aligns to the Nth vine from left to right. Slots are generated from the
-    // actual project count so every project gets one vine without reusing the
-    // old fixed six slots.
+    // aligns to the Nth project's primary vine from left to right. Slots are
+    // generated from the actual project count so every project gets a slot
+    // (and one or more session-driven strands) without reusing the old fixed
+    // six slots.
     const ordered = projects;
     const maxTokens = Math.max(...ordered.map((project) => project.total_tokens || 0), 1);
     const sortedTokens = ordered
@@ -718,6 +762,9 @@ function clearDynamicLayers() {
     const densityScale = ordered.length > 18 ? 0.66 : ordered.length > 12 ? 0.78 : ordered.length > 8 ? 0.88 : 1;
     const crownAnchors = [];
 
+    // Anti-clutter cap on strands-per-project, tighter as the wall fills up.
+    const strandCap = ordered.length > 28 ? 2 : ordered.length > 18 ? 3 : 4;
+
     entries.forEach(({ project, projectIndex, profile, useHanging }) => {
       const group = useHanging ? hanging : vertical;
       if (!group.length) return;
@@ -725,27 +772,68 @@ function clearDynamicLayers() {
       const slot = useHanging
         ? hangingSlots[hangingIndex++]
         : climbingSlots[climbingIndex++];
-      const sprite = pickByToken(group, profile.level);
-      const width = Math.max(useHanging ? 24 : 13, profile.width * densityScale);
-
-      const x = slot + (jitter(projectIndex, profile.level) - 0.5) * Math.min(2.2, 28 / Math.max(ordered.length, 1));
-      const y = useHanging ? 24.65 + jitter(projectIndex, 2) * 0.42 : 52 + (5 - profile.level) * 4;
+      const baseWidth = Math.max(useHanging ? 24 : 13, profile.width * densityScale);
       const hue = vineHueShift(project);
-      if (useHanging) crownAnchors.push({ x, y, projectIndex, profile, hue });
 
-      addSprite(sprite, {
-        x,
-        y,
-        width,
-        z: useHanging ? 22 + projectIndex : 18 + projectIndex,
-        opacity: profile.opacity,
-        className: 'project ' + (useHanging ? 'hanging' : 'climbing'),
-        anchor: useHanging ? 'top' : 'bottom',
-        project,
-        projectIndex,
-        title: project.display_name
-      });
+      // Session count → number of independent strands (docs/sprite-rendering.md).
+      // 1+floor(log2(sessions)): sessions 1→1, 2-3→2, 4-7→3, 8+→4 (capped).
+      // 1-session projects stay single, so the common case is unchanged. Climbing
+      // (sparse-wall) vines stay sparser than hanging.
+      const sessions = Math.max(1, project.sessions || 1);
+      let strandCount = Math.max(1, Math.min(strandCap, 1 + Math.floor(Math.log2(sessions))));
+      if (!useHanging) strandCount = Math.min(strandCount, 3);
 
+      // cache_ratio → "health" tint. 0 / absent ⇒ no vars ⇒ today's exact look,
+      // because cache_ratio==0 is overwhelmingly "this source reported no cache
+      // fields", not a genuinely cold cache (see docs/13 §2). Only >0 tints.
+      const cacheRatio = project.cache_ratio || 0;
+      const healthVars = cacheRatio > 0
+        ? (() => {
+            const health = Math.max(0, Math.min(1, (cacheRatio - 0.2) / 0.8));
+            return {
+              '--vine-health-sat': (1 + health * 0.5).toFixed(3),
+              '--vine-health-bright': (1 + health * 0.10).toFixed(3)
+            };
+          })()
+        : null;
+
+      const spreadX = Math.min(2.2, 28 / Math.max(ordered.length, 1));
+
+      for (let strandIndex = 0; strandIndex < strandCount; strandIndex++) {
+        const isPrimary = strandIndex === 0;
+        // Pick the frame by position (not pickByToken) so every variant in the
+        // group is reachable and adjacent strands/projects differ; SIZE stays
+        // token-driven via profile below.
+        const sprite = pick(group, projectIndex + strandIndex);
+        const x = slot + (isPrimary
+          ? (jitter(projectIndex, profile.level) - 0.5) * spreadX
+          : (jitter(projectIndex, strandIndex + 7) - 0.5) * 5);
+        const y = useHanging
+          ? 24.65 + jitter(projectIndex, strandIndex + 2) * 0.42
+          : 52 + (5 - profile.level) * 4 + (isPrimary ? 0 : jitter(projectIndex, strandIndex + 3) * 3);
+        const width = isPrimary ? baseWidth : baseWidth * 0.85;
+        const opacity = isPrimary ? profile.opacity : profile.opacity * 0.82;
+
+        // Only the primary strand is interactive: passing `project` makes
+        // addSprite tag it `.roving-vine` + wire focus/hover/keyboard. Decorative
+        // strands stay out of the roving/select model (pointer-events:none in CSS)
+        // but still animate + tint. crownAnchors collects the primary only.
+        if (isPrimary && useHanging) crownAnchors.push({ x, y, projectIndex, profile, hue });
+
+        addSprite(sprite, {
+          x,
+          y,
+          width,
+          z: useHanging ? 22 + projectIndex : 18 + projectIndex,
+          opacity,
+          className: 'project ' + (useHanging ? 'hanging' : 'climbing') + (isPrimary ? '' : ' vine-decorative'),
+          anchor: useHanging ? 'top' : 'bottom',
+          healthVars,
+          ...(isPrimary
+            ? { project, projectIndex, title: project.display_name }
+            : { hueShift: hue || undefined })
+        });
+      }
     });
 
     addVineCornice(leafCaps, crownAnchors);
@@ -906,6 +994,13 @@ function clearDynamicLayers() {
     }
     if (options.title) img.title = options.title;
     if (options.hueShift) img.style.setProperty('--vine-hue-shift', options.hueShift);
+    // cache_ratio "health" tint — set on every strand of a >0-cache project. The
+    // CSS multipliers default to 1, so absence is a no-op (today's exact look).
+    if (options.healthVars) {
+      for (const [prop, val] of Object.entries(options.healthVars)) {
+        img.style.setProperty(prop, val);
+      }
+    }
     if (options.project) {
       img.classList.add('roving-vine');
       img.dataset.projectIndex = String(options.projectIndex ?? 0);

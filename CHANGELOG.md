@@ -2,6 +2,41 @@
 
 ## Unreleased
 
+- Made the vine wall reflect per-project activity, wiring three render contracts
+  that had their data in the summary but no consumer. (1) **Session count → strands:**
+  `addIvyOverlay` rendered exactly one vine per project regardless of `sessions`;
+  now each project grows `clamp(1+floor(log2(sessions)),1,cap)` strands — one
+  primary interactive vine plus dimmer/narrower decorative strands — so a busy
+  project visibly fans out while 1-session projects are unchanged. Only the primary
+  strand is keyboard/hover/chip-interactive (decorative strands are
+  `pointer-events:none` and stay out of the roving-vine model), and the cornice
+  anchors off the primary only. (2) **All 8 vine frames reachable:** frame choice
+  moved from `pickByToken` (which could only ever hit 3–5 of the 8 hand-authored
+  hanging/vertical frames) to `pick(group, projectIndex+strandIndex)`; size stays
+  token-driven. (3) **cache_ratio → health tint:** projects with `cache_ratio > 0`
+  get a gentle saturation/brightness lift via new `--vine-health-*` CSS multipliers
+  (default 1, threaded through the resting/hover/active/focus filters and the
+  `pg6-vine-sway` keyframes so the animation can't clobber it); `cache_ratio == 0`
+  stays neutral, since in practice `0.0` means "source reported no cache fields"
+  rather than a cold cache. Pure frontend + deterministic (jitter/pick, no RNG); no
+  core or schema change. Spec + Claude↔codex review log:
+  `docs/13-garden-reflects-activity-spec.md`.
+- Realized the cherry-blossom peak tier and activity-driven flower accents — two
+  rendering contracts that had their data plumbed through core but no consuming
+  render path. `unlockTier` already derived three cherry states from summed
+  `recent_activity` (bud → bloom → petal ≥ 100k) and `addSpringPetals` already
+  treated `petal` as the hotter state, but `addCourtyardObjects` only branched
+  bud-vs-bloom, so the peak tier rendered identically to bloom. Added a derived
+  `cherry_tree_petal` sprite (a fuller, more-saturated bloom at the same 313×315
+  footprint) and a 3-way sprite/width branch with an explicit
+  petal→bloom→`pickByToken` fallback chain so older asset sets still render.
+  Separately, the four shipped-but-orphaned `flower_cluster` sprites are now
+  placed as small accents at the cherry base, count scaled by the cherry tier
+  (bud 0 / bloom 2 / petal 4), spring/summer only, deterministic (jitter, no
+  RNG), and `pointer-events:none` so they never block vine/cat hover. Pure
+  frontend + asset change — no core or schema touch. Spec + Claude↔codex review
+  log: `docs/12-cherry-petal-and-flower-accents-spec.md`.
+
 ## v0.1.1 - 2026-06-04
 
 - Decoded each Claude project directory name at most once per scan. The
