@@ -231,7 +231,8 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 
 ## 代码风格 hint
 
-- 代码注释 / commit / spec 用英文,UI 文案和 RUST.md / CHANGELOG 用中文
+- 代码注释 / commit / spec 用英文；UI 文案走 `web/i18n.js` 的 en/zh 双语层；
+  RUST.md / CHANGELOG 以中文为主
 - Rust 用 thiserror 的 enum Error,**不要** anyhow
 - 文档注释解释**为什么**(理由 / spec 引用 / 失败模式),不要复读签名
 - 测试用 fixture 风格(临时目录 + 写 JSON 字符串),不要依赖真实 home 目录
@@ -239,17 +240,22 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 
 ## 当前阶段
 
-`CHANGELOG.md` 的 `## Unreleased` 反映最新工作。Phase 1/2 完工,Phase 3 大部分落地:
+`CHANGELOG.md` 的 `## Unreleased` 反映最新工作。Phase 1/2 完工,Phase 3/公开发布
+路径大部分落地:
 
 - ✅ Settings 内嵌面板 + 错误 toast + schema versioning
 - ✅ 系统菜单 / 状态栏 / Tray(含 "Top Token Projects" 子菜单 + Scan Now)
 - ✅ CI/CD GHA matrix(rustfmt + clippy + test,mac/win/linux,MSRV 1.85)
 - ✅ Token Insight(per-day `daily_tokens`、sparkline、Insight 面板、core 端 `size_level`/`size_strength`)
-- ✅ 打包产物(`tauri-action` 出 dmg / deb+AppImage / NSIS,挂 draft release)
+- ✅ 打包产物(`tauri-action` 出 dmg / deb+AppImage / NSIS,`release.yml` 发真 Release)
+- ✅ 公开发布信任底座(LICENSE / PRIVACY.md / 锁 CSP / CI zero-network gate)
+- ✅ 双语 UI、Garden Postcard、本地 return diff、README 新截图和公开文案
+- ⚠️ 下一个 Release 前必须桌面验证 CSP + Postcard 原生保存
 - ⏳ 代码签名(目前是 unsigned bundle)
 - ⏳ Tauri updater(自动更新尚未接线)
 
-最近的零散修复见 `## Unreleased`:安全路径归一化、Insight 同名项目消歧、inferred 路径标记、深色滚动条、`.gitattributes` 行尾治理。
+最近的零散修复见 `## Unreleased`:路径归一化/推测路径标记、Insight 同名消歧、
+深色滚动条、`.gitattributes`、发布信任加固、Postcard、return diff、README 刷新。
 
 ## 如果你不确定
 

@@ -1,6 +1,6 @@
 # Spec 17 — Launch trust hardening (make "zero-network" provable)
 
-Status: **v2 — direction AGREED with codex (round 1); implementing.**
+Status: **Implemented; desktop CSP/runtime verification remains a release gate.**
 
 **Final CSP** (codex-confirmed): `default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost; font-src 'self'; object-src 'none'; base-uri 'self'; frame-src 'none'; worker-src 'none'; form-action 'none'; frame-ancestors 'none'` — `connect-src` MUST allow `'self'` (same-origin manifest fetch) + `ipc: http://ipc.localhost` (Tauri v2 IPC), NOT `'none'`; no `asset:` needed (no `convertFileSrc`).
 **CI ban list** = unambiguous egress client/server/telemetry crates that are NOT in the Tauri baseline. codex flagged the trap: `reqwest`/`hyper`/`tokio`/`url` are pulled transitively by Tauri 2.x — banning them would red-line CI on the current tree, so they are intentionally excluded. TLS libs (rustls/openssl/native-tls) also excluded (ambiguous; a future Tauri bump could pull them). Empirically none of the banned crates are in the current `Cargo.lock`.
@@ -12,6 +12,13 @@ CI-verified, publicly-documented** guarantee — the trust foundation for a PUBL
 UNSIGNED early launch to a broad multi-agent audience.
 Non-scope: code signing / updater (owner deferred certs), feature work, new deps in
 the app runtime.
+
+Implementation outcome: LICENSE, PRIVACY.md, locked Tauri CSP, the CI
+zero-network gate, unsigned install notes, and guarded signing hooks are in the
+tree. The remaining release blocker from this spec is a real desktop
+`cargo tauri dev` pass: confirm the garden renders under CSP, data loads through
+Tauri IPC, and webview devtools show no CSP violations before tagging the next
+release.
 
 > Product decisions driving this: **public launch**, **signing certs deferred**
 > (so trust CANNOT lean on code-signing — it must lean on verifiable privacy),
@@ -101,7 +108,7 @@ install from a stranger is a privacy claim they can *verify*. Today:
 - Privacy contract unchanged (this only *enforces + documents* it).
 - Modularity respected; no core logic change.
 
-## 4. Open questions for codex (align before implementing)
+## 4. Resolved questions for codex
 1. **CSP exact directives** for Tauri v2: is `connect-src 'self' ipc:
    http://ipc.localhost` the right IPC allowance (v2 with `withGlobalTauri:true`),
    or does it need `asset:`/`https://asset.localhost` / `tauri:` too given

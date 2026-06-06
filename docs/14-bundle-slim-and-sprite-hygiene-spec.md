@@ -1,6 +1,6 @@
 # Spec 14 — Slim the Tauri bundle + sprite hygiene
 
-Status: **v2 — direction AGREED with codex (round 1); codex implements**
+Status: **Implemented in v0.1.2; manifest-schema cleanup remains deferred.**
 Owner: build glue (`crates/tauri-app/build.rs`) + sprite assets/manifest + frontend
 ground decor (`web/render-garden.js`) + dev tool (`assets/sprites/preview.html`)
 Scope: remove dead weight that ships in every desktop binary, and restore the
@@ -10,7 +10,8 @@ Non-scope: `crates/core/**`, aggregation/schema, no new sprite art.
 
 > codex (gpt-5.5) reviewed v1 read-only → direction agreed; 3 doc-accuracy fixes
 > required (folded into v2, marked **[v2]**) + concrete implementation params
-> captured in §5. **codex implements this batch.**
+> captured in §5. **Implemented; keep the deferred manifest cleanup scoped
+> separately.**
 
 ## 1. Why (audit-confirmed, codex-verified)
 
@@ -62,7 +63,7 @@ shrinks. No "relocate to tools/" needed.
   re-evaluated later, but **`mountains/*.png` are a hard production dependency
   ([render-svg.js:110](../web/render-svg.js)) and must NOT be deleted.** Deferred.
 
-## 3. Deliverables (codex implements)
+## 3. Deliverables (implemented)
 
 ### A. build.rs — filter the web/assets copy *(headline, ~12 MB)*
 - **[v2] Locked predicate** (codex-agreed): when copying a file, **skip** it when
@@ -126,7 +127,7 @@ shrinks. No "relocate to tools/" needed.
   full-build verification may need a separate `CARGO_TARGET_DIR`.
 - Do not touch untracked `.claude/` or the spec files.
 
-## 7. Verification (Claude runs after codex implements)
+## 7. Verification (post-implementation)
 - **A**: trigger a tauri-app build (build.rs re-syncs before link, so the lock
   doesn't block it), then list `web/assets/sprites/` — **no** `*_spritesheet*`,
   `*_chroma`, `*.html`; all per-sprite crop PNGs present; size delta ≈ -12 MB.

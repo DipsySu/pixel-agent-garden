@@ -1,6 +1,6 @@
 # Spec 13 — "Garden reflects activity": session strands, vine variant rescue, cache-health tint
 
-Status: **v2 — revised per codex review round 1 (pending consensus confirmation)**
+Status: **Implemented in v0.1.2 (codex-reviewed v2).**
 Owner: frontend render layer (`web/render-garden.js`, `web/render-helpers.js`, `web/index.html` CSS)
 Scope: pure render-wiring of EXISTING sprites against EXISTING `GardenSummary` fields.
 Non-scope: `crates/core/**` (no schema/aggregation change), no new sprite art, atlas/manifest pruning (separate backlog).

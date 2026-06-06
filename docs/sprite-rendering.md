@@ -29,7 +29,8 @@ the shipped Tauri `web/assets` mirror.
 
 Use the data model to choose density and length rather than scaling sprites.
 
-- Project age controls how far down the hanging vines can extend.
+- Project age / first-seen-driven vine length was evaluated and deferred; avoid
+  scaling vine sprites until a future design proves it is worth the extra signal.
 - Recent activity controls fresh leaf overlays and flower probability.
   **Realized:** summed `recent_activity` drives the cherry blossom tier
   (bud → bloom → petal) and the number of `flower_cluster` accents at the cherry

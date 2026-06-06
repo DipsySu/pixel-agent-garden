@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Cleaned up spec/onboarding drift after the public-launch feature batch:
+  completed specs now say implemented, Postcard save-path questions are marked
+  resolved, the CSP/Postcard desktop verification remains explicit as the next
+  release gate, and sprite-rendering notes no longer claim project age currently
+  drives vine length.
 - Refreshed the README for public release: replaced the hero screenshot with the
   current full-window garden UI and updated both English and Chinese copy to
   cover locale-aware UI, Insight, Garden Postcard, return diff, and the local

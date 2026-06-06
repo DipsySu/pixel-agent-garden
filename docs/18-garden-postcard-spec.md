@@ -1,6 +1,7 @@
 # Spec 18 — Garden Postcard (one-click local export)
 
-Status: **v2 — direction AGREED with codex (round 1); codex implements.**
+Status: **Implemented; desktop native-save verification remains paired with the
+CSP release gate.**
 
 **Resolved (codex round 1):**
 - Rasterize: inline the 2 mountain `<image href>` → `data:`; rasterize base SVG at
@@ -21,8 +22,7 @@ Status: **v2 — direction AGREED with codex (round 1); codex implements.**
   clause**.
 - `tauri-plugin-dialog` is local (native dialog) — no egress, won't trip the
   supply-chain gate; CSP unaffected (`save_postcard` goes over IPC).
-Owner: frontend (`web/`), possibly a tiny Tauri save command if the webview can't
-download.
+Owner: frontend (`web/`) + the tiny Tauri `save_postcard` command.
 Scope: let the user export the **current garden scene** to a local PNG (zero
 network), with an anonymize-labels default and a one-line localized caption.
 Non-scope: cloud upload, accounts, a share gallery, server-side rendering, video.
@@ -74,14 +74,11 @@ So an export must composite **base SVG + DOM sprites** into one raster.
   (a checkbox in the export affordance, or a setting) to include it. Season / vine
   count / total tokens are non-identifying and always shown.
 
-## 4. Save path (the main open question)
-- `capabilities/default.json` has only `core:*` perms — **no `dialog`/`fs`
-  plugin**. So:
-  - **MVP**: `canvas.toBlob` → object URL → a programmatic `<a download="garden-….png">`
-    click. Works in a browser; confirm it works in the Tauri v2 webview.
-  - If the webview blocks the download, the minimal-footprint fix is a tiny Tauri
-    command `save_postcard(bytes, suggested_name)` using the dialog+fs plugins (add
-    the plugin + a capability entry) — codex to decide MVP vs plugin.
+## 4. Save path (resolved)
+- Desktop uses `save_postcard(bytes, suggested_name)`: Tauri dialog save path +
+  `std::fs::write`, with the minimal dialog capability. It deliberately does
+  **not** add `tauri-plugin-fs` or a broad frontend filesystem permission.
+- Browser preview keeps the `<a download>` fallback.
 - Filename: `garden-<season>-<yyyymmdd>.png` (timestamp from the frontend `Date`).
 
 ## 5. Trigger (codex to place)
@@ -103,18 +100,15 @@ So an export must composite **base SVG + DOM sprites** into one raster.
 - **Privacy**: the export is a local file the user manually shares; no auto-share,
   no upload, no metadata beyond the visible caption.
 
-## 7. Open questions for codex
-1. Save path: is a programmatic `<a download>` enough in the Tauri v2 webview, or
-   do we need the dialog+fs plugins + a `save_postcard` command + capability? Pick
-   the minimal reliable path.
-2. Should animated particles (falling petals / fireflies / snow) be included in
-   the snapshot (whatever's on screen) or excluded for a clean still? 
-3. Exact sprite-rect + transform mapping (the `%`-positioned + `translate(-50%)`
-   sprites onto the scaled canvas) — confirm the formula so sprites land pixel-
-   aligned, not shifted.
-4. Trigger placement + the anonymize toggle's home (inline checkbox vs a setting).
-5. Export scale (2× vs 3×) and whether `ctx.filter` is reliably supported in the
-   Tauri webview (WebKitGTK / WKWebView / WebView2) — fallback if not.
+## 7. Resolved questions for codex
+1. Save path: native `save_postcard` command on desktop; `<a download>` only as
+   browser fallback.
+2. Particles: excluded for a cleaner, reproducible still.
+3. Sprite mapping: `getBoundingClientRect()` relative to the scene, scaled to
+   1360×880, with per-sprite computed CSS filter + opacity.
+4. Trigger: footer button beside Insight; anonymize checkbox in the export panel.
+5. Export scale: 2×; `ctx.filter` is feature-detected and falls back to drawing
+   without filter if a platform lacks support.
 
 ## 8. Verification (after implement)
 - Clicking export yields a PNG that **visually matches the on-screen garden**:

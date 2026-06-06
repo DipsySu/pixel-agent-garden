@@ -1,6 +1,7 @@
 # Token Insight Spec / Token 消耗可视化规格
 
-> Status / 状态: Draft v2 草案(post-review 评审后修订).
+> Status / 状态: Implemented. Token Insight shipped first; launcher integration
+> later shipped as its own phase.
 > Scope this pass / 本轮范围: **make the data honest, then surface it gently.**
 > 先让数据诚实,再让 UI 轻轻露出来。
 > Builds on [11-tauri-rust-rewrite-spec.md](./11-tauri-rust-rewrite-spec.md)
@@ -196,10 +197,11 @@ part of the MVP — a big calendar dropped into the garden breaks the mood.
 ## Privacy / 隐私
 
 Unchanged. No network, no writes to source agent dirs, cache only in
-`~/.local-agent-garden/`, no telemetry. This pass adds **no** outbound side
-effects (the terminal-launch effect lives in the deferred launcher phase).
-不变。不联网、不写源目录、缓存只在 `~/.local-agent-garden/`、无 telemetry。本轮**不**引入任何对外副作用
-(终端启动的副作用在被推迟的 launcher 阶段)。
+`~/.local-agent-garden/`, no telemetry. This pass added **no** outbound side
+effects; the later terminal-launch phase is local, user-initiated, and confined
+to `terminal.rs`.
+不变。不联网、不写源目录、缓存只在 `~/.local-agent-garden/`、无 telemetry。本轮**不**引入任何对外副作用；
+后续 terminal-launch 阶段是本地、用户发起，并限制在 `terminal.rs`。
 
 ## Modularity checklist (spec §10) / Modularity 对照
 

@@ -1,7 +1,7 @@
 # Spec 15 — Per-project recent-activity fresh leaves
 
-Status: **v2 — direction AGREED with codex (round 1). SCOPE = Item A only; Item B
-(first_seen→length) DEFERRED. codex implements.**
+Status: **Implemented in v0.1.2 for Item A; Item B (first_seen→length) remains
+DEFERRED by consensus.**
 Owner: frontend render layer (`web/render-garden.js`, `web/index.html` CSS)
 Scope: surface the `recent_activity → fresh leaf overlays` Growth-Mapping contract
 per project. Pure frontend, existing `leaf_cluster` sprites, no core change.
@@ -12,7 +12,8 @@ Non-scope: `crates/core/**`, schema, new art, manifest cleanup, and **Item B**
 > verdict: AGREE, **scope = A only** — B is not worth shipping now (the vine
 > already encodes width/strands/frame/tint/hue = 5 signals; a `scaleY` length over
 > the narrow 9–37-day range distorts pixel art for little gain, and would make the
-> render time-dependent). codex implements A.
+> render time-dependent). Item A is implemented; Item B remains a recorded
+> non-goal unless a future design reopens it.
 
 ## 1. Why
 
@@ -33,7 +34,7 @@ exactly 0** (codex-corrected from "~9"). So `0` must mean **"no fresh leaves"
 
 ## 3. Deliverables
 
-### A. recent_activity → fresh leaf overlays *(codex implements)*
+### A. recent_activity → fresh leaf overlays *(implemented)*
 - In `addIvyOverlay`, for each project whose **primary** strand is placed and whose
   `recent_activity > 0`, scatter **`freshLeaves` extra `leaf_cluster` sprites**:
   `freshLeaves = clamp(round( (log1p(recent_activity)/log1p(maxRecent)) * 3 ), 0, 3)`
@@ -92,7 +93,7 @@ new origin needed). Not implemented now.
 | 2 | Item B (length) | **DEFER** — not worth it now (signal overload + scaleY distortion + time-dependence) |
 | 4 | which strands | **primary only** (decorative spec-13 strands get no fresh leaves) |
 
-## 6. Verification (Claude runs after codex implements)
+## 6. Verification (post-implementation)
 - The ≈125k-recent project shows ~3 fresh leaf accents near its vine crown; mid
   projects 1–2; the **8** zero-recent projects show **none** (unchanged).
 - Accents are `pointer-events:none`, add **no** `.roving-vine`, no console errors;

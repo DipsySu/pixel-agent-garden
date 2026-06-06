@@ -1,6 +1,6 @@
 # Spec 16 — Re-derive a punchier `cherry_tree_petal` (codex sprite-gen)
 
-Status: **DRAFT (for Claude↔codex alignment; codex produces the asset)**
+Status: **Implemented in v0.1.2; codex produced the refreshed petal asset.**
 Owner: sprite asset `assets/sprites/courtyard_style/cherry_tree_petal.png`
 Scope: replace the current peak-tier cherry sprite with one that reads **distinctly
 fuller / more saturated / pinker than `cherry_tree_bloom` on a still frame**, while
@@ -9,9 +9,9 @@ family. Pure asset change; manifest entry + render 3-way branch already exist
 (Spec 12) — we only swap the PNG bytes.
 Non-scope: `crates/**`, JS/CSS, manifest schema, the bud/bloom sprites.
 
-> This is the one remaining "codex authors new sprite art" item (matches the user's
-> original goal). codex implements by running a deterministic image-derivation
-> script (Pillow/numpy available), then Claude verifies stats + the browser.
+> This was the remaining "codex authors new sprite art" item (matching the user's
+> original goal). codex produced the asset via deterministic local image
+> derivation, then Claude verified stats + browser rendering.
 
 ## 1. Why (measured)
 
@@ -70,7 +70,7 @@ Derive from `cherry_tree_bloom.png` (don't draw from scratch — stays on-palett
 - Privacy/zero-network unaffected (local image processing only).
 - Bud/bloom PNGs untouched.
 
-## 5. Open questions for codex (align before producing)
+## 5. Resolved questions for codex
 1. Approach: pure saturation/pink push vs also dilating/cloning blossoms for density
    — which gets a convincing "fuller" read without looking noisy or off-palette?
    Pick concretely.
@@ -80,7 +80,7 @@ Derive from `cherry_tree_bloom.png` (don't draw from scratch — stays on-palett
 4. Any risk the denser canopy changes the alpha bbox enough to shift the render
    anchor — and how you'll keep the silhouette stable.
 
-## 6. Verification (Claude runs after codex produces)
+## 6. Verification (post-implementation)
 - `cherry_tree_petal.png` is 313×315 RGBA; alpha bbox within ±2 px of bloom.
 - Recompute the §1 table: petal saturation ≥ +25% and pinkness ≥ +40% over bloom;
   blossom coverage up.

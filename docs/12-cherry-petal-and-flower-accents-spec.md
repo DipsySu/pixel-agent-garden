@@ -1,6 +1,7 @@
 # Spec 12 — Peak-bloom cherry tier + activity-driven flower accents
 
-Status: **v2 — revised per codex review round 1 (pending consensus confirmation)**
+Status: **Implemented in v0.1.2 (codex-reviewed v2; Spec 16 later refreshed the
+petal PNG).**
 Owner: frontend render layer + sprite assets
 Scope: `web/render-garden.js`, `web/index.html` (CSS), `assets/sprites/`, `docs/sprite-rendering.md`, `CHANGELOG.md`
 Non-scope: `crates/core/**` (no schema or aggregation change), atlas regeneration, Tauri/CLI layer.
