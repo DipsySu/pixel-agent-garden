@@ -38,11 +38,13 @@ Grab the latest build for your platform from the
 
 - **macOS** — the `.dmg` build attached to the release. Builds are currently
   **unsigned**, so on first launch right-click the app and choose _Open_ (or
-  allow it under System Settings → Privacy & Security).
+  allow it under System Settings → Privacy & Security). See
+  [Unsigned Install Notes](docs/unsigned-installs.md).
 - **Linux** — `.AppImage` (make it executable: `chmod +x *.AppImage`) or the
   `.deb` package.
 - **Windows** — the NSIS `*-setup.exe` installer. SmartScreen may warn on an
-  unsigned installer; choose _More info → Run anyway_.
+  unsigned installer; choose _More info → Run anyway_. See
+  [Unsigned Install Notes](docs/unsigned-installs.md).
 
 On first run the app scans your local agent directories and writes a cache to
 `~/.local-agent-garden/`. The tray icon gives you _Scan Now_, show/hide, open
@@ -176,10 +178,12 @@ token、session 和近期活跃度会驱动藤蔓大小，并解锁庭院物件�
 下载对应平台的最新构建：
 
 - **macOS** — 下载 release 附带的 `.dmg`。当前构建还没有签名；首次启动时右键 app
-  选择 _Open_，或在 System Settings → Privacy & Security 里允许打开。
+  选择 _Open_，或在 System Settings → Privacy & Security 里允许打开。详见
+  [未签名安装说明](docs/unsigned-installs.md)。
 - **Linux** — 下载 `.AppImage`（先执行 `chmod +x *.AppImage`）或 `.deb` 包。
 - **Windows** — 下载 NSIS `*-setup.exe` 安装器。未签名安装器可能触发 SmartScreen；
-  如果信任该 release，选择 _More info → Run anyway_。
+  如果信任该 release，选择 _More info → Run anyway_。详见
+  [未签名安装说明](docs/unsigned-installs.md)。
 
 首次运行时，应用会扫描本地 agent 目录，并把缓存写到 `~/.local-agent-garden/`。
 托盘菜单提供 _Scan Now_、显示/隐藏窗口、打开设置和退出。

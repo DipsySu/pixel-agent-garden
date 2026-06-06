@@ -142,7 +142,7 @@ function clearDynamicLayers() {
     el.classList.remove('is-scanning', 'is-paused');
     if (diff > 24 * 3_600_000) {
       el.classList.add('is-stale');
-      el.title = '运行 agent-garden scan 刷新';
+      el.title = '可从托盘点击扫描刷新';
     } else {
       el.classList.remove('is-stale');
       el.removeAttribute('title');
@@ -694,8 +694,8 @@ function clearDynamicLayers() {
     const empty = document.createElement('div');
     empty.className = 'pg6-empty';
     empty.innerHTML =
-      '<div class="pg6-empty-title">还没有本地 agent 记录</div>' +
-      '<div class="pg6-empty-code">agent-garden scan</div>';
+      '<div class="pg6-empty-title">还没有本地 agent 活动</div>' +
+      '<div class="pg6-empty-hint">打开 Claude Code、Codex 或 Claude Cowork 后，花园会自动长出项目。</div>';
     scene.append(empty);
   }
 

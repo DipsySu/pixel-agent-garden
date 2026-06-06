@@ -43,6 +43,7 @@ pub fn run(app: AppHandle) -> Result<(), String> {
     // ate it. Better to over-trigger and rely on the 800ms debounce than
     // miss real activity.
     let (tx, rx): (Sender<notify::Event>, Receiver<notify::Event>) = channel();
+    let error_app = app.clone();
     let mut watcher =
         notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
             match res {
@@ -53,7 +54,10 @@ pub fn run(app: AppHandle) -> Result<(), String> {
                     }
                     let _ = tx.send(ev);
                 }
-                Err(err) => eprintln!("[watcher] notify error: {err}"),
+                Err(err) => {
+                    eprintln!("[watcher] notify error: {err}");
+                    emit_watcher_error(&error_app, format!("notify error: {err}"));
+                }
             }
         })
         .map_err(|e| format!("create watcher: {e}"))?;
@@ -69,6 +73,7 @@ pub fn run(app: AppHandle) -> Result<(), String> {
         };
         if let Err(err) = watcher.watch(path, mode) {
             eprintln!("[watcher] watch({}) failed: {err}", path.display());
+            emit_watcher_error(&app, format!("watch {} failed: {err}", path.display()));
         } else {
             eprintln!("[watcher] watching {}", path.display());
         }
@@ -111,12 +116,16 @@ pub fn run(app: AppHandle) -> Result<(), String> {
                 // Surface the failure to the frontend toast — the watcher
                 // path is silent otherwise and the user would just see stale
                 // data with no hint that the rescan didn't happen.
-                let payload = ErrorPayload::new("watcher", err);
-                if let Err(emit_err) = app.emit(GARDEN_ERROR, &payload) {
-                    eprintln!("[watcher] emit error event failed: {emit_err}");
-                }
+                emit_watcher_error(&app, err);
             }
         }
+    }
+}
+
+fn emit_watcher_error(app: &AppHandle, message: impl Into<String>) {
+    let payload = ErrorPayload::new("watcher", message);
+    if let Err(emit_err) = app.emit(GARDEN_ERROR, &payload) {
+        eprintln!("[watcher] emit error event failed: {emit_err}");
     }
 }
 

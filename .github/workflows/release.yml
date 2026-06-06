@@ -1,22 +1,24 @@
 name: Release
 
-# Tag-driven releases (push a v* tag) build signed-able bundles on all three
-# desktop platforms and attach them to a draft GitHub Release. Manual dispatch
-# can validate bundles without a release, or create a draft release when
-# `release_tag` is provided.
+# Tag-driven releases (push a v* tag) build bundles on all three desktop
+# platforms and publish a GitHub Release. Manual dispatch can validate bundles
+# without a release, or publish a release when `release_tag` is provided.
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Optional release tag for a draft release, e.g. v0.1.0'
+        description: 'Optional release tag to publish, e.g. v0.1.0'
         required: false
         type: string
 
 env:
   CARGO_TERM_COLOR: always
   RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || github.event.inputs.release_tag }}
+  RELEASE_BODY: |
+    Community build. Current install and unsigned-build notes:
+    https://github.com/DipsySu/pixel-agent-garden/blob/main/docs/unsigned-installs.md
 
 jobs:
   build:
@@ -24,6 +26,10 @@ jobs:
     runs-on: ${{ matrix.platform }}
     permissions:
       contents: write
+    env:
+      HAS_APPLE_SIGNING: ${{ secrets.APPLE_CERTIFICATE != '' && secrets.APPLE_CERTIFICATE_PASSWORD != '' && secrets.KEYCHAIN_PASSWORD != '' }}
+      HAS_WINDOWS_SIGNING: ${{ secrets.WINDOWS_CERTIFICATE != '' && secrets.WINDOWS_CERTIFICATE_PASSWORD != '' && secrets.WINDOWS_CERTIFICATE_THUMBPRINT != '' }}
+      WINDOWS_TIMESTAMP_URL: ${{ secrets.WINDOWS_TIMESTAMP_URL || 'http://timestamp.digicert.com' }}
     strategy:
       fail-fast: false
       matrix:
@@ -60,10 +66,90 @@ jobs:
         with:
           key: release-${{ matrix.platform }}
 
+      - name: Report signing mode
+        shell: bash
+        run: |
+          case "$RUNNER_OS" in
+            macOS)
+              if [[ "$HAS_APPLE_SIGNING" == "true" ]]; then
+                echo "macOS signing secrets present; importing Developer ID certificate."
+              else
+                echo "macOS signing secrets missing; building unsigned."
+              fi
+              ;;
+            Windows)
+              if [[ "$HAS_WINDOWS_SIGNING" == "true" ]]; then
+                echo "Windows signing secrets present; importing PFX certificate."
+              else
+                echo "Windows signing secrets missing; building unsigned."
+              fi
+              ;;
+            *)
+              echo "$RUNNER_OS build does not require code-signing secrets."
+              ;;
+          esac
+
+      - name: Import Apple Developer certificate
+        if: runner.os == 'macOS' && env.HAS_APPLE_SIGNING == 'true'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          security find-identity -v -p codesigning build.keychain
+
+      - name: Resolve Apple signing identity
+        if: runner.os == 'macOS' && env.HAS_APPLE_SIGNING == 'true'
+        run: |
+          CERT_INFO=$(security find-identity -v -p codesigning build.keychain | grep -E '"(Developer ID Application|Apple Distribution|Apple Development):' | head -n 1)
+          CERT_ID=$(echo "$CERT_INFO" | awk -F'"' '{print $2}')
+          if [[ -z "$CERT_ID" ]]; then
+            echo "No usable Apple code-signing identity found in build.keychain." >&2
+            exit 1
+          fi
+          echo "APPLE_SIGNING_IDENTITY=$CERT_ID" >> "$GITHUB_ENV"
+
+      - name: Import Windows signing certificate
+        if: runner.os == 'Windows' && env.HAS_WINDOWS_SIGNING == 'true'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          New-Item -ItemType Directory -Force -Path certificate | Out-Null
+          Set-Content -Path certificate\certificate.txt -Value $env:WINDOWS_CERTIFICATE
+          certutil -decode certificate\certificate.txt certificate\certificate.pfx
+          $secure = ConvertTo-SecureString -String $env:WINDOWS_CERTIFICATE_PASSWORD -Force -AsPlainText
+          Import-PfxCertificate -FilePath certificate\certificate.pfx -CertStoreLocation Cert:\CurrentUser\My -Password $secure
+
       # tauri-action runs `tauri build`, finds the config under projectPath,
       # and uploads bundles only when a tag name is provided.
-      - name: Build and attach draft release
-        if: env.RELEASE_TAG != ''
+      - name: Build and publish signed macOS release
+        if: env.RELEASE_TAG != '' && runner.os == 'macOS' && env.HAS_APPLE_SIGNING == 'true'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
+        with:
+          projectPath: crates/tauri-app
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: Local Agent Garden ${{ env.RELEASE_TAG || github.sha }}
+          releaseBody: ${{ env.RELEASE_BODY }}
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
+
+      - name: Build and publish signed Windows release
+        if: env.RELEASE_TAG != '' && runner.os == 'Windows' && env.HAS_WINDOWS_SIGNING == 'true'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -71,7 +157,27 @@ jobs:
           projectPath: crates/tauri-app
           tagName: ${{ env.RELEASE_TAG }}
           releaseName: Local Agent Garden ${{ env.RELEASE_TAG || github.sha }}
-          releaseDraft: true
+          releaseBody: ${{ env.RELEASE_BODY }}
+          releaseDraft: false
+          prerelease: false
+          args: >-
+            ${{ matrix.args }}
+            --config '{"bundle":{"windows":{"certificateThumbprint":"${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}","digestAlgorithm":"sha256","timestampUrl":"${{ env.WINDOWS_TIMESTAMP_URL }}"}}}'
+
+      - name: Build and publish unsigned release
+        if: >-
+          env.RELEASE_TAG != '' &&
+          !(runner.os == 'macOS' && env.HAS_APPLE_SIGNING == 'true') &&
+          !(runner.os == 'Windows' && env.HAS_WINDOWS_SIGNING == 'true')
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: crates/tauri-app
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: Local Agent Garden ${{ env.RELEASE_TAG || github.sha }}
+          releaseBody: ${{ env.RELEASE_BODY }}
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
 

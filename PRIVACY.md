@@ -67,10 +67,10 @@ Then read the two enforcement points above: the `csp` value in
 ## Unsigned builds
 
 Releases are currently **unsigned** (code-signing certificates are not yet in
-place). macOS Gatekeeper / Windows SmartScreen will warn on first launch; see the
-README for the right-click → Open / "Run anyway" steps. Signing — and, only then,
-an **explicit, opt-in, user-initiated** update check — are planned; until shipped,
-the app makes **no** network requests of any kind.
+place). macOS Gatekeeper / Windows SmartScreen will warn on first launch; see
+`docs/unsigned-installs.md` for the right-click → Open / "Run anyway" steps.
+Signing — and, only then, an **explicit, opt-in, user-initiated** update check —
+are planned; until shipped, the app makes **no** network requests of any kind.
 
 ## Reporting
 

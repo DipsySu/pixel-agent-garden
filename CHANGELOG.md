@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Prepared the remaining public-launch release path: first-run empty state now
+  stays user-facing and Chinese-only instead of showing a ghost
+  `agent-garden scan` command, watcher startup/watch/notify failures emit
+  `garden:error` to the desktop toast pipeline, `release.yml` now publishes real
+  GitHub Releases instead of drafts, unsigned install notes live in
+  `docs/unsigned-installs.md`, and the release workflow has guarded macOS /
+  Windows signing hooks that activate only when the required secrets exist.
 - Hardened and documented the zero-network guarantee for a public, unsigned launch.
   Added a `LICENSE` (MIT, matching `Cargo.toml`) and a `PRIVACY.md` with a "verify
   it yourself" recipe (watch egress with lsof / Little Snitch / TCPView → zero

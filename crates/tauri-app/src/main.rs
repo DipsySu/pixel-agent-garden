@@ -17,7 +17,8 @@ mod terminal;
 mod tray;
 mod watcher;
 
-use tauri::Manager;
+use crate::events::{ErrorPayload, GARDEN_ERROR};
+use tauri::{Emitter, Manager};
 
 fn main() {
     tauri::Builder::default()
@@ -44,8 +45,13 @@ fn main() {
             // changes (debounced — see watcher.rs).
             let handle = app.handle().clone();
             std::thread::spawn(move || {
-                if let Err(err) = watcher::run(handle) {
+                if let Err(err) = watcher::run(handle.clone()) {
                     eprintln!("[watcher] failed to start: {err}");
+                    let payload =
+                        ErrorPayload::new("watcher", format!("watcher startup failed: {err}"));
+                    if let Err(emit_err) = handle.emit(GARDEN_ERROR, &payload) {
+                        eprintln!("[watcher] emit startup error event failed: {emit_err}");
+                    }
                 }
             });
             Ok(())
