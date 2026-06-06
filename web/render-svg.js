@@ -1,3 +1,5 @@
+import { t } from './i18n.js';
+
 export function renderBaseScene(scene, assetRoot, options = {}) {
   const W = 680, H = 440;
   const r = (x, y, w, h, c) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + c + '"/>';
@@ -8,7 +10,7 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   const time = resolveTimeScene(options.settings);
   const season = resolveSeasonScene(options.settings);
 
-  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" role="img"><title>像素花园·' + time.label + '</title><desc>本地 agent 活动化作墙沿垂落和墙根攀爬的项目藤</desc>';
+  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" role="img"><title>' + t('svg.title', { time: time.label }) + '</title><desc>' + t('svg.desc') + '</desc>';
   // <defs> — soft radial gradient for the setting-sun halo. Replaces the
   // earlier rectangular halo which showed as ghost squares against the
   // mountain sprites once those went sprite-art.
@@ -222,9 +224,9 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
 
   scene.innerHTML = s +
     '<div class="pg6-info" aria-live="polite" role="status">' +
-      '<div class="pg6-info-label" id="garden-info-label">项目藤 · 当前选中</div>' +
-      '<div class="pg6-info-name" id="garden-info-name">枝繁叶茂期</div>' +
-      '<div class="pg6-info-row"><span id="garden-info-total">累计 580k</span><span id="garden-info-stage">阶段 4 / 6</span></div>' +
+      '<div class="pg6-info-label" id="garden-info-label">' + t('card.project.label') + '</div>' +
+      '<div class="pg6-info-name" id="garden-info-name">' + t('card.project.defaultName') + '</div>' +
+      '<div class="pg6-info-row"><span id="garden-info-total">' + t('card.total', { total: '580k' }) + '</span><span id="garden-info-stage">' + t('card.stage', { stage: 4 }) + '</span></div>' +
       '<div class="pg6-info-bar"><div class="pg6-info-fill" id="garden-info-fill"></div></div>' +
       '<div class="pg6-info-spark" id="garden-info-spark" aria-hidden="true"></div>' +
     '</div>';
@@ -268,7 +270,7 @@ function resolveTimeScene(settings) {
   const scenes = {
     day: {
       mode: 'day',
-      label: '白日',
+      label: t('time.day'),
       skyTop: '#7fb7e8',
       skyMid: '#a5cce8',
       skyBottom: '#b9d8ea',
@@ -283,7 +285,7 @@ function resolveTimeScene(settings) {
     },
     dusk: {
       mode: 'dusk',
-      label: '傍晚',
+      label: t('time.dusk'),
       skyTop: '#8ea2c8',
       // Pinkish middle softens the gray-blue → orange jump; the old setup
       // had a sharp seam at y=70 between these two stops.
@@ -300,7 +302,7 @@ function resolveTimeScene(settings) {
     },
     night: {
       mode: 'night',
-      label: '夜晚',
+      label: t('time.night'),
       skyTop: '#17213a',
       skyMid: '#1e2a44',
       skyBottom: '#273452',
@@ -333,7 +335,7 @@ function resolveSeasonScene(settings) {
   const palettes = {
     spring: {
       mode: 'spring',
-      label: '春',
+      label: t('season.spring'),
       grass: ['#4f7228', '#5e8a32', '#6e9a38', '#5e7c2a'],
       grassDots: '#3a5520',
       flowers: ['#f4b8c8', '#f0c068', '#e08aa0', '#f0e090', '#d870a0', '#f8e8ec'],
@@ -341,7 +343,7 @@ function resolveSeasonScene(settings) {
     },
     summer: {
       mode: 'summer',
-      label: '夏',
+      label: t('season.summer'),
       grass: ['#3f6b22', '#4f8030', '#5e9230', '#4f7022'],
       grassDots: '#2e4a18',
       flowers: ['#f0c068', '#e8a058', '#f0e090', '#f4b06a', '#e89048'],
@@ -349,7 +351,7 @@ function resolveSeasonScene(settings) {
     },
     autumn: {
       mode: 'autumn',
-      label: '秋',
+      label: t('season.autumn'),
       grass: ['#8a6a24', '#a07c2c', '#b08832', '#8e6628'],
       grassDots: '#5a4218',
       flowers: ['#d8682a', '#c4521e', '#e89c44', '#f0b860', '#a8401a'],
@@ -357,7 +359,7 @@ function resolveSeasonScene(settings) {
     },
     winter: {
       mode: 'winter',
-      label: '冬',
+      label: t('season.winter'),
       grass: ['#6b7c64', '#7e8c76', '#8e9c84', '#73826c'],
       grassDots: '#52604c',
       flowers: ['#e8eef0', '#cfd6da', '#f0f4f6'],

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added a lightweight frontend i18n layer for the desktop garden UI. The web
+  surface now defaults to English for non-Chinese systems, keeps Chinese for
+  Chinese locales, and supports `?lang=en` / `?lang=zh` for release-check
+  previews without adding a framework or touching core data contracts.
 - Updated CI / release checkout steps to `actions/checkout@v6`, clearing the
   Node.js 20 deprecation warning before GitHub Actions moves JavaScript actions
   to Node 24 by default.

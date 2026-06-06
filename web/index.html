@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -578,7 +578,7 @@ body {
 .pg6-settings-section + .pg6-settings-section { border-top: 1px dashed var(--color-border-tertiary); margin-top: 6px; padding-top: 10px; }
 .pg6-settings-title { color: var(--color-text-secondary); font-size: 11px; font-weight: 500; letter-spacing: 0.4px; margin: 0; text-transform: uppercase; }
 .pg6-settings-row { align-items: center; column-gap: 12px; display: flex; flex-wrap: wrap; row-gap: 4px; }
-.pg6-settings-label { color: var(--color-text-secondary); flex: 0 0 48px; font-size: 11px; }
+.pg6-settings-label { color: var(--color-text-secondary); flex: 0 0 132px; font-size: 11px; }
 .pg6-settings-pills { display: inline-flex; flex-wrap: wrap; gap: 4px; }
 .pg6-settings-pill {
   align-items: center;
@@ -707,12 +707,12 @@ body {
 </head>
 <body>
 
-<h2 class="sr-only">像素花园:本机 AI agent 活动化作墙沿垂落或墙根攀爬的项目藤。使用 Tab 进入项目藤列表,左右方向键在藤之间切换。</h2>
+<h2 class="sr-only" data-i18n="sr.description">Pixel garden: local AI agent activity grows into project vines hanging from the wall or climbing from the ground. Use Tab to enter the vine list, then Left and Right arrows to move between vines.</h2>
 
 <div class="pg6-wrap">
   <div class="pg6-frame">
     <div class="pg6-header" data-tauri-drag-region>
-      <div class="pg6-app">像素花园 · 你的数字庭院</div>
+      <div class="pg6-app" data-i18n="app.initial">Pixel Garden · Your local agent courtyard</div>
       <div class="pg6-meta">
         <span class="pg6-meta-item"><svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7c2-5 7-3 6 2 5-1 7 4 2 6 3 4-1 8-5 5-2 5-7 3-6-2-5 1-7-4-2-6-3-4 1-8 5-5Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg><span id="meta-season">—</span></span>
         <span class="pg6-meta-item"><svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16h16M7 20h10M6 12a6 6 0 0 1 12 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span id="meta-time">—</span></span>
@@ -721,7 +721,7 @@ body {
     <div class="pg6-scene" id="pg6-scene"></div>
     <div class="pg6-footer">
       <svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6l8-3Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 12 3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>仅读取本机 agent 数据 · 零网络请求</span>
+      <span data-i18n="footer.privacy">Reads local agent data only · zero network requests</span>
       <span id="data-freshness" class="pg6-footer-freshness"></span>
     </div>
   </div>

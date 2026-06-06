@@ -13,12 +13,15 @@ import { mountSettingsPanel } from './settings-panel.js';
 import { groupSprites } from './render-helpers.js';
 import { createGardenRenderer } from './render-garden.js';
 import { renderBaseScene } from './render-svg.js';
+import { applyStaticTranslations } from './i18n.js';
 
 const scene = document.getElementById('pg6-scene');
 const assetRoot = window.__TAURI__ ? './assets' : '../assets';
 const spriteRoot = assetRoot + '/sprites/';
 const manifestUrl = spriteRoot + 'ivy_courtyard_manifest.json';
 const dataUrl = './data/garden-summary.json';
+
+applyStaticTranslations();
 
 // Wire the toast layer + backend error stream before kicking off any IO,
 // so an early failure (manifest fetch, settings invoke) still surfaces.

@@ -1,5 +1,6 @@
 import { fmtLocal } from './render-helpers.js';
 import { insightPanelHTML } from './render-insight.js';
+import { t } from './i18n.js';
 
 const DAYS = 14;
 const LIMIT = 10;
@@ -10,7 +11,7 @@ export function mountInsightPanel({ hostFooter, initialSummary, onProjectSelect,
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'pg6-footer-insight';
-  button.setAttribute('aria-label', '打开 Token Insight');
+  button.setAttribute('aria-label', t('insight.openAria'));
   button.setAttribute('aria-expanded', 'false');
   button.innerHTML = insightSvg() + '<span>Insight</span>';
 
@@ -18,7 +19,7 @@ export function mountInsightPanel({ hostFooter, initialSummary, onProjectSelect,
   panel.className = 'pg6-insight-panel';
   panel.id = 'token-insight-panel';
   panel.setAttribute('role', 'dialog');
-  panel.setAttribute('aria-label', 'Token Insight');
+  panel.setAttribute('aria-label', t('insight.dialogAria'));
   panel.hidden = true;
   panel.innerHTML = insightPanelHTML(currentSummary, { days: DAYS, limit: LIMIT, format: fmtLocal });
 

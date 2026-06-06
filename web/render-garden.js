@@ -1,6 +1,7 @@
 import { CONFIG } from './scene-config.js';
 import { fmtLocal, escapeHtml, pick, pickByToken, namedSprite, jitter } from './render-helpers.js';
 import { sparklineSVG } from './render-insight.js';
+import { t } from './i18n.js';
 
 let scene;
 let spriteRoot;
@@ -93,20 +94,20 @@ function renderEverything(groups, summary) {
 function showScanning() {
   const el = document.getElementById('data-freshness');
   if (!el) return;
-  el.textContent = '· 正在扫描...';
+  el.textContent = t('fresh.scanning');
   el.classList.remove('is-stale', 'is-paused');
   el.classList.add('is-scanning');
-  el.title = '正在读取本机 agent 数据';
+  el.title = t('fresh.scanningTitle');
 }
 
 function showCached(summary) {
   updateDataFreshness(summary);
   const el = document.getElementById('data-freshness');
   if (!el) return;
-  el.textContent = '· 已扫描 · 自动刷新已关闭';
+  el.textContent = t('fresh.cached');
   el.classList.remove('is-scanning', 'is-stale');
   el.classList.add('is-paused');
-  el.title = '缓存已更新，打开自动刷新或手动切换视图后会重绘花园';
+  el.title = t('fresh.cachedTitle');
 }
 
 
@@ -133,16 +134,16 @@ function clearDynamicLayers() {
     const hours = Math.round(diff / 3_600_000);
     const days = Math.round(diff / 86_400_000);
     let label;
-    if (mins < 1)      label = '刚刚';
-    else if (mins < 60) label = mins + ' 分钟前';
-    else if (hours < 24) label = hours + ' 小时前';
-    else if (days < 30)  label = days + ' 天前';
-    else                 label = '一个月以上之前';
-    el.textContent = '· 更新于 ' + label;
+    if (mins < 1)      label = t('fresh.justNow');
+    else if (mins < 60) label = t('fresh.minutesAgo', { count: mins });
+    else if (hours < 24) label = t('fresh.hoursAgo', { count: hours });
+    else if (days < 30)  label = t('fresh.daysAgo', { count: days });
+    else                 label = t('fresh.monthPlusAgo');
+    el.textContent = t('fresh.updated', { when: label });
     el.classList.remove('is-scanning', 'is-paused');
     if (diff > 24 * 3_600_000) {
       el.classList.add('is-stale');
-      el.title = '可从托盘点击扫描刷新';
+      el.title = t('fresh.staleTitle');
     } else {
       el.classList.remove('is-stale');
       el.removeAttribute('title');
@@ -154,28 +155,28 @@ function clearDynamicLayers() {
   // ==========================================================================
   // 24 solar terms, indexed by month*100+day. find latest <= today.
   const TERMS_24 = [
-    [104, '小寒'], [120, '大寒'], [204, '立春'], [219, '雨水'],
-    [305, '惊蛰'], [320, '春分'], [404, '清明'], [420, '谷雨'],
-    [505, '立夏'], [521, '小满'], [605, '芒种'], [621, '夏至'],
-    [707, '小暑'], [722, '大暑'], [807, '立秋'], [823, '处暑'],
-    [907, '白露'], [923, '秋分'], [1008, '寒露'], [1023, '霜降'],
-    [1107, '立冬'], [1122, '小雪'], [1207, '大雪'], [1222, '冬至']
+    [104, 'term.minorCold'], [120, 'term.majorCold'], [204, 'term.startSpring'], [219, 'term.rainWater'],
+    [305, 'term.awakeningInsects'], [320, 'term.springEquinox'], [404, 'term.pureBrightness'], [420, 'term.grainRain'],
+    [505, 'term.startSummer'], [521, 'term.lesserFullness'], [605, 'term.grainInEar'], [621, 'term.summerSolstice'],
+    [707, 'term.minorHeat'], [722, 'term.majorHeat'], [807, 'term.startAutumn'], [823, 'term.endHeat'],
+    [907, 'term.whiteDew'], [923, 'term.autumnEquinox'], [1008, 'term.coldDew'], [1023, 'term.frostDescent'],
+    [1107, 'term.startWinter'], [1122, 'term.minorSnow'], [1207, 'term.majorSnow'], [1222, 'term.winterSolstice']
   ];
   function currentSolarTerm(d) {
     const md = (d.getMonth() + 1) * 100 + d.getDate();
-    let term = '冬至';   // wrap-around for early Jan before 小寒
-    for (const [cut, t] of TERMS_24) if (md >= cut) term = t;
-    return term;
+    let term = 'term.winterSolstice';   // wrap-around for early Jan before Minor Cold
+    for (const [cut, termKey] of TERMS_24) if (md >= cut) term = termKey;
+    return t(term);
   }
   function updateHeaderMeta() {
     const now = new Date();
     const season = document.getElementById('meta-season');
     const time = document.getElementById('meta-time');
-    if (season) season.textContent = sceneLabel('seasonLabel', '春') + ' · ' + currentSolarTerm(now);
+    if (season) season.textContent = sceneLabel('seasonLabel', t('season.spring')) + ' · ' + currentSolarTerm(now);
     if (time) {
       const hh = String(now.getHours()).padStart(2, '0');
       const mm = String(now.getMinutes()).padStart(2, '0');
-      time.textContent = sceneLabel('timeLabel', '白日') + ' · ' + hh + ':' + mm;
+      time.textContent = sceneLabel('timeLabel', t('time.day')) + ' · ' + hh + ':' + mm;
     }
   }
 
@@ -296,10 +297,11 @@ function clearDynamicLayers() {
       });
       // #D3 — cat hover/focus reveals "guardian" info card
       if (catImg) {
+        const catLabel = t('card.cat.label');
         catImg.tabIndex = 0;
         catImg.setAttribute('role', 'img');
-        catImg.setAttribute('aria-label', '石猫 · 镇园守护');
-        catImg.title = '石猫 · 镇园守护';
+        catImg.setAttribute('aria-label', catLabel);
+        catImg.title = catLabel;
         catImg.addEventListener('mouseenter', () => {
           updateInfoFromCat(tiers);
           positionInfoCardFromElement(catImg);
@@ -517,6 +519,7 @@ function clearDynamicLayers() {
   }
 
   function addTrinketSprite(trinket, xPct, yPct, wUnits, idx) {
+    const label = trinketLabel(trinket);
     const img = document.createElement('img');
     img.className = 'pg6-sprite object pg6-trinket-sprite';
     img.src = spriteRoot + trinket.file;
@@ -529,8 +532,8 @@ function clearDynamicLayers() {
     img.style.zIndex = String(40 + idx);
     img.style.setProperty('--sprite-transform', 'translate(-50%, -50%)');
     img.tabIndex = 0;
-    img.title = trinket.name + ' · ' + trinket.hint;
-    img.setAttribute('aria-label', trinket.name + ', ' + trinket.hint);
+    img.title = label.name + ' · ' + label.hint;
+    img.setAttribute('aria-label', label.name + ', ' + label.hint);
     img.addEventListener('mouseenter', () => {
       updateInfoFromTrinket(trinket);
       positionInfoCardFromElement(img);
@@ -694,21 +697,22 @@ function clearDynamicLayers() {
     const empty = document.createElement('div');
     empty.className = 'pg6-empty';
     empty.innerHTML =
-      '<div class="pg6-empty-title">还没有本地 agent 活动</div>' +
-      '<div class="pg6-empty-hint">打开 Claude Code、Codex 或 Claude Cowork 后，花园会自动长出项目。</div>';
+      '<div class="pg6-empty-title">' + escapeHtml(t('empty.title')) + '</div>' +
+      '<div class="pg6-empty-hint">' + escapeHtml(t('empty.hint')) + '</div>';
     scene.append(empty);
   }
 
   function updateInfoFromTrinket(trinket) {
+    const translated = trinketLabel(trinket);
     const label = document.getElementById('garden-info-label');
     const title = document.getElementById('garden-info-name');
     const token = document.getElementById('garden-info-total');
     const stageEl = document.getElementById('garden-info-stage');
     const fill = document.getElementById('garden-info-fill');
-    if (label) label.textContent = '亭子陈列';
-    if (title) title.textContent = trinket.name;
-    if (token) token.textContent = trinket.hint;
-    if (stageEl) stageEl.textContent = '阈值 ' + fmtLocal(trinket.threshold);
+    if (label) label.textContent = t('card.trinket.label');
+    if (title) title.textContent = translated.name;
+    if (token) token.textContent = translated.hint;
+    if (stageEl) stageEl.textContent = t('card.threshold', { threshold: fmtLocal(trinket.threshold) });
     if (fill) fill.style.width = '100%';
     setInfoSpark(null);
     showInfoCard();
@@ -724,10 +728,10 @@ function clearDynamicLayers() {
     const fill = document.getElementById('garden-info-fill');
     const isFull = tiers.stone_cat === 'full';
     const sessions = tiers.totalSessions || 0;
-    if (label) label.textContent = '石猫 · 镇园守护';
-    if (title) title.textContent = isFull ? '坐镇 · 戴铃' : '坐镇';
-    if (token) token.textContent = '累计 ' + sessions + ' 次会话';
-    if (stageEl) stageEl.textContent = isFull ? '满级' : '初阶';
+    if (label) label.textContent = t('card.cat.label');
+    if (title) title.textContent = isFull ? t('card.cat.fullTitle') : t('card.cat.smallTitle');
+    if (token) token.textContent = t('card.cat.sessions', { count: sessions });
+    if (stageEl) stageEl.textContent = isFull ? t('card.cat.fullStage') : t('card.cat.smallStage');
     if (fill) fill.style.width = isFull ? '100%' : '40%';
     setInfoSpark(null);
     showInfoCard();
@@ -1086,17 +1090,17 @@ function clearDynamicLayers() {
   function updateInfoFromProject(project, options) {
     const reveal = !options || options.reveal !== false;
     const stage = Number(project.stage || 1);
-    const name = project.display_name || '本地智能体花园';
+    const name = project.display_name || t('card.project.defaultName');
     const total = project.total_tokens || 0;
     const label = document.getElementById('garden-info-label');
     const title = document.getElementById('garden-info-name');
     const token = document.getElementById('garden-info-total');
     const stageEl = document.getElementById('garden-info-stage');
     const fill = document.getElementById('garden-info-fill');
-    if (label) label.textContent = '项目藤 · 当前选中';
+    if (label) label.textContent = t('card.project.label');
     if (title) title.textContent = name;
-    if (token) token.textContent = '累计 ' + fmtLocal(total);
-    if (stageEl) stageEl.textContent = '阶段 ' + stage + ' / 6';
+    if (token) token.textContent = t('card.total', { total: fmtLocal(total) });
+    if (stageEl) stageEl.textContent = t('card.stage', { stage });
     if (fill) fill.style.width = Math.max(8, Math.min(100, stage / 6 * 100)) + '%';
     // Honest per-project 14-day token sparkline. Absent daily_tokens (older
     // caches / fallback data) degrades to a flat baseline, never an error.
@@ -1230,7 +1234,14 @@ function clearDynamicLayers() {
     if (project) updateInfoFromProject(project, { reveal: false });
     const app = document.querySelector('.pg6-app');
     const total = summary ? summary.total_tokens : projects.reduce((sum, item) => sum + (item.total_tokens || 0), 0);
-    if (app) app.textContent = '像素花园 · ' + fmtLocal(total) + ' local tokens';
+    if (app) app.textContent = t('app.tokens', { total: fmtLocal(total) });
+  }
+
+  function trinketLabel(trinket) {
+    return {
+      name: t('trinket.' + trinket.id + '.name'),
+      hint: t('trinket.' + trinket.id + '.hint')
+    };
   }
 
 function sceneTimeMode() {

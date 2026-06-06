@@ -7,27 +7,28 @@
 // still render so the user can see what's configured.
 
 import { setSettings, isTauriRuntime } from './data-source.js';
+import { t } from './i18n.js';
 
 const SAVE_DEBOUNCE_MS = 300;
 
 const CHOICES = {
   time_mode: [
-    { value: 'system', label: '跟随系统' },
-    { value: 'day', label: '白日' },
-    { value: 'dusk', label: '傍晚' },
-    { value: 'night', label: '夜晚' }
+    { value: 'system', labelKey: 'choice.system' },
+    { value: 'day', labelKey: 'choice.day' },
+    { value: 'dusk', labelKey: 'choice.dusk' },
+    { value: 'night', labelKey: 'choice.night' }
   ],
   season_mode: [
-    { value: 'system', label: '跟随日期' },
-    { value: 'spring', label: '春' },
-    { value: 'summer', label: '夏' },
-    { value: 'autumn', label: '秋' },
-    { value: 'winter', label: '冬' }
+    { value: 'system', labelKey: 'choice.date' },
+    { value: 'spring', labelKey: 'choice.spring' },
+    { value: 'summer', labelKey: 'choice.summer' },
+    { value: 'autumn', labelKey: 'choice.autumn' },
+    { value: 'winter', labelKey: 'choice.winter' }
   ],
   motion: [
-    { value: 'system', label: '跟随系统' },
-    { value: 'reduced', label: '减弱' },
-    { value: 'off', label: '关闭' }
+    { value: 'system', labelKey: 'choice.system' },
+    { value: 'reduced', labelKey: 'choice.reduced' },
+    { value: 'off', labelKey: 'choice.off' }
   ]
 };
 
@@ -48,7 +49,7 @@ export function mountSettingsPanel({ hostFooter, initial, onChange }) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'pg6-footer-gear';
-  button.setAttribute('aria-label', '设置');
+  button.setAttribute('aria-label', t('settings.aria'));
   button.setAttribute('aria-expanded', 'false');
   button.innerHTML = gearSvg();
 
@@ -112,19 +113,19 @@ function buildPanelHtml(settings, canPersist) {
   const disabledAttr = canPersist ? '' : ' disabled';
   const note = canPersist
     ? ''
-    : '<p class="pg6-settings-note">只读模式 · 在桌面 App 中打开以保存设置</p>';
+    : '<p class="pg6-settings-note">' + escape(t('settings.readOnly')) + '</p>';
   return (
     note +
-    section('外观', [
-      radioGroup('time_mode', '时间', CHOICES.time_mode, settings.appearance.time_mode, disabledAttr),
-      radioGroup('season_mode', '季节', CHOICES.season_mode, settings.appearance.season_mode, disabledAttr),
-      radioGroup('motion', '动画', CHOICES.motion, settings.appearance.motion, disabledAttr)
+    section(t('settings.appearance'), [
+      radioGroup('time_mode', t('settings.time'), CHOICES.time_mode, settings.appearance.time_mode, disabledAttr),
+      radioGroup('season_mode', t('settings.season'), CHOICES.season_mode, settings.appearance.season_mode, disabledAttr),
+      radioGroup('motion', t('settings.motion'), CHOICES.motion, settings.appearance.motion, disabledAttr)
     ]) +
-    section('数据', [
+    section(t('settings.data'), [
       checkbox(
         'auto_rescan',
-        'watcher 实时更新',
-        '关闭后,需要点 footer 刷新才会看到新的活动',
+        t('settings.autoRescan'),
+        t('settings.autoRescanHint'),
         settings.data.auto_rescan,
         disabledAttr
       )
@@ -149,7 +150,7 @@ function radioGroup(name, label, options, value, disabledAttr) {
       return (
         '<label class="pg6-settings-pill" for="' + id + '">' +
         '<input type="radio" id="' + id + '" name="' + name + '" value="' + opt.value + '"' + checked + disabledAttr + '>' +
-        '<span>' + escape(opt.label) + '</span>' +
+        '<span>' + escape(t(opt.labelKey)) + '</span>' +
         '</label>'
       );
     })

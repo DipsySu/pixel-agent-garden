@@ -11,6 +11,8 @@
 // sparkline shows each project's OWN series over time, so no cross-project
 // scale is implied — the long-tail trap never appears here.
 
+import { t } from './i18n.js';
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function dayKey(date) {
@@ -72,7 +74,7 @@ export function sparklineSVG(dailyTokens, opts = {}) {
     rects += `<rect x="${x}" y="${yy}" width="${barW}" height="${minH}" rx="0.5" opacity="${op}"/>`;
   });
 
-  const label = `近 ${days} 天 token：合计 ${format(total)}`;
+  const label = t('insight.sparkLabel', { days, total: format(total) });
   const safeLabel = escapeAttr(label);
   return (
     `<svg class="pg6-spark-svg" viewBox="0 0 ${width} ${h}" preserveAspectRatio="none" ` +
@@ -120,18 +122,18 @@ export function insightPanelHTML(summary, opts = {}) {
         now,
         ambiguous: (nameCounts.get(project.display_name || 'unknown') || 0) > 1
       })).join('')
-    : '<div class="pg6-insight-empty">等待本地 agent 活动</div>';
+    : '<div class="pg6-insight-empty">' + escapeHtml(t('insight.empty')) + '</div>';
 
   return (
     '<div class="pg6-insight-head">' +
-      '<div><div class="pg6-insight-label">Token Insight</div>' +
-      '<div class="pg6-insight-title">项目消耗概览</div></div>' +
-      '<button class="pg6-insight-close" type="button" aria-label="关闭 Insight 面板">' + closeSvg() + '</button>' +
+      '<div><div class="pg6-insight-label">' + escapeHtml(t('insight.label')) + '</div>' +
+      '<div class="pg6-insight-title">' + escapeHtml(t('insight.title')) + '</div></div>' +
+      '<button class="pg6-insight-close" type="button" aria-label="' + escapeAttr(t('insight.closeAria')) + '">' + closeSvg() + '</button>' +
     '</div>' +
     '<div class="pg6-insight-summary">' +
-      '<span><b>' + escapeHtml(format(total)) + '</b><small>累计</small></span>' +
-      '<span><b>' + escapeHtml(format(recent)) + '</b><small>近 ' + days + ' 天</small></span>' +
-      '<span><b>' + escapeHtml(String(summary?.active_projects || projects.length || 0)) + '</b><small>项目</small></span>' +
+      '<span><b>' + escapeHtml(format(total)) + '</b><small>' + escapeHtml(t('insight.total')) + '</small></span>' +
+      '<span><b>' + escapeHtml(format(recent)) + '</b><small>' + escapeHtml(t('insight.recent', { days })) + '</small></span>' +
+      '<span><b>' + escapeHtml(String(summary?.active_projects || projects.length || 0)) + '</b><small>' + escapeHtml(t('insight.projects')) + '</small></span>' +
     '</div>' +
     '<div class="pg6-insight-list" role="list">' + rows + '</div>'
   );
@@ -150,17 +152,17 @@ function insightRowHTML(project, index, opts) {
   // siblings inside a flex line; the panel controller routes clicks by closest().
   const term = (path && !inferred)
     ? '<button class="pg6-insight-term" type="button" data-project-path="' + escapeAttr(path) +
-      '" title="在终端打开" aria-label="在终端打开 ' + escapeAttr(name) + '">' + terminalSvg() + '</button>'
+      '" title="' + escapeAttr(t('insight.openTerminalTitle')) + '" aria-label="' + escapeAttr(t('insight.openTerminalAria', { name })) + '">' + terminalSvg() + '</button>'
     : '';
   // "≈ 推测路径" badge marks an inferred (best-effort) path so the user knows
   // the name is a guess, not a verified directory.
   const approxBadge = inferred
-    ? '<span class="pg6-insight-approx" title="路径由 Claude 目录名反推,可能不准确">≈ 推测路径</span>'
+    ? '<span class="pg6-insight-approx" title="' + escapeAttr(t('insight.approxTitle')) + '">' + escapeHtml(t('insight.approxBadge')) + '</span>'
     : '';
   // Full path as a hover tooltip on every row (cheap discoverability). For
   // inferred paths the tooltip is explicitly marked approximate.
   const rowTitle = path
-    ? ' title="' + escapeAttr(inferred ? '≈ ' + path + '(推测路径,可能不准)' : path) + '"'
+    ? ' title="' + escapeAttr(inferred ? t('insight.inferredTooltip', { path }) : path) + '"'
     : '';
   // Show the path line when the basename is ambiguous (duplicate) OR the path
   // is inferred; prefix inferred ones with ≈ to keep the "guess" signal.
@@ -174,7 +176,7 @@ function insightRowHTML(project, index, opts) {
         '<span class="pg6-insight-rank">' + String(index + 1).padStart(2, '0') + '</span>' +
         '<span class="pg6-insight-main">' +
           '<strong>' + escapeHtml(name) + '</strong>' + approxBadge +
-          '<small>近 ' + opts.days + ' 天 ' + escapeHtml(opts.format(recent)) + '</small>' +
+          '<small>' + escapeHtml(t('insight.rowRecent', { days: opts.days, total: opts.format(recent) })) + '</small>' +
           pathLine +
         '</span>' +
         '<span class="pg6-insight-spark" aria-hidden="true">' + sparklineSVG(project.daily_tokens, { days: opts.days, now: opts.now, format: opts.format }) + '</span>' +
