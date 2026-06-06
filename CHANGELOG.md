@@ -21,7 +21,10 @@
   Tauri deps and intentionally not banned, so the honest proof stays runtime + CSP
   with the gate as defense-in-depth. The cargo-deny unmaintained-advisory check is
   scoped to direct workspace dependencies so Tauri's transitive gtk-rs GTK3 Linux
-  baseline does not drown out the privacy gate. Spec + Claude↔codex review:
+  baseline does not drown out the privacy gate; the `time` RFC2822 parser advisory is
+  temporarily ignored with a reason because the patched release raises MSRV beyond
+  the workspace's Rust 1.85 contract and the app does not directly parse untrusted
+  RFC2822 input with `time`. Spec + Claude↔codex review:
   `docs/17-launch-trust-hardening-spec.md`.
 
 ## v0.1.2 - 2026-06-06

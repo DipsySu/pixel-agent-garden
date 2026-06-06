@@ -15,6 +15,9 @@ yanked = "deny"
 # direct dependencies, but don't let that known upstream desktop baseline drown
 # out the zero-network gate this config exists to enforce.
 unmaintained = "workspace"
+ignore = [
+  { id = "RUSTSEC-2026-0009", reason = "time >=0.3.47 fixes the RFC2822 parser stack-exhaustion issue but requires Rust 1.88; this workspace is pinned to MSRV 1.85 and does not directly parse untrusted RFC2822 input with time. Remove once MSRV/Tauri deps can move to the patched time release." },
+]
 
 [bans]
 multiple-versions = "allow"
