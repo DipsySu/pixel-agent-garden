@@ -1,0 +1,48 @@
+# Supply-chain policy backing the zero-network / zero-telemetry contract (PRIVACY.md).
+# CI runs:  cargo deny check advisories bans sources
+#
+# NOTE: reqwest / hyper / hyper-util / tokio / url appear TRANSITIVELY via Tauri 2.x
+# and are intentionally NOT banned (banning them would red-line CI on the current
+# tree). The bans below target NEW egress / server / telemetry crates the app must
+# never add. The definitive zero-network proof is runtime (lsof = 0 connections) +
+# the locked CSP; this gate is defense-in-depth against new dependencies.
+
+[advisories]
+version = 2
+yanked = "deny"
+
+[bans]
+multiple-versions = "allow"
+wildcards = "allow"
+# Unambiguous network clients, servers, and telemetry SDKs. None are in the Tauri
+# baseline; their appearance signals app-level egress and fails the build.
+deny = [
+  { name = "ureq" },
+  { name = "isahc" },
+  { name = "surf" },
+  { name = "attohttpc" },
+  { name = "curl" },
+  { name = "curl-sys" },
+  { name = "sentry" },
+  { name = "sentry-core" },
+  { name = "opentelemetry" },
+  { name = "tracing-opentelemetry" },
+  { name = "tungstenite" },
+  { name = "tokio-tungstenite" },
+  { name = "async-tungstenite" },
+  { name = "websocket" },
+  { name = "axum" },
+  { name = "warp" },
+  { name = "actix-web" },
+  { name = "rocket" },
+  { name = "tiny_http" },
+  { name = "rouille" },
+  { name = "quinn" },
+  { name = "lettre" },
+  { name = "ssh2" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

@@ -24,6 +24,30 @@ jobs:
           components: rustfmt
       - run: cargo fmt --all -- --check
 
+  supply-chain:
+    name: supply-chain (zero-network gate)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: No new network / telemetry client crates in Cargo.lock
+        run: |
+          # Egress / server / telemetry crates the app must never add. reqwest,
+          # hyper, tokio, url are baseline Tauri 2.x deps and are intentionally NOT
+          # listed (see PRIVACY.md). Keep this in sync with deny.toml [bans].
+          banned='ureq|isahc|surf|attohttpc|curl|curl-sys|sentry|sentry-core|opentelemetry|tracing-opentelemetry|tungstenite|tokio-tungstenite|async-tungstenite|websocket|axum|warp|actix-web|rocket|tiny_http|rouille|quinn|lettre|ssh2'
+          if grep -nE "^name = \"($banned)\"$" Cargo.lock; then
+            echo "::error::A network/telemetry crate entered Cargo.lock — violates the zero-network contract (see PRIVACY.md)."
+            exit 1
+          fi
+          echo "OK — no new egress/telemetry client crates in Cargo.lock."
+      - uses: dtolnay/rust-toolchain@1.85.0
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
+      - name: cargo-deny (advisories + bans + sources)
+        run: cargo deny check advisories bans sources
+
   clippy-test:
     name: clippy + test (${{ matrix.platform }})
     runs-on: ${{ matrix.platform }}

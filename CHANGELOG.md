@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Hardened and documented the zero-network guarantee for a public, unsigned launch.
+  Added a `LICENSE` (MIT, matching `Cargo.toml`) and a `PRIVACY.md` with a "verify
+  it yourself" recipe (watch egress with lsof / Little Snitch / TCPView → zero
+  connections). Replaced `tauri.conf.json`'s `csp: null` with a locked policy
+  (`default-src 'self'` … `connect-src 'self' ipc: http://ipc.localhost`) so the
+  webview is runtime-prevented from reaching any external host while still allowing
+  same-origin assets + Tauri IPC. Added a CI "zero-network gate" (`deny.toml` +
+  `cargo deny check advisories bans sources` + a `Cargo.lock` scan) that fails if a
+  new egress/telemetry crate is introduced — `reqwest`/`hyper`/`tokio` are baseline
+  Tauri deps and intentionally not banned, so the honest proof stays runtime + CSP
+  with the gate as defense-in-depth. Spec + Claude↔codex review:
+  `docs/17-launch-trust-hardening-spec.md`.
+
 ## v0.1.2 - 2026-06-06
 
 - Added focused core test coverage for scan-level dedupe and the manual JSONL
