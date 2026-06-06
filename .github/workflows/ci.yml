@@ -18,7 +18,7 @@ jobs:
     name: rustfmt
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@1.85.0
         with:
           components: rustfmt
@@ -28,7 +28,7 @@ jobs:
     name: supply-chain (zero-network gate)
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: No new network / telemetry client crates in Cargo.lock
         run: |
           # Egress / server / telemetry crates the app must never add. reqwest,
@@ -56,7 +56,7 @@ jobs:
       matrix:
         platform: [ubuntu-22.04, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Tauri 2 on Linux needs the webkit2gtk-4.1 stack + appindicator (for the
       # tray planned in P3-2). macOS / Windows runners ship what's needed.

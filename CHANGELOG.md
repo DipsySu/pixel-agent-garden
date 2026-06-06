@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Updated CI / release checkout steps to `actions/checkout@v6`, clearing the
+  Node.js 20 deprecation warning before GitHub Actions moves JavaScript actions
+  to Node 24 by default.
 - Prepared the remaining public-launch release path: first-run empty state now
   stays user-facing and Chinese-only instead of showing a ghost
   `agent-garden scan` command, watcher startup/watch/notify failures emit
