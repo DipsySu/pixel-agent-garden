@@ -72,6 +72,35 @@ export async function openInTerminal(path) {
     }
   }
 
+/**
+ * Save a generated postcard image. Desktop uses the Rust save dialog command;
+ * browser preview falls back to a normal user-initiated download link.
+ */
+export async function savePostcard(blob, suggestedName) {
+    const api = tauriApi();
+    if (api?.core?.invoke) {
+      try {
+        const bytes = Array.from(new Uint8Array(await blob.arrayBuffer()));
+        return await api.core.invoke('save_postcard', { bytes, suggestedName });
+      } catch (err) {
+        logGardenError('save_postcard invoke failed', err);
+        throw err;
+      }
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = suggestedName || 'garden-postcard.png';
+    link.rel = 'noopener';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    return true;
+  }
+
 export function subscribeGardenUpdates(onSummary) {
     const api = tauriApi();
     if (!api?.event || typeof api.event.listen !== 'function') return;

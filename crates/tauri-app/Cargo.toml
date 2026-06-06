@@ -21,6 +21,7 @@ local-agent-garden-core = { workspace = true }
 
 # Tauri 2.x
 tauri = { version = "2", features = ["protocol-asset", "tray-icon", "image-png"] }
+tauri-plugin-dialog = "2"
 
 # Shared workspace deps
 serde = { workspace = true }

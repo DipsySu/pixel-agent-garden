@@ -10,6 +10,7 @@ import {
 import { mountErrorToast } from './error-toast.js';
 import { mountInsightPanel } from './insight-panel.js';
 import { mountSettingsPanel } from './settings-panel.js';
+import { mountPostcardExport } from './postcard.js';
 import { groupSprites } from './render-helpers.js';
 import { createGardenRenderer } from './render-garden.js';
 import { renderBaseScene } from './render-svg.js';
@@ -65,6 +66,12 @@ Promise.all([
         renderer.renderEverything(groups, lastSummary);
         insightPanel?.update(lastSummary);
       }
+    });
+    mountPostcardExport({
+      scene,
+      assetRoot,
+      getSummary: () => lastSummary,
+      onError: logGardenError
     });
   }
 

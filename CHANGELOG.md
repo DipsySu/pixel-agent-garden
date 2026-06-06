@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Added Garden Postcard — a one-click, zero-network export of the current scene to
+  a local PNG, the first way the garden can leave its window (the only privacy-safe
+  growth channel a local-first app has). A new `web/postcard.js` rasterizes the base
+  SVG (inlining the mountain sprite hrefs so they aren't blank), composites the DOM
+  sprites onto a 2× canvas preserving each vine's CSS filter tint + opacity, draws
+  the `.pg6-wall-edge-cover`, excludes transient particles, and adds a localized
+  one-line caption (`season · N vines · tokens` + optional `busiest: …`). A footer
+  button opens a small export panel whose anonymize default omits the busiest-project
+  name (basenames leak directory paths). Saving uses a new `save_postcard` Tauri
+  command (`tauri-plugin-dialog` save dialog + `std::fs::write`, `dialog:allow-save`
+  only — no `tauri-plugin-fs`, no frontend fs permission) with a browser
+  `<a download>` fallback; the save is user-initiated to a user-chosen path,
+  consistent with the privacy contract, and the caption/labels go through the i18n
+  layer. Spec + Claude↔codex review: `docs/18-garden-postcard-spec.md`. (Frontend
+  raster verified in-browser; the Rust save command is compile-checked in CI; the
+  native save dialog + the locked CSP still want one desktop `cargo tauri dev` pass
+  before the next release.)
 - Added a lightweight frontend i18n layer for the desktop garden UI. The web
   surface now defaults to English for non-Chinese systems, keeps Chinese for
   Chinese locales, and supports `?lang=en` / `?lang=zh` for release-check

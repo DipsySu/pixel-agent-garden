@@ -429,6 +429,39 @@ body {
 .pg6-footer-insight:hover,
 .pg6-footer-insight:focus-visible { background: rgba(255, 255, 255, 0.06); border-color: rgba(244, 216, 120, 0.24); color: var(--color-text-primary); outline: none; }
 .pg6-footer-insight.is-active { background: rgba(244, 216, 120, 0.10); border-color: rgba(244, 216, 120, 0.34); color: var(--color-text-primary); }
+.pg6-postcard-panel {
+  background: rgba(20, 24, 18, 0.93);
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: var(--border-radius-md);
+  bottom: 76px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3);
+  color: var(--color-text-primary);
+  font-size: 12px;
+  padding: 12px;
+  position: absolute;
+  right: var(--edge-pad);
+  width: min(300px, calc(100vw - var(--edge-pad) * 2));
+  z-index: 154;
+}
+.pg6-postcard-panel[hidden] { display: none; }
+.pg6-postcard-title { color: var(--color-text-primary); font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.pg6-postcard-toggle { align-items: center; color: var(--color-text-secondary); cursor: pointer; display: flex; gap: 8px; line-height: 1.4; }
+.pg6-postcard-toggle input { accent-color: #d6a258; flex: 0 0 auto; }
+.pg6-postcard-actions { align-items: center; display: flex; gap: 8px; justify-content: space-between; margin-top: 12px; }
+.pg6-postcard-export {
+  background: rgba(244, 216, 120, 0.12);
+  border: 1px solid rgba(244, 216, 120, 0.28);
+  border-radius: 5px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font: inherit;
+  height: 26px;
+  padding: 0 10px;
+}
+.pg6-postcard-export:hover,
+.pg6-postcard-export:focus-visible { background: rgba(244, 216, 120, 0.18); outline: none; }
+.pg6-postcard-export:disabled { cursor: wait; opacity: 0.62; }
+.pg6-postcard-status { color: var(--color-text-tertiary); font-size: 10px; min-width: 0; overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
 .pg6-footer-gear {
   align-items: center;
   background: transparent;
@@ -723,6 +756,21 @@ body {
       <svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6l8-3Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 12 3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span data-i18n="footer.privacy">Reads local agent data only · zero network requests</span>
       <span id="data-freshness" class="pg6-footer-freshness"></span>
+      <button id="postcard-open-button" class="pg6-footer-insight" type="button" aria-expanded="false" aria-controls="postcard-export-panel" data-i18n-aria-label="postcard.openAria">
+        <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 5h14v14H5z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 15 3-4 3 3 2-2 2 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="9" r="1.5" fill="currentColor"/></svg>
+        <span data-i18n="postcard.button">Postcard</span>
+      </button>
+    </div>
+    <div id="postcard-export-panel" class="pg6-postcard-panel" role="dialog" data-i18n-aria-label="postcard.dialogAria" hidden>
+      <div class="pg6-postcard-title" data-i18n="postcard.panelTitle">Export postcard</div>
+      <label class="pg6-postcard-toggle">
+        <input id="postcard-include-busiest" type="checkbox">
+        <span data-i18n="postcard.includeBusiest">Include busiest project</span>
+      </label>
+      <div class="pg6-postcard-actions">
+        <button id="postcard-export-button" class="pg6-postcard-export" type="button" data-i18n="postcard.export">Export</button>
+        <span id="postcard-status" class="pg6-postcard-status" aria-live="polite"></span>
+      </div>
     </div>
   </div>
 </div>

@@ -12,6 +12,7 @@ use local_agent_garden_core::cache;
 use local_agent_garden_core::registry;
 use local_agent_garden_core::settings::{self, Settings};
 use serde::Serialize;
+use tauri_plugin_dialog::DialogExt;
 
 /// Return the current garden summary from cache when possible, falling back to
 /// a fresh scan that writes `~/.local-agent-garden/events.json`.
@@ -106,4 +107,37 @@ pub async fn open_in_terminal(path: String) -> Result<(), String> {
     })
     .await
     .map_err(|e| format!("open_in_terminal task panicked: {e}"))?
+}
+
+/// Save a generated PNG postcard to a user-chosen path. The frontend provides
+/// the already-rendered bytes; this command only owns the native save dialog
+/// and the final write.
+#[tauri::command]
+pub async fn save_postcard(
+    app: tauri::AppHandle,
+    bytes: Vec<u8>,
+    suggested_name: String,
+) -> Result<bool, String> {
+    tokio::task::spawn_blocking(move || {
+        let Some(file_path) = app
+            .dialog()
+            .file()
+            .set_file_name(suggested_name)
+            .add_filter("PNG", &["png"])
+            .blocking_save_file()
+        else {
+            return Ok(false);
+        };
+
+        let mut path = file_path
+            .into_path()
+            .map_err(|e| format!("save dialog returned a non-file path: {e}"))?;
+        if path.extension().is_none() {
+            path.set_extension("png");
+        }
+        std::fs::write(&path, bytes).map_err(|e| format!("write {}: {e}", path.display()))?;
+        Ok(true)
+    })
+    .await
+    .map_err(|e| format!("save_postcard task panicked: {e}"))?
 }

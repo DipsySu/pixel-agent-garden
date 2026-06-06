@@ -9,6 +9,7 @@
     "core:event:allow-listen",
     "core:event:allow-unlisten",
     "core:window:default",
-    "core:webview:default"
+    "core:webview:default",
+    "dialog:allow-save"
   ]
 }

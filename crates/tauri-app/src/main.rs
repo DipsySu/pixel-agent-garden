@@ -22,6 +22,7 @@ use tauri::{Emitter, Manager};
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .menu(tray::build_app_menu)
         .on_menu_event(tray::handle_menu_event)
         .on_window_event(tray::handle_window_event)
@@ -33,6 +34,7 @@ fn main() {
             commands::get_settings,
             commands::set_settings,
             commands::open_in_terminal,
+            commands::save_postcard,
         ])
         .setup(|app| {
             tray::setup(app)?;
