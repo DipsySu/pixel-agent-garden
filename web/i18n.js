@@ -125,6 +125,15 @@ const MESSAGES = {
     'postcard.tokens': '{total} tokens',
     'postcard.busiest': 'busiest: {name}',
 
+    'return.label': 'Garden diff',
+    'return.title': 'While you were away',
+    'return.tokenDelta': '+{total} tokens',
+    'return.sessionDelta': '+{count} sessions',
+    'return.newVines': '{count} new vines',
+    'return.changedProjects': '{count} projects grew',
+    'return.topProject': 'Most changed: {name}',
+    'return.closeAria': 'Close return summary',
+
     'trinket.scroll.name': 'Scroll',
     'trinket.scroll.hint': '1M tokens · rear wall scroll',
     'trinket.tea_set.name': 'Tea set',
@@ -261,6 +270,15 @@ const MESSAGES = {
     'postcard.vines': '{count} 条藤',
     'postcard.tokens': '{total} tokens',
     'postcard.busiest': '最忙: {name}',
+
+    'return.label': '花园变化',
+    'return.title': '你不在的时候',
+    'return.tokenDelta': '+{total} tokens',
+    'return.sessionDelta': '+{count} 次会话',
+    'return.newVines': '{count} 条新藤',
+    'return.changedProjects': '{count} 个项目长高了',
+    'return.topProject': '变化最多: {name}',
+    'return.closeAria': '关闭回来摘要',
 
     'trinket.scroll.name': '挂卷',
     'trinket.scroll.hint': '百万 token · 后墙挂卷',

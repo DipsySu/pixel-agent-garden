@@ -462,6 +462,65 @@ body {
 .pg6-postcard-export:focus-visible { background: rgba(244, 216, 120, 0.18); outline: none; }
 .pg6-postcard-export:disabled { cursor: wait; opacity: 0.62; }
 .pg6-postcard-status { color: var(--color-text-tertiary); font-size: 10px; min-width: 0; overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.pg6-return-diff {
+  background: rgba(20, 24, 18, 0.88);
+  border: 1px solid rgba(244, 216, 120, 0.18);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
+  color: var(--color-text-primary);
+  font-size: 11px;
+  left: var(--edge-pad);
+  line-height: 1.45;
+  padding: 11px 34px 12px 13px;
+  position: absolute;
+  top: 48px;
+  transition: opacity 160ms ease, transform 160ms ease;
+  width: min(330px, calc(100vw - var(--edge-pad) * 2));
+  z-index: 146;
+}
+.pg6-return-diff.is-closing {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+.pg6-return-diff-label {
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  letter-spacing: 0.35px;
+  margin-bottom: 1px;
+  text-transform: uppercase;
+}
+.pg6-return-diff-title { font-size: 13px; font-weight: 600; margin-bottom: 7px; }
+.pg6-return-diff-stats { display: flex; flex-wrap: wrap; gap: 5px; }
+.pg6-return-diff-stats span {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(244, 234, 216, 0.08);
+  border-radius: 5px;
+  color: var(--color-text-secondary);
+  padding: 2px 6px;
+}
+.pg6-return-diff-top {
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+  margin-top: 7px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pg6-return-diff-close {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  display: inline-flex;
+  padding: 4px;
+  position: absolute;
+  right: 8px;
+  top: 8px;
+}
+.pg6-return-diff-close:hover,
+.pg6-return-diff-close:focus-visible { background: rgba(255, 255, 255, 0.06); color: var(--color-text-primary); outline: none; }
 .pg6-footer-gear {
   align-items: center;
   background: transparent;
@@ -715,6 +774,7 @@ body {
 @media (max-width: 520px) {
   .pg6-header { display: flex; }
   .pg6-meta { gap: 8px; justify-content: flex-start; margin-top: 8px; }
+  .pg6-return-diff { top: 78px; }
   /* On narrow screens, the bottom-left info card covers most of the wall.
      Move it to the top edge as a thin strip — it overlays the sky area
      which has less critical detail. */

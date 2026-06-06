@@ -11,6 +11,7 @@ import { mountErrorToast } from './error-toast.js';
 import { mountInsightPanel } from './insight-panel.js';
 import { mountSettingsPanel } from './settings-panel.js';
 import { mountPostcardExport } from './postcard.js';
+import { mountReturnDiff } from './return-diff.js';
 import { groupSprites } from './render-helpers.js';
 import { createGardenRenderer } from './render-garden.js';
 import { renderBaseScene } from './render-svg.js';
@@ -42,6 +43,10 @@ Promise.all([
   const renderer = createGardenRenderer({ scene, spriteRoot });
   renderBaseScene(scene, assetRoot, { settings: currentSettings });
   renderer.renderEverything(groups, lastSummary);
+  const returnDiff = mountReturnDiff({
+    hostFrame: document.querySelector('.pg6-frame'),
+    initialSummary: lastSummary
+  });
 
   // Settings panel — drives both live-apply (scene re-paint) and persistence.
   // Footer is the host; the panel inserts itself after the footer in the same
@@ -88,6 +93,7 @@ Promise.all([
     } else {
       renderer.showCached(lastSummary);
     }
+    returnDiff?.record(lastSummary);
   });
 }).catch((err) => {
   // Bootstrap failed (manifest fetch error, etc.). Best-effort: still paint

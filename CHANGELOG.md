@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added a "While you were away" garden diff, a localStorage-backed frontend
+  snapshot that shows a small return summary only when projects grew since the
+  last viewed garden. It reuses `GardenSummary` and stays web-only: no schema
+  change, no new permissions, no network, and no source-directory writes.
 - Added Garden Postcard — a one-click, zero-network export of the current scene to
   a local PNG, the first way the garden can leave its window (the only privacy-safe
   growth channel a local-first app has). A new `web/postcard.js` rasterizes the base
