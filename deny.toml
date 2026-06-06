@@ -10,6 +10,11 @@
 [advisories]
 version = 2
 yanked = "deny"
+# Tauri's Linux desktop stack currently pulls archived gtk-rs GTK3 crates
+# transitively via webkit2gtk / tray-icon. Keep advisories strict for workspace
+# direct dependencies, but don't let that known upstream desktop baseline drown
+# out the zero-network gate this config exists to enforce.
+unmaintained = "workspace"
 
 [bans]
 multiple-versions = "allow"

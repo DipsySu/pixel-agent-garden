@@ -19,7 +19,9 @@
   `cargo deny check advisories bans sources` + a `Cargo.lock` scan) that fails if a
   new egress/telemetry crate is introduced — `reqwest`/`hyper`/`tokio` are baseline
   Tauri deps and intentionally not banned, so the honest proof stays runtime + CSP
-  with the gate as defense-in-depth. Spec + Claude↔codex review:
+  with the gate as defense-in-depth. The cargo-deny unmaintained-advisory check is
+  scoped to direct workspace dependencies so Tauri's transitive gtk-rs GTK3 Linux
+  baseline does not drown out the privacy gate. Spec + Claude↔codex review:
   `docs/17-launch-trust-hardening-spec.md`.
 
 ## v0.1.2 - 2026-06-06
