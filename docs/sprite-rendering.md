@@ -7,6 +7,8 @@ The first generated atlas lives at:
 - `assets/sprites/ivy_courtyard/*/*.png`
 
 Open `assets/sprites/preview.html` to inspect the atlas and all sliced sprites.
+The atlas PNGs and preview HTML are dev-only source assets and are excluded from
+the shipped Tauri `web/assets` mirror.
 
 ## Current Sprite Groups
 
@@ -33,6 +35,9 @@ Use the data model to choose density and length rather than scaling sprites.
   (bud → bloom → petal) and the number of `flower_cluster` accents at the cherry
   base (bud 0 / bloom 2 / petal 4) — see
   [Spec 12](./12-cherry-petal-and-flower-accents-spec.md).
+  **Realized:** per-project `recent_activity` now spawns deterministic
+  `leaf_cluster` fresh-leaf overlays near primary vine crowns — see
+  [Spec 15](./15-recent-activity-leaves-and-vine-age-spec.md).
 - Session count controls the number of independent hanging strands.
   **Realized:** each project renders `clamp(1+floor(log2(sessions)),1,cap)` strands
   (one primary interactive vine + dimmer decorative strands), so busy projects

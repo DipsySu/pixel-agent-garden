@@ -1022,54 +1022,6 @@
       ]
     },
     {
-      "name": "ground_tuft_01",
-      "group": "object_ground_tuft",
-      "file": "courtyard_objects/ground_tuft_01.png",
-      "size": [
-        89,
-        77
-      ],
-      "anchor": "bottom",
-      "source_box": [
-        1092,
-        873,
-        1181,
-        950
-      ]
-    },
-    {
-      "name": "rock_large_01",
-      "group": "object_rock",
-      "file": "courtyard_objects/rock_large_01.png",
-      "size": [
-        108,
-        77
-      ],
-      "anchor": "bottom",
-      "source_box": [
-        1209,
-        875,
-        1317,
-        952
-      ]
-    },
-    {
-      "name": "rock_small_01",
-      "group": "object_rock",
-      "file": "courtyard_objects/rock_small_01.png",
-      "size": [
-        63,
-        44
-      ],
-      "anchor": "bottom",
-      "source_box": [
-        1362,
-        901,
-        1425,
-        945
-      ]
-    },
-    {
       "group": "cherry_tree",
       "name": "cherry_tree_bud",
       "file": "courtyard_style/cherry_tree_bud.png",

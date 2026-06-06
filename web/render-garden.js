@@ -746,6 +746,7 @@ function clearDynamicLayers() {
     // six slots.
     const ordered = projects;
     const maxTokens = Math.max(...ordered.map((project) => project.total_tokens || 0), 1);
+    const maxRecent = Math.max(...ordered.map((project) => project.recent_activity || 0), 1);
     const sortedTokens = ordered
       .map((project) => project.total_tokens || 0)
       .filter(Boolean)
@@ -764,6 +765,7 @@ function clearDynamicLayers() {
 
     // Anti-clutter cap on strands-per-project, tighter as the wall fills up.
     const strandCap = ordered.length > 28 ? 2 : ordered.length > 18 ? 3 : 4;
+    const showFreshLeaves = leafCaps.length && ordered.length <= 28;
 
     entries.forEach(({ project, projectIndex, profile, useHanging }) => {
       const group = useHanging ? hanging : vertical;
@@ -833,6 +835,23 @@ function clearDynamicLayers() {
             ? { project, projectIndex, title: project.display_name }
             : { hueShift: hue || undefined })
         });
+
+        if (isPrimary && showFreshLeaves) {
+          const recent = project.recent_activity || 0;
+          const freshLeaves = Math.max(0, Math.min(3, Math.round((Math.log1p(recent) / Math.log1p(maxRecent)) * 3)));
+          for (let leafIndex = 0; leafIndex < freshLeaves; leafIndex++) {
+            addSprite(pick(leafCaps, projectIndex + leafIndex), {
+              x: x + (jitter(projectIndex, leafIndex + 101) - 0.5) * 2.2,
+              y: y + 1.4 + jitter(projectIndex, leafIndex + 113) * 1.1,
+              width: 14 + jitter(projectIndex, leafIndex + 127) * 6,
+              z: Math.min(58, Math.max(40 + leafIndex, 24 + projectIndex)),
+              opacity: 0.62 + jitter(projectIndex, leafIndex + 139) * 0.16,
+              className: 'vine-fresh-leaf',
+              anchor: 'bottom',
+              hueShift: hue || undefined
+            });
+          }
+        }
       }
     });
 
@@ -947,7 +966,7 @@ function clearDynamicLayers() {
   function addWallMarks(patches) {
     if (!patches.length) return;
     const marks = [
-      [18, 49, 36], [56, 48, 32], [84, 57, 34]
+      [18, 49, 36], [56, 48, 32], [84, 57, 34], [36, 58, 30]
     ];
     marks.forEach(([x, y, width], i) => {
       addSprite(pick(patches, i), { x, y, width, z: 9, opacity: 0.22, className: 'mark' });
@@ -959,7 +978,7 @@ function clearDynamicLayers() {
     const rocks = groups.rock || [];
     const stones = groups.stone_base || [];
     if (stones.length) {
-      [[17, 86, 48], [78, 86, 44]].forEach(([x, y, width], i) => {
+      [[17, 86, 48], [78, 86, 44], [42, 88, 34], [62, 90, 30]].forEach(([x, y, width], i) => {
         addSprite(pick(stones, i), { x, y, width, z: 12, opacity: 0.36, className: 'ground' });
       });
     }

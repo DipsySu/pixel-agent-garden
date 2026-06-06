@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- feat: Per-project `recent_activity` now spawns deterministic fresh
+  `leaf_cluster` accents near each primary vine crown; see
+  `docs/15-recent-activity-leaves-and-vine-age-spec.md`.
+- Slimmed the shipped Tauri asset mirror by excluding dev-only sprite atlases and
+  the preview HTML, pruned orphan courtyard rock/tuft sprites, placed stranded
+  stone/plaster frames, and fixed the sprite preview for `w`/`h`-only entries
+  (about 12 MB less bundle payload).
 - Made the vine wall reflect per-project activity, wiring three render contracts
   that had their data in the summary but no consumer. (1) **Session count → strands:**
   `addIvyOverlay` rendered exactly one vine per project regardless of `sessions`;

@@ -102,7 +102,8 @@
             for (const sprite of sprites) {
               const item = document.createElement("div");
               item.className = "sprite";
-              item.innerHTML = `<img src="./${sprite.file}" alt="${sprite.name}" /><span>${sprite.name} · ${sprite.size[0]}x${sprite.size[1]}</span>`;
+              const [w, h] = sprite.size || [sprite.w, sprite.h];
+              item.innerHTML = `<img src="./${sprite.file}" alt="${sprite.name}" /><span>${sprite.name} · ${w}x${h}</span>`;
               grid.append(item);
             }
             root.append(grid);
