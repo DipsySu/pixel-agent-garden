@@ -1,6 +1,6 @@
 [package]
 name = "local-agent-garden-core"
-version = "0.1.1"
+version = "0.1.2"
 description = "Domain core for Local Agent Garden: adapter trait, AgentEvent, summarize()."
 edition.workspace = true
 rust-version.workspace = true

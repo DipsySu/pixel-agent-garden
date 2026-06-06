@@ -1,6 +1,6 @@
 [package]
 name = "local-agent-garden-cli"
-version = "0.1.1"
+version = "0.1.2"
 description = "agent-garden CLI for Pixel Agent Garden."
 edition.workspace = true
 rust-version.workspace = true

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.1.2 - 2026-06-06
+
+- Added focused core test coverage for scan-level dedupe and the manual JSONL
+  adapter. The new tests lock down UUID dedupe scoping, fallback row keys,
+  chronological ordering, manual import field mapping, bad-row skipping,
+  `raw_ref` line numbers, token normalization, and watch-path behavior.
 - feat: Per-project `recent_activity` now spawns deterministic fresh
   `leaf_cluster` accents near each primary vine crown; see
   `docs/15-recent-activity-leaves-and-vine-age-spec.md`.
