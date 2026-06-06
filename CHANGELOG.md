@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Refreshed the README for public release: replaced the hero screenshot with the
+  current full-window garden UI and updated both English and Chinese copy to
+  cover locale-aware UI, Insight, Garden Postcard, return diff, and the local
+  privacy boundary.
 - Added a "While you were away" garden diff, a localStorage-backed frontend
   snapshot that shows a small return summary only when projects grew since the
   last viewed garden. It reuses `GardenSummary` and stays web-only: no schema
