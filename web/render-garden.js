@@ -1122,32 +1122,32 @@ function clearDynamicLayers() {
   function buildInfoDetail(project) {
     const rows = [];
     const today = windowTotal(project.daily_tokens, 1);
-    if (today > 0) rows.push(metaRow('今日', fmtLocal(today)));
+    if (today > 0) rows.push(metaRow(t('card.today'), fmtLocal(today)));
 
     // cache_ratio is a 0..1 float (share of input served from cache).
     const cacheRatio = Number(project.cache_ratio || 0);
-    if (cacheRatio > 0) rows.push(metaRow('缓存命中', Math.round(cacheRatio * 100) + '%'));
+    if (cacheRatio > 0) rows.push(metaRow(t('card.cacheHit'), Math.round(cacheRatio * 100) + '%'));
 
     // Sessions and tool calls share one row to keep the card short.
     const sessions = Number(project.sessions || 0);
     const tools = Number(project.tool_calls || 0);
     if (sessions > 0 || tools > 0) {
       const parts = [];
-      if (sessions > 0) parts.push(sessions + ' 会话');
-      if (tools > 0) parts.push(fmtLocal(tools) + ' 工具');
-      rows.push(metaRow('活动', parts.join(' · ')));
+      if (sessions > 0) parts.push(t('card.sessionsShort', { count: sessions }));
+      if (tools > 0) parts.push(t('card.toolsShort', { count: fmtLocal(tools) }));
+      rows.push(metaRow(t('card.activity'), parts.join(' · ')));
     }
 
     const model = topModel(project.models);
-    if (model) rows.push(metaRow('主力模型', model));
+    if (model) rows.push(metaRow(t('card.topModel'), model));
 
     // Multi-source projects: show the split so the vine's hue tint is explained
     // and same-named dirs from different tools are distinguishable.
     const sources = sourceSummary(project.sources);
-    if (sources) rows.push(metaRow('来源', sources));
+    if (sources) rows.push(metaRow(t('card.sources'), sources));
 
     const ago = relativeAgo(project.last_seen);
-    if (ago) rows.push(metaRow('最近活动', ago));
+    if (ago) rows.push(metaRow(t('card.lastActive'), ago));
 
     return rows.join('');
   }
@@ -1182,29 +1182,31 @@ function clearDynamicLayers() {
     if (!sources || typeof sources !== 'object') return '';
     const entries = Object.entries(sources).filter(([, c]) => Number(c || 0) > 0);
     if (entries.length < 2) return '';
-    const pretty = { 'claude-code': 'Claude Code', 'claude-cowork': 'Cowork', codex: 'Codex', 'manual-jsonl': '手动' };
+    // Brand names stay as-is across locales; only the generic "manual" source
+    // is translated.
+    const pretty = { 'claude-code': 'Claude Code', 'claude-cowork': 'Cowork', codex: 'Codex', 'manual-jsonl': t('source.manual') };
     return entries
       .sort((a, b) => Number(b[1]) - Number(a[1]))
       .map(([name, count]) => (pretty[name] || name) + ' ' + fmtLocal(Number(count)))
       .join(' · ');
   }
 
-  // Humanize an ISO timestamp into a short "N 分钟前" relative string. Shared
-  // shape with the footer freshness pill. Returns '' for missing/invalid input.
+  // Humanize an ISO timestamp into a short relative string, reusing the footer
+  // freshness pill's i18n keys (fresh.*). Returns '' for missing/invalid input.
   function relativeAgo(stamp) {
     if (!stamp) return '';
-    const t = new Date(stamp).getTime();
-    if (!Number.isFinite(t)) return '';
-    const diff = Date.now() - t;
-    if (diff < 0) return '刚刚';
+    const ms = new Date(stamp).getTime();
+    if (!Number.isFinite(ms)) return '';
+    const diff = Date.now() - ms;
+    if (diff < 0) return t('fresh.justNow');
     const mins = Math.round(diff / 60_000);
     const hours = Math.round(diff / 3_600_000);
     const days = Math.round(diff / 86_400_000);
-    if (mins < 1) return '刚刚';
-    if (mins < 60) return mins + ' 分钟前';
-    if (hours < 24) return hours + ' 小时前';
-    if (days < 30) return days + ' 天前';
-    return '一个月以上之前';
+    if (mins < 1) return t('fresh.justNow');
+    if (mins < 60) return t('fresh.minutesAgo', { count: mins });
+    if (hours < 24) return t('fresh.hoursAgo', { count: hours });
+    if (days < 30) return t('fresh.daysAgo', { count: days });
+    return t('fresh.monthPlusAgo');
   }
 
   function setInfoDetail(html) {
