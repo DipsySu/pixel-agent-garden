@@ -228,6 +228,7 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
       '<div class="pg6-info-name" id="garden-info-name">' + t('card.project.defaultName') + '</div>' +
       '<div class="pg6-info-row"><span id="garden-info-total">' + t('card.total', { total: '580k' }) + '</span><span id="garden-info-stage">' + t('card.stage', { stage: 4 }) + '</span></div>' +
       '<div class="pg6-info-bar"><div class="pg6-info-fill" id="garden-info-fill"></div></div>' +
+      '<div class="pg6-info-detail" id="garden-info-detail"></div>' +
       '<div class="pg6-info-spark" id="garden-info-spark" aria-hidden="true"></div>' +
     '</div>';
   scene.dataset.timeMode = time.mode;

@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Enriched the project hover card into a mini profile: it now shows today's
+  tokens, cache-hit %, sessions + tool calls, the dominant model, the
+  source split (when more than one tool contributed), and a "last active N ago"
+  line — all from fields `aggregate.rs` already computed but the card never
+  surfaced. Each line omits itself when its value is zero, so sparse projects
+  keep a clean card. Frontend-only, no schema change.
+- Fixed `motion = "off"` hiding the entire garden: the setting's CSS rule was
+  `display: none` on `.pg6-sprite` and `.pg6-info`, so choosing "no motion"
+  blanked every vine, courtyard object, and the info card, leaving only the
+  static wall. motion=off now stops animation/transition and removes only the
+  ambient season particles; all content stays visible.
 - Added source-fingerprint cache invalidation: the desktop app now refreshes the
   cached garden on startup when agent logs changed while it was closed, instead
   of showing stale data until the next watcher tick or manual scan. Freshness is

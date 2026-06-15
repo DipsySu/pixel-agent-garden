@@ -1,6 +1,6 @@
 import { CONFIG } from './scene-config.js';
 import { fmtLocal, escapeHtml, pick, pickByToken, namedSprite, jitter } from './render-helpers.js';
-import { sparklineSVG } from './render-insight.js';
+import { sparklineSVG, windowTotal } from './render-insight.js';
 import { t } from './i18n.js';
 
 let scene;
@@ -714,6 +714,7 @@ function clearDynamicLayers() {
     if (token) token.textContent = translated.hint;
     if (stageEl) stageEl.textContent = t('card.threshold', { threshold: fmtLocal(trinket.threshold) });
     if (fill) fill.style.width = '100%';
+    setInfoDetail('');
     setInfoSpark(null);
     showInfoCard();
   }
@@ -733,6 +734,7 @@ function clearDynamicLayers() {
     if (token) token.textContent = t('card.cat.sessions', { count: sessions });
     if (stageEl) stageEl.textContent = isFull ? t('card.cat.fullStage') : t('card.cat.smallStage');
     if (fill) fill.style.width = isFull ? '100%' : '40%';
+    setInfoDetail('');
     setInfoSpark(null);
     showInfoCard();
   }
@@ -1102,12 +1104,112 @@ function clearDynamicLayers() {
     if (token) token.textContent = t('card.total', { total: fmtLocal(total) });
     if (stageEl) stageEl.textContent = t('card.stage', { stage });
     if (fill) fill.style.width = Math.max(8, Math.min(100, stage / 6 * 100)) + '%';
+    // Mini project profile: fields aggregate.rs already computes but the card
+    // never showed. Each line omits itself when its value is zero/absent so a
+    // sparse project keeps a clean card.
+    setInfoDetail(buildInfoDetail(project));
     // Honest per-project 14-day token sparkline. Absent daily_tokens (older
     // caches / fallback data) degrades to a flat baseline, never an error.
     setInfoSpark(project.daily_tokens);
     if (reveal) {
       showInfoCard(options && options.event);
     }
+  }
+
+  // Build the compact detail block for a project card. Returns an HTML string
+  // of `.pg6-info-meta` rows; empty string when nothing is worth showing.
+  // Pure data → markup, omit-if-zero throughout.
+  function buildInfoDetail(project) {
+    const rows = [];
+    const today = windowTotal(project.daily_tokens, 1);
+    if (today > 0) rows.push(metaRow('今日', fmtLocal(today)));
+
+    // cache_ratio is a 0..1 float (share of input served from cache).
+    const cacheRatio = Number(project.cache_ratio || 0);
+    if (cacheRatio > 0) rows.push(metaRow('缓存命中', Math.round(cacheRatio * 100) + '%'));
+
+    // Sessions and tool calls share one row to keep the card short.
+    const sessions = Number(project.sessions || 0);
+    const tools = Number(project.tool_calls || 0);
+    if (sessions > 0 || tools > 0) {
+      const parts = [];
+      if (sessions > 0) parts.push(sessions + ' 会话');
+      if (tools > 0) parts.push(fmtLocal(tools) + ' 工具');
+      rows.push(metaRow('活动', parts.join(' · ')));
+    }
+
+    const model = topModel(project.models);
+    if (model) rows.push(metaRow('主力模型', model));
+
+    // Multi-source projects: show the split so the vine's hue tint is explained
+    // and same-named dirs from different tools are distinguishable.
+    const sources = sourceSummary(project.sources);
+    if (sources) rows.push(metaRow('来源', sources));
+
+    const ago = relativeAgo(project.last_seen);
+    if (ago) rows.push(metaRow('最近活动', ago));
+
+    return rows.join('');
+  }
+
+  function metaRow(label, value) {
+    return (
+      '<div class="pg6-info-meta">' +
+      '<span class="pg6-info-meta-k">' + escapeHtml(label) + '</span>' +
+      '<span class="pg6-info-meta-v">' + escapeHtml(value) + '</span>' +
+      '</div>'
+    );
+  }
+
+  // Most-used model by event count (models is model -> count). Trims the long
+  // "[1m]" context-window suffix so it fits the narrow card.
+  function topModel(models) {
+    if (!models || typeof models !== 'object') return '';
+    let best = null;
+    let bestCount = -1;
+    for (const [name, count] of Object.entries(models)) {
+      const n = Number(count || 0);
+      if (n > bestCount) {
+        bestCount = n;
+        best = name;
+      }
+    }
+    return best ? String(best).replace(/\[[^\]]*\]\s*$/, '').trim() : '';
+  }
+
+  // "Claude Code 18 · Codex 4" — only when more than one source contributed.
+  function sourceSummary(sources) {
+    if (!sources || typeof sources !== 'object') return '';
+    const entries = Object.entries(sources).filter(([, c]) => Number(c || 0) > 0);
+    if (entries.length < 2) return '';
+    const pretty = { 'claude-code': 'Claude Code', 'claude-cowork': 'Cowork', codex: 'Codex', 'manual-jsonl': '手动' };
+    return entries
+      .sort((a, b) => Number(b[1]) - Number(a[1]))
+      .map(([name, count]) => (pretty[name] || name) + ' ' + fmtLocal(Number(count)))
+      .join(' · ');
+  }
+
+  // Humanize an ISO timestamp into a short "N 分钟前" relative string. Shared
+  // shape with the footer freshness pill. Returns '' for missing/invalid input.
+  function relativeAgo(stamp) {
+    if (!stamp) return '';
+    const t = new Date(stamp).getTime();
+    if (!Number.isFinite(t)) return '';
+    const diff = Date.now() - t;
+    if (diff < 0) return '刚刚';
+    const mins = Math.round(diff / 60_000);
+    const hours = Math.round(diff / 3_600_000);
+    const days = Math.round(diff / 86_400_000);
+    if (mins < 1) return '刚刚';
+    if (mins < 60) return mins + ' 分钟前';
+    if (hours < 24) return hours + ' 小时前';
+    if (days < 30) return days + ' 天前';
+    return '一个月以上之前';
+  }
+
+  function setInfoDetail(html) {
+    const el = document.getElementById('garden-info-detail');
+    if (el) el.innerHTML = html || '';
   }
 
   // Inject or clear the info-card sparkline. Pass a daily_tokens map to show a
