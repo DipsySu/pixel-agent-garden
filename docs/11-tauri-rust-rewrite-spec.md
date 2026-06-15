@@ -113,8 +113,13 @@ auto_rescan = true
 ## Tauri Commands
 
 - `garden_summary() -> GardenSummary`: load `~/.local-agent-garden/events.json`
-  when possible; if it is missing, malformed, or from an incompatible future
-  schema, run a fresh scan and replace the cache.
+  when it is **fresh**; if it is missing, malformed, from an incompatible future
+  schema, carries no fingerprint, or its source fingerprint no longer matches
+  the agent logs on disk, run a fresh scan and replace the cache. Freshness is a
+  metadata-only check (total bytes + newest mtime + file count across adapter
+  `watch_paths()`) — see `core::cache::source_fingerprint`; no source file is
+  re-parsed just to decide staleness. Byte total is what catches in-place
+  appends to an active session log within one coarse mtime tick.
 - `trigger_scan() -> GardenSummary`: force a fresh scan, write
   `~/.local-agent-garden/events.json`, and return the new summary.
 - `list_adapters() -> Vec<AdapterStatus>`

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added source-fingerprint cache invalidation: the desktop app now refreshes the
+  cached garden on startup when agent logs changed while it was closed, instead
+  of showing stale data until the next watcher tick or manual scan. Freshness is
+  decided metadata-only — total bytes, newest mtime, and file count across every
+  adapter watch path — and the `events.json` envelope stores an optional
+  `fingerprint` field so legacy caches refresh once.
 - Cleaned up spec/onboarding drift after the public-launch feature batch:
   completed specs now say implemented, Postcard save-path questions are marked
   resolved, the CSP/Postcard desktop verification remains explicit as the next

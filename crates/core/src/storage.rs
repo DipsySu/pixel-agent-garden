@@ -17,11 +17,44 @@ use std::path::{Path, PathBuf};
 /// when the `EventsCache` / `AgentEvent` on-disk shape changes incompatibly.
 pub const EVENTS_SCHEMA_VERSION: u32 = 1;
 
+/// Fingerprint of the source files the cached events were built from. Used by
+/// `crate::cache` to decide whether a cache is stale relative to the agent
+/// logs on disk, without re-parsing them.
+///
+/// Three fields, because no single one catches every change to append-only
+/// agent logs:
+/// - `total_bytes`: sum of every source file's length → catches **in-place
+///   appends** to an active session `.jsonl` (the dominant case), which change
+///   neither the file count nor reliably the mtime within one coarse FS tick.
+/// - `max_mtime_ms`: newest source-file mtime → catches touches / new files.
+/// - `file_count`: number of source files → catches deletions (which can leave
+///   `max_mtime_ms` unchanged when the newest file survives).
+///
+/// A mismatch in *any* field means the cache is stale. This is purely data;
+/// computing it lives in `crate::cache` because it has to walk adapter
+/// `watch_paths()` (storage stays adapter-agnostic, spec §10).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct SourceFingerprint {
+    /// Sum of source-file lengths in bytes. `#[serde(default)]` so a cache
+    /// written before this field existed loads as 0 and is treated as stale
+    /// (one safe refresh) rather than failing the whole envelope parse.
+    #[serde(default)]
+    pub total_bytes: u64,
+    pub max_mtime_ms: i64,
+    pub file_count: u64,
+}
+
 /// Versioned events cache envelope. Saved as JSON to `events.json`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventsCache {
     pub schema_version: u32,
     pub events: Vec<AgentEvent>,
+    /// Source fingerprint at scan time. `#[serde(default)]` so caches written
+    /// before this field existed (and CLI exports that don't compute it)
+    /// deserialize as `None` — which `crate::cache` treats as "always stale",
+    /// forcing one safe refresh rather than trusting an unknown-freshness cache.
+    #[serde(default)]
+    pub fingerprint: Option<SourceFingerprint>,
 }
 
 /// Default cache directory — `~/.local-agent-garden/`.
@@ -33,25 +66,38 @@ pub fn default_state_dir() -> PathBuf {
     home.join(".local-agent-garden")
 }
 
-/// Write events to disk wrapped in the versioned envelope.
+/// Write events to disk wrapped in the versioned envelope, with no source
+/// fingerprint. Used by callers (e.g. the CLI `scan --out`) that don't track
+/// freshness; the resulting cache is treated as always-stale by `crate::cache`.
 pub fn save_events(events: &[AgentEvent], path: &Path) -> Result<(), Error> {
+    save_events_with_fingerprint(events, None, path)
+}
+
+/// Write events plus the source `fingerprint` they were built from. `crate::cache`
+/// uses this on refresh so the next read can tell whether the cache is current.
+pub fn save_events_with_fingerprint(
+    events: &[AgentEvent],
+    fingerprint: Option<SourceFingerprint>,
+    path: &Path,
+) -> Result<(), Error> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).map_err(|e| Error::io(parent, e))?;
     }
     let cache = EventsCache {
         schema_version: EVENTS_SCHEMA_VERSION,
         events: events.to_vec(),
+        fingerprint,
     };
     let json = serde_json::to_string_pretty(&cache).map_err(|e| Error::json(path, e))?;
     std::fs::write(path, json).map_err(|e| Error::io(path, e))?;
     Ok(())
 }
 
-/// Read events from disk. Rejects caches with an unknown schema version so
-/// the caller falls back to a fresh scan rather than misinterpreting fields.
-/// Also accepts legacy unwrapped event arrays for backward compatibility with
-/// caches written before versioning landed.
-pub fn load_events(path: &Path) -> Result<Vec<AgentEvent>, Error> {
+/// Read the full cache envelope (events + fingerprint). Rejects caches with an
+/// unknown future schema version so the caller rescans rather than
+/// misinterpreting fields. Legacy unwrapped event arrays load as an envelope
+/// with `fingerprint: None`.
+pub fn load_cache(path: &Path) -> Result<EventsCache, Error> {
     let text = std::fs::read_to_string(path).map_err(|e| Error::io(path, e))?;
     // Try the wrapped form first; fall back to a bare array.
     match serde_json::from_str::<EventsCache>(&text) {
@@ -66,10 +112,24 @@ pub fn load_events(path: &Path) -> Result<Vec<AgentEvent>, Error> {
                     ),
                 });
             }
-            Ok(cache.events)
+            Ok(cache)
         }
-        Err(_) => serde_json::from_str::<Vec<AgentEvent>>(&text).map_err(|e| Error::json(path, e)),
+        Err(_) => {
+            let events =
+                serde_json::from_str::<Vec<AgentEvent>>(&text).map_err(|e| Error::json(path, e))?;
+            Ok(EventsCache {
+                schema_version: EVENTS_SCHEMA_VERSION,
+                events,
+                fingerprint: None,
+            })
+        }
     }
+}
+
+/// Read just the events from disk. Thin wrapper over `load_cache` for callers
+/// that don't care about freshness (CLI views, tests).
+pub fn load_events(path: &Path) -> Result<Vec<AgentEvent>, Error> {
+    load_cache(path).map(|cache| cache.events)
 }
 
 #[cfg(test)]
@@ -99,6 +159,56 @@ mod tests {
         let back = load_events(&path).unwrap();
         assert_eq!(back.len(), 1);
         assert_eq!(back[0].source, "claude-code");
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn fingerprint_survives_roundtrip() {
+        // The whole freshness mechanism depends on a non-zero fingerprint
+        // coming back as Some(fp) bit-equal after a disk round-trip. Pin it so
+        // a future serde rename/shape change can't silently null it out (which
+        // would make every cache read permanently stale).
+        let path = tmp("fproundtrip");
+        let _ = std::fs::remove_file(&path);
+        let fp = SourceFingerprint {
+            total_bytes: 4096,
+            max_mtime_ms: 1_700_000_000_000,
+            file_count: 7,
+        };
+        save_events_with_fingerprint(&sample_events(), Some(fp), &path).unwrap();
+        let back = load_cache(&path).unwrap();
+        assert_eq!(back.fingerprint, Some(fp));
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn save_events_writes_no_fingerprint() {
+        // The plain save_events (CLI export path) must produce a None
+        // fingerprint so crate::cache treats it as always-stale.
+        let path = tmp("nofp");
+        let _ = std::fs::remove_file(&path);
+        save_events(&sample_events(), &path).unwrap();
+        let back = load_cache(&path).unwrap();
+        assert!(back.fingerprint.is_none());
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn legacy_fingerprint_without_total_bytes_loads() {
+        // A cache written before total_bytes existed (only mtime + count) must
+        // still deserialize — total_bytes defaults to 0 — rather than failing
+        // the whole envelope parse.
+        let path = tmp("legacyfp");
+        std::fs::write(
+            &path,
+            r#"{"schema_version":1,"events":[],"fingerprint":{"max_mtime_ms":123,"file_count":2}}"#,
+        )
+        .unwrap();
+        let back = load_cache(&path).unwrap();
+        let fp = back.fingerprint.expect("fingerprint should deserialize");
+        assert_eq!(fp.max_mtime_ms, 123);
+        assert_eq!(fp.file_count, 2);
+        assert_eq!(fp.total_bytes, 0, "missing total_bytes defaults to 0");
         std::fs::remove_file(&path).ok();
     }
 
