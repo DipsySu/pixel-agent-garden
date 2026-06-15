@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+- Re-tuned the pavilion trinket display and a courtyard ground-prop after an
+  adversarial layout review (Claude visual+measured-rects ⨯ Codex 5.5 ⨯ a
+  4-agent geometry workflow). Real bugs found and fixed: the incense burner sat
+  ON the seat cushion at every pavilion tier; the hanging scroll dropped onto
+  the cushion in the shorter small/mid interiors (the small tier shows ONLY the
+  scroll, so this was the most-seen case); tea_set collided with the stool at
+  the mid tier; and sleeping_cat sat on the stool at full unlock. Re-slotted all
+  six trinkets in `scene-config.js` so the seat (interior center) stays clear —
+  scroll high on the rear wall, wind-chime on the eave, tea_set + incense on the
+  left floor, lucky_cat + sleeping_cat on the right — verified collision-free
+  against the stool/cushion and pairwise across small/mid/full and 1-6 unlocks.
+  Bumped trinket sizes ~1.35× (a larger bump was rejected — it re-introduced
+  overlaps) so they're legible at 1× instead of 7-17px dust. Also fixed
+  `path_stones`, whose `z=26` contradicted its own "should recede" comment by
+  drawing the worn path in front of the pavilion/lantern/cairn, and whose
+  `y=95.4` sank it ~4pp below the ground line — now `z=12` and `y=91.0`. Reworded
+  the tea_set/incense i18n hints from "table" to "floor" (there is no table
+  sprite; a new one was judged too expensive) and softened the now-proportionate
+  trinket hover outline (2px→1.5px + glow). No core change, no schema bump.
+
 - Added a project search box + "show all" toggle to the Insight panel so all
   20-37 projects are reachable, not just the top 10. The panel now renders every
   project into the DOM (rows past the top-N get an `is-extra` cap hidden by CSS);

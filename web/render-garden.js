@@ -345,12 +345,16 @@ function clearDynamicLayers() {
     }
     if (pathStones.length) {
       // Path stones intentionally stay on the .ground class — they're worn
-      // and should recede rather than read as a foreground prop.
+      // and should recede rather than read as a foreground prop. z=12 (with the
+      // other recessive ground sprites like stone_base) honors that intent —
+      // the old z=26 contradicted the comment by drawing the path IN FRONT of
+      // the pavilion / lantern / cairn. y aligned to the ground row (~91) so the
+      // path doesn't sink ~4pp below every other object.
       addSprite(pathStones[0], {
         x: 55,
-        y: 95.4,
+        y: 91.0,
         width: 168,
-        z: 26,
+        z: 12,
         opacity: 0.62,
         className: 'ground',
         anchor: 'bottom'
