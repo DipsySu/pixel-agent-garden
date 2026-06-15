@@ -99,11 +99,15 @@ export function topProjectsByTokens(summary, limit = 10) {
 export function insightPanelHTML(summary, opts = {}) {
   const format = typeof opts.format === 'function' ? opts.format : (v) => String(v);
   const days = opts.days || 14;
-  const limit = opts.limit || 10;
+  // `limit` is now the visible-by-default cap (the "top N"); ALL projects are
+  // rendered into the DOM so search can reach beyond the cap. Rows past topN
+  // get `is-extra` and are hidden by CSS until "show all" or a search query.
+  const topN = opts.limit || 10;
   const now = opts.now || new Date();
-  const projects = topProjectsByTokens(summary, limit);
+  const projects = topProjectsByTokens(summary, Infinity);
   const total = Number(summary?.total_tokens || 0);
   const recent = windowTotal(summary?.daily_tokens, days, now);
+  const extra = Math.max(0, projects.length - topN);
 
   // Same project basename can appear on several rows because aggregation keys
   // on full path, not display name (two real dirs named "xiaowo_sport" are
@@ -120,9 +124,17 @@ export function insightPanelHTML(summary, opts = {}) {
         format,
         days,
         now,
+        isExtra: index >= topN,
         ambiguous: (nameCounts.get(project.display_name || 'unknown') || 0) > 1
       })).join('')
     : '<div class="pg6-insight-empty">' + escapeHtml(t('insight.empty')) + '</div>';
+
+  // "Show all (N more)" / "Show top N" toggle — only when there's an overflow.
+  const showAll = extra > 0
+    ? '<button class="pg6-insight-showall" type="button" data-extra="' + extra + '" data-topn="' + topN + '">' +
+        escapeHtml(t('insight.showAll', { count: extra })) +
+      '</button>'
+    : '';
 
   return (
     '<div class="pg6-insight-head">' +
@@ -135,8 +147,27 @@ export function insightPanelHTML(summary, opts = {}) {
       '<span><b>' + escapeHtml(format(recent)) + '</b><small>' + escapeHtml(t('insight.recent', { days })) + '</small></span>' +
       '<span><b>' + escapeHtml(String(summary?.active_projects || projects.length || 0)) + '</b><small>' + escapeHtml(t('insight.projects')) + '</small></span>' +
     '</div>' +
-    '<div class="pg6-insight-list" role="list">' + rows + '</div>'
+    '<div class="pg6-insight-search">' +
+      '<input type="search" class="pg6-insight-search-input" autocomplete="off" spellcheck="false" ' +
+        'placeholder="' + escapeAttr(t('insight.searchPlaceholder')) + '" aria-label="' + escapeAttr(t('insight.searchPlaceholder')) + '">' +
+    '</div>' +
+    '<div class="pg6-insight-list" role="list">' + rows + '</div>' +
+    '<div class="pg6-insight-noresults" hidden>' + escapeHtml(t('insight.noResults')) + '</div>' +
+    showAll
   );
+}
+
+// Lowercased haystack for client-side filtering: name, path, key, source and
+// model identifiers. Lets a search match by tool or model, not just name.
+function searchableText(project) {
+  const parts = [
+    project.display_name || '',
+    project.project_path || '',
+    project.project_key || '',
+    ...Object.keys(project.sources || {}),
+    ...Object.keys(project.models || {})
+  ];
+  return parts.join(' ').toLowerCase();
 }
 
 function insightRowHTML(project, index, opts) {
@@ -170,8 +201,9 @@ function insightRowHTML(project, index, opts) {
   const pathLine = showPath
     ? '<small class="pg6-insight-path" title="' + escapeAttr(path) + '">' + (inferred ? '≈ ' : '') + escapeHtml(path) + '</small>'
     : '';
+  const extraClass = opts.isExtra ? ' is-extra' : '';
   return (
-    '<div class="pg6-insight-row-line" role="listitem">' +
+    '<div class="pg6-insight-row-line' + extraClass + '" role="listitem" data-search="' + escapeAttr(searchableText(project)) + '">' +
       '<button class="pg6-insight-row" type="button"' + rowTitle + ' data-project-key="' + escapeAttr(project.project_key || '') + '">' +
         '<span class="pg6-insight-rank">' + String(index + 1).padStart(2, '0') + '</span>' +
         '<span class="pg6-insight-main">' +

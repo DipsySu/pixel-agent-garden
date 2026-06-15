@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Added a project search box + "show all" toggle to the Insight panel so all
+  20-37 projects are reachable, not just the top 10. The panel now renders every
+  project into the DOM (rows past the top-N get an `is-extra` cap hidden by CSS);
+  a live search filters by name / path / source / model across the full set —
+  so a project ranked #23 surfaces the moment you type it — and a "show all (N
+  more)" / "show top N" toggle lifts the cap. Pure client-side show/hide (the
+  search keeps focus across watcher re-renders), reuses the existing
+  row→vine-highlight wiring, all strings via i18n. No core change, no schema
+  bump. Direction picked from a Codex 5.5 + multi-agent analysis pass; the wall
+  stays intentionally token-ordered (no sort modes).
+- Routed the project card's detail rows through i18n: the enriched card's labels
+  (today / cache hit / activity / top model / sources / last active) and the
+  relative "last active" string were hardcoded Chinese after the i18n layer
+  landed, so an English-locale user saw Chinese on every card. They now use t()
+  keys (relative time reuses the footer `fresh.*` keys); the "manual" source
+  label is localized too.
 - Enriched the project hover card into a mini profile: it now shows today's
   tokens, cache-hit %, sessions + tool calls, the dominant model, the
   source split (when more than one tool contributed), and a "last active N ago"
