@@ -24,22 +24,25 @@ export const CONFIG = {
     // bounding box (defined below), so they follow pavilion size changes.
     // w is the trinket's diameter in 680-unit scene coordinates.
     // file: sprite path under assets/sprites/.
-    // Slots re-tuned (2026-06) after an adversarial layout review: the old
-    // center/seat slots collided with the stool+cushion (incense/sleeping_cat
-    // sat ON the seat; scroll dropped onto the cushion in the short small/mid
-    // interiors; tea_set hit the stool at mid). New layout keeps the seat
-    // (interior center, ~x50 y96) clear and arranges trinkets around it:
-    //   rear wall: scroll (high center)        eave: wind_chime (high right)
-    //   left shelf/floor: tea_set, incense     right: lucky_cat, sleeping_cat
-    // Widths bumped ~1.35× for legibility at 1× scale (a larger bump was
-    // rejected — it re-introduced overlaps). Verified collision-free against
-    // the stool/cushion and pairwise across small/mid/full and 1..6 unlocks.
+    //
+    // Layout intent (also see render-garden.js stool/cushion placement):
+    //   Eave row (y≈12-18)    : scroll hangs center, wind_chime hangs right.
+    //   Table-top row (y≈62)  : tea_set + incense sit ON the stool, which
+    //                           reads as a stone table once the cushion is
+    //                           NOT stacked on top of it.
+    //   Floor row (y≈92-96)   : sleeping_cat lounges on the right. stool +
+    //                           cushion are placed side-by-side on the floor
+    //                           in render-garden.js.
+    //
+    // lucky_cat (招财猫) was removed: visually duplicated the courtyard's
+    // stone_cat statue (both read as "seated cat statue"). sleeping_cat
+    // keeps the 5e8 hidden-终极 role — its prone pose reads as a live pet
+    // rather than another stone carving, so no duplication.
     pavilionTrinkets: [
-      { id: 'scroll',       threshold:   1_000_000, slot: { x: 50, y: 12 }, w: 11, name: '挂卷',     hint: '百万 token · 后墙挂卷',     file: 'pavilion_trinkets/trinket_scroll.png' },
-      { id: 'tea_set',      threshold:  10_000_000, slot: { x: 16, y: 72 }, w: 18, name: '茶具',     hint: '千万 token · 案前茶具',     file: 'pavilion_trinkets/trinket_tea_set.png' },
-      { id: 'lucky_cat',    threshold:  50_000_000, slot: { x: 88, y: 62 }, w: 14, name: '招财猫',   hint: '5 千万 token · 角落石猫',   file: 'pavilion_trinkets/trinket_lucky_cat.png' },
-      { id: 'wind_chime',   threshold: 100_000_000, slot: { x: 86, y: 14 }, w: 10, name: '风铃',     hint: '亿 token · 檐下风铃',       file: 'pavilion_trinkets/trinket_wind_chime.png' },
-      { id: 'incense',      threshold: 200_000_000, slot: { x: 14, y: 92 }, w: 14, name: '香炉',     hint: '两亿 token · 案上香炉',     file: 'pavilion_trinkets/trinket_incense.png' },
+      { id: 'scroll',       threshold:   1_000_000, slot: { x: 50, y: 12 }, w: 11, name: '挂卷',     hint: '百万 token · 檐下挂卷',     file: 'pavilion_trinkets/trinket_scroll.png' },
+      { id: 'tea_set',      threshold:  10_000_000, slot: { x: 38, y: 62 }, w: 18, name: '茶具',     hint: '千万 token · 桌上茶具',     file: 'pavilion_trinkets/trinket_tea_set.png' },
+      { id: 'wind_chime',   threshold:  50_000_000, slot: { x: 86, y: 14 }, w: 10, name: '风铃',     hint: '5 千万 token · 檐下风铃',   file: 'pavilion_trinkets/trinket_wind_chime.png' },
+      { id: 'incense',      threshold: 100_000_000, slot: { x: 60, y: 62 }, w: 14, name: '香炉',     hint: '亿 token · 桌上香炉',       file: 'pavilion_trinkets/trinket_incense.png' },
       { id: 'sleeping_cat', threshold: 500_000_000, slot: { x: 80, y: 94 }, w: 18, name: '睡猫',     hint: '五亿 token · 隐藏终极',     file: 'pavilion_trinkets/trinket_sleeping_cat.png' }
     ],
 

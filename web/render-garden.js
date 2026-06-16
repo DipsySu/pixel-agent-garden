@@ -373,9 +373,12 @@ function clearDynamicLayers() {
         anchor: 'bottom'
       });
     }
-    // Stool + cushion now live INSIDE the pavilion, centered on the floor
-    // of its interior. Positions are derived from pavilionInteriorPoint so
-    // they follow the pavilion tier (small/mid/full) automatically.
+    // Stool + cushion live INSIDE the pavilion on the floor. Stool stays at
+    // interior-center so it reads as a low stone table for the tea_set /
+    // incense trinkets that land on its top surface. Cushion sits BESIDE
+    // the stool on the floor (not stacked on it) — stacking made the stool
+    // look like a table with the cushion on top, fighting the table reading
+    // we want for the table-top trinkets.
     // z = 25/26 places them in front of the pavilion sprite so they peek
     // through the open columns at the front.
     if (tiers.stool === 'visible' && stools.length) {
@@ -391,13 +394,13 @@ function clearDynamicLayers() {
       });
     }
     if (tiers.cushion === 'visible' && cushions.length) {
-      // Stack cushion on top of stool: stool height in scene-% ≈
-      // (26 / 680) × (71 / 83) × (680 / 440) × 100 ≈ 5.05
-      const stoolHeightPct = (26 / 680) * (71 / 83) * (680 / 440) * 100;
-      const p = pavilionInteriorPoint(tiers.pavilion, 50, 96);
+      // Floor-left of the stool. Mirrors sleeping_cat (right floor at slot
+      // x=80) so the floor reads symmetric: cushion left, stool center,
+      // sleeping_cat right.
+      const p = pavilionInteriorPoint(tiers.pavilion, 22, 96);
       addSprite(cushions[0], {
         x: p.x,
-        y: p.y - stoolHeightPct,
+        y: p.y,
         width: 18,
         z: 26,
         opacity: 1.0,
