@@ -274,12 +274,31 @@ body {
 .pg6-season-particle.snow {
   filter: saturate(0.45) brightness(1.08);
 }
+.pg6-garden-cat {
+  aspect-ratio: 10 / 7;
+  background-image: var(--cat-sprite);
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  background-size: 800% 100%;
+  filter: saturate(1.06) brightness(1.08) contrast(1.04) drop-shadow(0 2px 0 rgba(28, 24, 20, 0.35));
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  left: var(--cat-left);
+  pointer-events: none;
+  position: absolute;
+  top: var(--cat-top);
+  transform: translate3d(0, 0, 0) scaleX(1);
+  transform-origin: 50% 62%;
+  user-select: none;
+  width: var(--cat-width);
+}
 /* motion="off" must STOP motion, not hide content. Sprites (project vines,
    courtyard objects) and the info card stay fully visible — only their
    animation/transition is killed. Season particles are pure ambient motion,
    so those alone are removed entirely. */
 .pg6-scene[data-motion="off"] .pg6-sprite,
-.pg6-scene[data-motion="off"] .pg6-info {
+.pg6-scene[data-motion="off"] .pg6-info,
+.pg6-scene[data-motion="off"] .pg6-garden-cat {
   animation: none !important;
   transition-duration: 0ms !important;
 }
@@ -299,11 +318,17 @@ body {
 .pg6-scene[data-motion="reduced"] .pg6-sprite.project.climbing.is-new { animation: pg6-vine-breathe 8s ease-in-out infinite; }
 .pg6-scene[data-motion="reduced"] .pg6-sprite.project.climbing.is-new { transform-origin: bottom center; }
 .pg6-scene[data-motion="reduced"] .pg6-trinket-sprite.is-new { animation: pg6-trinket-nod 8s ease-in-out infinite; }
+.pg6-scene[data-motion="reduced"] .pg6-garden-cat { animation: pg6-cat-steps 900ms linear infinite; }
 @media (prefers-reduced-motion: no-preference) {
   .pg6-trinket-sprite { animation: pg6-trinket-nod 3600ms ease-in-out infinite; }
   .pg6-sprite.project.hanging { animation: pg6-vine-sway 4200ms ease-in-out infinite; }
   .pg6-sprite.project.climbing { animation: pg6-vine-breathe 5200ms ease-in-out infinite; }
   .pg6-sprite.decor-lantern.is-lit { animation: pg6-lantern-pulse 2200ms ease-in-out infinite; }
+  .pg6-scene:not([data-motion="off"]):not([data-motion="reduced"]) .pg6-garden-cat {
+    animation:
+      pg6-cat-wander 15000ms ease-in-out infinite,
+      pg6-cat-steps 620ms linear infinite;
+  }
   .pg6-petal { animation: pg6-petal-fall var(--petal-duration, 9s) linear infinite; }
   .pg6-season-particle.maple { animation: pg6-maple-fall var(--particle-duration, 14s) linear infinite; }
   .pg6-season-particle.firefly { animation: pg6-firefly-drift var(--particle-duration, 5s) ease-in-out infinite; }
@@ -348,6 +373,54 @@ body {
   @keyframes pg6-trinket-nod {
     0%, 100% { filter: saturate(0.97) brightness(0.98); }
     50%      { filter: saturate(1.05) brightness(1.06); }
+  }
+  @keyframes pg6-cat-steps {
+    0%, 12.49%    { background-position: 0 0; }
+    12.5%, 24.99% { background-position: 14.285% 0; }
+    25%, 37.49%   { background-position: 28.571% 0; }
+    37.5%, 49.99% { background-position: 42.857% 0; }
+    50%, 62.49%   { background-position: 57.142% 0; }
+    62.5%, 74.99% { background-position: 71.428% 0; }
+    75%, 87.49%   { background-position: 85.714% 0; }
+    87.5%, 100%   { background-position: 100% 0; }
+  }
+  /* Cat wander path:
+       0..50%   → walk RIGHT (rightward translate, small hop at 31%)
+       50..60%  → STOP, squash-anticipate, jump, flip facing IN MID-AIR, land
+       60..100% → walk LEFT (back to origin, small hop at 84%)
+
+     The flip used to be `scaleX(1) → scaleX(-1)` interpolated across 4% of
+     the timeline. CSS lerps that linearly, so for a few frames scaleX passed
+     through ~0 and the cat collapsed to a vertical line — the "paper cat"
+     bug the user reported. Fixed by:
+       a) Splitting the flip onto a near-zero-time keyframe step (56% →
+          56.01%), so scaleX jumps without an interpolated mid value.
+       b) Wrapping that jump in a squash-and-stretch arc (scaleY 0.88 down,
+          then 1.10 up, then back to 1.0) so the cat reads as "crouch then
+          hop+turn", not as an instant teleport.
+       c) Dropping the 360° rotate — it read as a gymnastic spin, which is
+          off-character for a cat.
+     transform-origin: 50% 62% (set on .pg6-garden-cat) keeps the squash
+     anchored at the cat's feet so the floor doesn't dip during the crouch.
+  */
+  @keyframes pg6-cat-wander {
+    0%, 10%   { transform: translate3d(0, 0, 0) scaleX(1) scaleY(1); }
+    24%       { transform: translate3d(54px, 0, 0) scaleX(1) scaleY(1); }
+    31%       { transform: translate3d(72px, -16px, 0) scaleX(1) scaleY(1); }
+    38%       { transform: translate3d(90px, 0, 0) scaleX(1) scaleY(1); }
+    50%       { transform: translate3d(116px, 0, 0) scaleX(1) scaleY(1); }
+    /* crouch — anticipation */
+    53%       { transform: translate3d(116px, 0, 0) scaleX(1) scaleY(0.88); }
+    /* peak of the hop — body is stretched, facing still forward */
+    56%       { transform: translate3d(116px, -10px, 0) scaleX(1) scaleY(1.10); }
+    /* instant facing flip while airborne; near-zero gap (≈1.5ms at 15s) so
+       scaleX never interpolates through 0 */
+    56.01%    { transform: translate3d(116px, -10px, 0) scaleX(-1) scaleY(1.10); }
+    /* landing — back to baseline, now facing left */
+    60%       { transform: translate3d(116px, 0, 0) scaleX(-1) scaleY(1); }
+    76%       { transform: translate3d(68px, 0, 0) scaleX(-1) scaleY(1); }
+    84%       { transform: translate3d(36px, -10px, 0) scaleX(-1) scaleY(1); }
+    94%, 100% { transform: translate3d(0, 0, 0) scaleX(-1) scaleY(1); }
   }
   @keyframes pg6-vine-sway {
     0%, 100% { filter: saturate(calc(0.78 * var(--vine-health-sat, 1))) brightness(calc(0.90 * var(--vine-health-bright, 1))) contrast(0.96) hue-rotate(var(--vine-hue-shift, 0deg)); }
@@ -840,7 +913,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .pg6-sprite,
   .pg6-info,
-  .pg6-season-particle {
+  .pg6-season-particle,
+  .pg6-garden-cat {
     animation: none !important;
     transition-duration: 0ms !important;
   }
