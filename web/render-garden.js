@@ -11,6 +11,7 @@ const dynamicLayerSelector = [
   '.pg6-wall-edge-cover',
   '.pg6-petal',
   '.pg6-season-particle',
+  '.pg6-garden-cat',
   '.pg6-empty'
 ].join(', ');
 
@@ -86,7 +87,9 @@ function renderEverything(groups, summary) {
   addGroundOverlay(groups);
   addCourtyardObjects(groups, tiers);
   addFlowerAccents(groups, tiers);
-  addPavilionTrinkets(tiers.pavilion, tiers.pavilionTrinkets);
+  const liveCatUnlocked = hasLiveGardenCat(groups, tiers);
+  addPavilionTrinkets(tiers.pavilion, tiers.pavilionTrinkets, { skipSleepingCat: liveCatUnlocked });
+  addGardenCat(groups, tiers);
   addAmbientMotion(groups, tiers);
   if (!projects.length) renderEmptyState();
 }
@@ -212,7 +215,9 @@ function clearDynamicLayers() {
     const pavilions = groups.pavilion_compact || [];
     const bamboo = groups.bamboo_cluster || [];
     const pathStones = groups.path_stones || [];
-    const stools = groups.stone_stool || [];
+    const lowTables = (groups.wood_low_table && groups.wood_low_table.length)
+      ? groups.wood_low_table
+      : (groups.stone_stool || []);
     const cushions = groups.cushion || [];
     const cherries = groups.cherry_tree || [];
     const willows = groups.willow || [];
@@ -373,20 +378,18 @@ function clearDynamicLayers() {
         anchor: 'bottom'
       });
     }
-    // Stool + cushion live INSIDE the pavilion on the floor. Stool stays at
-    // interior-center so it reads as a low stone table for the tea_set /
-    // incense trinkets that land on its top surface. Cushion sits BESIDE
-    // the stool on the floor (not stacked on it) — stacking made the stool
-    // look like a table with the cushion on top, fighting the table reading
-    // we want for the table-top trinkets.
+    // Low table + cushion live INSIDE the pavilion on the floor. The table is
+    // a warm wooden replacement for the old stone stool, sized wide enough for
+    // tea_set + incense trinkets to read as placed on its top surface. Cushion
+    // stays beside it on the floor, matching the reference's quiet resting area.
     // z = 25/26 places them in front of the pavilion sprite so they peek
     // through the open columns at the front.
-    if (tiers.stool === 'visible' && stools.length) {
-      const p = pavilionInteriorPoint(tiers.pavilion, 50, 96);
-      addSprite(stools[0], {
+    if (tiers.stool === 'visible' && lowTables.length) {
+      const p = pavilionInteriorPoint(tiers.pavilion, 50, 94);
+      addSprite(lowTables[0], {
         x: p.x,
         y: p.y,
-        width: 26,
+        width: 54,
         z: 25,
         opacity: 1.0,
         className: 'object',
@@ -471,7 +474,7 @@ function clearDynamicLayers() {
     }, 0);
 
     const trinkets = CONFIG.pavilionTrinkets
-      .filter((t) => maxProjectTokens >= t.threshold)
+      .filter((t) => totalTokens >= t.threshold)
       .map((t) => t.id);
 
     const c = CONFIG;
@@ -507,7 +510,7 @@ function clearDynamicLayers() {
   // Pavilion trinket slot system.
   // Each trinket has a slot.{x,y} inside the pavilion's interior bounding box.
   // ========================================================================
-  function addPavilionTrinkets(pavilionTier, unlockedIds) {
+  function addPavilionTrinkets(pavilionTier, unlockedIds, options = {}) {
     if (!unlockedIds || !unlockedIds.length) return;
     const bbox = pavilionBoundingBox(pavilionTier);
     const int = CONFIG.pavilionInterior;
@@ -519,6 +522,7 @@ function clearDynamicLayers() {
     const unlocked = new Set(unlockedIds);
     CONFIG.pavilionTrinkets.forEach((tk, idx) => {
       if (!unlocked.has(tk.id)) return;
+      if (options.skipSleepingCat && tk.id === 'sleeping_cat') return;
       const xPct = intLeft + (tk.slot.x / 100) * intWidth;
       const yPct = intTop  + (tk.slot.y / 100) * intHeight;
       if (tk.file) addTrinketSprite(tk, xPct, yPct, tk.w, idx);
@@ -537,7 +541,8 @@ function clearDynamicLayers() {
     img.style.top = yPct + '%';
     img.style.width = (wUnits / 680 * 100) + '%';
     img.style.zIndex = String(40 + idx);
-    img.style.setProperty('--sprite-transform', 'translate(-50%, -50%)');
+    const anchorTransform = trinket.anchor === 'bottom' ? 'translate(-50%, -100%)' : 'translate(-50%, -50%)';
+    img.style.setProperty('--sprite-transform', anchorTransform);
     img.tabIndex = 0;
     img.title = label.name + ' · ' + label.hint;
     img.setAttribute('aria-label', label.name + ', ' + label.hint);
@@ -559,6 +564,33 @@ function clearDynamicLayers() {
       img.style.setProperty('--drop-delay', (Math.min(idx, 6) * 90) + 'ms');
     }
     scene.append(img);
+  }
+
+  function hasLiveGardenCat(groups, tiers) {
+    return Boolean(
+      groups.garden_cat?.length
+      && Array.isArray(tiers.pavilionTrinkets)
+      && tiers.pavilionTrinkets.includes('sleeping_cat')
+    );
+  }
+
+  function addGardenCat(groups, tiers) {
+    if (!hasLiveGardenCat(groups, tiers)) return;
+    const sprite = namedSprite(groups.garden_cat || [], 'garden_cat')
+      || namedSprite(groups.garden_cat || [], 'garden_cat_walk')
+      || groups.garden_cat[0];
+    if (!sprite?.file) return;
+    const cat = document.createElement('span');
+    cat.className = 'pg6-garden-cat';
+    cat.setAttribute('role', 'img');
+    cat.setAttribute('aria-label', '庭院猫');
+    cat.title = '庭院猫 · 五亿 token 住客';
+    cat.style.setProperty('--cat-sprite', `url("${spriteRoot + sprite.file}")`);
+    cat.style.setProperty('--cat-left', '59.4%');
+    cat.style.setProperty('--cat-top', '80.0%');
+    cat.style.setProperty('--cat-width', (58 / 680 * 100) + '%');
+    cat.style.zIndex = '64';
+    scene.append(cat);
   }
 
   function pavilionInteriorPoint(tier, slotX, slotY) {

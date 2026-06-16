@@ -1006,6 +1006,18 @@
       ]
     },
     {
+      "name": "wood_low_table_01",
+      "group": "wood_low_table",
+      "file": "courtyard_objects/wood_low_table_01.png",
+      "size": [
+        140,
+        74
+      ],
+      "anchor": "bottom",
+      "source_box": null,
+      "notes": "low wooden tea table for pavilion interior; tea_set and incense sit on its top"
+    },
+    {
       "name": "cushion_01",
       "group": "cushion",
       "file": "courtyard_objects/cushion_01.png",
@@ -1167,6 +1179,24 @@
       "file": "pavilion_trinkets/trinket_sleeping_cat.png",
       "w": 206,
       "h": 159
+    },
+    {
+      "name": "garden_cat",
+      "group": "garden_cat",
+      "file": "garden_cat/garden_cat.png",
+      "size": [
+        800,
+        168
+      ],
+      "frame_size": [
+        80,
+        56
+      ],
+      "frames": 30,
+      "sheet_cols": 10,
+      "sheet_rows": 3,
+      "anchor": "bottom",
+      "notes": "animated courtyard cat; unlocked by the sleeping_cat trinket tier"
     },
     {
       "name": "maple_leaf_01",
