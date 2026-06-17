@@ -1,4 +1,5 @@
 import { t } from './i18n.js';
+import { wallPattern, pathPattern } from './scene-tiles.js';
 
 export function renderBaseScene(scene, assetRoot, options = {}) {
   const W = 680, H = 440;
@@ -34,6 +35,8 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
      +   '<stop offset="0%" stop-color="' + time.wood[2] + '" stop-opacity="0.85"/>'
      +   '<stop offset="100%" stop-color="' + time.wood[2] + '" stop-opacity="0"/>'
      + '</linearGradient>'
+     + wallPattern()
+     + pathPattern()
      + '</defs>';
 
   // === Wooden awning ============================================
@@ -137,18 +140,38 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   const BW = 40, BH = 20;
   s += r(0, WT, W, WB - WT, '#48382a');
 
-  const bricks = ['#9e8268', '#8c7058', '#a68a72', '#7a6048', '#94795f', '#b09682', '#82684f', '#a89072'];
-  let rowI = 0;
-  for (let y = WT; y < WB; y += BH) {
-    const off = (rowI % 2) * (BW / 2);
-    for (let col = -1; col * BW + off < W + BW; col++) {
-      const bx = col * BW + off;
-      const ci = Math.floor(hash(col + 50, rowI) * bricks.length);
-      s += r(bx + 1, y + 1, BW - 2, BH - 2, bricks[ci]);
-      if (hash(col + 13, rowI + 7) > 0.84) s += r(bx + 8, y + 8, 3, 2, '#5a4030');
-      if (hash(col + 31, rowI + 19) > 0.92) s += r(bx + 24, y + 13, 2, 2, '#6e5440');
+  // Wall = a seamless hand-tuned pixel-art brick tile (scene-tiles.js) tiled
+  // across the wall band, over a dark mortar backdrop. A sparse weathering
+  // overlay (worn-light patches, extra moss, damp streaks) is scattered on top
+  // so the tile's ~160-unit repeat doesn't read as an obvious stamp.
+  s += '<rect x="0" y="' + WT + '" width="' + W + '" height="' + (WB - WT) + '" fill="url(#pg6WallTex)"/>';
+  // Weathering overlay — random (NON-repeating) damp patches, sun-worn patches,
+  // moss clumps and hairline cracks scattered across the whole wall, so the
+  // tile's ~160-unit repeat reads as one continuous aged wall.
+  for (let i = 0; i < 38; i++) {
+    const wx = Math.floor(hash(i + 3, 61) * (W - 24));
+    const wy = WT + 6 + Math.floor(hash(i + 9, 17) * (WB - WT - 18));
+    const k = hash(i, 41);
+    if (k > 0.72) {
+      // damp / shadowed patch
+      s += r(wx, wy, 10 + Math.floor(hash(i, 5) * 16), 6 + Math.floor(hash(i, 7) * 7), 'rgba(34,26,22,0.20)');
+    } else if (k > 0.48) {
+      // sun-worn lighter patch
+      s += r(wx, wy, 8 + Math.floor(hash(i, 6) * 14), 4 + Math.floor(hash(i, 8) * 5), 'rgba(198,168,128,0.15)');
+    } else if (k > 0.24) {
+      // moss clump creeping from a joint
+      s += r(wx, wy, 5, 2, 'rgba(95,107,74,0.5)');
+      s += r(wx + 1, wy - 2, 3, 2, 'rgba(110,124,82,0.42)');
+      s += r(wx - 1, wy + 2, 2, 1, 'rgba(80,95,60,0.4)');
+    } else {
+      // hairline crack — a short jagged dark run
+      const len = 4 + Math.floor(hash(i, 12) * 6);
+      let cxk = wx;
+      for (let k2 = 0; k2 < len; k2++) {
+        s += r(cxk, wy + k2 * 2, 2, 2, 'rgba(28,20,16,0.5)');
+        if (hash(i + k2, 3) > 0.6) cxk += hash(i + k2, 9) > 0.5 ? 2 : -2;
+      }
     }
-    rowI++;
   }
 
   s += r(580, 180, 35, 30, 'rgba(40,28,18,0.18)');
@@ -177,12 +200,36 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   s += r(0, WB + 4, W, 12, season.grass[1]);
   s += r(0, WB + 16, W, 12, season.grass[2]);
   s += r(0, WB + 28, W, H - WB - 28, season.grass[3]);
-  for (let i = 0; i < 80; i++) {
-    const gx = (i * 11 + 5) % W;
-    const gy = WB + 6 + (i % 5) * 6;
-    const gh = 2 + Math.floor(hash(i, 5) * 3);
-    s += r(gx, gy, 2, gh, season.grassDots);
+  // Dither the band seams instead of letting them meet as hard stripes — the
+  // classic pixel-art gradient. Each seam gets a checker of the lower band's
+  // color straddling the boundary line.
+  const ditherSeam = (yMid, col) => {
+    for (let dx = 0; dx < W; dx += 4) {
+      s += r(dx, yMid, 2, 2, col);
+      s += r(dx + 2, yMid - 2, 2, 2, col);
+    }
+  };
+  ditherSeam(WB + 4, season.grass[1]);
+  ditherSeam(WB + 16, season.grass[2]);
+  ditherSeam(WB + 28, season.grass[3]);
+  // Upright pixel grass blades (1px wide, varied height + shade) replace the
+  // old flat 2px specks so the lawn reads as textured pixel art, not a fill.
+  for (let i = 0; i < 96; i++) {
+    const tx = (i * 37 + 5) % W;
+    const ty = WB + 5 + (i % 6) * 6;
+    const blades = 2 + Math.floor(hash(i, 7) * 2);
+    for (let b = 0; b < blades; b++) {
+      const bh = 2 + Math.floor(hash(i + b, 11) * 4);
+      const shade = hash(i + b, 3) > 0.62 ? season.grass[2] : (hash(i + b, 9) > 0.5 ? season.grassDots : season.grass[1]);
+      s += r(tx + b * 2, ty - bh, 1, bh, shade);
+    }
   }
+  // Pixel-art flagstone path — a seamless stepping-stone tile (scene-tiles.js)
+  // tiled along a strip on the courtyard floor, replacing the faint path_stones
+  // sprite (its placement is removed in render-garden.js). The tile's gaps are
+  // transparent so the lawn shows between stones; sprites draw over the strip,
+  // so the path recedes behind the willow / lantern that stand on it.
+  s += '<rect x="276" y="392" width="208" height="20" fill="url(#pg6PathTex)"/>';
   // Flower spread varies by season — spring/summer get the full bouquet,
   // autumn switches to warm tones, winter is sparse.
   const flCol = season.flowers;

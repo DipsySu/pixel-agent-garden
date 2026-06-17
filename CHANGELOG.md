@@ -2,6 +2,48 @@
 
 ## Unreleased
 
+- Repixelated the courtyard wall and path so they read as deliberate, hand-
+  crafted pixel art instead of smooth fills. New `web/scene-tiles.js` builds
+  seamless pixel-art tiles rendered as SVG `<pattern>`s (drawn once, tiled by
+  the renderer — efficient): a running-bond sandstone brick tile and a cool-gray
+  flagstone tile, both on a tight palette ramp with NO blended in-between colors,
+  dithered shading transitions, chunky 2-unit pixels, and crisp dark mortar
+  joints. The warm-sandstone palette came out of a pixel-art design pass with
+  Codex 5.5 (asked to *draw* the tiles — it reliably picked the ramp but couldn't
+  hand-place a seam-continuous grid, so the grids are generated in code). The
+  wall tile is tiled across the band with a sparse RANDOM weathering overlay
+  (damp/sun-worn patches, moss, hairline cracks) on top so the ~160-unit repeat
+  reads as one continuous aged wall rather than a stamp. The lawn's hard band
+  stripes are dithered at the seams and the flat 2px specks are replaced by
+  upright varied-shade grass blades. The faint 0.62-opacity `path_stones` sprite
+  is gone (its placement removed in `render-garden.js`); the path is now the
+  flagstone pattern tiled along a floor strip, with transparent gaps so the lawn
+  shows between stones and sprites drawing over it so it recedes behind the
+  willow/lantern. No new binary assets, no core change, no schema bump.
+- Rebuilt the garden cat's roaming so it actually strolls the courtyard like a
+  cat. The old wander was a fixed CSS keyframe — a ±116px sweep pinned to the
+  right side that, being absolute pixels, shrank to a twitch on large displays
+  and traced the same mechanical right→turn→left loop forever. It's now a JS
+  state machine (`startCatWander` in `render-garden.js`) over `requestAnimation-
+  Frame`, with a behavior model designed in an adversarial pass with Codex 5.5:
+  destinations are weighted habit-zones + short heading-preserving patrols (not
+  uniform-random across a rectangle — that "drone cutting across the yard" look
+  was the biggest tell); each leg has subtle accel/decel zones (never easing to
+  zero, so no moonwalk) while the walk-frame cadence stays distance-driven so
+  feet never slide; a turn + brief hesitation precedes walking (anticipation
+  reads as life); arrival plants a frame before sitting; and the rest menu is
+  mostly short beats with rare long sits and "alert" stillness (animals aren't
+  animated 100% of the time). The roam box is scene-relative (~30–72% of width,
+  >2.5× the old span, scales with the window) with a subtle near/far scale.
+  **No more teleporting:** the cat element is now long-lived across re-renders
+  (removed from the dynamic-layer clear list) so a watcher tick no longer tears
+  it down and respawns it at home mid-stroll; it's only rebuilt when it
+  (un)locks or its motion-kind changes, and even then it resumes from its last
+  position. Motion modes honored (full runs the loop; `reduced` keeps the CSS
+  sit-blink; `off`/`prefers-reduced-motion` sit on one frame); rAF naturally
+  pauses when the window is hidden and the dt clamp prevents a resume jump.
+  Dropped the now-dead `pg6-cat-wander` / `pg6-cat-frames` keyframes. No core
+  change, no schema bump.
 - Re-tuned the pavilion trinket display and a courtyard ground-prop after an
   adversarial layout review (Claude visual+measured-rects ⨯ Codex 5.5 ⨯ a
   4-agent geometry workflow). Real bugs found and fixed: the incense burner sat
