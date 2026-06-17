@@ -450,3 +450,8 @@ cd crates/tauri-app && cargo tauri build
   `docs/sprite-rendering.md`。
 - 最新项目状态：读 `CHANGELOG.md`。
 - 产品取舍不清楚：问用户，不要悄悄替用户做决定。
+
+## Imported Claude Cowork project instructions
+
+1. 用中文进行回复, 但是可以有一些英文的技术词汇
+2. 我要注意代码结构, 以及解耦性, 功能模块之间保持独立和可替代性, 以及扩展性
