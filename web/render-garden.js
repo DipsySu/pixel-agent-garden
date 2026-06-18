@@ -364,8 +364,15 @@ function clearDynamicLayers() {
       const sprite = namedSprite(lanterns, tiers.lamp === 'lit' ? 'stone_lantern_lit' : 'stone_lantern_unlit') || pickByToken(lanterns, tiers.lamp === 'lit' ? 5 : 1);
       const timeMode = sceneTimeMode();
       const lampLit = tiers.lamp === 'lit' || timeMode === 'night' || timeMode === 'dusk';
+      // x 60→45 (layout audit F6): the lantern (x=60, bbox [57.7,62.3]) sat
+      // ENTIRELY inside the mature willow (x=60, bbox [52.3,67.7]) — a regression
+      // from moving the willow 48→60 to clear the cherry, which parked it right
+      // on top of the lantern (willow droops hid the lantern cap). Move the
+      // lantern into the empty 14%-wide bay between the stone cat (right 37.7)
+      // and the willow (left 52.3), centered — it now lights the path edge with
+      // ~5% clearance on each side instead of being swallowed by the tree.
       addSprite(sprite, {
-        x: 60,
+        x: 45,
         y: 91.5,
         width: 31,
         z: 25,
@@ -376,16 +383,21 @@ function clearDynamicLayers() {
     }
     if (cairns.length) {
       // Cairn size piggybacks on the stone_cat tier (both grow with sessions).
-      // x moved 68→78 (audit fix F4): old position overlapped stone_lantern
-      // by ~6 scene-units; the new position keeps cairn between lantern and
-      // pavilion without crowding either.
+      // x 78→72, width 42→38/32→30 (layout audit F7): at x=78 the cairn stood
+      // INSIDE the pavilion footprint ([74.9,81.1] within the pavilion's
+      // [65.4,96.6]), planted on the floor right beside the tea table — an
+      // outdoor stone pagoda reading as indoor furniture. x=72 tucks it just
+      // outside the willow (left of it by ~1.5%) and against the pavilion's
+      // front-left column, reading as a courtyard pagoda at the pavilion's
+      // corner rather than on its floor; the slight downsize keeps it from
+      // poking into the eave.
       const wantFull = tiers.stone_cat === 'full';
       const sprite = namedSprite(cairns, wantFull ? 'stone_cairn_full' : 'stone_cairn_small')
                   || pickByToken(cairns, wantFull ? 5 : 2);
       addSprite(sprite, {
-        x: 78,
+        x: 72,
         y: 92,
-        width: wantFull ? 42 : 32,
+        width: wantFull ? 38 : 30,
         z: 25,
         opacity: 1.0,
         className: 'object',

@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Fixed two courtyard placement regressions caught in a live layout check
+  (`render-garden.js`). The mature willow had been moved to x=60 to clear the
+  cherry, which parked it directly on top of the stone lantern (also x=60) —
+  the lantern sat ENTIRELY inside the willow's canopy ([57.7,62.3] within
+  [52.3,67.7]), hidden under the drooping branches. Moved the lantern into the
+  empty ~14%-wide bay between the stone cat and the willow (x=45), now 0%
+  overlap with ~5% clearance each side, lighting the path edge. Separately the
+  stone cairn (x=78) stood INSIDE the pavilion footprint, planted on the floor
+  beside the tea table like indoor furniture; moved it to the pavilion's
+  front-left corner (x=72, clear of the willow) and downsized slightly
+  (full 42→38 / small 32→30) so it reads as a courtyard pagoda at the eave
+  corner, not a tea-room ornament. Verified live via measured bounding rects.
+  No core change, no schema bump.
 - Regenerated the courtyard's static decor — stone lantern (lit + unlit
   states), stone cairn (small + full tiers), bamboo grove (3 cluster
   variants) — via PixelLab `create_map_object` + `create_object_state`,
