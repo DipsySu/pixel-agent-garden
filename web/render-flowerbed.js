@@ -52,7 +52,12 @@ export function renderFlowerbed(scene, flowerSprites, summary, options = {}) {
     img.decoding = 'async';
     img.loading = 'lazy';
     img.title = title;
-    img.tabIndex = 0;
+    // Deliberately NOT focusable / not a tab stop: there are up to 366 flowers,
+    // and making each one tabbable floods keyboard navigation with hundreds of
+    // stops (the vines avoid this with a roving-tabindex pattern). The flowerbed
+    // is an at-a-glance overview — its data is reachable keyboard-first via the
+    // Dashboard heatmap. Hover/focus tooltip listeners stay below so a future
+    // roving pattern can opt one flower in without re-plumbing.
     img.dataset.date = day.date;
     img.dataset.activity = String(day.activity || 0);
     img.dataset.level = String(level);

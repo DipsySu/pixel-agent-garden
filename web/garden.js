@@ -121,10 +121,16 @@ Promise.all([
   });
   subscribeGardenUpdates((summary) => {
     lastSummary = summary;
-    insightPanel?.update(lastSummary);
-    dashboardPanel?.update(lastSummary);
-    miniStrip?._redraw?.(lastSummary);
+    // auto_rescan off = the user paused live updates. Keep EVERY view on the
+    // cached frame — the scene, the mini-heatmap strip, the dashboard, AND the
+    // insight panel — not just the scene. Updating the year-views while the
+    // garden stays cached made the two diverge (heatmap showed today, flowers
+    // showed yesterday). returnDiff still records the real latest summary below
+    // so the "while you were away" diff stays truthful regardless of the pause.
     if (currentSettings.data.auto_rescan) {
+      insightPanel?.update(lastSummary);
+      dashboardPanel?.update(lastSummary);
+      miniStrip?._redraw?.(lastSummary);
       renderer.renderEverything(groups, lastSummary);
     } else {
       renderer.showCached(lastSummary);

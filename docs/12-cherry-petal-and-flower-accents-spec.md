@@ -180,10 +180,10 @@ unconditionally; flowers are not.)
 - Manifest valid JSON; `cherry_tree` group has 3 entries.
 - Flowers don't block hover on vines / cat / trinkets (pointer-events:none).
 - Season toggle to autumn/winter removes flowers; back to spring/summer restores.
-- **[v2] Sample is schema v2** (core `SUMMARY_SCHEMA_VERSION` = 4) and lacks
-  `size_level` / `path_inferred` — it still drives this feature fine, but a
-  schema-current sample/fixture refresh is tracked **separately** (the "doc/sample
-  refresh" task), not in this spec.
+- **[history]** An early sample was schema v2; the committed fixture has since
+  been refreshed to schema v6 (core `SUMMARY_SCHEMA_VERSION` = 6) and now carries
+  `size_level` / `path_inferred` / `flowerbed_year`. This feature drives fine on
+  any of them.
 - `cargo build` / `cargo tauri dev` runs `build.rs` to mirror the new PNG into
   `web/assets/`; pure browser preview needs `web/assets` synced (build once or copy).
 

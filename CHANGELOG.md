@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+- Hardened the flowerbed view after a 4-dimension adversarial review (Claude
+  reviewers ⨯ per-finding skeptic verification; 10 confirmed of 14, 4 rejected
+  as false alarms). Fixes: (1) the build script shipped a 1.4 MB image-gen
+  source PNG, the unused master spritesheet, and the `_brief/` authoring notes
+  into every user's Tauri bundle — `build.rs` now skips `_source*` files,
+  `flowers.png`, and any `_`-prefixed sprite subdir, so the mirror carries only
+  the 20 runtime sliced flowers; (2) flowers ignored an OS `prefers-reduced-
+  motion` preference under the default `motion: system` — added `.pg6-flower`
+  to the global reduced-motion media query; (3) 366 flowers were each a
+  keyboard tab stop, flooding navigation — flowers are no longer focusable (the
+  flowerbed is an at-a-glance overview; its data is keyboard-reachable via the
+  Dashboard heatmap); (4) with `auto_rescan` off, the mini-heatmap / dashboard
+  refreshed on watcher ticks while the cached scene (and flowers) did not, so
+  the two year-views diverged — all views now pause together. Also corrected
+  two stale schema-version references (CLAUDE.md, cherry-petal spec said v4;
+  actual is v6) and tightened the `flowerbed_level` docstring (it shares the
+  log-ratio *formula* with `size_level` but uses a different baseline + band
+  count). Earlier in the cycle, two promotion-gap bugs were also fixed: the
+  settings normalizer dropped the `flowerbed` field on the desktop round-trip
+  (so the toggle never took effect outside browser preview), and re-renders
+  re-appended flowers without clearing the old set (stacking + DOM leak).
+
 - Added a flowerbed contribution view (opt-in). When `appearance.flowerbed =
   enabled` (or URL `?flowerbed=enabled` for ad-hoc preview), the garden's
   ground band swaps the grass strips for a tilled dirt bed and 366 generated

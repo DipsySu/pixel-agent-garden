@@ -448,10 +448,16 @@ fn build_flowerbed_year(
 }
 
 /// Flowerbed level: 0 reserved for idle days; non-zero activity log-
-/// compresses into 1..=4 using the same shape as `size_level`. Distinct
-/// from `quantize_level` (used by `heatmap_year`) which is value/max
-/// linear — the flowerbed wants intensity bursts to bloom visibly even
-/// when one peak day dominates the year.
+/// compresses into 1..=4 with the *same log-ratio formula* as `size_level`
+/// — `(log10(x+1) - min_log) / (max_log - min_log)`, ceil'd into bands —
+/// but a DIFFERENT baseline and band count: `min_log = log10(2) ≈ 0.301`
+/// and 4 bands here, vs `min_log = 3.0` (the ~1000-token decade) and 5
+/// bands in `size_level`. So the two are tuned independently — changing
+/// one does NOT track the other. Still self-relative: `max_log` is driven
+/// by this window's own `max_activity`. Distinct from `quantize_level`
+/// (used by `heatmap_year`), which is plain value/max linear — the
+/// flowerbed wants intensity bursts to bloom visibly even when one peak
+/// day dominates the year.
 fn flowerbed_level(activity: u64, max_activity: u64) -> u8 {
     if activity == 0 || max_activity == 0 {
         return 0;
