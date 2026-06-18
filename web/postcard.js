@@ -6,7 +6,7 @@ const EXPORT_WIDTH = 1360;
 const EXPORT_HEIGHT = 880;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-export async function buildPostcardBlob({ scene, assetRoot, summary, anonymize }) {
+export async function buildPostcardCanvas({ scene, assetRoot, summary, anonymize }) {
   if (!scene) throw new Error('scene is required');
 
   const canvas = document.createElement('canvas');
@@ -19,13 +19,26 @@ export async function buildPostcardBlob({ scene, assetRoot, summary, anonymize }
   await drawBaseSvg(ctx, scene, assetRoot);
   drawWallEdgeCover(ctx, scene);
   await drawSprites(ctx, scene);
+  // The live cat (a CSS sprite-sheet <span>) and the ambient season particles
+  // are NOT `.pg6-sprite` elements, so drawSprites never sees them — without
+  // this the postcard silently dropped the cat and all the season ambiance.
+  await drawGardenCat(ctx, scene);
+  drawParticles(ctx, scene);
   drawCaption(ctx, scene, summary, anonymize);
 
-  return canvasToPngBlob(canvas);
+  return canvas;
 }
 
-export async function saveGardenPostcard({ scene, assetRoot, summary, anonymize }) {
-  const blob = await buildPostcardBlob({ scene, assetRoot, summary, anonymize });
+export async function buildPostcardBlob(options) {
+  return canvasToPngBlob(await buildPostcardCanvas(options));
+}
+
+export async function saveGardenPostcard({ scene, assetRoot, summary, anonymize, canvas }) {
+  // Reuse a preview canvas when one is supplied (so Save doesn't re-render);
+  // otherwise build a fresh one.
+  const blob = await canvasToPngBlob(
+    canvas || await buildPostcardCanvas({ scene, assetRoot, summary, anonymize })
+  );
   return savePostcard(blob, suggestedPostcardName(scene));
 }
 
@@ -45,6 +58,10 @@ export function mountPostcardExport({ scene, assetRoot, getSummary, onError }) {
   const status = document.getElementById('postcard-status');
   if (!button || !panel || !include || !exportButton) return null;
 
+  const preview = document.getElementById('postcard-preview');
+  let lastCanvas = null;   // the live preview canvas, reused on Save (no re-render)
+  let rendering = false;
+
   button.addEventListener('click', () => togglePanel());
   panel.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
@@ -53,16 +70,19 @@ export function mountPostcardExport({ scene, assetRoot, getSummary, onError }) {
       button.focus();
     }
   });
+  // The "include project name" toggle changes the caption — re-render so the
+  // preview always reflects exactly what will be saved (and the user can verify
+  // anonymization before committing).
+  include.addEventListener('change', () => { renderPreview(); });
+
   exportButton.addEventListener('click', async () => {
+    if (rendering) return;
+    if (!lastCanvas) await renderPreview();
+    if (!lastCanvas) return;
     exportButton.disabled = true;
     setStatus(t('postcard.exporting'));
     try {
-      const saved = await saveGardenPostcard({
-        scene,
-        assetRoot,
-        summary: typeof getSummary === 'function' ? getSummary() : null,
-        anonymize: !include.checked
-      });
+      const saved = await saveGardenPostcard({ scene, canvas: lastCanvas });
       setStatus(saved ? t('postcard.saved') : t('postcard.cancelled'));
       if (saved) togglePanel(false);
     } catch (err) {
@@ -73,13 +93,43 @@ export function mountPostcardExport({ scene, assetRoot, getSummary, onError }) {
     }
   });
 
+  async function renderPreview() {
+    if (rendering) return;
+    rendering = true;
+    lastCanvas = null;
+    exportButton.disabled = true;
+    setStatus(t('postcard.rendering'));
+    try {
+      const canvas = await buildPostcardCanvas({
+        scene,
+        assetRoot,
+        summary: typeof getSummary === 'function' ? getSummary() : null,
+        anonymize: !include.checked
+      });
+      lastCanvas = canvas;
+      if (preview instanceof HTMLCanvasElement) {
+        preview.width = canvas.width;
+        preview.height = canvas.height;
+        const pctx = preview.getContext('2d');
+        if (pctx) { pctx.imageSmoothingEnabled = false; pctx.drawImage(canvas, 0, 0); }
+      }
+      setStatus('');
+    } catch (err) {
+      setStatus(t('postcard.error'));
+      if (typeof onError === 'function') onError('postcard preview failed', err);
+    } finally {
+      rendering = false;
+      exportButton.disabled = false;
+    }
+  }
+
   function togglePanel(force) {
     const open = typeof force === 'boolean' ? force : panel.hidden;
     panel.hidden = !open;
     button.setAttribute('aria-expanded', open ? 'true' : 'false');
     button.classList.toggle('is-active', open);
     if (open) {
-      setStatus('');
+      renderPreview();
       include.focus();
     }
   }
@@ -176,37 +226,117 @@ async function drawSprites(ctx, scene) {
   }
 }
 
+// The garden cat is a <span> backed by a 10×3 sprite sheet, animated over rAF.
+// For the postcard we draw a FIXED sit frame (row 2, col 4) at the cat's current
+// on-screen rect, so the export is deterministic — never a half-stride walk
+// frame — no matter when Export is pressed.
+async function drawGardenCat(ctx, scene) {
+  const cat = scene.querySelector('.pg6-garden-cat');
+  if (!(cat instanceof HTMLElement)) return;
+  const style = getComputedStyle(cat);
+  if (style.display === 'none' || style.visibility === 'hidden') return;
+  const alpha = parseCssAlpha(style.opacity);
+  if (alpha <= 0) return;
+  const match = /url\(["']?(.*?)["']?\)/.exec(style.backgroundImage || '');
+  if (!match || !match[1]) return;
+  let sheet;
+  try { sheet = await loadImage(new URL(match[1], document.baseURI).href); }
+  catch (_) { return; }
+  if (!sheet.naturalWidth || !sheet.naturalHeight) return;
+  const box = scaledBox(cat.getBoundingClientRect(), scene.getBoundingClientRect());
+  if (!box) return;
+  const cols = 10, rows = 3;
+  const fw = sheet.naturalWidth / cols, fh = sheet.naturalHeight / rows;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.imageSmoothingEnabled = false;
+  if ('filter' in ctx) ctx.filter = 'none';
+  ctx.drawImage(sheet, 4 * fw, 2 * fh, fw, fh, box.x, box.y, box.w, box.h);
+  ctx.restore();
+}
+
+// Season particles (.pg6-petal + .pg6-season-particle): small CSS color blocks
+// or sprite imgs, animated by CSS. Draw each at its current rect honoring its
+// live opacity, so mid-fade-in particles stay faint exactly as on screen and
+// fully-faded ones are skipped (keeps the export matching the moment).
+function drawParticles(ctx, scene) {
+  const sceneRect = scene.getBoundingClientRect();
+  for (const el of scene.querySelectorAll('.pg6-petal, .pg6-season-particle')) {
+    if (!(el instanceof HTMLElement)) continue;
+    const style = getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden') continue;
+    const alpha = parseCssAlpha(style.opacity);
+    if (alpha <= 0.04) continue;
+    const box = scaledBox(el.getBoundingClientRect(), sceneRect);
+    if (!box) continue;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    if ('filter' in ctx) ctx.filter = 'none';
+    if (el instanceof HTMLImageElement && el.naturalWidth) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(el, box.x, box.y, box.w, box.h);
+    } else {
+      ctx.fillStyle = style.backgroundColor || 'rgba(255,255,255,0.9)';
+      const radius = style.borderRadius || '';
+      const round = radius.includes('50%') || parseFloat(radius) >= Math.min(box.w, box.h) / 2;
+      if (round) {
+        ctx.beginPath();
+        ctx.ellipse(box.x + box.w / 2, box.y + box.h / 2, box.w / 2, box.h / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillRect(box.x, box.y, box.w, box.h);
+      }
+    }
+    ctx.restore();
+  }
+}
+
 function drawCaption(ctx, scene, summary, anonymize) {
-  const stripHeight = 54;
-  const season = scene?.dataset?.seasonLabel || t('season.spring');
+  const stripHeight = 76;
+  const fontStack = 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif';
+  const seasonLabel = scene?.dataset?.seasonLabel || t('season.spring');
+  const timeLabel = scene?.dataset?.timeLabel || t('time.day');
   const projects = Array.isArray(summary?.projects) ? summary.projects : [];
   const total = summary?.total_tokens ?? projects.reduce((sum, item) => sum + (item.total_tokens || 0), 0);
-  const parts = [
-    season,
+
+  // Line 1 (title): the garden's state — "<season> · <time of day>".
+  const line1 = seasonLabel + ' · ' + timeLabel;
+  // Line 2 (stats): vine count + total tokens, plus the busiest project name
+  // ONLY when the user opted in — and never a filesystem path (see topProject).
+  const stats = [
     t('postcard.vines', { count: projects.length || summary?.active_projects || 0 }),
     t('postcard.tokens', { total: fmtLocal(total) })
   ];
   if (!anonymize) {
     const top = topProject(projects);
-    if (top) parts.push(t('postcard.busiest', { name: top }));
+    if (top) stats.push(t('postcard.busiest', { name: top }));
   }
+  const line2 = stats.join(' · ');
 
   ctx.save();
   ctx.globalAlpha = 1;
   if ('filter' in ctx) ctx.filter = 'none';
-  ctx.fillStyle = 'rgba(16, 20, 15, 0.84)';
+  // Solid dark scrim: keeps text legible over any scene (bright day, white
+  // winter, dark night) without per-scene contrast tuning.
+  ctx.fillStyle = 'rgba(16, 20, 15, 0.86)';
   ctx.fillRect(0, EXPORT_HEIGHT - stripHeight, EXPORT_WIDTH, stripHeight);
-  ctx.fillStyle = 'rgba(244, 234, 216, 0.94)';
-  ctx.font = '22px ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
   ctx.textBaseline = 'middle';
-  ctx.fillText(fitOneLine(ctx, parts.join(' · '), EXPORT_WIDTH - 64), 32, EXPORT_HEIGHT - stripHeight / 2 + 1);
+  ctx.fillStyle = 'rgba(246, 238, 222, 0.97)';
+  ctx.font = '600 27px ' + fontStack;
+  ctx.fillText(fitOneLine(ctx, line1, EXPORT_WIDTH - 64), 32, EXPORT_HEIGHT - stripHeight + 27);
+  ctx.fillStyle = 'rgba(214, 210, 196, 0.9)';
+  ctx.font = '20px ' + fontStack;
+  ctx.fillText(fitOneLine(ctx, line2, EXPORT_WIDTH - 64), 32, EXPORT_HEIGHT - stripHeight + 54);
   ctx.restore();
 }
 
 function topProject(projects) {
   if (!projects.length) return '';
   const top = [...projects].sort((a, b) => (b.total_tokens || 0) - (a.total_tokens || 0))[0];
-  return top?.display_name || top?.project_key || '';
+  // display_name is already a path basename (core strips it). NEVER fall back
+  // to project_key — that's typically an absolute local path and would leak the
+  // user's directory structure into a shared image.
+  return top?.display_name || '';
 }
 
 function fitOneLine(ctx, text, maxWidth) {

@@ -541,6 +541,17 @@ body {
   z-index: 154;
 }
 .pg6-postcard-panel[hidden] { display: none; }
+.pg6-postcard-preview {
+  aspect-ratio: 1360 / 880;
+  background: #0d0f0c;
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: 4px;
+  display: block;
+  height: auto;
+  image-rendering: pixelated;
+  margin: 8px 0 10px;
+  width: 100%;
+}
 
 /* === Mini heatmap strip (sits between header and scene) ====================
    ~50 px tall horizontal band — a quick at-a-glance view of the rolling
@@ -1106,6 +1117,7 @@ body {
     </div>
     <div id="postcard-export-panel" class="pg6-postcard-panel" role="dialog" data-i18n-aria-label="postcard.dialogAria" hidden>
       <div class="pg6-postcard-title" data-i18n="postcard.panelTitle">Export postcard</div>
+      <canvas id="postcard-preview" class="pg6-postcard-preview" width="1360" height="880" aria-hidden="true"></canvas>
       <label class="pg6-postcard-toggle">
         <input id="postcard-include-busiest" type="checkbox">
         <span data-i18n="postcard.includeBusiest">Include busiest project</span>

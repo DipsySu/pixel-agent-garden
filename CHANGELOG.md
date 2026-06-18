@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Postcard export overhaul (P0 set from an adversarial Codex 5.5 review),
+  turning a buggy screenshot into a trustworthy keepsake (`postcard.js`).
+  (1) Completeness — the export silently dropped the live cat (a CSS sprite-
+  sheet `<span>`, not a `.pg6-sprite`) and every season particle; both are now
+  drawn. The cat is rendered as a deterministic FIXED sit frame (sheet row 2
+  col 4) at its on-screen rect, so the export is never a half-stride walk frame
+  regardless of when Export is pressed; particles honor their live opacity.
+  (2) Caption — the single bottom line that i18n could ellipsis-truncate is now
+  a two-line block on a solid dark scrim: `<season> · <time of day>` then
+  `<N> vines · <tokens> [· busiest: <name>]`, with a CJK font fallback and
+  per-line ellipsis, legible over any scene (bright day, snow, night).
+  (3) Preview — the panel renders a live `<canvas>` preview (re-rendered when
+  the include-project-name toggle changes) so you confirm framing AND
+  anonymization before saving instead of saving blind; Save reuses the preview
+  canvas (no re-render). Privacy: the busiest-project label can no longer fall
+  back to `project_key` (a local path) — it uses `display_name` (a basename)
+  only. No core change, no schema bump.
 - Follow-up courtyard de-clutter from a second layout pass (`render-garden.js`).
   (1) Bamboo vs cherry: the grove [0.6,17.5] overlapped the cherry [10.1,25.9]
   by 7.4% (the mid cluster shoved into the cherry's left canopy). Pulled the
