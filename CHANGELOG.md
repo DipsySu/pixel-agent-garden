@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Follow-up courtyard de-clutter from a second layout pass (`render-garden.js`).
+  (1) Bamboo vs cherry: the grove [0.6,17.5] overlapped the cherry [10.1,25.9]
+  by 7.4% (the mid cluster shoved into the cherry's left canopy). Pulled the
+  grove into the left corner and narrowed it ([0,~12]) and stepped the cherry
+  x=18→21 — now 0% overlap, cherry still clearing the stone cat. (2) Stone cairn:
+  shrank + nudged it (x=72→70, full 38→30 / small 30→26) so it stops crowding
+  the pavilion's front-left column and reads as a slim pagoda in the narrow
+  willow–pavilion gap instead of jammed against the post. All overlaps
+  re-measured to 0%. No core change, no schema bump.
 - Fixed two courtyard placement regressions caught in a live layout check
   (`render-garden.js`). The mature willow had been moved to x=60 to clear the
   cherry, which parked it directly on top of the stone lantern (also x=60) —

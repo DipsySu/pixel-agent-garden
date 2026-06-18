@@ -268,12 +268,16 @@ function clearDynamicLayers() {
       const back  = namedSprite(bamboo, 'bamboo_cluster_03') || bamboo[0];
       const mid   = namedSprite(bamboo, 'bamboo_cluster_02') || bamboo[bamboo.length > 1 ? 1 : 0];
       const front = namedSprite(bamboo, 'bamboo_cluster_01') || bamboo[bamboo.length > 2 ? 2 : 0];
+      // Grove pulled left + narrowed (layout audit F8): the old grove spanned
+      // [0.6,17.5] while the cherry spans [10.1,25.9] — a 7.4% overlap where the
+      // mid cluster shoved into the cherry's left canopy. Tucking the grove into
+      // the corner ([0,~12]) clears it.
       // back row (taller, slightly farther left)
-      addSprite(back,  { x:  6.5, y: 90.0, width: 58, z: 23, opacity: 0.95, className: 'object', anchor: 'bottom' });
+      addSprite(back,  { x:  4.0, y: 90.0, width: 50, z: 23, opacity: 0.95, className: 'object', anchor: 'bottom' });
       // mid row (fuller, anchors the grove)
-      addSprite(mid,   { x: 12.5, y: 91.2, width: 68, z: 26, opacity: 0.97, className: 'object', anchor: 'bottom' });
+      addSprite(mid,   { x:  7.5, y: 91.2, width: 58, z: 26, opacity: 0.97, className: 'object', anchor: 'bottom' });
       // foreground accent (smaller, in front for depth)
-      addSprite(front, { x:  3.5, y: 92.4, width: 40, z: 29, opacity: 1.0,  className: 'object', anchor: 'bottom' });
+      addSprite(front, { x:  2.5, y: 92.4, width: 34, z: 29, opacity: 1.0,  className: 'object', anchor: 'bottom' });
     }
     if (cherries.length) {
       // Cherry is one of two visual anchors (with the pavilion). Sized to
@@ -293,13 +297,14 @@ function clearDynamicLayers() {
       // denser sprite + 12 falling petals — kept ≤110 so it doesn't out-scale
       // the pavilion anchor.
       const cherryWidth = cherryTier === 'bud' ? 78 : cherryTier === 'petal' ? 108 : 100;
-      // x lowered 23→18 alongside willow x 48→60: a layout audit found mature
-      // willow (x=48, w=125, bbox [-14.5, 110.5]) horizontally engulfed cherry
-      // (x=23, w=100-108, bbox [-31,77]) — overlap ≈59% of cherry petal at the
-      // peak tier. Separating their centers by 42 scene-units instead of 25
-      // restores a readable foreground/background.
+      // x 23→18→21. First lowered alongside willow x 48→60 (a layout audit
+      // found the mature willow engulfing the cherry by ≈59% at the petal tier).
+      // Then nudged 18→21 (audit F8) to clear the bamboo grove on its left: the
+      // grove [0.6,17.5] had overlapped the cherry [10.1,25.9] by 7.4%, so the
+      // grove was pulled into the corner and the cherry stepped right — they now
+      // sit shoulder-to-shoulder with a small gap, cherry clearing the stone cat.
       addSprite(sprite, {
-        x: 18,
+        x: 21,
         y: 91.4,
         width: cherryWidth,
         z: 22,
@@ -383,21 +388,20 @@ function clearDynamicLayers() {
     }
     if (cairns.length) {
       // Cairn size piggybacks on the stone_cat tier (both grow with sessions).
-      // x 78→72, width 42→38/32→30 (layout audit F7): at x=78 the cairn stood
-      // INSIDE the pavilion footprint ([74.9,81.1] within the pavilion's
-      // [65.4,96.6]), planted on the floor right beside the tea table — an
-      // outdoor stone pagoda reading as indoor furniture. x=72 tucks it just
-      // outside the willow (left of it by ~1.5%) and against the pavilion's
-      // front-left column, reading as a courtyard pagoda at the pavilion's
-      // corner rather than on its floor; the slight downsize keeps it from
-      // poking into the eave.
+      // Placement is space-constrained: the willow [52.3,67.7] and pavilion
+      // [65.4,96.6] nearly fill the right half, so the cairn lives in the narrow
+      // willow–pavilion gap. Iterated x 78→72→70 + width 42→38→30 / 32→30→26
+      // (audit F7/F9): x=78 stood INSIDE the pavilion on the floor beside the
+      // tea table (indoor-furniture look); x=70 + the downsize tuck it against
+      // the willow's right edge (~0% overlap) as a slim pagoda that clears the
+      // pavilion's front-left column and no longer pokes into the eave.
       const wantFull = tiers.stone_cat === 'full';
       const sprite = namedSprite(cairns, wantFull ? 'stone_cairn_full' : 'stone_cairn_small')
                   || pickByToken(cairns, wantFull ? 5 : 2);
       addSprite(sprite, {
-        x: 72,
+        x: 70,
         y: 92,
-        width: wantFull ? 38 : 30,
+        width: wantFull ? 30 : 26,
         z: 25,
         opacity: 1.0,
         className: 'object',
