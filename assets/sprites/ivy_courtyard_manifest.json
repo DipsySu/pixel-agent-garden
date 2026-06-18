@@ -939,7 +939,9 @@
         509,
         386,
         774
-      ]
+      ],
+      "w": 95,
+      "h": 140
     },
     {
       "name": "bamboo_cluster_02",
@@ -955,7 +957,9 @@
         429,
         792,
         777
-      ]
+      ],
+      "w": 124,
+      "h": 176
     },
     {
       "name": "bamboo_cluster_03",
@@ -971,7 +975,9 @@
         483,
         1073,
         772
-      ]
+      ],
+      "w": 106,
+      "h": 177
     },
     {
       "name": "path_stones_01",
@@ -1086,29 +1092,29 @@
       "group": "stone_lantern",
       "name": "stone_lantern_unlit",
       "file": "courtyard_style/stone_lantern_unlit.png",
-      "w": 180,
-      "h": 281
+      "w": 70,
+      "h": 151
     },
     {
       "group": "stone_lantern",
       "name": "stone_lantern_lit",
       "file": "courtyard_style/stone_lantern_lit.png",
-      "w": 184,
-      "h": 287
+      "w": 70,
+      "h": 153
     },
     {
       "group": "stone_cairn",
       "name": "stone_cairn_small",
       "file": "courtyard_style/stone_cairn_small.png",
-      "w": 197,
-      "h": 236
+      "w": 62,
+      "h": 107
     },
     {
       "group": "stone_cairn",
       "name": "stone_cairn_full",
       "file": "courtyard_style/stone_cairn_full.png",
-      "w": 227,
-      "h": 321
+      "w": 62,
+      "h": 112
     },
     {
       "group": "stone_cat",

@@ -293,8 +293,13 @@ function clearDynamicLayers() {
       // denser sprite + 12 falling petals — kept ≤110 so it doesn't out-scale
       // the pavilion anchor.
       const cherryWidth = cherryTier === 'bud' ? 78 : cherryTier === 'petal' ? 108 : 100;
+      // x lowered 23→18 alongside willow x 48→60: a layout audit found mature
+      // willow (x=48, w=125, bbox [-14.5, 110.5]) horizontally engulfed cherry
+      // (x=23, w=100-108, bbox [-31,77]) — overlap ≈59% of cherry petal at the
+      // peak tier. Separating their centers by 42 scene-units instead of 25
+      // restores a readable foreground/background.
       addSprite(sprite, {
-        x: 23,
+        x: 18,
         y: 91.4,
         width: cherryWidth,
         z: 22,
@@ -304,13 +309,14 @@ function clearDynamicLayers() {
       });
     }
     if (willows.length) {
-      // Willow scales to ~75% of pavilion when mature — it should feel like
-      // the biggest tree in the courtyard.
+      // Willow scales to ~65% of pavilion when mature — it should feel like
+      // the biggest tree in the courtyard, BUT not swallow the cherry. Audit
+      // fix: x 48→60, mature width 125→105 (cap footprint).
       const sprite = namedSprite(willows, tiers.willow === 'mature' ? 'willow_mature' : 'willow_young') || pickByToken(willows, tiers.willow === 'mature' ? 5 : 2);
       addSprite(sprite, {
-        x: 48,
+        x: 60,
         y: 90.9,
-        width: tiers.willow === 'mature' ? 125 : 95,
+        width: tiers.willow === 'mature' ? 105 : 88,
         z: 21,
         opacity: 0.98,
         className: 'object decor-willow',
@@ -327,7 +333,9 @@ function clearDynamicLayers() {
       const catImg = addSprite(sprite, {
         x: 34,
         y: 92.3,
-        width: wantFull ? 58 : 46,
+        // wantFull width 58→50: audit found 18.5% overlap with stone_lantern
+        // (x=60, w=31). Cap to 50 → overlap drops to ~14.5 / 47% of lantern.
+        width: wantFull ? 50 : 46,
         z: 24,
         opacity: 1.0,
         className: 'object cat-interactive',
@@ -368,11 +376,14 @@ function clearDynamicLayers() {
     }
     if (cairns.length) {
       // Cairn size piggybacks on the stone_cat tier (both grow with sessions).
+      // x moved 68→78 (audit fix F4): old position overlapped stone_lantern
+      // by ~6 scene-units; the new position keeps cairn between lantern and
+      // pavilion without crowding either.
       const wantFull = tiers.stone_cat === 'full';
       const sprite = namedSprite(cairns, wantFull ? 'stone_cairn_full' : 'stone_cairn_small')
                   || pickByToken(cairns, wantFull ? 5 : 2);
       addSprite(sprite, {
-        x: 68,
+        x: 78,
         y: 92,
         width: wantFull ? 42 : 32,
         z: 25,
@@ -387,11 +398,17 @@ function clearDynamicLayers() {
     // 0.62-opacity blur. `path_stones` stays in the manifest as a legacy asset.
     void pathStones;
     if (pavilions.length) {
+      // Audit fix F5: was hardcoded x=82.5 / y=90.5 here while scene-config's
+      // pavilionAnchor was {cx_pct:81, bottom_pct:91} — the trinket-placement
+      // math read from CONFIG but the actual pavilion sprite sat 1.5 scene-%
+      // to the right of where the interior bounding box thought it did, so
+      // trinkets drifted leftward relative to the visible pavilion. Use the
+      // config as the single source of truth.
       const pavilionIndex = { small: 1, mid: 3, full: 5 }[tiers.pavilion] || 1;
       const sprite = pickByToken(pavilions, pavilionIndex);
       addSprite(sprite, {
-        x: 82.5,
-        y: 90.5,
+        x: CONFIG.pavilionAnchor.cx_pct,
+        y: CONFIG.pavilionAnchor.bottom_pct,
         width: pavilionWidth(tiers.pavilion),
         z: 24,
         opacity: 1.0,

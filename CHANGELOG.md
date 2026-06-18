@@ -2,6 +2,44 @@
 
 ## Unreleased
 
+- Regenerated the courtyard's static decor — stone lantern (lit + unlit
+  states), stone cairn (small + full tiers), bamboo grove (3 cluster
+  variants) — via PixelLab `create_map_object` + `create_object_state`,
+  matching the same warm-stone / vibrant-bamboo palette established by the
+  trinket pass earlier. 7 generations total. PixelLab cloud now holds the
+  ginger character + 1 lantern + 1 cairn + 1 bamboo grouped object set with
+  their state variants.
+
+  Same processing pipeline as before (tight crop to alpha bbox + 2 px,
+  flood-fill stray-cluster scrub ≤6 px). All sprites came back ≤3 strays —
+  one tiny anti-alias residue on lantern_lit from the glowing-window edit,
+  zero on the rest. Aspect-ratio drift relative to the old Codex sprites:
+  bamboo ±10%, cairn -22 to -28%, lantern -27%. Render-height % at the
+  current configured widths goes up 10-44% — visible but not enough to
+  blow out the scene at any tier (verified by working through the
+  scene-pct math against the existing `width: <n>` calls).
+
+- Fixed three real layout overlaps surfaced by a layout-audit workflow
+  (2-dimension audit ⨯ per-finding skeptic verification; the verifier
+  caught the auditor proposing fixes that didn't actually clear the
+  problem, then computed the correct numbers itself):
+  * Mature willow used to engulf the cherry tree at every recent-activity
+    tier — bbox overlap ~59% of cherry-petal at peak. Moved cherry x
+    23→18, willow x 48→60, capped mature willow width 125→105 (young
+    95→88), so the two anchor trees now sit on opposite sides of the
+    courtyard with clear breathing room.
+  * Full stone_cat overlapped stone_lantern by ~60% of the lantern's
+    footprint. Capped stone_cat full width 58→50; moved cairn x 68→78 to
+    let the lantern read as a standalone landmark again.
+  * The pavilion sprite was rendered at hardcoded x=82.5 / y=90.5 while
+    `scene-config.js` pavilionAnchor was {cx_pct:81, bottom_pct:91} — so
+    the pavilion-interior trinket math (which read from CONFIG) was 1.5
+    scene-% off from the visible pavilion. Render-garden now reads from
+    CONFIG, single source of truth. Three sleeping_cat overlap findings
+    were rejected after verification: that trinket is supplanted at
+    runtime by the live garden_cat (`skipSleepingCat` path in
+    addPavilionTrinkets), so its config slot is never drawn.
+
 - Regenerated all 5 pavilion trinket sprites via PixelLab (`create_map_object`,
   ~5 generations on the trial subscription). Each was authored in PixelLab's
   warm-wood palette to harmonize with the ginger calico cat that landed
