@@ -2,6 +2,32 @@
 
 ## Unreleased
 
+- Expanded the courtyard cat's rest behavior into three distinct postures
+  matching rest length, generated from two more PixelLab template animations
+  (1 generation each, south-only, on the existing ginger character). The rest
+  state used to be one station: stand & look (col 4↔5 toggle). Now
+  `beginRest()` picks one of:
+    * 55% short alert pause (col 4-5, 0.8-2.2s) — heard something mid-yard
+    * 20% alert held still (col 4-5, single frame, 1.3-2.9s)
+    * 12% true sit (col 6-7, 2.5-5s) — `sitting` template, paws tucked under
+    * 8% lie on belly (col 8-9, 4.5-9s) — `seated-on-belly-idle`, longer rest
+    * 5% immediate next hop (no perceptible rest)
+  Frame toggle interval scales with the rest's calmness — lie at 1.4-2.6s
+  (breath-like), alert at 0.9-2.0s (quicker flick). Whole pacing slowed ~20%
+  per user request: STRIDE 2.4→2.0, baseSpeed range 7.5-12.5→6.0-10.0,
+  turnDur 260-340→360-480, hesitate 120-300→160-380, rest durations
+  +30-40%. Row-2 cells 6-9 of the sheet were previously empty — now fully
+  populated. Reduced-motion CSS keyframe (col 4↔5) untouched: already
+  aligned with the new alert kind.
+
+  Three rounds of pixel scrubbing along the way: PixelLab's image-gen export
+  leaves stray fragments (anti-alias residue, etc) beyond the cat's body.
+  The final scrub generalized to a flood-fill connected-component
+  algorithm — any cluster ≤6 pixels in a sheet whose smallest legitimate
+  body is 374 px is by definition an orphan, regardless of color or shape.
+  That cleaned the last two-pixel cluster the user spotted in front of
+  west walk frame 3 and is robust to any future PixelLab artifact shape.
+
 - Replaced the courtyard cat sprite with a ginger-and-white calico (黄三花)
   Chinese-domestic cat generated via the PixelLab MCP (character
   `cdd47da3-d0d6-4798-a7c1-9d92bd73ae97`, side view, quadruped/cat template).
