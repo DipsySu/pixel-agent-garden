@@ -1287,6 +1287,486 @@
         40
       ],
       "anchor": "center"
+    },
+    {
+      "name": "flower_l0_rose",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l0_rose.png",
+      "source_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 0,
+      "variant": "rose"
+    },
+    {
+      "name": "flower_l0_daisy",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l0_daisy.png",
+      "source_box": [
+        24,
+        0,
+        48,
+        32
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 0,
+      "variant": "daisy"
+    },
+    {
+      "name": "flower_l0_tulip",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l0_tulip.png",
+      "source_box": [
+        48,
+        0,
+        72,
+        32
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 0,
+      "variant": "tulip"
+    },
+    {
+      "name": "flower_l0_wildflower",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l0_wildflower.png",
+      "source_box": [
+        72,
+        0,
+        96,
+        32
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 0,
+      "variant": "wildflower"
+    },
+    {
+      "name": "flower_l1_rose",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l1_rose.png",
+      "source_box": [
+        0,
+        32,
+        24,
+        64
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 1,
+      "variant": "rose"
+    },
+    {
+      "name": "flower_l1_daisy",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l1_daisy.png",
+      "source_box": [
+        24,
+        32,
+        48,
+        64
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 1,
+      "variant": "daisy"
+    },
+    {
+      "name": "flower_l1_tulip",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l1_tulip.png",
+      "source_box": [
+        48,
+        32,
+        72,
+        64
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 1,
+      "variant": "tulip"
+    },
+    {
+      "name": "flower_l1_wildflower",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l1_wildflower.png",
+      "source_box": [
+        72,
+        32,
+        96,
+        64
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 1,
+      "variant": "wildflower"
+    },
+    {
+      "name": "flower_l2_rose",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l2_rose.png",
+      "source_box": [
+        0,
+        64,
+        24,
+        96
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 2,
+      "variant": "rose"
+    },
+    {
+      "name": "flower_l2_daisy",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l2_daisy.png",
+      "source_box": [
+        24,
+        64,
+        48,
+        96
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 2,
+      "variant": "daisy"
+    },
+    {
+      "name": "flower_l2_tulip",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l2_tulip.png",
+      "source_box": [
+        48,
+        64,
+        72,
+        96
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 2,
+      "variant": "tulip"
+    },
+    {
+      "name": "flower_l2_wildflower",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l2_wildflower.png",
+      "source_box": [
+        72,
+        64,
+        96,
+        96
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 2,
+      "variant": "wildflower"
+    },
+    {
+      "name": "flower_l3_rose",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l3_rose.png",
+      "source_box": [
+        0,
+        96,
+        24,
+        128
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 3,
+      "variant": "rose"
+    },
+    {
+      "name": "flower_l3_daisy",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l3_daisy.png",
+      "source_box": [
+        24,
+        96,
+        48,
+        128
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 3,
+      "variant": "daisy"
+    },
+    {
+      "name": "flower_l3_tulip",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l3_tulip.png",
+      "source_box": [
+        48,
+        96,
+        72,
+        128
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 3,
+      "variant": "tulip"
+    },
+    {
+      "name": "flower_l3_wildflower",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l3_wildflower.png",
+      "source_box": [
+        72,
+        96,
+        96,
+        128
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 3,
+      "variant": "wildflower"
+    },
+    {
+      "name": "flower_l4_rose",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l4_rose.png",
+      "source_box": [
+        0,
+        128,
+        24,
+        160
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 4,
+      "variant": "rose"
+    },
+    {
+      "name": "flower_l4_daisy",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l4_daisy.png",
+      "source_box": [
+        24,
+        128,
+        48,
+        160
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 4,
+      "variant": "daisy"
+    },
+    {
+      "name": "flower_l4_tulip",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l4_tulip.png",
+      "source_box": [
+        48,
+        128,
+        72,
+        160
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 4,
+      "variant": "tulip"
+    },
+    {
+      "name": "flower_l4_wildflower",
+      "group": "flowerbed",
+      "file": "flowerbed/flower_l4_wildflower.png",
+      "source_box": [
+        72,
+        128,
+        96,
+        160
+      ],
+      "trim_box": [
+        0,
+        0,
+        24,
+        32
+      ],
+      "size": [
+        24,
+        32
+      ],
+      "anchor": "bottom",
+      "level": 4,
+      "variant": "wildflower"
     }
   ]
 }

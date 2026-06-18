@@ -88,6 +88,7 @@ const MESSAGES = {
     'settings.time': 'Time',
     'settings.season': 'Season',
     'settings.motion': 'Motion',
+    'settings.flowerbed': 'Flowerbed',
     'settings.data': 'Data',
     'settings.autoRescan': 'Live watcher updates',
     'settings.autoRescanHint': 'When off, new activity appears after a manual scan or view refresh.',
@@ -102,6 +103,8 @@ const MESSAGES = {
     'choice.winter': 'Winter',
     'choice.reduced': 'Reduced',
     'choice.off': 'Off',
+    'choice.enabled': 'Enabled',
+    'choice.disabled': 'Disabled',
 
     'insight.openAria': 'Open Token Insight',
     'insight.dialogAria': 'Token Insight',
@@ -267,6 +270,7 @@ const MESSAGES = {
     'settings.time': '时间',
     'settings.season': '季节',
     'settings.motion': '动画',
+    'settings.flowerbed': '花床',
     'settings.data': '数据',
     'settings.autoRescan': 'watcher 实时更新',
     'settings.autoRescanHint': '关闭后,需要点 footer 刷新才会看到新的活动',
@@ -281,6 +285,8 @@ const MESSAGES = {
     'choice.winter': '冬',
     'choice.reduced': '减弱',
     'choice.off': '关闭',
+    'choice.enabled': '启用',
+    'choice.disabled': '禁用',
 
     'insight.openAria': '打开 Token Insight',
     'insight.dialogAria': 'Token Insight',

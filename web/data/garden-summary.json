@@ -1,5 +1,5 @@
 {
-  "schema_version": 5,
+  "schema_version": 6,
   "projects": [
     {
       "project_key": "/Users/dipsy/Developer/tool-lib/pay-module",
@@ -78,7 +78,7 @@
       "recent_activity": 253018,
       "cache_ratio": 0.9325889588380661,
       "size_level": 5,
-      "size_strength": 0.9920268593552558,
+      "size_strength": 0.9860555775582431,
       "path_inferred": false
     },
     {
@@ -129,7 +129,7 @@
       "recent_activity": 707462,
       "cache_ratio": 0.9435442455100328,
       "size_level": 5,
-      "size_strength": 0.9656355022685964,
+      "size_strength": 0.959849857884701,
       "path_inferred": false
     },
     {
@@ -137,27 +137,27 @@
       "display_name": "不知道叫什么",
       "project_path": "/Users/dipsy/Documents/不知道叫什么",
       "sources": {
-        "claude-code": 1178,
+        "claude-code": 1529,
         "claude-cowork": 1792,
         "codex": 9
       },
       "sessions": 11,
       "first_seen": "2026-05-27T05:42:57.705000+00:00",
-      "last_seen": "2026-06-18T01:14:02.254000+00:00",
-      "total_tokens": 1138199864,
-      "input_tokens": 6734,
-      "output_tokens": 2052130,
-      "cache_read_tokens": 617552833,
-      "cache_write_tokens": 18261628,
-      "tool_calls": 1101,
-      "event_count": 2979,
+      "last_seen": "2026-06-18T02:04:25.154000+00:00",
+      "total_tokens": 1262374321,
+      "input_tokens": 6996,
+      "output_tokens": 2181927,
+      "cache_read_tokens": 741371317,
+      "cache_write_tokens": 18487542,
+      "tool_calls": 1245,
+      "event_count": 3330,
       "daily_activity": {
         "2026-05-27": 166781,
         "2026-05-28": 456410,
         "2026-05-29": 18036,
         "2026-06-02": 143020,
         "2026-06-16": 302534,
-        "2026-06-18": 52838
+        "2026-06-18": 177199
       },
       "daily_tokens": {
         "2026-05-27": 166268532,
@@ -165,19 +165,19 @@
         "2026-05-29": 17937299,
         "2026-06-02": 143020812,
         "2026-06-16": 302399184,
-        "2026-06-18": 52712692
+        "2026-06-18": 176887149
       },
       "models": {
         "<synthetic>": 8,
         "claude-haiku-4-5-20251001": 13,
-        "claude-opus-4-7": 1730,
+        "claude-opus-4-7": 1932,
         "gpt-5.4": 1,
         "gpt-5.5": 8
       },
       "activity_score": 653,
       "stage": 6,
-      "recent_activity": 355372,
-      "cache_ratio": 0.9712680826879324,
+      "recent_activity": 479733,
+      "cache_ratio": 0.97566078554747,
       "size_level": 5,
       "size_strength": 1.0,
       "path_inferred": false
@@ -222,7 +222,7 @@
       "recent_activity": 164555,
       "cache_ratio": 0.9289113597003413,
       "size_level": 5,
-      "size_strength": 0.8782852462219691,
+      "size_strength": 0.8730815752890495,
       "path_inferred": false
     },
     {
@@ -235,8 +235,8 @@
       },
       "sessions": 7,
       "first_seen": "2026-06-09T02:04:21.701000+00:00",
-      "last_seen": "2026-06-17T07:48:42.859000+00:00",
-      "total_tokens": 234624415,
+      "last_seen": "2026-06-18T02:04:44+00:00",
+      "total_tokens": 235325960,
       "input_tokens": 555952,
       "output_tokens": 1274193,
       "cache_read_tokens": 125224309,
@@ -249,7 +249,8 @@
         "2026-06-13": 21551,
         "2026-06-14": 48603,
         "2026-06-16": 11830,
-        "2026-06-17": 88821
+        "2026-06-17": 7813,
+        "2026-06-18": 81710
       },
       "daily_tokens": {
         "2026-06-09": 44470740,
@@ -257,7 +258,8 @@
         "2026-06-13": 21505921,
         "2026-06-14": 48574166,
         "2026-06-16": 11826506,
-        "2026-06-17": 88818618
+        "2026-06-17": 7809715,
+        "2026-06-18": 81710448
       },
       "models": {
         "<synthetic>": 3,
@@ -266,10 +268,10 @@
       },
       "activity_score": 600,
       "stage": 6,
-      "recent_activity": 190240,
+      "recent_activity": 190942,
       "cache_ratio": 0.8947263938740574,
       "size_level": 5,
-      "size_strength": 0.8704287979233072,
+      "size_strength": 0.8654202141252003,
       "path_inferred": false
     },
     {
@@ -322,7 +324,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.8564416514501983,
       "size_level": 5,
-      "size_strength": 0.8877836193364732,
+      "size_strength": 0.8825432314153138,
       "path_inferred": false
     },
     {
@@ -375,7 +377,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.9591043793728367,
       "size_level": 5,
-      "size_strength": 0.8245454821223259,
+      "size_strength": 0.8197215229076602,
       "path_inferred": false
     },
     {
@@ -415,7 +417,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.8985537033580483,
       "size_level": 4,
-      "size_strength": 0.7098381522920374,
+      "size_strength": 0.7056962850305619,
       "path_inferred": false
     },
     {
@@ -460,7 +462,7 @@
       "recent_activity": 323871,
       "cache_ratio": 0.9760814274510767,
       "size_level": 5,
-      "size_strength": 0.9104927893785597,
+      "size_strength": 0.9051462405374462,
       "path_inferred": false
     },
     {
@@ -512,7 +514,7 @@
       "recent_activity": 78444,
       "cache_ratio": 0.9849717665827908,
       "size_level": 5,
-      "size_strength": 0.9014430786027698,
+      "size_strength": 0.8961292915584262,
       "path_inferred": false
     },
     {
@@ -557,8 +559,8 @@
       "stage": 6,
       "recent_activity": 51461,
       "cache_ratio": 0.8509141859785203,
-      "size_level": 5,
-      "size_strength": 0.7863911653052413,
+      "size_level": 4,
+      "size_strength": 0.781809523998769,
       "path_inferred": false
     },
     {
@@ -601,7 +603,7 @@
       "recent_activity": 716,
       "cache_ratio": 0.963356784256583,
       "size_level": 5,
-      "size_strength": 0.7970073591502939,
+      "size_strength": 0.7923791466854478,
       "path_inferred": false
     },
     {
@@ -639,8 +641,8 @@
       "stage": 6,
       "recent_activity": 45084,
       "cache_ratio": 0.9743733157262722,
-      "size_level": 5,
-      "size_strength": 0.7802451674518139,
+      "size_level": 4,
+      "size_strength": 0.7756706902050373,
       "path_inferred": false
     },
     {
@@ -674,7 +676,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.984928818872219,
       "size_level": 4,
-      "size_strength": 0.7709062704001631,
+      "size_strength": 0.7663671042773293,
       "path_inferred": false
     },
     {
@@ -709,7 +711,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.895312291176809,
       "size_level": 4,
-      "size_strength": 0.7421401768693399,
+      "size_strength": 0.7378075826943875,
       "path_inferred": false
     },
     {
@@ -747,7 +749,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.8879029843154105,
       "size_level": 4,
-      "size_strength": 0.6870792539167996,
+      "size_strength": 0.6830910020588576,
       "path_inferred": false
     },
     {
@@ -783,7 +785,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.8643092495258112,
       "size_level": 4,
-      "size_strength": 0.5248549192848863,
+      "size_strength": 0.5162581842958501,
       "path_inferred": false
     },
     {
@@ -822,7 +824,7 @@
       "recent_activity": 7051,
       "cache_ratio": 0.9932710093773908,
       "size_level": 4,
-      "size_strength": 0.6431340546291593,
+      "size_strength": 0.6393451381101212,
       "path_inferred": false
     },
     {
@@ -860,7 +862,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.7968829579680974,
       "size_level": 3,
-      "size_strength": 0.4748259268851581,
+      "size_strength": 0.46652917513263414,
       "path_inferred": true
     },
     {
@@ -903,7 +905,7 @@
       "recent_activity": 40534,
       "cache_ratio": 0.8468390087793481,
       "size_level": 4,
-      "size_strength": 0.7326301757917408,
+      "size_strength": 0.7283344011115606,
       "path_inferred": false
     },
     {
@@ -941,7 +943,7 @@
       "recent_activity": 15086,
       "cache_ratio": 0.9969824906492928,
       "size_level": 4,
-      "size_strength": 0.6365025898159118,
+      "size_strength": 0.6327251169998839,
       "path_inferred": false
     },
     {
@@ -992,7 +994,7 @@
       "recent_activity": 4,
       "cache_ratio": 0.2970327519081451,
       "size_level": 4,
-      "size_strength": 0.5465310219928032,
+      "size_strength": 0.5378842492112548,
       "path_inferred": false
     },
     {
@@ -1028,7 +1030,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.9909915474746888,
       "size_level": 4,
-      "size_strength": 0.5661364713974085,
+      "size_strength": 0.5574108986048372,
       "path_inferred": false
     },
     {
@@ -1064,7 +1066,7 @@
       "recent_activity": 7544,
       "cache_ratio": 0.9892340040119029,
       "size_level": 4,
-      "size_strength": 0.5736438923562754,
+      "size_strength": 0.5648991538524567,
       "path_inferred": false
     },
     {
@@ -1098,7 +1100,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.9908487567309373,
       "size_level": 3,
-      "size_strength": 0.48205548685880195,
+      "size_strength": 0.47374201888388623,
       "path_inferred": false
     },
     {
@@ -1132,7 +1134,7 @@
       "recent_activity": 1457,
       "cache_ratio": 0.9503146152943227,
       "size_level": 3,
-      "size_strength": 0.4079949315712993,
+      "size_strength": 0.4054325986657296,
       "path_inferred": false
     },
     {
@@ -1166,7 +1168,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.9966681081444816,
       "size_level": 3,
-      "size_strength": 0.5000065376131462,
+      "size_strength": 0.4915818379078021,
       "path_inferred": false
     },
     {
@@ -1202,7 +1204,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.5937371455234189,
       "size_level": 3,
-      "size_strength": 0.3489309710782053,
+      "size_strength": 0.34674826934402025,
       "path_inferred": true
     },
     {
@@ -1240,7 +1242,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 4,
-      "size_strength": 0.6799858378920012,
+      "size_strength": 0.6760131020768534,
       "path_inferred": false
     },
     {
@@ -1276,7 +1278,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 4,
-      "size_strength": 0.6580340511818343,
+      "size_strength": 0.6541607995593218,
       "path_inferred": false
     },
     {
@@ -1313,7 +1315,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.2135014110551792,
       "size_level": 3,
-      "size_strength": 0.2653020452088446,
+      "size_strength": 0.2634804470579255,
       "path_inferred": false
     },
     {
@@ -1347,7 +1349,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.9822440643225855,
       "size_level": 3,
-      "size_strength": 0.4346780743961591,
+      "size_strength": 0.4319275318346892,
       "path_inferred": false
     },
     {
@@ -1382,7 +1384,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 4,
-      "size_strength": 0.6014628419543004,
+      "size_strength": 0.5979002305039793,
       "path_inferred": false
     },
     {
@@ -1416,7 +1418,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.9984501468781635,
       "size_level": 3,
-      "size_strength": 0.34289207501893715,
+      "size_strength": 0.340715593186523,
       "path_inferred": false
     },
     {
@@ -1450,7 +1452,7 @@
       "recent_activity": 18518,
       "cache_ratio": 0.0,
       "size_level": 4,
-      "size_strength": 0.6634529368301991,
+      "size_strength": 0.6595789310196092,
       "path_inferred": false
     },
     {
@@ -1484,7 +1486,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 4,
-      "size_strength": 0.622587903553633,
+      "size_strength": 0.6188860798192777,
       "path_inferred": false
     },
     {
@@ -1518,7 +1520,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 3,
-      "size_strength": 0.46519658240754735,
+      "size_strength": 0.4569377022238319,
       "path_inferred": false
     },
     {
@@ -1552,7 +1554,41 @@
       "recent_activity": 0,
       "cache_ratio": 0.13442701760711495,
       "size_level": 3,
-      "size_strength": 0.33717018052861625,
+      "size_strength": 0.33499712406454935,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/garden-d-poc",
+      "display_name": "garden-d-poc",
+      "project_path": "/Users/dipsy/Documents/garden-d-poc",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-18T01:26:01+00:00",
+      "last_seen": "2026-06-18T01:26:01+00:00",
+      "total_tokens": 9359395,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-06-18": 9359
+      },
+      "daily_tokens": {
+        "2026-06-18": 9359395
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 137,
+      "stage": 4,
+      "recent_activity": 9359,
+      "cache_ratio": 0.0,
+      "size_level": 4,
+      "size_strength": 0.588074102611161,
       "path_inferred": false
     },
     {
@@ -1586,7 +1622,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 4,
-      "size_strength": 0.5845902423302365,
+      "size_strength": 0.5757960221703442,
       "path_inferred": false
     },
     {
@@ -1620,7 +1656,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 4,
-      "size_strength": 0.5575425940003926,
+      "size_strength": 0.5488457645966799,
       "path_inferred": false
     },
     {
@@ -1654,7 +1690,7 @@
       "recent_activity": 6098,
       "cache_ratio": 0.0,
       "size_level": 4,
-      "size_strength": 0.5345783728274627,
+      "size_strength": 0.5259429366493471,
       "path_inferred": false
     },
     {
@@ -1688,7 +1724,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 4,
-      "size_strength": 0.5409085647007581,
+      "size_strength": 0.5322643406970246,
       "path_inferred": false
     },
     {
@@ -1722,7 +1758,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.9492530708672657,
       "size_level": 3,
-      "size_strength": 0.3171541148252668,
+      "size_strength": 0.3150634781680963,
       "path_inferred": false
     },
     {
@@ -1756,41 +1792,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.9341369395557522,
       "size_level": 3,
-      "size_strength": 0.3001015796357084,
-      "path_inferred": false
-    },
-    {
-      "project_key": "/Users/dipsy/Documents/garden-d-poc",
-      "display_name": "garden-d-poc",
-      "project_path": "/Users/dipsy/Documents/garden-d-poc",
-      "sources": {
-        "codex": 1
-      },
-      "sessions": 1,
-      "first_seen": "2026-06-18T01:13:55+00:00",
-      "last_seen": "2026-06-18T01:13:55+00:00",
-      "total_tokens": 2704924,
-      "input_tokens": 0,
-      "output_tokens": 0,
-      "cache_read_tokens": 0,
-      "cache_write_tokens": 0,
-      "tool_calls": 0,
-      "event_count": 1,
-      "daily_activity": {
-        "2026-06-18": 2704
-      },
-      "daily_tokens": {
-        "2026-06-18": 2704924
-      },
-      "models": {
-        "gpt-5.5": 1
-      },
-      "activity_score": 127,
-      "stage": 4,
-      "recent_activity": 2704,
-      "cache_ratio": 0.0,
-      "size_level": 3,
-      "size_strength": 0.45509534708512267,
+      "size_strength": 0.2980672377252333,
       "path_inferred": false
     },
     {
@@ -1824,7 +1826,7 @@
       "recent_activity": 366,
       "cache_ratio": 0.0,
       "size_level": 3,
-      "size_strength": 0.2745562438546301,
+      "size_strength": 0.2727000812401929,
       "path_inferred": false
     },
     {
@@ -1858,7 +1860,7 @@
       "recent_activity": 1278,
       "cache_ratio": 0.0,
       "size_level": 3,
-      "size_strength": 0.39534165639433405,
+      "size_strength": 0.39284385257677085,
       "path_inferred": false
     },
     {
@@ -1892,7 +1894,7 @@
       "recent_activity": 950,
       "cache_ratio": 0.0,
       "size_level": 3,
-      "size_strength": 0.37266633331447446,
+      "size_strength": 0.37032140814082204,
       "path_inferred": false
     },
     {
@@ -1926,7 +1928,7 @@
       "recent_activity": 604,
       "cache_ratio": 0.0,
       "size_level": 3,
-      "size_strength": 0.3248768397944591,
+      "size_strength": 0.32276513940940044,
       "path_inferred": false
     },
     {
@@ -1960,7 +1962,7 @@
       "recent_activity": 565,
       "cache_ratio": 0.0,
       "size_level": 3,
-      "size_strength": 0.31031048381950455,
+      "size_strength": 0.30823316122049227,
       "path_inferred": false
     },
     {
@@ -1994,7 +1996,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.9745410231276658,
       "size_level": 2,
-      "size_strength": 0.18486489078144172,
+      "size_strength": 0.1836113396038123,
       "path_inferred": false
     },
     {
@@ -2028,7 +2030,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 3,
-      "size_strength": 0.25572851902058014,
+      "size_strength": 0.2539443003712671,
       "path_inferred": false
     },
     {
@@ -2062,7 +2064,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.771817349208426,
       "size_level": 2,
-      "size_strength": 0.13947999113288898,
+      "size_strength": 0.13848548310286757,
       "path_inferred": false
     },
     {
@@ -2096,7 +2098,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 2,
-      "size_strength": 0.23578264874269803,
+      "size_strength": 0.23412724719366187,
       "path_inferred": false
     },
     {
@@ -2130,7 +2132,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 2,
-      "size_strength": 0.17775851037389973,
+      "size_strength": 0.17652058952682964,
       "path_inferred": false
     },
     {
@@ -2164,7 +2166,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 2,
-      "size_strength": 0.14527705785161066,
+      "size_strength": 0.14427846177101777,
       "path_inferred": false
     },
     {
@@ -2198,7 +2200,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 2,
-      "size_strength": 0.08512534066785361,
+      "size_strength": 0.08456298100116053,
       "path_inferred": false
     },
     {
@@ -2232,7 +2234,7 @@
       "recent_activity": 22,
       "cache_ratio": 0.0,
       "size_level": 2,
-      "size_strength": 0.06353017309313663,
+      "size_strength": 0.063111169938739,
       "path_inferred": false
     },
     {
@@ -2266,7 +2268,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 2,
-      "size_strength": 0.05039910616026228,
+      "size_strength": 0.05004884407627813,
       "path_inferred": false
     },
     {
@@ -2300,7 +2302,7 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 1,
-      "size_strength": 0.019806605143860245,
+      "size_strength": 0.019631999635546113,
       "path_inferred": false
     },
     {
@@ -2334,19 +2336,19 @@
       "recent_activity": 0,
       "cache_ratio": 0.0,
       "size_level": 1,
-      "size_strength": 0.02650529214417189,
+      "size_strength": 0.026318650334365413,
       "path_inferred": false
     }
   ],
   "sources": {
-    "claude-code": 26559,
+    "claude-code": 26910,
     "claude-cowork": 6705,
     "codex": 84
   },
-  "total_events": 33348,
-  "total_tokens": 5101595114,
+  "total_events": 33699,
+  "total_tokens": 5233125587,
   "first_seen": "2026-04-30T13:47:52.012000+00:00",
-  "last_seen": "2026-06-18T01:14:02.254000+00:00",
+  "last_seen": "2026-06-18T02:04:44+00:00",
   "active_projects": 61,
   "daily_tokens": {
     "2026-04-30": 4082692,
@@ -2384,8 +2386,8 @@
     "2026-06-14": 313811280,
     "2026-06-15": 122259713,
     "2026-06-16": 746982332,
-    "2026-06-17": 367996722,
-    "2026-06-18": 55417616
+    "2026-06-17": 286987819,
+    "2026-06-18": 267956992
   },
   "heatmap_year": [
     {
@@ -4205,13 +4207,13 @@
     },
     {
       "date": "2026-06-17",
-      "value": 367996722,
+      "value": 286987819,
       "level": 2
     },
     {
       "date": "2026-06-18",
-      "value": 55417616,
-      "level": 1
+      "value": 267956992,
+      "level": 2
     }
   ],
   "hour_of_week": [
@@ -4269,7 +4271,7 @@
     ],
     [
       63,
-      337,
+      336,
       1913,
       3511,
       1073,
@@ -4295,8 +4297,8 @@
     ],
     [
       264,
-      375,
-      157,
+      645,
+      239,
       28,
       117,
       129,
@@ -4397,5 +4399,1837 @@
       0,
       0
     ]
+  ],
+  "flowerbed_year": [
+    {
+      "date": "2025-06-18",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-19",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-20",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-21",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-22",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-23",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-24",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-25",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-26",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-27",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-28",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-29",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-30",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-01",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-02",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-03",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-04",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-05",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-06",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-07",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-08",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-09",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-10",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-11",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-12",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-13",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-14",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-15",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-16",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-17",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-18",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-19",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-20",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-21",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-22",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-23",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-24",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-25",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-26",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-27",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-28",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-29",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-30",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-31",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-01",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-02",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-03",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-04",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-05",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-06",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-07",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-08",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-09",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-10",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-11",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-12",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-13",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-14",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-15",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-16",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-17",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-18",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-19",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-20",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-21",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-22",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-23",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-24",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-25",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-26",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-27",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-28",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-29",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-30",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-31",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-01",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-02",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-03",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-04",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-05",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-06",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-07",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-08",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-09",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-10",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-11",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-12",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-13",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-14",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-15",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-16",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-17",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-18",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-19",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-20",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-21",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-22",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-23",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-24",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-25",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-26",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-27",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-28",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-29",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-30",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-01",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-02",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-03",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-04",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-05",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-06",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-07",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-08",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-09",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-10",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-11",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-12",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-13",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-14",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-15",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-16",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-17",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-18",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-19",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-20",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-21",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-22",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-23",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-24",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-25",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-26",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-27",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-28",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-29",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-30",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-31",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-01",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-02",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-03",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-04",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-05",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-06",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-07",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-08",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-09",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-10",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-11",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-12",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-13",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-14",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-15",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-16",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-17",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-18",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-19",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-20",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-21",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-22",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-23",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-24",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-25",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-26",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-27",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-28",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-29",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-30",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-01",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-02",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-03",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-04",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-05",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-06",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-07",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-08",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-09",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-10",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-11",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-12",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-13",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-14",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-15",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-16",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-17",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-18",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-19",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-20",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-21",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-22",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-23",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-24",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-25",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-26",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-27",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-28",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-29",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-30",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-31",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-01",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-02",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-03",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-04",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-05",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-06",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-07",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-08",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-09",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-10",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-11",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-12",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-13",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-14",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-15",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-16",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-17",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-18",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-19",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-20",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-21",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-22",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-23",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-24",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-25",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-26",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-27",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-28",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-29",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-30",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-31",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-01",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-02",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-03",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-04",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-05",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-06",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-07",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-08",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-09",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-10",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-11",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-12",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-13",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-14",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-15",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-16",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-17",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-18",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-19",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-20",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-21",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-22",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-23",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-24",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-25",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-26",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-27",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-28",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-01",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-02",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-03",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-04",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-05",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-06",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-07",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-08",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-09",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-10",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-11",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-12",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-13",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-14",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-15",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-16",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-17",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-18",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-19",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-20",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-21",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-22",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-23",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-24",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-25",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-26",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-27",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-28",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-29",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-30",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-31",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-01",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-02",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-03",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-04",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-05",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-06",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-07",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-08",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-09",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-10",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-11",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-12",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-13",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-14",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-15",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-16",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-17",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-18",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-19",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-20",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-21",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-22",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-23",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-24",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-25",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-26",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-27",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-28",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-29",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-30",
+      "activity": 4129,
+      "level": 3
+    },
+    {
+      "date": "2026-05-01",
+      "activity": 7583,
+      "level": 3
+    },
+    {
+      "date": "2026-05-02",
+      "activity": 78654,
+      "level": 4
+    },
+    {
+      "date": "2026-05-03",
+      "activity": 1158,
+      "level": 2
+    },
+    {
+      "date": "2026-05-04",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-05",
+      "activity": 46331,
+      "level": 4
+    },
+    {
+      "date": "2026-05-06",
+      "activity": 53522,
+      "level": 4
+    },
+    {
+      "date": "2026-05-07",
+      "activity": 2869,
+      "level": 3
+    },
+    {
+      "date": "2026-05-08",
+      "activity": 661,
+      "level": 2
+    },
+    {
+      "date": "2026-05-09",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-10",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-11",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-12",
+      "activity": 12245,
+      "level": 3
+    },
+    {
+      "date": "2026-05-13",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-14",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-15",
+      "activity": 69,
+      "level": 2
+    },
+    {
+      "date": "2026-05-16",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-17",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-18",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-19",
+      "activity": 3321,
+      "level": 3
+    },
+    {
+      "date": "2026-05-20",
+      "activity": 10238,
+      "level": 3
+    },
+    {
+      "date": "2026-05-21",
+      "activity": 7053,
+      "level": 3
+    },
+    {
+      "date": "2026-05-22",
+      "activity": 49065,
+      "level": 4
+    },
+    {
+      "date": "2026-05-23",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-24",
+      "activity": 16600,
+      "level": 3
+    },
+    {
+      "date": "2026-05-25",
+      "activity": 78801,
+      "level": 4
+    },
+    {
+      "date": "2026-05-26",
+      "activity": 87781,
+      "level": 4
+    },
+    {
+      "date": "2026-05-27",
+      "activity": 166784,
+      "level": 4
+    },
+    {
+      "date": "2026-05-28",
+      "activity": 473737,
+      "level": 4
+    },
+    {
+      "date": "2026-05-29",
+      "activity": 141515,
+      "level": 4
+    },
+    {
+      "date": "2026-05-30",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-31",
+      "activity": 134,
+      "level": 2
+    },
+    {
+      "date": "2026-06-01",
+      "activity": 178068,
+      "level": 4
+    },
+    {
+      "date": "2026-06-02",
+      "activity": 227396,
+      "level": 4
+    },
+    {
+      "date": "2026-06-03",
+      "activity": 83387,
+      "level": 4
+    },
+    {
+      "date": "2026-06-04",
+      "activity": 59608,
+      "level": 4
+    },
+    {
+      "date": "2026-06-05",
+      "activity": 449279,
+      "level": 4
+    },
+    {
+      "date": "2026-06-06",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-06-07",
+      "activity": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-06-08",
+      "activity": 113328,
+      "level": 4
+    },
+    {
+      "date": "2026-06-09",
+      "activity": 104563,
+      "level": 4
+    },
+    {
+      "date": "2026-06-10",
+      "activity": 301087,
+      "level": 4
+    },
+    {
+      "date": "2026-06-11",
+      "activity": 83510,
+      "level": 4
+    },
+    {
+      "date": "2026-06-12",
+      "activity": 246981,
+      "level": 4
+    },
+    {
+      "date": "2026-06-13",
+      "activity": 416125,
+      "level": 4
+    },
+    {
+      "date": "2026-06-14",
+      "activity": 315307,
+      "level": 4
+    },
+    {
+      "date": "2026-06-15",
+      "activity": 122496,
+      "level": 4
+    },
+    {
+      "date": "2026-06-16",
+      "activity": 747702,
+      "level": 4
+    },
+    {
+      "date": "2026-06-17",
+      "activity": 287843,
+      "level": 4
+    },
+    {
+      "date": "2026-06-18",
+      "activity": 268268,
+      "level": 4
+    }
   ]
 }

@@ -10,6 +10,14 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   }
   const time = resolveTimeScene(options.settings);
   const season = resolveSeasonScene(options.settings);
+  // Flowerbed mode: when enabled, the grass-band foreground is replaced by
+  // a dirt strip so the 366 flower sprites have a clean substrate to bloom
+  // out of (see render-flowerbed.js + render-garden.js). Honor an explicit
+  // boolean override (URL query in garden.js) over the settings value so
+  // PoC reviewers don't have to persist the toggle.
+  const flowerbedEnabled = typeof options.flowerbedEnabled === 'boolean'
+    ? options.flowerbedEnabled
+    : options.settings?.appearance?.flowerbed === 'enabled';
 
   let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" role="img"><title>' + t('svg.title', { time: time.label }) + '</title><desc>' + t('svg.desc') + '</desc>';
   // <defs> — soft radial gradient for the setting-sun halo. Replaces the
@@ -192,52 +200,70 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   s += r(scx + 6, scy + 5, 4, 2, '#4a4842');
   s += r(scx - 1, scy + 7, 9, 1, '#3a3832');
 
-  // Ground band colors — season-driven. Spring/summer keep the lush greens;
-  // autumn shifts toward warm ochres; winter goes cool gray-green with a
-  // dusting of frost. The dirt strip at the very bottom is always dark.
+  // Ground band — two modes:
+  //   * default: season-driven grass strips + dither + blades + flagstone path
+  //   * flowerbed: a tilled dirt bed with speckled clods, ready for the 366
+  //     flower sprites that render-garden.js / render-flowerbed.js will lay on
+  //     top. We skip the flagstone path in flowerbed mode because the path's
+  //     hard outline reads as foreign once flowers cover the foreground.
   s += r(0, WB, W, H - WB, '#3a2a1a');
-  s += r(0, WB - 2, W, 6, season.grass[0]);
-  s += r(0, WB + 4, W, 12, season.grass[1]);
-  s += r(0, WB + 16, W, 12, season.grass[2]);
-  s += r(0, WB + 28, W, H - WB - 28, season.grass[3]);
-  // Dither the band seams instead of letting them meet as hard stripes — the
-  // classic pixel-art gradient. Each seam gets a checker of the lower band's
-  // color straddling the boundary line.
-  const ditherSeam = (yMid, col) => {
-    for (let dx = 0; dx < W; dx += 4) {
-      s += r(dx, yMid, 2, 2, col);
-      s += r(dx + 2, yMid - 2, 2, 2, col);
+  if (flowerbedEnabled) {
+    s += r(0, WB - 2, W, 5, '#536a3a');
+    s += r(0, WB + 3, W, 10, '#5a3a22');
+    s += r(0, WB + 13, W, 14, '#6a4428');
+    s += r(0, WB + 27, W, 20, '#58361f');
+    s += r(0, H - 12, W, 12, '#2d1d12');
+    // Speckled dirt clods over the bed for texture.
+    for (let i = 0; i < 170; i++) {
+      const dx = Math.floor(hash(i, 17) * W);
+      const dy = WB + 4 + Math.floor(hash(i, 31) * 45);
+      const col = hash(i, 43) > 0.62 ? '#7a4d2c' : '#3a2518';
+      s += r(dx, dy, 1 + Math.floor(hash(i, 47) * 2), 1, col);
     }
-  };
-  ditherSeam(WB + 4, season.grass[1]);
-  ditherSeam(WB + 16, season.grass[2]);
-  ditherSeam(WB + 28, season.grass[3]);
-  // Upright pixel grass blades (1px wide, varied height + shade) replace the
-  // old flat 2px specks so the lawn reads as textured pixel art, not a fill.
-  for (let i = 0; i < 96; i++) {
-    const tx = (i * 37 + 5) % W;
-    const ty = WB + 5 + (i % 6) * 6;
-    const blades = 2 + Math.floor(hash(i, 7) * 2);
-    for (let b = 0; b < blades; b++) {
-      const bh = 2 + Math.floor(hash(i + b, 11) * 4);
-      const shade = hash(i + b, 3) > 0.62 ? season.grass[2] : (hash(i + b, 9) > 0.5 ? season.grassDots : season.grass[1]);
-      s += r(tx + b * 2, ty - bh, 1, bh, shade);
+  } else {
+    s += r(0, WB - 2, W, 6, season.grass[0]);
+    s += r(0, WB + 4, W, 12, season.grass[1]);
+    s += r(0, WB + 16, W, 12, season.grass[2]);
+    s += r(0, WB + 28, W, H - WB - 28, season.grass[3]);
+    // Dither the band seams instead of letting them meet as hard stripes — the
+    // classic pixel-art gradient. Each seam gets a checker of the lower band's
+    // color straddling the boundary line.
+    const ditherSeam = (yMid, col) => {
+      for (let dx = 0; dx < W; dx += 4) {
+        s += r(dx, yMid, 2, 2, col);
+        s += r(dx + 2, yMid - 2, 2, 2, col);
+      }
+    };
+    ditherSeam(WB + 4, season.grass[1]);
+    ditherSeam(WB + 16, season.grass[2]);
+    ditherSeam(WB + 28, season.grass[3]);
+    // Upright pixel grass blades (1px wide, varied height + shade) replace the
+    // old flat 2px specks so the lawn reads as textured pixel art, not a fill.
+    for (let i = 0; i < 96; i++) {
+      const tx = (i * 37 + 5) % W;
+      const ty = WB + 5 + (i % 6) * 6;
+      const blades = 2 + Math.floor(hash(i, 7) * 2);
+      for (let b = 0; b < blades; b++) {
+        const bh = 2 + Math.floor(hash(i + b, 11) * 4);
+        const shade = hash(i + b, 3) > 0.62 ? season.grass[2] : (hash(i + b, 9) > 0.5 ? season.grassDots : season.grass[1]);
+        s += r(tx + b * 2, ty - bh, 1, bh, shade);
+      }
     }
-  }
-  // Pixel-art flagstone path — a seamless stepping-stone tile (scene-tiles.js)
-  // tiled along a strip on the courtyard floor, replacing the faint path_stones
-  // sprite (its placement is removed in render-garden.js). The tile's gaps are
-  // transparent so the lawn shows between stones; sprites draw over the strip,
-  // so the path recedes behind the willow / lantern that stand on it.
-  s += '<rect x="276" y="392" width="208" height="20" fill="url(#pg6PathTex)"/>';
-  // Flower spread varies by season — spring/summer get the full bouquet,
-  // autumn switches to warm tones, winter is sparse.
-  const flCol = season.flowers;
-  const flowerCount = season.flowerCount;
-  for (let i = 0; i < flowerCount; i++) {
-    const fx = (i * 19 + 11) % W;
-    const fy = WB + 12 + (i % 4) * 8;
-    s += r(fx, fy, 2, 2, flCol[i % flCol.length]);
+    // Pixel-art flagstone path — a seamless stepping-stone tile (scene-tiles.js)
+    // tiled along a strip on the courtyard floor, replacing the faint path_stones
+    // sprite (its placement is removed in render-garden.js). The tile's gaps are
+    // transparent so the lawn shows between stones; sprites draw over the strip,
+    // so the path recedes behind the willow / lantern that stand on it.
+    s += '<rect x="276" y="392" width="208" height="20" fill="url(#pg6PathTex)"/>';
+    // Flower spread varies by season — spring/summer get the full bouquet,
+    // autumn switches to warm tones, winter is sparse.
+    const flCol = season.flowers;
+    const flowerCount = season.flowerCount;
+    for (let i = 0; i < flowerCount; i++) {
+      const fx = (i * 19 + 11) % W;
+      const fy = WB + 12 + (i % 4) * 8;
+      s += r(fx, fy, 2, 2, flCol[i % flCol.length]);
+    }
   }
 
   const gx = 480, gy = 220;
@@ -286,6 +312,7 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   // willow, vines, etc. react too.
   scene.dataset.season = season.mode;
   scene.dataset.seasonLabel = season.label;
+  scene.dataset.flowerbed = flowerbedEnabled ? 'enabled' : 'disabled';
 }
 
 // Mix two hex colors by `t` in [0,1]. Used when a scene config doesn't ship

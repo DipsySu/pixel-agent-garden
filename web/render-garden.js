@@ -1,6 +1,7 @@
 import { CONFIG } from './scene-config.js';
 import { fmtLocal, escapeHtml, pick, pickByToken, namedSprite, jitter } from './render-helpers.js';
 import { sparklineSVG, windowTotal } from './render-insight.js';
+import { renderFlowerbed } from './render-flowerbed.js';
 import { t } from './i18n.js';
 
 let scene;
@@ -67,9 +68,16 @@ function diffNew(kind, ids) {
   return fresh;
 }
 
+// `isFlowerbedEnabled` is a getter so the renderer always sees the live
+// setting (settings panel can flip it without rebuilding the renderer).
+let isFlowerbedEnabled = () => false;
+
 export function createGardenRenderer(options) {
   scene = options.scene;
   spriteRoot = options.spriteRoot;
+  if (typeof options.isFlowerbedEnabled === 'function') {
+    isFlowerbedEnabled = options.isFlowerbedEnabled;
+  }
   return { renderEverything, showScanning, showCached, selectProjectByKey };
 }
 
@@ -96,6 +104,13 @@ function renderEverything(groups, summary) {
   addWallEdgeCover();
   addWallMarks(groups.plaster_patch || []);
   addGroundOverlay(groups);
+  // Flowerbed view (D PoC, opt-in). When enabled, the base scene swaps the
+  // grass strips for a dirt bed (see render-svg.js) and we lay 366 flower
+  // sprites encoding daily activity. Drawn BEFORE courtyard objects so the
+  // willow/lantern/pavilion sit in front of the flowers, not on top of them.
+  if (isFlowerbedEnabled()) {
+    renderFlowerbed(scene, groups.flowerbed || [], summary, { spriteRoot });
+  }
   addCourtyardObjects(groups, tiers);
   addFlowerAccents(groups, tiers);
   const liveCatUnlocked = hasLiveGardenCat(groups, tiers);

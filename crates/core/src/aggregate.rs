@@ -61,6 +61,16 @@ pub struct GardenSummary {
     /// "when do I burn tokens?". Additive.
     #[serde(default)]
     pub hour_of_week: Vec<Vec<u32>>,
+    /// Rolling-366-day activity series driving the flowerbed view. Uses
+    /// per-project `daily_activity` (intensity proxy: max(1, tokens/1k +
+    /// tool_calls)), NOT raw tokens — semantically distinct from
+    /// `heatmap_year` which is honest per-day tokens. The flowerbed favors
+    /// "intensity bursts read as bloom" so the activity proxy is the right
+    /// signal even on tool-call-heavy / low-token days. Level uses the same
+    /// log-compressed size_level shape as project vines, so a lush flower
+    /// matches the user's mental model of a vigorous vine. Additive.
+    #[serde(default)]
+    pub flowerbed_year: Vec<FlowerbedDay>,
 }
 
 /// One day in the rolling-year heatmap. `level` is the 5-band quantization
@@ -70,6 +80,17 @@ pub struct GardenSummary {
 pub struct HeatmapEntry {
     pub date: String,
     pub value: u64,
+    pub level: u8,
+}
+
+/// One day in the flowerbed contribution view. Separate from `HeatmapEntry`
+/// because the flowerbed encodes `daily_activity` (intensity) rather than
+/// `daily_tokens` (honest tokens) — the field name `activity` makes that
+/// distinction explicit in the JSON.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct FlowerbedDay {
+    pub date: String,
+    pub activity: u64,
     pub level: u8,
 }
 
@@ -85,8 +106,8 @@ const HOUR_OF_WEEK_WINDOW_DAYS: i64 = 90;
 /// backward-incompatible summary change (renamed/removed field, semantic
 /// redefinition). Bumped to 2 for `daily_tokens`, to 3 for `size_level` /
 /// `size_strength`, to 4 for `path_inferred`, to 5 for `heatmap_year` +
-/// `hour_of_week`.
-pub const SUMMARY_SCHEMA_VERSION: u32 = 5;
+/// `hour_of_week`, to 6 for `flowerbed_year`.
+pub const SUMMARY_SCHEMA_VERSION: u32 = 6;
 
 fn current_schema_version() -> u32 {
     SUMMARY_SCHEMA_VERSION
@@ -106,6 +127,7 @@ impl Default for GardenSummary {
             daily_tokens: BTreeMap::new(),
             heatmap_year: Vec::new(),
             hour_of_week: empty_hour_of_week(),
+            flowerbed_year: Vec::new(),
         }
     }
 }
@@ -366,6 +388,8 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
     let active_projects = projects.len() as u64;
     let heatmap_year = build_heatmap_year(&daily_tokens, now);
     let hour_of_week = build_hour_of_week(events, now, HOUR_OF_WEEK_WINDOW_DAYS);
+    let daily_activity_rollup = rollup_daily_activity(&projects);
+    let flowerbed_year = build_flowerbed_year(&daily_activity_rollup, now);
     GardenSummary {
         schema_version: SUMMARY_SCHEMA_VERSION,
         projects,
@@ -378,7 +402,64 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
         daily_tokens,
         heatmap_year,
         hour_of_week,
+        flowerbed_year,
     }
+}
+
+/// Sum each project's per-day activity into one whole-garden series.
+/// Distinct from `daily_tokens` (which is honest tokens); this rolls up
+/// the intensity proxy that already lives on every project.
+fn rollup_daily_activity(projects: &[ProjectGrowth]) -> BTreeMap<String, u64> {
+    let mut out: BTreeMap<String, u64> = BTreeMap::new();
+    for project in projects {
+        for (date, activity) in &project.daily_activity {
+            *out.entry(date.clone()).or_insert(0) += *activity;
+        }
+    }
+    out
+}
+
+/// Build a rolling-366-day activity series for the flowerbed view, oldest
+/// first. Days with no activity get `activity=0, level=0`. Non-zero days
+/// are quantized into levels 1..=4 with the same log-compressed shape as
+/// `size_level` so a lush flower matches the user's mental model of a
+/// vigorous vine.
+fn build_flowerbed_year(
+    daily_activity: &BTreeMap<String, u64>,
+    now: DateTime<Utc>,
+) -> Vec<FlowerbedDay> {
+    let today = now.date_naive();
+    let mut pairs: Vec<(String, u64)> = Vec::with_capacity(366);
+    for offset in (0..366).rev() {
+        let day = today - chrono::Duration::days(offset);
+        let date = day.format("%Y-%m-%d").to_string();
+        let activity = daily_activity.get(&date).copied().unwrap_or(0);
+        pairs.push((date, activity));
+    }
+    let max_activity = pairs.iter().map(|(_, a)| *a).max().unwrap_or(0);
+    pairs
+        .into_iter()
+        .map(|(date, activity)| FlowerbedDay {
+            date,
+            activity,
+            level: flowerbed_level(activity, max_activity),
+        })
+        .collect()
+}
+
+/// Flowerbed level: 0 reserved for idle days; non-zero activity log-
+/// compresses into 1..=4 using the same shape as `size_level`. Distinct
+/// from `quantize_level` (used by `heatmap_year`) which is value/max
+/// linear — the flowerbed wants intensity bursts to bloom visibly even
+/// when one peak day dominates the year.
+fn flowerbed_level(activity: u64, max_activity: u64) -> u8 {
+    if activity == 0 || max_activity == 0 {
+        return 0;
+    }
+    let min_log = 2.0_f64.log10();
+    let max_log = (min_log + 1.0).max(((max_activity + 1) as f64).log10());
+    let ratio = (((activity + 1) as f64).log10() - min_log) / (max_log - min_log);
+    (ratio * 4.0).ceil().clamp(1.0, 4.0) as u8
 }
 
 /// Build a rolling-365-day calendar heatmap aligned to `now`'s UTC date.
@@ -439,7 +520,11 @@ fn quantize_level(value: u64, max_value: u64) -> u8 {
 /// shifting is a future enhancement once we settle on a settings story
 /// for it (today the user's clock and UTC drift differently and we
 /// don't want to make that opinion at the core layer).
-fn build_hour_of_week(events: &[AgentEvent], now: DateTime<Utc>, window_days: i64) -> Vec<Vec<u32>> {
+fn build_hour_of_week(
+    events: &[AgentEvent],
+    now: DateTime<Utc>,
+    window_days: i64,
+) -> Vec<Vec<u32>> {
     let cutoff = now - chrono::Duration::days(window_days);
     let mut grid = empty_hour_of_week();
     for event in events {
@@ -1204,9 +1289,65 @@ mod tests {
     }
 
     #[test]
-    fn schema_version_is_five() {
-        assert_eq!(SUMMARY_SCHEMA_VERSION, 5);
+    fn schema_version_is_six() {
+        assert_eq!(SUMMARY_SCHEMA_VERSION, 6);
         let s = summarize(&[]);
-        assert_eq!(s.schema_version, 5);
+        assert_eq!(s.schema_version, 6);
+    }
+
+    #[test]
+    fn flowerbed_year_is_366_entries_oldest_first() {
+        let now = Utc.with_ymd_and_hms(2026, 6, 18, 12, 0, 0).unwrap();
+        let s = summarize_at(&[], now);
+        assert_eq!(s.flowerbed_year.len(), 366);
+        assert_eq!(s.flowerbed_year[0].date, "2025-06-18");
+        assert_eq!(s.flowerbed_year[365].date, "2026-06-18");
+        assert!(
+            s.flowerbed_year
+                .iter()
+                .all(|e| e.activity == 0 && e.level == 0)
+        );
+    }
+
+    #[test]
+    fn flowerbed_level_log_compresses_activity() {
+        // Activity per day: 1 / 8 / 80 / 800 / 8000 — log-compressed so
+        // even a low day blooms a little (level >= 1), and even one giant
+        // peak still leaves the moderate days in tiers 2-3 (not all bottom).
+        let now = Utc.with_ymd_and_hms(2026, 6, 18, 12, 0, 0).unwrap();
+        let make_day = |days_ago: i64, tokens: u64, tool_calls: u32| {
+            let ts = now - chrono::Duration::days(days_ago);
+            make_event(EventFixture {
+                source: "claude-code",
+                ts,
+                project: Some("/p"),
+                session: Some("s"),
+                input: tokens,
+                output: 0,
+                cache_read: 0,
+                tool_calls,
+                model: None,
+            })
+        };
+        // daily_activity bump = max(1, tokens/1000 + tool_calls)
+        // To get activity 1/8/80/800/8000 we use plain tool_calls.
+        let events = vec![
+            make_day(4, 0, 1),
+            make_day(3, 0, 8),
+            make_day(2, 0, 80),
+            make_day(1, 0, 800),
+            make_day(0, 0, 8000),
+        ];
+        let s = summarize_at(&events, now);
+        let tail: Vec<u8> = s.flowerbed_year[361..].iter().map(|e| e.level).collect();
+        // Each non-zero day must land in 1..=4; trend monotonically non-decreasing.
+        assert!(tail[0] >= 1);
+        for i in 1..5 {
+            assert!(
+                tail[i] >= tail[i - 1],
+                "level non-monotonic at idx {i}: {tail:?}"
+            );
+        }
+        assert_eq!(tail[4], 4, "peak day should hit the top bucket");
     }
 }

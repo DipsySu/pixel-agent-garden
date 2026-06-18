@@ -42,8 +42,15 @@ Promise.all([
   // settings panel both pick up whichever changed last.
   let currentSettings = settings;
   let lastSummary = summary;
-  const renderer = createGardenRenderer({ scene, spriteRoot });
-  renderBaseScene(scene, assetRoot, { settings: currentSettings });
+  const renderer = createGardenRenderer({
+    scene,
+    spriteRoot,
+    isFlowerbedEnabled: () => shouldRenderFlowerbed(currentSettings),
+  });
+  renderBaseScene(scene, assetRoot, {
+    settings: currentSettings,
+    flowerbedEnabled: shouldRenderFlowerbed(currentSettings),
+  });
   renderer.renderEverything(groups, lastSummary);
   const returnDiff = mountReturnDiff({
     hostFrame: document.querySelector('.pg6-frame'),
@@ -74,7 +81,10 @@ Promise.all([
         currentSettings = next;
         // renderBaseScene replaces scene.innerHTML and updates scene.dataset;
         // renderEverything then rebuilds sprites from that dataset.
-        renderBaseScene(scene, assetRoot, { settings: currentSettings });
+        renderBaseScene(scene, assetRoot, {
+          settings: currentSettings,
+          flowerbedEnabled: shouldRenderFlowerbed(currentSettings),
+        });
         renderer.renderEverything(groups, lastSummary);
         insightPanel?.update(lastSummary);
         dashboardPanel?.update(lastSummary);
@@ -132,3 +142,27 @@ Promise.all([
     logGardenError('fallback base scene render failed', renderErr);
   }
 });
+
+// Flowerbed (D PoC) opt-in. Two ways to enable:
+//   - persisted settings.appearance.flowerbed === 'enabled'
+//   - URL `?flowerbed=enabled` override (lets reviewers preview without
+//     touching their settings.toml)
+// Returns boolean. Lives at module scope so renderEverything's
+// `isFlowerbedEnabled` getter always reads the live currentSettings.
+function shouldRenderFlowerbed(settings) {
+  const override = flowerbedQueryOverride();
+  if (override !== null) return override;
+  return settings?.appearance?.flowerbed === 'enabled';
+}
+
+function flowerbedQueryOverride() {
+  try {
+    const value = (new URLSearchParams(window.location.search).get('flowerbed') || '').toLowerCase();
+    if (!value) return null;
+    if (['1', 'true', 'enabled', 'on'].includes(value)) return true;
+    if (['0', 'false', 'disabled', 'off'].includes(value)) return false;
+  } catch (_) {
+    return null;
+  }
+  return null;
+}

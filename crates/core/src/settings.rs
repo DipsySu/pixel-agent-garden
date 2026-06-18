@@ -31,6 +31,7 @@ pub struct Appearance {
     pub time_mode: TimeMode,
     pub season_mode: SeasonMode,
     pub motion: Motion,
+    pub flowerbed: FlowerbedMode,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -134,6 +135,18 @@ pub enum Motion {
     Off,
 }
 
+/// Flowerbed contribution view (D PoC). When `enabled`, the scene's
+/// ground band swaps the classic grass for a dirt strip and 366 flower
+/// sprites render along the foreground, encoding daily activity. Default
+/// `disabled` so existing users see no change on upgrade.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum FlowerbedMode {
+    Enabled,
+    #[default]
+    Disabled,
+}
+
 /// Default location for the settings file. Co-located with the event cache
 /// so a future "reset everything" command can wipe one directory.
 pub fn default_settings_path() -> PathBuf {
@@ -206,6 +219,7 @@ mod tests {
                 time_mode: TimeMode::Night,
                 season_mode: SeasonMode::Winter,
                 motion: Motion::Reduced,
+                flowerbed: FlowerbedMode::Enabled,
             },
             data: DataSettings { auto_rescan: false },
             integrations: Integrations {
@@ -247,6 +261,7 @@ mod tests {
                 time_mode: TimeMode::Dusk,
                 season_mode: SeasonMode::Autumn,
                 motion: Motion::Off,
+                flowerbed: FlowerbedMode::Disabled,
             },
             data: DataSettings { auto_rescan: true },
             integrations: Integrations {

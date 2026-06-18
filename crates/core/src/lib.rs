@@ -22,5 +22,6 @@ pub use adapter::{Adapter, AdapterContext};
 pub use error::Error;
 pub use event::{AgentEvent, TokenUsage};
 pub use settings::{
-    Appearance, DataSettings, Integrations, Motion, SeasonMode, Settings, TerminalKind, TimeMode,
+    Appearance, DataSettings, FlowerbedMode, Integrations, Motion, SeasonMode, Settings,
+    TerminalKind, TimeMode,
 };

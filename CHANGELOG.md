@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Added a flowerbed contribution view (opt-in). When `appearance.flowerbed =
+  enabled` (or URL `?flowerbed=enabled` for ad-hoc preview), the garden's
+  ground band swaps the grass strips for a tilled dirt bed and 366 generated
+  flower sprites bloom along the foreground — each one a day in the rolling
+  year, with bloom intensity following `daily_activity`. Originally an
+  isolated PoC branch grown with Codex 5.5 (image-gen produced the 5×4
+  rose/daisy/tulip/wildflower spritesheet, then PIL chroma-keyed it to
+  transparency); now promoted to main as a second visualization that
+  coexists with the Dashboard heatmap (which renders honest tokens) — the
+  flowerbed favors intensity-bursts-as-bloom so tool-heavy / low-token days
+  still get visible flowers. Default is `disabled` so existing users see no
+  change on upgrade. Bumped `SUMMARY_SCHEMA_VERSION` 5 → 6 to add
+  `flowerbed_year: Vec<FlowerbedDay>` to `GardenSummary` alongside the
+  existing `heatmap_year` and `hour_of_week`. Also reduced the bottom
+  vignette (`.pg6-frame::after`) from 122px×0.9α → 84px×0.65α — it was wide
+  and dark enough to swallow the bottom-most foreground at any view.
 - Added activity Dashboard: GitHub-style year heatmap (365 days, self-relative
   5-band color scale) + hour-of-week punchcard (7×24 grid over the last 90
   days) + 6 KPI cards (total tokens, active projects, active days, this week

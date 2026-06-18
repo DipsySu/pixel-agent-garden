@@ -29,6 +29,10 @@ const CHOICES = {
     { value: 'system', labelKey: 'choice.system' },
     { value: 'reduced', labelKey: 'choice.reduced' },
     { value: 'off', labelKey: 'choice.off' }
+  ],
+  flowerbed: [
+    { value: 'disabled', labelKey: 'choice.disabled' },
+    { value: 'enabled', labelKey: 'choice.enabled' }
   ]
 };
 
@@ -119,7 +123,8 @@ function buildPanelHtml(settings, canPersist) {
     section(t('settings.appearance'), [
       radioGroup('time_mode', t('settings.time'), CHOICES.time_mode, settings.appearance.time_mode, disabledAttr),
       radioGroup('season_mode', t('settings.season'), CHOICES.season_mode, settings.appearance.season_mode, disabledAttr),
-      radioGroup('motion', t('settings.motion'), CHOICES.motion, settings.appearance.motion, disabledAttr)
+      radioGroup('motion', t('settings.motion'), CHOICES.motion, settings.appearance.motion, disabledAttr),
+      radioGroup('flowerbed', t('settings.flowerbed'), CHOICES.flowerbed, settings.appearance.flowerbed, disabledAttr),
     ]) +
     section(t('settings.data'), [
       checkbox(
@@ -197,7 +202,8 @@ function cloneSettings(value) {
     appearance: {
       time_mode: value?.appearance?.time_mode || 'system',
       season_mode: value?.appearance?.season_mode || 'system',
-      motion: value?.appearance?.motion || 'system'
+      motion: value?.appearance?.motion || 'system',
+      flowerbed: value?.appearance?.flowerbed || 'disabled',
     },
     data: {
       auto_rescan: value?.data?.auto_rescan !== false
