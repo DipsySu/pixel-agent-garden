@@ -1142,15 +1142,15 @@
       "group": "pavilion_trinket",
       "name": "trinket_scroll",
       "file": "pavilion_trinkets/trinket_scroll.png",
-      "w": 187,
-      "h": 315
+      "w": 63,
+      "h": 122
     },
     {
       "group": "pavilion_trinket",
       "name": "trinket_tea_set",
       "file": "pavilion_trinkets/trinket_tea_set.png",
-      "w": 276,
-      "h": 190
+      "w": 84,
+      "h": 55
     },
     {
       "group": "pavilion_trinket",
@@ -1163,22 +1163,22 @@
       "group": "pavilion_trinket",
       "name": "trinket_wind_chime",
       "file": "pavilion_trinkets/trinket_wind_chime.png",
-      "w": 129,
-      "h": 307
+      "w": 46,
+      "h": 107
     },
     {
       "group": "pavilion_trinket",
       "name": "trinket_incense",
       "file": "pavilion_trinkets/trinket_incense.png",
-      "w": 227,
-      "h": 250
+      "w": 74,
+      "h": 82
     },
     {
       "group": "pavilion_trinket",
       "name": "trinket_sleeping_cat",
       "file": "pavilion_trinkets/trinket_sleeping_cat.png",
-      "w": 206,
-      "h": 159
+      "w": 85,
+      "h": 53
     },
     {
       "name": "garden_cat",

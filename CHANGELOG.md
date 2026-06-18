@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+- Regenerated all 5 pavilion trinket sprites via PixelLab (`create_map_object`,
+  ~5 generations on the trial subscription). Each was authored in PixelLab's
+  warm-wood palette to harmonize with the ginger calico cat that landed
+  earlier this cycle — they now read as one cohesive courtyard set instead of
+  the Codex-image-gen mixed bag they used to be. The trinkets:
+    * `scroll` — hanging scroll with red-pavilion landscape painting, wooden
+      end-rollers (63×122, side view)
+    * `tea_set` — clay teapot + two cups on a wooden tray (84×55, high
+      top-down)
+    * `wind_chime` — pavilion-eave roof bar + 3 brass tubular chimes + clapper
+      (46×107, side; first attempt came back too tall/thin — re-rolled with a
+      "compact, NOT tall" brief to match the old 0.42 aspect ratio so the
+      sheet doesn't blow out the pavilion's interior height budget at render
+      time)
+    * `incense` — bronze three-legged Chinese censer with a wisp of smoke
+      (74×82, high top-down)
+    * `sleeping_cat` — curled-loaf ginger calico (85×53, side) — color-matched
+      to the main `garden_cat` so the unlock at 5e8 tokens reads as "the
+      same cat decided to nap inside"
+  All sprites tight-cropped to alpha bbox + 2px breathing room, run through
+  the flood-fill stray-cluster scrubber (≤6px isolated islands → erased) —
+  every sheet came back 0 strays, since the `create_map_object` pipeline is
+  cleaner than the character-animation export that needed three scrub rounds
+  for the cat. Aspect-ratio drift kept within ±25% on every sprite (incense
+  -1%, tea_set +5%, scroll -13%, sleeping_cat +24%, wind_chime +2% after the
+  re-roll) — `addTrinketSprite` sets only width and lets `<img>` auto-compute
+  height, so out-of-range aspect changes would have warped the pavilion
+  layout. Manifest `w` / `h` updated; PixelLab cloud now holds just the
+  ginger character and the 6 trinket objects.
+
 - Expanded the courtyard cat's rest behavior into three distinct postures
   matching rest length, generated from two more PixelLab template animations
   (1 generation each, south-only, on the existing ginger character). The rest
