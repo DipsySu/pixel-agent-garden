@@ -19,6 +19,13 @@ const dynamicLayerSelector = [
   '.pg6-wall-edge-cover',
   '.pg6-petal',
   '.pg6-season-particle',
+  // Flowerbed view: render-flowerbed.js appends `.pg6-flower` elements (and a
+  // single `.pg6-flower-tooltip`) without self-clearing, so they MUST be in
+  // the clear list — otherwise every watcher tick re-appends 366 flowers on
+  // top of the old ones (stacking + leak). NOT `.pg6-garden-cat` (below) —
+  // the cat is deliberately long-lived.
+  '.pg6-flower',
+  '.pg6-flower-tooltip',
   '.pg6-empty'
 ].join(', ');
 // NOTE: `.pg6-garden-cat` is deliberately NOT in the clear list. The cat owns a
