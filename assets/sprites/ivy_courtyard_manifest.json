@@ -1185,18 +1185,18 @@
       "group": "garden_cat",
       "file": "garden_cat/garden_cat.png",
       "size": [
-        800,
-        168
+        680,
+        204
       ],
       "frame_size": [
-        80,
-        56
+        68,
+        68
       ],
       "frames": 30,
       "sheet_cols": 10,
       "sheet_rows": 3,
       "anchor": "bottom",
-      "notes": "animated courtyard cat; unlocked by the sleeping_cat trinket tier"
+      "notes": "animated courtyard cat (pixellab ginger calico); 10x3: row0 walk-right, row1 walk-left, row2 turn(0-3)+idle(4-5); unlocked by sleeping_cat trinket tier"
     },
     {
       "name": "maple_leaf_01",

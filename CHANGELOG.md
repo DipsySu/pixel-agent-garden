@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Replaced the courtyard cat sprite with a ginger-and-white calico (黄三花)
+  Chinese-domestic cat generated via the PixelLab MCP (character
+  `cdd47da3-d0d6-4798-a7c1-9d92bd73ae97`, side view, quadruped/cat template).
+  The win: PixelLab produces genuine per-direction art, so we now have a real
+  **east (walk-right)** and **west (walk-left)** 8-frame walk cycle instead of
+  faking the turn with `scaleX(-1)` (the old "paper cat" flip). Repacked the
+  PixelLab frames into the existing 10×3 sheet layout
+  (`garden_cat/garden_cat.png`, now 680×204 with 68×68 cells) so the
+  adversarially-tuned wander state machine in `render-garden.js` needs ZERO
+  logic changes — `catFrameBg` uses relative background-position percentages,
+  which are cell-size-agnostic. Row 0 = walk-right, row 1 = walk-left, row 2
+  cols 0-3 = turn (a gentle SE→S→S→SW "glance toward camera" transition), cols
+  4-5 = idle (front-facing "paused and watching"). Only CSS changed: the
+  cat element's `aspect-ratio` 10/7 → 1/1 to match the square cell, and
+  `CAT_W_FRAC` nudged 58→64/680 to keep the displayed body size. Manifest
+  updated to the new frame geometry.
+
 - Hardened the flowerbed view after a 4-dimension adversarial review (Claude
   reviewers ⨯ per-finding skeptic verification; 10 confirmed of 14, 4 rejected
   as false alarms). Fixes: (1) the build script shipped a 1.4 MB image-gen

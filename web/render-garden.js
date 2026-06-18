@@ -602,7 +602,10 @@ function clearDynamicLayers() {
   const CAT_ROAM = { xMin: 30, xMax: 72, yMin: 76, yMax: 84 };
   // Resting spot used by the static (reduced/off) fallback.
   const CAT_HOME = { x: 60, y: 80 };
-  const CAT_W_FRAC = 58 / 680;
+  // 68px sprite cell (~58px of actual cat body with padding). Sized so the
+  // displayed cat body lands near the old ~55px width despite the square
+  // cell's vertical padding.
+  const CAT_W_FRAC = 64 / 680;
   // Habit zones (Codex's #1 fix): real cats don't sample a rectangle uniformly —
   // they revisit a handful of favored spots and graze the perimeter. Weighted
   // anchors over the open grass / path; medium + cross-yard hops aim at these,

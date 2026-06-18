@@ -323,7 +323,11 @@ body {
   filter: saturate(0.45) brightness(1.08);
 }
 .pg6-garden-cat {
-  aspect-ratio: 10 / 7;
+  /* Cell is 68×68 (pixellab sprite). The 10×3 grid + percentage frame
+     positions are unchanged from the old 80×56 sheet — background-position is
+     relative, so the JS frame logic (catFrameBg) needs no change; only the
+     element's aspect-ratio must match the new square cell. */
+  aspect-ratio: 1 / 1;
   background-image: var(--cat-sprite);
   background-position: 44.444% 100%;
   background-repeat: no-repeat;
