@@ -701,7 +701,11 @@ function clearDynamicLayers() {
     const rand = (a, b) => a + Math.random() * (b - a);
     const yspan = CAT_ROAM.yMax - CAT_ROAM.yMin;
     const center = (CAT_ROAM.xMin + CAT_ROAM.xMax) / 2;
-    const STRIDE = 2.4;   // % of scene width travelled per walk frame
+    // STRIDE was 2.4, BASE_SPEED was lerp(7.5, 12.5). Slowed ~20% to a more
+    // contemplative pacing (user request: "动作稍微慢一些"). The slower base
+    // makes idle / sit / lie beats land in a calmer rhythm too, so the cat
+    // reads as a courtyard resident rather than a busy NPC.
+    const STRIDE = 2.0;   // % of scene width travelled per walk frame
 
     const zoneTotal = CAT_ZONES.reduce((sum, z) => sum + z.w, 0);
     function weightedZone() {
@@ -740,7 +744,13 @@ function clearDynamicLayers() {
     let state = 'rest', timer = 600;
     let legDist = 0, baseSpeed = 10, accelZone = 1, decelZone = 1, turnDur = 320;
     let pauseAt = -1, paused = false;
-    let restAnimate = true, sitFrame = 4, toggleTimer = 0;
+    // Rest "kind" picks WHICH row-2 cell pair to toggle between, so each
+    // rest length looks visually distinct:
+    //   alert  = stand & look (col 4↔5) — the "I heard something" pose
+    //   sit    = sit up (col 6↔7) — classic seated cat
+    //   lie    = settle on belly (col 8↔9) — long, relaxed rest
+    // `restAnimate=false` freezes a single frame (alert-stillness).
+    let restAnimate = true, restKind = 'sit', sitFrame = 6, toggleTimer = 0;
     let rafId = 0, lastTs = 0, stopped = false;
 
     function apply() {
@@ -793,27 +803,48 @@ function clearDynamicLayers() {
       const { nx, ny } = pickDestination();
       sx = x; sy = y; tx = nx; ty = ny;
       legDist = Math.abs(tx - sx);
-      baseSpeed = lerp(7.5, 12.5, clamp(legDist / 32, 0, 1)) * rand(0.9, 1.12);
+      baseSpeed = lerp(6.0, 10.0, clamp(legDist / 32, 0, 1)) * rand(0.9, 1.12);
       accelZone = Math.min(0.18 * legDist, 2.5);
       decelZone = Math.min(0.22 * legDist, 3.0);
       pendingFacing = tx >= sx ? 'right' : 'left';
       pauseAt = (legDist > 18 && Math.random() < 0.18) ? rand(0.35, 0.70) : -1;
       paused = false;
-      if (pendingFacing !== facing) { state = 'preturn'; turnDur = rand(260, 340); timer = turnDur; }
-      else if (Math.random() < 0.35) { state = 'hesitate'; timer = rand(120, 300); }
+      if (pendingFacing !== facing) { state = 'preturn'; turnDur = rand(360, 480); timer = turnDur; }
+      else if (Math.random() < 0.35) { state = 'hesitate'; timer = rand(160, 380); }
       else { facing = pendingFacing; lastDir = facing === 'right' ? 1 : -1; state = 'walk'; }
     }
 
-    // Rest menu: mostly short beats, occasional alert stillness (held frame, no
-    // toggle), rare long sit, sometimes an immediate next hop.
+    // Rest menu. Each branch picks a duration AND a posture (restKind) that
+    // matches the duration's mood. Slowed ~20% per the user's pacing request.
+    //
+    //   55% short stand-and-look (alert pose, col 4↔5 toggle) — the cat
+    //        paused mid-yard to listen / glance around
+    //   20% alert stillness — same alert pose, held on one frame (no toggle)
+    //   12% medium sit (col 6↔7 toggle) — actually sits down for a beat
+    //    8% long lie (col 8↔9 toggle) — settles on belly to rest
+    //    5% immediate next hop (no perceptible rest)
+    //
+    // The toggle pair is { col_a, col_b }: 4/5 (alert), 6/7 (sit), 8/9 (lie).
     function beginRest() {
       const r = Math.random();
-      if (r < 0.55)      { timer = rand(500, 1600);  restAnimate = true; }   // short sit
-      else if (r < 0.80) { timer = rand(900, 2400);  restAnimate = false; }  // alert stillness
-      else if (r < 0.92) { timer = rand(3000, 6500); restAnimate = true; }   // long sit
-      else               { timer = rand(120, 350);   restAnimate = false; }  // immediate patrol
+      if (r < 0.55) {
+        timer = rand(800, 2200);  restAnimate = true;  restKind = 'alert';
+      } else if (r < 0.75) {
+        timer = rand(1300, 2900); restAnimate = false; restKind = 'alert';
+      } else if (r < 0.87) {
+        timer = rand(2500, 5000); restAnimate = true;  restKind = 'sit';
+      } else if (r < 0.95) {
+        timer = rand(4500, 9000); restAnimate = true;  restKind = 'lie';
+      } else {
+        timer = rand(180, 450);   restAnimate = false; restKind = 'alert';
+      }
       state = 'rest';
-      sitFrame = 4; toggleTimer = rand(600, 1400);
+      const baseCol = restKind === 'lie' ? 8 : restKind === 'sit' ? 6 : 4;
+      sitFrame = baseCol;
+      // Slower toggle on calmer rests — sit/lie ought to feel still.
+      toggleTimer = restKind === 'lie' ? rand(1400, 2600)
+                  : restKind === 'sit' ? rand(1100, 2200)
+                                       : rand(900, 2000);
       cat.style.backgroundPosition = catFrameBg(sitFrame, 2);
     }
 
@@ -829,8 +860,14 @@ function clearDynamicLayers() {
         if (restAnimate) {
           toggleTimer -= dt;
           if (toggleTimer <= 0) {
-            sitFrame = sitFrame === 4 ? 5 : 4;
-            toggleTimer = rand(600, 1400);
+            // Each rest kind toggles within its own pair: alert 4↔5,
+            // sit 6↔7, lie 8↔9. baseCol stays constant per rest, the
+            // toggle flips +/- 1.
+            const baseCol = restKind === 'lie' ? 8 : restKind === 'sit' ? 6 : 4;
+            sitFrame = sitFrame === baseCol ? baseCol + 1 : baseCol;
+            toggleTimer = restKind === 'lie' ? rand(1400, 2600)
+                        : restKind === 'sit' ? rand(1100, 2200)
+                                             : rand(900, 2000);
             cat.style.backgroundPosition = catFrameBg(sitFrame, 2);
           }
         }
