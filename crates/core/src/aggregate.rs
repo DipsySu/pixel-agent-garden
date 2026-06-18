@@ -11,7 +11,7 @@
 //!   calls", not "many tokens" — only `daily_tokens` answers the token question.
 
 use crate::event::AgentEvent;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Datelike, Timelike, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
@@ -46,15 +46,47 @@ pub struct GardenSummary {
     /// defaults to empty so older summaries still deserialize.
     #[serde(default)]
     pub daily_tokens: BTreeMap<String, u64>,
+    /// Rolling-365-day calendar heatmap, oldest-first. Each entry has the
+    /// ISO date, the day's token total, and a 5-band quantized `level` (0..=4)
+    /// computed against this user's own 365-day max so the visualization
+    /// stays self-relative regardless of scale. Empty days are filled with
+    /// `value=0, level=0` so the front-end never has to fill gaps. Additive.
+    #[serde(default)]
+    pub heatmap_year: Vec<HeatmapEntry>,
+    /// 7×24 hour-of-week event counts over a rolling window (90 days by
+    /// default — enough to surface a stable weekly pattern, recent enough
+    /// to track lifestyle changes). Row 0 = Monday, row 6 = Sunday;
+    /// columns 0..23 are local-clock hours of the day. Counts events, not
+    /// tokens — the punchcard answers "when am I active?", not
+    /// "when do I burn tokens?". Additive.
+    #[serde(default)]
+    pub hour_of_week: Vec<Vec<u32>>,
 }
+
+/// One day in the rolling-year heatmap. `level` is the 5-band quantization
+/// (0..=4) the front-end maps directly to a 5-step color scale; raw `value`
+/// is kept so the tooltip can show the actual token total.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct HeatmapEntry {
+    pub date: String,
+    pub value: u64,
+    pub level: u8,
+}
+
+/// How many days of history the hour-of-week grid considers. 90 days is the
+/// sweet spot — enough for a stable Mon/Tue/Wed pattern to emerge, short
+/// enough that "you used to code on Sundays" doesn't drown out "you don't
+/// anymore".
+const HOUR_OF_WEEK_WINDOW_DAYS: i64 = 90;
 
 /// Schema version for the `GardenSummary` JSON shape. Independent from the
 /// events cache (`storage::EVENTS_SCHEMA_VERSION`) so the summary shape can
 /// evolve without invalidating cached raw events. Bump on any
 /// backward-incompatible summary change (renamed/removed field, semantic
 /// redefinition). Bumped to 2 for `daily_tokens`, to 3 for `size_level` /
-/// `size_strength`, to 4 for `path_inferred`.
-pub const SUMMARY_SCHEMA_VERSION: u32 = 4;
+/// `size_strength`, to 4 for `path_inferred`, to 5 for `heatmap_year` +
+/// `hour_of_week`.
+pub const SUMMARY_SCHEMA_VERSION: u32 = 5;
 
 fn current_schema_version() -> u32 {
     SUMMARY_SCHEMA_VERSION
@@ -72,8 +104,17 @@ impl Default for GardenSummary {
             last_seen: None,
             active_projects: 0,
             daily_tokens: BTreeMap::new(),
+            heatmap_year: Vec::new(),
+            hour_of_week: empty_hour_of_week(),
         }
     }
+}
+
+/// 7×24 zero grid. Kept as `Vec<Vec<u32>>` rather than a fixed `[[u32; 24]; 7]`
+/// because serde + JSON cares about the dynamic representation; the shape is
+/// always 7×24 (asserted in tests).
+fn empty_hour_of_week() -> Vec<Vec<u32>> {
+    (0..7).map(|_| vec![0u32; 24]).collect()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -323,6 +364,8 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
     }
 
     let active_projects = projects.len() as u64;
+    let heatmap_year = build_heatmap_year(&daily_tokens, now);
+    let hour_of_week = build_hour_of_week(events, now, HOUR_OF_WEEK_WINDOW_DAYS);
     GardenSummary {
         schema_version: SUMMARY_SCHEMA_VERSION,
         projects,
@@ -333,7 +376,83 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
         last_seen,
         active_projects,
         daily_tokens,
+        heatmap_year,
+        hour_of_week,
     }
+}
+
+/// Build a rolling-365-day calendar heatmap aligned to `now`'s UTC date.
+/// Returns oldest-day-first so the front-end can iterate left-to-right.
+///
+/// Level quantization is self-relative: each day's `value / max_value` falls
+/// into one of 4 non-zero bands at 0.25 / 0.5 / 0.75 / 1.0 cutoffs, mirroring
+/// the 5-step GitHub contribution-graph scale. The "max value" is the largest
+/// daily total within the 365-day window — so a user who never crosses 1k
+/// tokens/day still sees a meaningful gradient, and a heavy user's gradient
+/// doesn't get crushed by their own ceiling.
+fn build_heatmap_year(
+    daily_tokens: &BTreeMap<String, u64>,
+    now: DateTime<Utc>,
+) -> Vec<HeatmapEntry> {
+    let today = now.date_naive();
+    // Collect (date, value) pairs for the 365 days ending at today, oldest
+    // first. Two-pass: gather values, compute max, then assign levels.
+    let mut pairs: Vec<(String, u64)> = Vec::with_capacity(365);
+    for i in (0..365).rev() {
+        let day = today - chrono::Duration::days(i);
+        let key = day.format("%Y-%m-%d").to_string();
+        let value = daily_tokens.get(&key).copied().unwrap_or(0);
+        pairs.push((key, value));
+    }
+    let max_value = pairs.iter().map(|(_, v)| *v).max().unwrap_or(0);
+    pairs
+        .into_iter()
+        .map(|(date, value)| {
+            let level = quantize_level(value, max_value);
+            HeatmapEntry { date, value, level }
+        })
+        .collect()
+}
+
+/// 5-band quantization (0..=4). 0 reserved for empty days; non-empty days
+/// split into 4 bins by `value / max`. The cutoffs match GitHub's
+/// contribution-graph behavior.
+fn quantize_level(value: u64, max_value: u64) -> u8 {
+    if value == 0 || max_value == 0 {
+        return 0;
+    }
+    let ratio = value as f64 / max_value as f64;
+    if ratio <= 0.25 {
+        1
+    } else if ratio <= 0.5 {
+        2
+    } else if ratio <= 0.75 {
+        3
+    } else {
+        4
+    }
+}
+
+/// Build a 7×24 hour-of-week event-count grid over the trailing
+/// `window_days` window. Row 0 = Monday … row 6 = Sunday, columns 0..23
+/// = hour of day. Uses event timestamps' UTC weekday/hour — local-time
+/// shifting is a future enhancement once we settle on a settings story
+/// for it (today the user's clock and UTC drift differently and we
+/// don't want to make that opinion at the core layer).
+fn build_hour_of_week(events: &[AgentEvent], now: DateTime<Utc>, window_days: i64) -> Vec<Vec<u32>> {
+    let cutoff = now - chrono::Duration::days(window_days);
+    let mut grid = empty_hour_of_week();
+    for event in events {
+        if event.timestamp < cutoff || event.timestamp > now {
+            continue;
+        }
+        let dow = event.timestamp.weekday().num_days_from_monday() as usize;
+        let hour = event.timestamp.hour() as usize;
+        if dow < 7 && hour < 24 {
+            grid[dow][hour] = grid[dow][hour].saturating_add(1);
+        }
+    }
+    grid
 }
 
 /// Top `n` projects by total tokens, descending, with a deterministic
@@ -970,5 +1089,124 @@ mod tests {
         let strength = size_strength(42, 42, &only);
         assert!(strength.is_finite());
         assert!((0.0..=1.0).contains(&strength));
+    }
+
+    // ===== heatmap_year + hour_of_week (schema_version 5) ===================
+
+    #[test]
+    fn heatmap_year_has_exactly_365_entries_ending_today() {
+        let now = Utc.with_ymd_and_hms(2026, 6, 18, 12, 0, 0).unwrap();
+        let s = summarize_at(&[], now);
+        assert_eq!(s.heatmap_year.len(), 365);
+        // Oldest first, today last.
+        assert_eq!(s.heatmap_year[0].date, "2025-06-19");
+        assert_eq!(s.heatmap_year[364].date, "2026-06-18");
+        // No data → all zero / level 0.
+        assert!(s.heatmap_year.iter().all(|e| e.value == 0 && e.level == 0));
+    }
+
+    #[test]
+    fn heatmap_year_levels_self_relative_to_max() {
+        // Pin `now` so the dates are deterministic. Place one event per day
+        // for five distinct days with escalating token totals: 100 / 600 /
+        // 1300 / 2100 / 4000. Max = 4000 → ratios 0.025, 0.15, 0.325, 0.525,
+        // 1.0 → levels 1, 1, 2, 3, 4.
+        let now = Utc.with_ymd_and_hms(2026, 6, 18, 12, 0, 0).unwrap();
+        let make_day = |days_ago: i64, tokens: u64| {
+            let ts = now - chrono::Duration::days(days_ago);
+            make_event(EventFixture {
+                source: "claude-code",
+                ts,
+                project: Some("/p"),
+                session: Some("s"),
+                input: tokens,
+                output: 0,
+                cache_read: 0,
+                tool_calls: 0,
+                model: None,
+            })
+        };
+        let events = vec![
+            make_day(4, 100),
+            make_day(3, 600),
+            make_day(2, 1300),
+            make_day(1, 2100),
+            make_day(0, 4000),
+        ];
+        let s = summarize_at(&events, now);
+        // heatmap_year is oldest-first; the 5 most recent are at positions
+        // 360..=364.
+        let tail: Vec<u8> = s.heatmap_year[360..].iter().map(|e| e.level).collect();
+        // ratios: 100/4000=0.025→1, 600/4000=0.15→1, 1300/4000=0.325→2,
+        // 2100/4000=0.525→3, 4000/4000=1.0→4
+        assert_eq!(tail, vec![1, 1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn hour_of_week_grid_is_7x24_zeros_when_empty() {
+        let s = summarize(&[]);
+        assert_eq!(s.hour_of_week.len(), 7);
+        for row in &s.hour_of_week {
+            assert_eq!(row.len(), 24);
+            assert!(row.iter().all(|&c| c == 0));
+        }
+    }
+
+    #[test]
+    fn hour_of_week_buckets_by_weekday_and_hour() {
+        // 2026-06-17 is a Wednesday (dow index 2 in Mon=0..Sun=6).
+        // Build 3 events on that day at hour 14, then 1 event on Sunday
+        // (dow 6) at hour 9. Both within the 90-day window.
+        let now = Utc.with_ymd_and_hms(2026, 6, 18, 23, 59, 0).unwrap();
+        let wed_14 = Utc.with_ymd_and_hms(2026, 6, 17, 14, 30, 0).unwrap();
+        let sun_09 = Utc.with_ymd_and_hms(2026, 6, 14, 9, 5, 0).unwrap(); // 2026-06-14 is Sun
+        let mk = |ts| {
+            make_event(EventFixture {
+                source: "claude-code",
+                ts,
+                project: Some("/p"),
+                session: Some("s"),
+                input: 10,
+                output: 0,
+                cache_read: 0,
+                tool_calls: 0,
+                model: None,
+            })
+        };
+        let events = vec![mk(wed_14), mk(wed_14), mk(wed_14), mk(sun_09)];
+        let s = summarize_at(&events, now);
+        assert_eq!(s.hour_of_week[2][14], 3, "Wed 14:00 should be 3");
+        assert_eq!(s.hour_of_week[6][9], 1, "Sun 09:00 should be 1");
+        // Every other cell stays zero.
+        let total: u32 = s.hour_of_week.iter().flatten().sum();
+        assert_eq!(total, 4);
+    }
+
+    #[test]
+    fn hour_of_week_drops_events_outside_window() {
+        // 120 days back — outside the 90-day window — should not be counted.
+        let now = Utc.with_ymd_and_hms(2026, 6, 18, 12, 0, 0).unwrap();
+        let too_old = now - chrono::Duration::days(120);
+        let events = vec![make_event(EventFixture {
+            source: "claude-code",
+            ts: too_old,
+            project: Some("/p"),
+            session: Some("s"),
+            input: 10,
+            output: 0,
+            cache_read: 0,
+            tool_calls: 0,
+            model: None,
+        })];
+        let s = summarize_at(&events, now);
+        let total: u32 = s.hour_of_week.iter().flatten().sum();
+        assert_eq!(total, 0);
+    }
+
+    #[test]
+    fn schema_version_is_five() {
+        assert_eq!(SUMMARY_SCHEMA_VERSION, 5);
+        let s = summarize(&[]);
+        assert_eq!(s.schema_version, 5);
     }
 }

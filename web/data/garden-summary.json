@@ -1,171 +1,1209 @@
 {
-  "schema_version": 2,
+  "schema_version": 5,
   "projects": [
     {
       "project_key": "/Users/dipsy/Developer/tool-lib/pay-module",
       "display_name": "pay-module",
       "project_path": "/Users/dipsy/Developer/tool-lib/pay-module",
       "sources": {
-        "claude-code": 1717,
-        "codex": 7
+        "claude-code": 8907,
+        "claude-cowork": 2454,
+        "codex": 11
       },
-      "sessions": 8,
+      "sessions": 19,
       "first_seen": "2026-05-05T02:31:26.518000+00:00",
-      "last_seen": "2026-05-26T06:25:28+00:00",
-      "total_tokens": 226880048,
-      "input_tokens": 644816,
-      "output_tokens": 197552,
-      "cache_read_tokens": 97500672,
-      "cache_write_tokens": 0,
-      "tool_calls": 481,
-      "event_count": 1724,
+      "last_seen": "2026-06-17T02:47:20.028000+00:00",
+      "total_tokens": 1087902406,
+      "input_tokens": 4049222,
+      "output_tokens": 3315329,
+      "cache_read_tokens": 638630002,
+      "cache_write_tokens": 42113359,
+      "tool_calls": 3906,
+      "event_count": 11372,
       "daily_activity": {
-        "2026-05-05": 45584,
+        "2026-05-05": 46331,
         "2026-05-06": 53522,
         "2026-05-19": 3321,
         "2026-05-21": 145,
-        "2026-05-22": 27116,
-        "2026-05-25": 59639,
-        "2026-05-26": 38312
+        "2026-05-22": 28907,
+        "2026-05-25": 63180,
+        "2026-05-26": 87461,
+        "2026-06-01": 43005,
+        "2026-06-02": 1382,
+        "2026-06-03": 55464,
+        "2026-06-04": 47098,
+        "2026-06-05": 226178,
+        "2026-06-10": 137973,
+        "2026-06-11": 46087,
+        "2026-06-12": 569,
+        "2026-06-15": 22614,
+        "2026-06-16": 210936,
+        "2026-06-17": 18899
+      },
+      "daily_tokens": {
+        "2026-05-05": 45758801,
+        "2026-05-06": 53119484,
+        "2026-05-19": 3321974,
+        "2026-05-21": 145366,
+        "2026-05-22": 28648038,
+        "2026-05-25": 62732158,
+        "2026-05-26": 86972055,
+        "2026-06-01": 42642734,
+        "2026-06-02": 1382703,
+        "2026-06-03": 55415413,
+        "2026-06-04": 47098922,
+        "2026-06-05": 225940427,
+        "2026-06-10": 136231584,
+        "2026-06-11": 46064873,
+        "2026-06-12": 568408,
+        "2026-06-15": 22561483,
+        "2026-06-16": 210412001,
+        "2026-06-17": 18885982
       },
       "models": {
-        "mimo-v2.5-pro": 1173,
-        "gpt-5.5": 5,
-        "codex-auto-review": 2
+        "<synthetic>": 49,
+        "claude-fable-5": 2396,
+        "claude-haiku-4-5-20251001": 923,
+        "claude-opus-4-6": 673,
+        "claude-opus-4-7": 431,
+        "claude-opus-4-8": 1308,
+        "claude-sonnet-4-6": 6,
+        "codex-auto-review": 2,
+        "gpt-5.3-codex-spark": 2,
+        "gpt-5.5": 7,
+        "mimo-v2.5-pro": 1296
       },
-      "activity_score": 610,
+      "activity_score": 732,
       "stage": 6,
-      "recent_activity": 125067,
-      "cache_ratio": 0.9934299985344207,
-      "daily_tokens": {
-        "2026-05-05": 45432022,
-        "2026-05-06": 53343556,
-        "2026-05-19": 3309927,
-        "2026-05-21": 144516,
-        "2026-05-22": 27025594,
-        "2026-05-25": 59440166,
-        "2026-05-26": 38184267
-      }
+      "recent_activity": 253018,
+      "cache_ratio": 0.9325889588380661,
+      "size_level": 5,
+      "size_strength": 0.9920268593552558,
+      "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/xiaowo/xiaowo_sport",
-      "display_name": "xiaowo_sport",
-      "project_path": "/Users/dipsy/Documents/xiaowo/xiaowo_sport",
+      "project_key": "/Users/dipsy/Developer/motionx-synca/motionx-backend",
+      "display_name": "motionx-backend",
+      "project_path": "/Users/dipsy/Developer/motionx-synca/motionx-backend",
       "sources": {
-        "claude-code": 1186,
-        "codex": 1
+        "claude-code": 6326,
+        "codex": 10
       },
-      "sessions": 2,
-      "first_seen": "2026-05-02T00:57:53.770000+00:00",
-      "last_seen": "2026-05-03T04:35:41+00:00",
-      "total_tokens": 87163938,
-      "input_tokens": 2233950,
-      "output_tokens": 179299,
-      "cache_read_tokens": 71173376,
-      "cache_write_tokens": 0,
-      "tool_calls": 363,
-      "event_count": 1187,
+      "sessions": 12,
+      "first_seen": "2026-06-09T02:16:57.776000+00:00",
+      "last_seen": "2026-06-17T07:55:09.258000+00:00",
+      "total_tokens": 758596037,
+      "input_tokens": 1365739,
+      "output_tokens": 4642746,
+      "cache_read_tokens": 706156090,
+      "cache_write_tokens": 40886201,
+      "tool_calls": 2264,
+      "event_count": 6336,
       "daily_activity": {
-        "2026-05-02": 72969,
-        "2026-05-03": 14735
+        "2026-06-09": 53823,
+        "2026-06-12": 147162,
+        "2026-06-13": 226726,
+        "2026-06-14": 197726,
+        "2026-06-15": 13903,
+        "2026-06-16": 60291,
+        "2026-06-17": 61654
+      },
+      "daily_tokens": {
+        "2026-06-09": 53516559,
+        "2026-06-12": 146794977,
+        "2026-06-13": 226190268,
+        "2026-06-14": 196309148,
+        "2026-06-15": 13899565,
+        "2026-06-16": 60270288,
+        "2026-06-17": 61615232
       },
       "models": {
-        "glm-4.7": 361,
-        "<synthetic>": 4,
-        "mimo-v2.5-pro": 425,
-        "gpt-5.5": 1
+        "<synthetic>": 1,
+        "claude-fable-5": 478,
+        "claude-haiku-4-5-20251001": 1760,
+        "claude-opus-4-8": 1686,
+        "gpt-5.5": 10
       },
-      "activity_score": 542,
+      "activity_score": 659,
       "stage": 6,
-      "recent_activity": 0,
-      "cache_ratio": 0.96956775131681,
+      "recent_activity": 707462,
+      "cache_ratio": 0.9435442455100328,
+      "size_level": 5,
+      "size_strength": 0.9656355022685964,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/不知道叫什么",
+      "display_name": "不知道叫什么",
+      "project_path": "/Users/dipsy/Documents/不知道叫什么",
+      "sources": {
+        "claude-code": 1178,
+        "claude-cowork": 1792,
+        "codex": 9
+      },
+      "sessions": 11,
+      "first_seen": "2026-05-27T05:42:57.705000+00:00",
+      "last_seen": "2026-06-18T01:14:02.254000+00:00",
+      "total_tokens": 1138199864,
+      "input_tokens": 6734,
+      "output_tokens": 2052130,
+      "cache_read_tokens": 617552833,
+      "cache_write_tokens": 18261628,
+      "tool_calls": 1101,
+      "event_count": 2979,
+      "daily_activity": {
+        "2026-05-27": 166781,
+        "2026-05-28": 456410,
+        "2026-05-29": 18036,
+        "2026-06-02": 143020,
+        "2026-06-16": 302534,
+        "2026-06-18": 52838
+      },
       "daily_tokens": {
-        "2026-05-02": 72519673,
-        "2026-05-03": 14644265
-      }
+        "2026-05-27": 166268532,
+        "2026-05-28": 455861345,
+        "2026-05-29": 17937299,
+        "2026-06-02": 143020812,
+        "2026-06-16": 302399184,
+        "2026-06-18": 52712692
+      },
+      "models": {
+        "<synthetic>": 8,
+        "claude-haiku-4-5-20251001": 13,
+        "claude-opus-4-7": 1730,
+        "gpt-5.4": 1,
+        "gpt-5.5": 8
+      },
+      "activity_score": 653,
+      "stage": 6,
+      "recent_activity": 355372,
+      "cache_ratio": 0.9712680826879324,
+      "size_level": 5,
+      "size_strength": 1.0,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/hexo_blog",
+      "display_name": "hexo_blog",
+      "project_path": "/Users/dipsy/Documents/hexo_blog",
+      "sources": {
+        "claude-code": 2484,
+        "codex": 5
+      },
+      "sessions": 10,
+      "first_seen": "2026-05-28T14:21:33.818000+00:00",
+      "last_seen": "2026-06-17T05:47:12.308000+00:00",
+      "total_tokens": 244981966,
+      "input_tokens": 1943418,
+      "output_tokens": 934428,
+      "cache_read_tokens": 157929163,
+      "cache_write_tokens": 10142740,
+      "tool_calls": 823,
+      "event_count": 2489,
+      "daily_activity": {
+        "2026-05-28": 3736,
+        "2026-05-29": 77603,
+        "2026-06-17": 164555
+      },
+      "daily_tokens": {
+        "2026-05-28": 3654451,
+        "2026-05-29": 77548923,
+        "2026-06-17": 163778592
+      },
+      "models": {
+        "<synthetic>": 1,
+        "claude-haiku-4-5-20251001": 56,
+        "claude-opus-4-7": 102,
+        "claude-opus-4-8": 1416,
+        "gpt-5.5": 5
+      },
+      "activity_score": 631,
+      "stage": 6,
+      "recent_activity": 164555,
+      "cache_ratio": 0.9289113597003413,
+      "size_level": 5,
+      "size_strength": 0.8782852462219691,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/motionx-synca",
+      "display_name": "motionx-synca",
+      "project_path": "/Users/dipsy/Developer/motionx-synca",
+      "sources": {
+        "claude-code": 912,
+        "codex": 3
+      },
+      "sessions": 7,
+      "first_seen": "2026-06-09T02:04:21.701000+00:00",
+      "last_seen": "2026-06-17T07:48:42.859000+00:00",
+      "total_tokens": 234624415,
+      "input_tokens": 555952,
+      "output_tokens": 1274193,
+      "cache_read_tokens": 125224309,
+      "cache_write_tokens": 14177954,
+      "tool_calls": 273,
+      "event_count": 915,
+      "daily_activity": {
+        "2026-06-09": 44722,
+        "2026-06-12": 19435,
+        "2026-06-13": 21551,
+        "2026-06-14": 48603,
+        "2026-06-16": 11830,
+        "2026-06-17": 88821
+      },
+      "daily_tokens": {
+        "2026-06-09": 44470740,
+        "2026-06-12": 19428464,
+        "2026-06-13": 21505921,
+        "2026-06-14": 48574166,
+        "2026-06-16": 11826506,
+        "2026-06-17": 88818618
+      },
+      "models": {
+        "<synthetic>": 3,
+        "claude-opus-4-8": 562,
+        "gpt-5.5": 3
+      },
+      "activity_score": 600,
+      "stage": 6,
+      "recent_activity": 190240,
+      "cache_ratio": 0.8947263938740574,
+      "size_level": 5,
+      "size_strength": 0.8704287979233072,
+      "path_inferred": false
     },
     {
       "project_key": "/Users/dipsy/Documents/xiaowo",
       "display_name": "xiaowo",
       "project_path": "/Users/dipsy/Documents/xiaowo",
       "sources": {
-        "claude-code": 396,
-        "codex": 1
+        "claude-code": 851,
+        "codex": 3
       },
-      "sessions": 2,
+      "sessions": 5,
       "first_seen": "2026-04-30T13:47:52.012000+00:00",
-      "last_seen": "2026-05-02T13:40:27+00:00",
-      "total_tokens": 75038804,
-      "input_tokens": 1007291,
-      "output_tokens": 58584,
-      "cache_read_tokens": 15505920,
-      "cache_write_tokens": 0,
-      "tool_calls": 117,
-      "event_count": 397,
+      "last_seen": "2026-06-10T07:45:22.272000+00:00",
+      "total_tokens": 263089642,
+      "input_tokens": 1234867,
+      "output_tokens": 919072,
+      "cache_read_tokens": 82320781,
+      "cache_write_tokens": 12563896,
+      "tool_calls": 225,
+      "event_count": 854,
       "daily_activity": {
         "2026-04-30": 4129,
         "2026-05-01": 7583,
-        "2026-05-02": 63466
+        "2026-05-02": 4999,
+        "2026-06-01": 52517,
+        "2026-06-02": 7035,
+        "2026-06-03": 3117,
+        "2026-06-08": 67435,
+        "2026-06-10": 116519
+      },
+      "daily_tokens": {
+        "2026-04-30": 4082692,
+        "2026-05-01": 7528806,
+        "2026-05-02": 4960297,
+        "2026-06-01": 52511431,
+        "2026-06-02": 7019541,
+        "2026-06-03": 3114583,
+        "2026-06-08": 67356115,
+        "2026-06-10": 116516177
       },
       "models": {
+        "<synthetic>": 5,
+        "claude-opus-4-8": 309,
         "glm-4.7": 217,
+        "gpt-5.5": 3,
+        "mimo-v2.5-pro": 48
+      },
+      "activity_score": 581,
+      "stage": 6,
+      "recent_activity": 0,
+      "cache_ratio": 0.8564416514501983,
+      "size_level": 5,
+      "size_strength": 0.8877836193364732,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/xiaowo/xiaowo_sport",
+      "display_name": "xiaowo_sport",
+      "project_path": "/Users/dipsy/Documents/xiaowo/xiaowo_sport",
+      "sources": {
+        "claude-code": 1369,
+        "codex": 1
+      },
+      "sessions": 4,
+      "first_seen": "2026-05-02T00:57:53.770000+00:00",
+      "last_seen": "2026-06-10T08:08:44.446000+00:00",
+      "total_tokens": 117181519,
+      "input_tokens": 2373590,
+      "output_tokens": 581121,
+      "cache_read_tokens": 98809892,
+      "cache_write_tokens": 1839603,
+      "tool_calls": 410,
+      "event_count": 1370,
+      "daily_activity": {
+        "2026-05-02": 72969,
+        "2026-05-03": 1158,
+        "2026-05-28": 13577,
+        "2026-06-01": 153,
+        "2026-06-03": 8915,
+        "2026-06-08": 10222,
+        "2026-06-09": 739,
+        "2026-06-10": 10029
+      },
+      "daily_tokens": {
+        "2026-05-02": 72439891,
+        "2026-05-03": 1146734,
+        "2026-05-28": 13577313,
+        "2026-06-01": 153886,
+        "2026-06-03": 8906495,
+        "2026-06-08": 10199495,
+        "2026-06-09": 733968,
+        "2026-06-10": 10023737
+      },
+      "models": {
+        "<synthetic>": 4,
+        "claude-opus-4-8": 125,
+        "glm-4.7": 361,
+        "gpt-5.5": 1,
+        "mimo-v2.5-pro": 425
+      },
+      "activity_score": 565,
+      "stage": 6,
+      "recent_activity": 0,
+      "cache_ratio": 0.9591043793728367,
+      "size_level": 5,
+      "size_strength": 0.8245454821223259,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/backend",
+      "display_name": "backend",
+      "project_path": "/Users/dipsy/Developer/backend",
+      "sources": {
+        "claude-cowork": 914,
+        "codex": 2
+      },
+      "sessions": 5,
+      "first_seen": "2026-05-24T13:36:40.431000+00:00",
+      "last_seen": "2026-06-05T04:22:47+00:00",
+      "total_tokens": 31155579,
+      "input_tokens": 55371,
+      "output_tokens": 296850,
+      "cache_read_tokens": 22847286,
+      "cache_write_tokens": 2524077,
+      "tool_calls": 389,
+      "event_count": 916,
+      "daily_activity": {
+        "2026-05-24": 16600,
+        "2026-06-05": 15126
+      },
+      "daily_tokens": {
+        "2026-05-24": 16153702,
+        "2026-06-05": 15001877
+      },
+      "models": {
+        "claude-opus-4-6": 96,
+        "claude-opus-4-8": 171,
+        "claude-sonnet-4-6": 239,
+        "gpt-5.5": 2
+      },
+      "activity_score": 564,
+      "stage": 6,
+      "recent_activity": 0,
+      "cache_ratio": 0.8985537033580483,
+      "size_level": 4,
+      "size_strength": 0.7098381522920374,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/motionx-synca/motionx-backend/services/core-api",
+      "display_name": "core-api",
+      "project_path": "/Users/dipsy/Developer/motionx-synca/motionx-backend/services/core-api",
+      "sources": {
+        "claude-code": 1623
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-12T06:47:53.723000+00:00",
+      "last_seen": "2026-06-17T07:40:05.374000+00:00",
+      "total_tokens": 323330873,
+      "input_tokens": 92878,
+      "output_tokens": 1152742,
+      "cache_read_tokens": 314472090,
+      "cache_write_tokens": 7613163,
+      "tool_calls": 520,
+      "event_count": 1623,
+      "daily_activity": {
+        "2026-06-12": 62406,
+        "2026-06-13": 166387,
+        "2026-06-14": 68978,
+        "2026-06-16": 2346,
+        "2026-06-17": 23754
+      },
+      "daily_tokens": {
+        "2026-06-12": 62365761,
+        "2026-06-13": 165959433,
+        "2026-06-14": 68927966,
+        "2026-06-16": 2345730,
+        "2026-06-17": 23731983
+      },
+      "models": {
         "<synthetic>": 1,
-        "mimo-v2.5-pro": 48,
-        "gpt-5.4-mini": 1
+        "claude-fable-5": 72,
+        "claude-haiku-4-5-20251001": 357,
+        "claude-opus-4-8": 633
+      },
+      "activity_score": 543,
+      "stage": 6,
+      "recent_activity": 323871,
+      "cache_ratio": 0.9760814274510767,
+      "size_level": 5,
+      "size_strength": 0.9104927893785597,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/tool-lib/pay-module/unibee-api",
+      "display_name": "unibee-api",
+      "project_path": "/Users/dipsy/Developer/tool-lib/pay-module/unibee-api",
+      "sources": {
+        "claude-code": 1229
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-01T07:53:18.370000+00:00",
+      "last_seen": "2026-06-17T02:48:13.777000+00:00",
+      "total_tokens": 303398634,
+      "input_tokens": 55359,
+      "output_tokens": 1620782,
+      "cache_read_tokens": 297242664,
+      "cache_write_tokens": 4479829,
+      "tool_calls": 318,
+      "event_count": 1229,
+      "daily_activity": {
+        "2026-06-01": 44247,
+        "2026-06-02": 2334,
+        "2026-06-05": 149537,
+        "2026-06-10": 2707,
+        "2026-06-11": 26436,
+        "2026-06-12": 16693,
+        "2026-06-15": 7955,
+        "2026-06-16": 49724,
+        "2026-06-17": 4072
+      },
+      "daily_tokens": {
+        "2026-06-01": 44207633,
+        "2026-06-02": 2330555,
+        "2026-06-05": 149432185,
+        "2026-06-10": 2698931,
+        "2026-06-11": 26350291,
+        "2026-06-12": 16673353,
+        "2026-06-15": 7945338,
+        "2026-06-16": 49687026,
+        "2026-06-17": 4073322
+      },
+      "models": {
+        "claude-fable-5": 275,
+        "claude-opus-4-8": 559,
+        "claude-sonnet-4-6": 12
+      },
+      "activity_score": 542,
+      "stage": 6,
+      "recent_activity": 78444,
+      "cache_ratio": 0.9849717665827908,
+      "size_level": 5,
+      "size_strength": 0.9014430786027698,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/test/未命名文件夹",
+      "display_name": "未命名文件夹",
+      "project_path": "/Users/dipsy/Developer/test/未命名文件夹",
+      "sources": {
+        "claude-code": 475,
+        "codex": 1
+      },
+      "sessions": 2,
+      "first_seen": "2026-06-08T02:10:04.142000+00:00",
+      "last_seen": "2026-06-16T02:31:34+00:00",
+      "total_tokens": 73193333,
+      "input_tokens": 234021,
+      "output_tokens": 809269,
+      "cache_read_tokens": 29972055,
+      "cache_write_tokens": 5017282,
+      "tool_calls": 147,
+      "event_count": 476,
+      "daily_activity": {
+        "2026-06-08": 10521,
+        "2026-06-09": 899,
+        "2026-06-10": 10473,
+        "2026-06-15": 14301,
+        "2026-06-16": 37160
+      },
+      "daily_tokens": {
+        "2026-06-08": 10493813,
+        "2026-06-09": 897696,
+        "2026-06-10": 10460497,
+        "2026-06-15": 14180621,
+        "2026-06-16": 37160706
+      },
+      "models": {
+        "<synthetic>": 1,
+        "claude-fable-5": 38,
+        "claude-opus-4-8": 264,
+        "gpt-5.5": 1
       },
       "activity_score": 541,
       "stage": 6,
-      "recent_activity": 0,
-      "cache_ratio": 0.9390009005516855,
+      "recent_activity": 51461,
+      "cache_ratio": 0.8509141859785203,
+      "size_level": 5,
+      "size_strength": 0.7863911653052413,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/tool-lib/pay-module/unibee-admin-portal",
+      "display_name": "unibee-admin-portal",
+      "project_path": "/Users/dipsy/Developer/tool-lib/pay-module/unibee-admin-portal",
+      "sources": {
+        "claude-code": 418
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-01T07:50:16.405000+00:00",
+      "last_seen": "2026-06-12T03:31:36.060000+00:00",
+      "total_tokens": 80122196,
+      "input_tokens": 110879,
+      "output_tokens": 611325,
+      "cache_read_tokens": 76597337,
+      "cache_write_tokens": 2802655,
+      "tool_calls": 132,
+      "event_count": 418,
+      "daily_activity": {
+        "2026-06-01": 19163,
+        "2026-06-05": 45425,
+        "2026-06-10": 11266,
+        "2026-06-11": 3698,
+        "2026-06-12": 716
+      },
       "daily_tokens": {
-        "2026-04-30": 4121354,
-        "2026-05-01": 7568959,
-        "2026-05-02": 63348491
-      }
+        "2026-06-01": 19136416,
+        "2026-06-05": 45334948,
+        "2026-06-10": 11247431,
+        "2026-06-11": 3687958,
+        "2026-06-12": 715443
+      },
+      "models": {
+        "claude-fable-5": 79,
+        "claude-opus-4-8": 191
+      },
+      "activity_score": 532,
+      "stage": 6,
+      "recent_activity": 716,
+      "cache_ratio": 0.963356784256583,
+      "size_level": 5,
+      "size_strength": 0.7970073591502939,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/test/未命名文件夹/ai-skill-ppt/ppt",
+      "display_name": "ppt",
+      "project_path": "/Users/dipsy/Developer/test/未命名文件夹/ai-skill-ppt/ppt",
+      "sources": {
+        "claude-code": 276
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-08T03:08:58.347000+00:00",
+      "last_seen": "2026-06-15T09:15:38.361000+00:00",
+      "total_tokens": 72181992,
+      "input_tokens": 17308,
+      "output_tokens": 127567,
+      "cache_read_tokens": 70207909,
+      "cache_write_tokens": 1829208,
+      "tool_calls": 78,
+      "event_count": 276,
+      "daily_activity": {
+        "2026-06-08": 15044,
+        "2026-06-10": 12120,
+        "2026-06-15": 45084
+      },
+      "daily_tokens": {
+        "2026-06-08": 15034277,
+        "2026-06-10": 12104698,
+        "2026-06-15": 45043017
+      },
+      "models": {
+        "claude-fable-5": 40,
+        "claude-opus-4-8": 152
+      },
+      "activity_score": 531,
+      "stage": 6,
+      "recent_activity": 45084,
+      "cache_ratio": 0.9743733157262722,
+      "size_level": 5,
+      "size_strength": 0.7802451674518139,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Library/Application Support/Claude/local-agent-mode-sessions/d8cf20b3-5a87-4f52-a73c-9b60c2fef529/7210a4ee-491d-4d88-8808-0840724f4a53/local_d5da5864-2231-4ccb-8b26-c440ce855b92/outputs",
+      "display_name": "outputs",
+      "project_path": "/Users/dipsy/Library/Application Support/Claude/local-agent-mode-sessions/d8cf20b3-5a87-4f52-a73c-9b60c2fef529/7210a4ee-491d-4d88-8808-0840724f4a53/local_d5da5864-2231-4ccb-8b26-c440ce855b92/outputs",
+      "sources": {
+        "claude-cowork": 554
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-02T05:30:05+00:00",
+      "last_seen": "2026-06-02T07:42:52.731000+00:00",
+      "total_tokens": 67397693,
+      "input_tokens": 64103,
+      "output_tokens": 462395,
+      "cache_read_tokens": 65926504,
+      "cache_write_tokens": 944691,
+      "tool_calls": 184,
+      "event_count": 554,
+      "daily_activity": {
+        "2026-06-02": 67594
+      },
+      "daily_tokens": {
+        "2026-06-02": 67397693
+      },
+      "models": {
+        "claude-opus-4-8": 358
+      },
+      "activity_score": 530,
+      "stage": 6,
+      "recent_activity": 0,
+      "cache_ratio": 0.984928818872219,
+      "size_level": 4,
+      "size_strength": 0.7709062704001631,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Library/Application Support/Claude/local-agent-mode-sessions/d8cf20b3-5a87-4f52-a73c-9b60c2fef529/7210a4ee-491d-4d88-8808-0840724f4a53/local_992db141-d8a2-49bb-8448-8ea1319f25e5/outputs",
+      "display_name": "outputs",
+      "project_path": "/Users/dipsy/Library/Application Support/Claude/local-agent-mode-sessions/d8cf20b3-5a87-4f52-a73c-9b60c2fef529/7210a4ee-491d-4d88-8808-0840724f4a53/local_992db141-d8a2-49bb-8448-8ea1319f25e5/outputs",
+      "sources": {
+        "claude-cowork": 432
+      },
+      "sessions": 1,
+      "first_seen": "2026-05-29T03:14:18.985000+00:00",
+      "last_seen": "2026-05-29T08:20:36.070000+00:00",
+      "total_tokens": 45124046,
+      "input_tokens": 68740,
+      "output_tokens": 394220,
+      "cache_read_tokens": 40047163,
+      "cache_write_tokens": 4613923,
+      "tool_calls": 126,
+      "event_count": 432,
+      "daily_activity": {
+        "2026-05-29": 45261
+      },
+      "daily_tokens": {
+        "2026-05-29": 45124046
+      },
+      "models": {
+        "<synthetic>": 3,
+        "claude-opus-4-8": 283
+      },
+      "activity_score": 527,
+      "stage": 6,
+      "recent_activity": 0,
+      "cache_ratio": 0.895312291176809,
+      "size_level": 4,
+      "size_strength": 0.7421401768693399,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Library/Application Support/Claude/local-agent-mode-sessions/d8cf20b3-5a87-4f52-a73c-9b60c2fef529/7210a4ee-491d-4d88-8808-0840724f4a53/local_f0816e4e-bc3d-439b-9361-72ce8fbbd964/outputs",
+      "display_name": "outputs",
+      "project_path": "/Users/dipsy/Library/Application Support/Claude/local-agent-mode-sessions/d8cf20b3-5a87-4f52-a73c-9b60c2fef529/7210a4ee-491d-4d88-8808-0840724f4a53/local_f0816e4e-bc3d-439b-9361-72ce8fbbd964/outputs",
+      "sources": {
+        "claude-cowork": 456
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-01T06:38:54.754000+00:00",
+      "last_seen": "2026-06-04T08:19:47.388000+00:00",
+      "total_tokens": 23118839,
+      "input_tokens": 12561,
+      "output_tokens": 186712,
+      "cache_read_tokens": 20361504,
+      "cache_write_tokens": 2558062,
+      "tool_calls": 160,
+      "event_count": 456,
+      "daily_activity": {
+        "2026-06-01": 18096,
+        "2026-06-04": 5227
+      },
+      "daily_tokens": {
+        "2026-06-01": 17900672,
+        "2026-06-04": 5218167
+      },
+      "models": {
+        "<synthetic>": 1,
+        "claude-haiku-4-5-20251001": 125,
+        "claude-opus-4-8": 157
+      },
+      "activity_score": 522,
+      "stage": 6,
+      "recent_activity": 0,
+      "cache_ratio": 0.8879029843154105,
+      "size_level": 4,
+      "size_strength": 0.6870792539167996,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/xiaowo/plan_data_and_source",
+      "display_name": "plan_data_and_source",
+      "project_path": "/Users/dipsy/Documents/xiaowo/plan_data_and_source",
+      "sources": {
+        "claude-code": 126
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-02T00:48:01.198000+00:00",
+      "last_seen": "2026-06-03T01:03:00.134000+00:00",
+      "total_tokens": 5656886,
+      "input_tokens": 161939,
+      "output_tokens": 111099,
+      "cache_read_tokens": 4793275,
+      "cache_write_tokens": 590573,
+      "tool_calls": 43,
+      "event_count": 126,
+      "daily_activity": {
+        "2026-06-02": 3704,
+        "2026-06-03": 2012
+      },
+      "daily_tokens": {
+        "2026-06-02": 3646644,
+        "2026-06-03": 2010242
+      },
+      "models": {
+        "claude-opus-4-8": 72
+      },
+      "activity_score": 503,
+      "stage": 6,
+      "recent_activity": 0,
+      "cache_ratio": 0.8643092495258112,
+      "size_level": 4,
+      "size_strength": 0.5248549192848863,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/tool-lib/pay-module/unibee",
+      "display_name": "unibee",
+      "project_path": "/Users/dipsy/Developer/tool-lib/pay-module/unibee",
+      "sources": {
+        "claude-code": 68
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-05T13:47:12.323000+00:00",
+      "last_seen": "2026-06-16T07:12:32.746000+00:00",
+      "total_tokens": 15697586,
+      "input_tokens": 16439,
+      "output_tokens": 71171,
+      "cache_read_tokens": 15521265,
+      "cache_write_tokens": 88711,
+      "tool_calls": 15,
+      "event_count": 68,
+      "daily_activity": {
+        "2026-06-05": 4646,
+        "2026-06-11": 4013,
+        "2026-06-16": 7051
+      },
+      "daily_tokens": {
+        "2026-06-05": 4640735,
+        "2026-06-11": 4005135,
+        "2026-06-16": 7051716
+      },
+      "models": {
+        "claude-fable-5": 27,
+        "claude-opus-4-8": 19
+      },
+      "activity_score": 320,
+      "stage": 5,
+      "recent_activity": 7051,
+      "cache_ratio": 0.9932710093773908,
+      "size_level": 4,
+      "size_strength": 0.6431340546291593,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/sessions/zealous/gallant/einstein",
+      "display_name": "einstein",
+      "project_path": "/sessions/zealous/gallant/einstein",
+      "sources": {
+        "claude-cowork": 62
+      },
+      "sessions": 1,
+      "first_seen": "2026-05-22T07:54:54.025000+00:00",
+      "last_seen": "2026-06-04T09:04:49.250000+00:00",
+      "total_tokens": 3159009,
+      "input_tokens": 92,
+      "output_tokens": 86224,
+      "cache_read_tokens": 2448650,
+      "cache_write_tokens": 624043,
+      "tool_calls": 20,
+      "event_count": 62,
+      "daily_activity": {
+        "2026-05-22": 2334,
+        "2026-06-03": 625,
+        "2026-06-04": 229
+      },
+      "daily_tokens": {
+        "2026-05-22": 2307391,
+        "2026-06-03": 623348,
+        "2026-06-04": 228270
+      },
+      "models": {
+        "claude-opus-4-7": 37
+      },
+      "activity_score": 310,
+      "stage": 5,
+      "recent_activity": 0,
+      "cache_ratio": 0.7968829579680974,
+      "size_level": 3,
+      "size_strength": 0.4748259268851581,
+      "path_inferred": true
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/AdbBar",
+      "display_name": "AdbBar",
+      "project_path": "/Users/dipsy/Documents/AdbBar",
+      "sources": {
+        "claude-code": 49,
+        "codex": 2
+      },
+      "sessions": 3,
+      "first_seen": "2026-05-29T08:44:15.258000+00:00",
+      "last_seen": "2026-06-16T09:03:34+00:00",
+      "total_tokens": 42009928,
+      "input_tokens": 13706,
+      "output_tokens": 26020,
+      "cache_read_tokens": 1113512,
+      "cache_write_tokens": 187686,
+      "tool_calls": 13,
+      "event_count": 51,
+      "daily_activity": {
+        "2026-05-29": 499,
+        "2026-05-31": 134,
+        "2026-06-01": 858,
+        "2026-06-16": 40534
+      },
+      "daily_tokens": {
+        "2026-05-29": 492466,
+        "2026-05-31": 134075,
+        "2026-06-01": 848458,
+        "2026-06-16": 40534929
+      },
+      "models": {
+        "claude-opus-4-8": 34,
+        "codex-auto-review": 1,
+        "gpt-5.5": 1
+      },
+      "activity_score": 308,
+      "stage": 5,
+      "recent_activity": 40534,
+      "cache_ratio": 0.8468390087793481,
+      "size_level": 4,
+      "size_strength": 0.7326301757917408,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/test/未命名文件夹/ai-skill-ppt",
+      "display_name": "ai-skill-ppt",
+      "project_path": "/Users/dipsy/Developer/test/未命名文件夹/ai-skill-ppt",
+      "sources": {
+        "claude-code": 50
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-08T03:26:40.721000+00:00",
+      "last_seen": "2026-06-17T02:29:46.673000+00:00",
+      "total_tokens": 15352548,
+      "input_tokens": 505,
+      "output_tokens": 37931,
+      "cache_read_tokens": 15268405,
+      "cache_write_tokens": 45707,
+      "tool_calls": 12,
+      "event_count": 50,
+      "daily_activity": {
+        "2026-06-08": 283,
+        "2026-06-15": 15080,
+        "2026-06-17": 6
+      },
+      "daily_tokens": {
+        "2026-06-08": 282043,
+        "2026-06-15": 15070505,
+        "2026-06-17": 0
+      },
+      "models": {
+        "claude-opus-4-8": 30
+      },
+      "activity_score": 275,
+      "stage": 5,
+      "recent_activity": 15086,
+      "cache_ratio": 0.9969824906492928,
+      "size_level": 4,
+      "size_strength": 0.6365025898159118,
+      "path_inferred": false
     },
     {
       "project_key": "/Users/dipsy/Developer/test",
       "display_name": "test",
       "project_path": "/Users/dipsy/Developer/test",
       "sources": {
-        "codex": 4,
-        "claude-code": 23
+        "claude-code": 32,
+        "codex": 4
       },
       "sessions": 7,
       "first_seen": "2026-05-08T06:03:19+00:00",
-      "last_seen": "2026-05-27T02:49:35.655000+00:00",
+      "last_seen": "2026-06-13T14:21:19.865000+00:00",
       "total_tokens": 6234229,
       "input_tokens": 127836,
       "output_tokens": 220,
       "cache_read_tokens": 54016,
       "cache_write_tokens": 0,
       "tool_calls": 1,
-      "event_count": 27,
+      "event_count": 36,
       "daily_activity": {
         "2026-05-08": 661,
         "2026-05-12": 5375,
         "2026-05-20": 14,
         "2026-05-22": 199,
         "2026-05-26": 1,
-        "2026-05-27": 3
+        "2026-05-27": 3,
+        "2026-06-11": 5,
+        "2026-06-13": 4
+      },
+      "daily_tokens": {
+        "2026-05-08": 661930,
+        "2026-05-12": 5375437,
+        "2026-05-20": 14790,
+        "2026-05-22": 182072,
+        "2026-05-26": 0,
+        "2026-05-27": 0,
+        "2026-06-11": 0,
+        "2026-06-13": 0
       },
       "models": {
+        "<synthetic>": 4,
         "gpt-5.5": 3,
-        "mimo-v2.5-pro": 4,
-        "<synthetic>": 2
+        "mimo-v2.5-pro": 4
       },
-      "activity_score": 249,
+      "activity_score": 267,
       "stage": 5,
-      "recent_activity": 203,
+      "recent_activity": 4,
       "cache_ratio": 0.2970327519081451,
+      "size_level": 4,
+      "size_strength": 0.5465310219928032,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/private/tmp/codex_verify",
+      "display_name": "codex_verify",
+      "project_path": "/private/tmp/codex_verify",
+      "sources": {
+        "claude-code": 31,
+        "codex": 1
+      },
+      "sessions": 2,
+      "first_seen": "2026-06-08T04:17:52+00:00",
+      "last_seen": "2026-06-08T04:31:46.084000+00:00",
+      "total_tokens": 7265209,
+      "input_tokens": 818,
+      "output_tokens": 44800,
+      "cache_read_tokens": 7091152,
+      "cache_write_tokens": 63643,
+      "tool_calls": 8,
+      "event_count": 32,
+      "daily_activity": {
+        "2026-06-08": 7273
+      },
       "daily_tokens": {
-        "2026-05-08": 659015,
-        "2026-05-12": 5358869,
-        "2026-05-20": 13957,
-        "2026-05-22": 198402,
-        "2026-05-26": 996,
-        "2026-05-27": 2990
-      }
+        "2026-06-08": 7265209
+      },
+      "models": {
+        "claude-opus-4-8": 22,
+        "gpt-5.5": 1
+      },
+      "activity_score": 231,
+      "stage": 5,
+      "recent_activity": 0,
+      "cache_ratio": 0.9909915474746888,
+      "size_level": 4,
+      "size_strength": 0.5661364713974085,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/tool-lib/pay-module/unibee-api/manifest/deploy/mysql",
+      "display_name": "mysql",
+      "project_path": "/Users/dipsy/Developer/tool-lib/pay-module/unibee-api/manifest/deploy/mysql",
+      "sources": {
+        "claude-code": 31
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-15T07:10:30.147000+00:00",
+      "last_seen": "2026-06-16T04:03:40.280000+00:00",
+      "total_tokens": 7540737,
+      "input_tokens": 173,
+      "output_tokens": 29588,
+      "cache_read_tokens": 7430284,
+      "cache_write_tokens": 80692,
+      "tool_calls": 7,
+      "event_count": 31,
+      "daily_activity": {
+        "2026-06-15": 3559,
+        "2026-06-16": 3985
+      },
+      "daily_tokens": {
+        "2026-06-15": 3559184,
+        "2026-06-16": 3981553
+      },
+      "models": {
+        "claude-opus-4-8": 22
+      },
+      "activity_score": 216,
+      "stage": 5,
+      "recent_activity": 7544,
+      "cache_ratio": 0.9892340040119029,
+      "size_level": 4,
+      "size_strength": 0.5736438923562754,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/tool-lib/pay-module/devops_config",
+      "display_name": "devops_config",
+      "project_path": "/Users/dipsy/Developer/tool-lib/pay-module/devops_config",
+      "sources": {
+        "claude-code": 26
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-11T02:46:07.784000+00:00",
+      "last_seen": "2026-06-11T02:49:21.840000+00:00",
+      "total_tokens": 3263251,
+      "input_tokens": 294,
+      "output_tokens": 14075,
+      "cache_read_tokens": 3219442,
+      "cache_write_tokens": 29440,
+      "tool_calls": 9,
+      "event_count": 26,
+      "daily_activity": {
+        "2026-06-11": 3271
+      },
+      "daily_tokens": {
+        "2026-06-11": 3263251
+      },
+      "models": {
+        "claude-fable-5": 18
+      },
+      "activity_score": 206,
+      "stage": 4,
+      "recent_activity": 0,
+      "cache_ratio": 0.9908487567309373,
+      "size_level": 3,
+      "size_strength": 0.48205548685880195,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/motionx-synca/motionx-backend/services/core-api/internal/repo/postgres/migrations",
+      "display_name": "migrations",
+      "project_path": "/Users/dipsy/Developer/motionx-synca/motionx-backend/services/core-api/internal/repo/postgres/migrations",
+      "sources": {
+        "claude-code": 23
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-13T11:41:52.798000+00:00",
+      "last_seen": "2026-06-13T11:44:41.599000+00:00",
+      "total_tokens": 1449598,
+      "input_tokens": 417,
+      "output_tokens": 43913,
+      "cache_read_tokens": 1335843,
+      "cache_write_tokens": 69425,
+      "tool_calls": 9,
+      "event_count": 23,
+      "daily_activity": {
+        "2026-06-13": 1457
+      },
+      "daily_tokens": {
+        "2026-06-13": 1449598
+      },
+      "models": {
+        "claude-opus-4-8": 15
+      },
+      "activity_score": 193,
+      "stage": 4,
+      "recent_activity": 1457,
+      "cache_ratio": 0.9503146152943227,
+      "size_level": 3,
+      "size_strength": 0.4079949315712993,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/motionx-synca/motionx-backend/services/prompt-lab-api",
+      "display_name": "prompt-lab-api",
+      "project_path": "/Users/dipsy/Developer/motionx-synca/motionx-backend/services/prompt-lab-api",
+      "sources": {
+        "claude-code": 20
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-09T03:51:03.079000+00:00",
+      "last_seen": "2026-06-09T03:57:49.119000+00:00",
+      "total_tokens": 4050149,
+      "input_tokens": 973,
+      "output_tokens": 8001,
+      "cache_read_tokens": 4028680,
+      "cache_write_tokens": 12495,
+      "tool_calls": 8,
+      "event_count": 20,
+      "daily_activity": {
+        "2026-06-09": 4061
+      },
+      "daily_tokens": {
+        "2026-06-09": 4050149
+      },
+      "models": {
+        "claude-opus-4-8": 12
+      },
+      "activity_score": 192,
+      "stage": 4,
+      "recent_activity": 0,
+      "cache_ratio": 0.9966681081444816,
+      "size_level": 3,
+      "size_strength": 0.5000065376131462,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/sessions/exciting/relaxed/keller",
+      "display_name": "keller",
+      "project_path": "/sessions/exciting/relaxed/keller",
+      "sources": {
+        "claude-cowork": 23
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-02T08:51:49.427000+00:00",
+      "last_seen": "2026-06-08T02:33:34.221000+00:00",
+      "total_tokens": 693490,
+      "input_tokens": 5502,
+      "output_tokens": 41966,
+      "cache_read_tokens": 386834,
+      "cache_write_tokens": 259188,
+      "tool_calls": 5,
+      "event_count": 23,
+      "daily_activity": {
+        "2026-06-02": 527,
+        "2026-06-08": 174
+      },
+      "daily_tokens": {
+        "2026-06-02": 521361,
+        "2026-06-08": 172129
+      },
+      "models": {
+        "claude-opus-4-8": 14
+      },
+      "activity_score": 176,
+      "stage": 4,
+      "recent_activity": 0,
+      "cache_ratio": 0.5937371455234189,
+      "size_level": 3,
+      "size_strength": 0.3489309710782053,
+      "path_inferred": true
     },
     {
       "project_key": "/Users/dipsy/Developer/test/gcp",
@@ -176,8 +1214,8 @@
       },
       "sessions": 3,
       "first_seen": "2026-05-21T08:18:32+00:00",
-      "last_seen": "2026-05-22T07:54:37+00:00",
-      "total_tokens": 22267086,
+      "last_seen": "2026-06-04T09:51:39+00:00",
+      "total_tokens": 22432554,
       "input_tokens": 0,
       "output_tokens": 0,
       "cache_read_tokens": 0,
@@ -186,19 +1224,24 @@
       "event_count": 3,
       "daily_activity": {
         "2026-05-21": 6889,
-        "2026-05-22": 15377
+        "2026-05-22": 8488,
+        "2026-06-04": 7054
+      },
+      "daily_tokens": {
+        "2026-05-21": 6889197,
+        "2026-05-22": 8488692,
+        "2026-06-04": 7054665
       },
       "models": {
         "gpt-5.5": 3
       },
       "activity_score": 168,
       "stage": 4,
-      "recent_activity": 15377,
+      "recent_activity": 0,
       "cache_ratio": 0.0,
-      "daily_tokens": {
-        "2026-05-21": 6889336,
-        "2026-05-22": 15377750
-      }
+      "size_level": 4,
+      "size_strength": 0.6799858378920012,
+      "path_inferred": false
     },
     {
       "project_key": "/Users/dipsy/Developer/other/ar-sky",
@@ -221,17 +1264,91 @@
         "2026-05-07": 2869,
         "2026-05-25": 15621
       },
+      "daily_tokens": {
+        "2026-05-07": 2869396,
+        "2026-05-25": 15621881
+      },
       "models": {
         "gpt-5.5": 3
       },
       "activity_score": 166,
       "stage": 4,
-      "recent_activity": 15621,
+      "recent_activity": 0,
       "cache_ratio": 0.0,
+      "size_level": 4,
+      "size_strength": 0.6580340511818343,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Claude/Projects/none_name",
+      "display_name": "none_name",
+      "project_path": "/Users/dipsy/Claude/Projects/none_name",
+      "sources": {
+        "claude-cowork": 18
+      },
+      "sessions": 2,
+      "first_seen": "2026-06-05T00:25:28.261000+00:00",
+      "last_seen": "2026-06-08T02:02:25.907000+00:00",
+      "total_tokens": 343922,
+      "input_tokens": 10570,
+      "output_tokens": 12964,
+      "cache_read_tokens": 70660,
+      "cache_write_tokens": 249728,
+      "tool_calls": 3,
+      "event_count": 18,
+      "daily_activity": {
+        "2026-06-05": 66,
+        "2026-06-08": 285
+      },
       "daily_tokens": {
-        "2026-05-07": 2869198,
-        "2026-05-25": 15622079
-      }
+        "2026-06-05": 62418,
+        "2026-06-08": 281504
+      },
+      "models": {
+        "<synthetic>": 1,
+        "claude-opus-4-8": 10
+      },
+      "activity_score": 164,
+      "stage": 4,
+      "recent_activity": 0,
+      "cache_ratio": 0.2135014110551792,
+      "size_level": 3,
+      "size_strength": 0.2653020452088446,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/private/tmp",
+      "display_name": "tmp",
+      "project_path": "/private/tmp",
+      "sources": {
+        "claude-code": 15
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-08T02:43:01.181000+00:00",
+      "last_seen": "2026-06-08T02:50:06.361000+00:00",
+      "total_tokens": 2089280,
+      "input_tokens": 409,
+      "output_tokens": 24562,
+      "cache_read_tokens": 2028057,
+      "cache_write_tokens": 36252,
+      "tool_calls": 3,
+      "event_count": 15,
+      "daily_activity": {
+        "2026-06-08": 2091
+      },
+      "daily_tokens": {
+        "2026-06-08": 2089280
+      },
+      "models": {
+        "claude-opus-4-8": 11
+      },
+      "activity_score": 162,
+      "stage": 4,
+      "recent_activity": 0,
+      "cache_ratio": 0.9822440643225855,
+      "size_level": 3,
+      "size_strength": 0.4346780743961591,
+      "path_inferred": false
     },
     {
       "project_key": "/Users/dipsy/Documents/Codex/2026-05-20/http-tomatogenetics-cau-edu-cn-download",
@@ -253,6 +1370,9 @@
       "daily_activity": {
         "2026-05-20": 10114
       },
+      "daily_tokens": {
+        "2026-05-20": 10114667
+      },
       "models": {
         "codex-auto-review": 1,
         "gpt-5.5": 1
@@ -261,40 +1381,9 @@
       "stage": 4,
       "recent_activity": 0,
       "cache_ratio": 0.0,
-      "daily_tokens": {
-        "2026-05-20": 10114667
-      }
-    },
-    {
-      "project_key": "/Users/dipsy/Documents/不知道叫什么",
-      "display_name": "不知道叫什么",
-      "project_path": "/Users/dipsy/Documents/不知道叫什么",
-      "sources": {
-        "codex": 1
-      },
-      "sessions": 1,
-      "first_seen": "2026-05-28T02:23:04+00:00",
-      "last_seen": "2026-05-28T02:23:04+00:00",
-      "total_tokens": 45386732,
-      "input_tokens": 0,
-      "output_tokens": 0,
-      "cache_read_tokens": 0,
-      "cache_write_tokens": 0,
-      "tool_calls": 0,
-      "event_count": 1,
-      "daily_activity": {
-        "2026-05-28": 45386
-      },
-      "models": {
-        "gpt-5.5": 1
-      },
-      "activity_score": 149,
-      "stage": 4,
-      "recent_activity": 45386,
-      "cache_ratio": 0.0,
-      "daily_tokens": {
-        "2026-05-28": 45386732
-      }
+      "size_level": 4,
+      "size_strength": 0.6014628419543004,
+      "path_inferred": false
     },
     {
       "project_key": "/Users/dipsy/Documents/xiaowo/xiaowo_sport_server",
@@ -316,6 +1405,9 @@
       "daily_activity": {
         "2026-05-02": 686
       },
+      "daily_tokens": {
+        "2026-05-02": 685163
+      },
       "models": {
         "glm-4.7": 7
       },
@@ -323,9 +1415,77 @@
       "stage": 4,
       "recent_activity": 0,
       "cache_ratio": 0.9984501468781635,
+      "size_level": 3,
+      "size_strength": 0.34289207501893715,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Codex/2026-06-05/inter-mac-mini-type-c-2",
+      "display_name": "inter-mac-mini-type-c-2",
+      "project_path": "/Users/dipsy/Documents/Codex/2026-06-05/inter-mac-mini-type-c-2",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-16T08:54:29+00:00",
+      "last_seen": "2026-06-16T08:54:29+00:00",
+      "total_tokens": 18518382,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-06-16": 18518
+      },
       "daily_tokens": {
-        "2026-05-02": 685163
-      }
+        "2026-06-16": 18518382
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 142,
+      "stage": 4,
+      "recent_activity": 18518,
+      "cache_ratio": 0.0,
+      "size_level": 4,
+      "size_strength": 0.6634529368301991,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/nas",
+      "display_name": "nas",
+      "project_path": "/Users/dipsy/Documents/nas",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-03T00:49:37+00:00",
+      "last_seen": "2026-06-03T00:49:37+00:00",
+      "total_tokens": 13254789,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-06-03": 13254
+      },
+      "daily_tokens": {
+        "2026-06-03": 13254789
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 140,
+      "stage": 4,
+      "recent_activity": 0,
+      "cache_ratio": 0.0,
+      "size_level": 4,
+      "size_strength": 0.622587903553633,
+      "path_inferred": false
     },
     {
       "project_key": "/Users/dipsy/Documents/Obsidian Vault",
@@ -347,16 +1507,87 @@
       "daily_activity": {
         "2026-05-22": 2934
       },
+      "daily_tokens": {
+        "2026-05-22": 2934995
+      },
       "models": {
         "gpt-5.5": 2
       },
       "activity_score": 140,
       "stage": 4,
-      "recent_activity": 2934,
+      "recent_activity": 0,
       "cache_ratio": 0.0,
+      "size_level": 3,
+      "size_strength": 0.46519658240754735,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/xiaowo/xiaowo_sport/lib/app/modules/workout",
+      "display_name": "workout",
+      "project_path": "/Users/dipsy/Documents/xiaowo/xiaowo_sport/lib/app/modules/workout",
+      "sources": {
+        "claude-code": 8
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-02T01:36:14.554000+00:00",
+      "last_seen": "2026-06-02T01:53:32.598000+00:00",
+      "total_tokens": 680620,
+      "input_tokens": 655,
+      "output_tokens": 14980,
+      "cache_read_tokens": 89480,
+      "cache_write_tokens": 575505,
+      "tool_calls": 3,
+      "event_count": 8,
+      "daily_activity": {
+        "2026-06-02": 686
+      },
       "daily_tokens": {
-        "2026-05-22": 2934995
-      }
+        "2026-06-02": 680620
+      },
+      "models": {
+        "claude-opus-4-8": 5
+      },
+      "activity_score": 139,
+      "stage": 4,
+      "recent_activity": 0,
+      "cache_ratio": 0.13442701760711495,
+      "size_level": 3,
+      "size_strength": 0.33717018052861625,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/test-build",
+      "display_name": "test-build",
+      "project_path": "/Users/dipsy/Documents/test-build",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-05T09:02:11+00:00",
+      "last_seen": "2026-06-05T09:02:11+00:00",
+      "total_tokens": 8301375,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-06-05": 8301
+      },
+      "daily_tokens": {
+        "2026-06-05": 8301375
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 136,
+      "stage": 4,
+      "recent_activity": 0,
+      "cache_ratio": 0.0,
+      "size_level": 4,
+      "size_strength": 0.5845902423302365,
+      "path_inferred": false
     },
     {
       "project_key": "/Users/dipsy/Documents/ppt-master",
@@ -378,6 +1609,9 @@
       "daily_activity": {
         "2026-05-12": 6870
       },
+      "daily_tokens": {
+        "2026-05-12": 6870747
+      },
       "models": {
         "gpt-5.5": 1
       },
@@ -385,9 +1619,43 @@
       "stage": 4,
       "recent_activity": 0,
       "cache_ratio": 0.0,
+      "size_level": 4,
+      "size_strength": 0.5575425940003926,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Desktop/ai-ppt",
+      "display_name": "ai-ppt",
+      "project_path": "/Users/dipsy/Desktop/ai-ppt",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-17T01:02:24+00:00",
+      "last_seen": "2026-06-17T01:02:24+00:00",
+      "total_tokens": 6098467,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-06-17": 6098
+      },
       "daily_tokens": {
-        "2026-05-12": 6870747
-      }
+        "2026-06-17": 6098467
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 134,
+      "stage": 4,
+      "recent_activity": 6098,
+      "cache_ratio": 0.0,
+      "size_level": 4,
+      "size_strength": 0.5345783728274627,
+      "path_inferred": false
     },
     {
       "project_key": "/Users/dipsy/Documents/8-bit",
@@ -409,28 +1677,99 @@
       "daily_activity": {
         "2026-05-22": 6203
       },
+      "daily_tokens": {
+        "2026-05-22": 6203445
+      },
       "models": {
         "gpt-5.5": 1
       },
       "activity_score": 134,
       "stage": 4,
-      "recent_activity": 6203,
+      "recent_activity": 0,
       "cache_ratio": 0.0,
-      "daily_tokens": {
-        "2026-05-22": 6203445
-      }
+      "size_level": 4,
+      "size_strength": 0.5409085647007581,
+      "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/backend",
-      "display_name": "backend",
-      "project_path": "/Users/dipsy/Developer/backend",
+      "project_key": "/Users/dipsy/Documents/xiaowo/xiaowo_sport/lib/app/modules/workout/widgets",
+      "display_name": "widgets",
+      "project_path": "/Users/dipsy/Documents/xiaowo/xiaowo_sport/lib/app/modules/workout/widgets",
+      "sources": {
+        "claude-code": 6
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-02T01:53:37.673000+00:00",
+      "last_seen": "2026-06-02T01:54:54.498000+00:00",
+      "total_tokens": 579944,
+      "input_tokens": 8,
+      "output_tokens": 19516,
+      "cache_read_tokens": 531988,
+      "cache_write_tokens": 28432,
+      "tool_calls": 2,
+      "event_count": 6,
+      "daily_activity": {
+        "2026-06-02": 580
+      },
+      "daily_tokens": {
+        "2026-06-02": 579944
+      },
+      "models": {
+        "claude-opus-4-8": 4
+      },
+      "activity_score": 131,
+      "stage": 4,
+      "recent_activity": 0,
+      "cache_ratio": 0.9492530708672657,
+      "size_level": 3,
+      "size_strength": 0.3171541148252668,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/xiaowo/xiaowo_sport_server/functions",
+      "display_name": "functions",
+      "project_path": "/Users/dipsy/Documents/xiaowo/xiaowo_sport_server/functions",
+      "sources": {
+        "claude-code": 6
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-02T01:26:09.392000+00:00",
+      "last_seen": "2026-06-02T01:27:03.931000+00:00",
+      "total_tokens": 519880,
+      "input_tokens": 8,
+      "output_tokens": 13496,
+      "cache_read_tokens": 473032,
+      "cache_write_tokens": 33344,
+      "tool_calls": 2,
+      "event_count": 6,
+      "daily_activity": {
+        "2026-06-02": 520
+      },
+      "daily_tokens": {
+        "2026-06-02": 519880
+      },
+      "models": {
+        "claude-opus-4-8": 4
+      },
+      "activity_score": 130,
+      "stage": 4,
+      "recent_activity": 0,
+      "cache_ratio": 0.9341369395557522,
+      "size_level": 3,
+      "size_strength": 0.3001015796357084,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/garden-d-poc",
+      "display_name": "garden-d-poc",
+      "project_path": "/Users/dipsy/Documents/garden-d-poc",
       "sources": {
         "codex": 1
       },
       "sessions": 1,
-      "first_seen": "2026-05-25T01:18:03+00:00",
-      "last_seen": "2026-05-25T01:18:03+00:00",
-      "total_tokens": 763219,
+      "first_seen": "2026-06-18T01:13:55+00:00",
+      "last_seen": "2026-06-18T01:13:55+00:00",
+      "total_tokens": 2704924,
       "input_tokens": 0,
       "output_tokens": 0,
       "cache_read_tokens": 0,
@@ -438,18 +1777,225 @@
       "tool_calls": 0,
       "event_count": 1,
       "daily_activity": {
-        "2026-05-25": 763
+        "2026-06-18": 2704
+      },
+      "daily_tokens": {
+        "2026-06-18": 2704924
       },
       "models": {
         "gpt-5.5": 1
       },
-      "activity_score": 117,
-      "stage": 3,
-      "recent_activity": 763,
+      "activity_score": 127,
+      "stage": 4,
+      "recent_activity": 2704,
       "cache_ratio": 0.0,
+      "size_level": 3,
+      "size_strength": 0.45509534708512267,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Codex/2026-06-17/ai-broker-ble-ai-broker-ble",
+      "display_name": "ai-broker-ble-ai-broker-ble",
+      "project_path": "/Users/dipsy/Documents/Codex/2026-06-17/ai-broker-ble-ai-broker-ble",
+      "sources": {
+        "codex": 2
+      },
+      "sessions": 2,
+      "first_seen": "2026-06-17T05:54:44+00:00",
+      "last_seen": "2026-06-17T06:46:54+00:00",
+      "total_tokens": 367802,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 2,
+      "daily_activity": {
+        "2026-06-17": 366
+      },
       "daily_tokens": {
-        "2026-05-25": 763219
-      }
+        "2026-06-17": 367802
+      },
+      "models": {
+        "gpt-5.5": 2
+      },
+      "activity_score": 124,
+      "stage": 3,
+      "recent_activity": 366,
+      "cache_ratio": 0.0,
+      "size_level": 3,
+      "size_strength": 0.2745562438546301,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Codex/2026-06-11/files-mentioned-by-the-user-0531d7f8",
+      "display_name": "files-mentioned-by-the-user-0531d7f8",
+      "project_path": "/Users/dipsy/Documents/Codex/2026-06-11/files-mentioned-by-the-user-0531d7f8",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-16T07:29:48+00:00",
+      "last_seen": "2026-06-16T07:29:48+00:00",
+      "total_tokens": 1278849,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-06-16": 1278
+      },
+      "daily_tokens": {
+        "2026-06-16": 1278849
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 121,
+      "stage": 3,
+      "recent_activity": 1278,
+      "cache_ratio": 0.0,
+      "size_level": 3,
+      "size_strength": 0.39534165639433405,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Codex/2026-06-05/files-mentioned-by-the-user-14",
+      "display_name": "files-mentioned-by-the-user-14",
+      "project_path": "/Users/dipsy/Documents/Codex/2026-06-05/files-mentioned-by-the-user-14",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-16T05:37:06+00:00",
+      "last_seen": "2026-06-16T05:37:06+00:00",
+      "total_tokens": 950322,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-06-16": 950
+      },
+      "daily_tokens": {
+        "2026-06-16": 950322
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 119,
+      "stage": 3,
+      "recent_activity": 950,
+      "cache_ratio": 0.0,
+      "size_level": 3,
+      "size_strength": 0.37266633331447446,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Codex/2026-06-17/use-the-little-girl-figurine-from",
+      "display_name": "use-the-little-girl-figurine-from",
+      "project_path": "/Users/dipsy/Documents/Codex/2026-06-17/use-the-little-girl-figurine-from",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-17T09:00:24+00:00",
+      "last_seen": "2026-06-17T09:00:24+00:00",
+      "total_tokens": 604161,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-06-17": 604
+      },
+      "daily_tokens": {
+        "2026-06-17": 604161
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 116,
+      "stage": 3,
+      "recent_activity": 604,
+      "cache_ratio": 0.0,
+      "size_level": 3,
+      "size_strength": 0.3248768397944591,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Codex/2026-06-01/developer-16-42-19-developer-16",
+      "display_name": "developer-16-42-19-developer-16",
+      "project_path": "/Users/dipsy/Documents/Codex/2026-06-01/developer-16-42-19-developer-16",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-16T03:07:46+00:00",
+      "last_seen": "2026-06-16T03:07:46+00:00",
+      "total_tokens": 565140,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-06-16": 565
+      },
+      "daily_tokens": {
+        "2026-06-16": 565140
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 115,
+      "stage": 3,
+      "recent_activity": 565,
+      "cache_ratio": 0.0,
+      "size_level": 3,
+      "size_strength": 0.31031048381950455,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/AdbBar/src-tauri",
+      "display_name": "src-tauri",
+      "project_path": "/Users/dipsy/Documents/AdbBar/src-tauri",
+      "sources": {
+        "claude-code": 4
+      },
+      "sessions": 1,
+      "first_seen": "2026-05-29T09:14:01.305000+00:00",
+      "last_seen": "2026-05-29T09:14:15.986000+00:00",
+      "total_tokens": 114111,
+      "input_tokens": 6,
+      "output_tokens": 870,
+      "cache_read_tokens": 110358,
+      "cache_write_tokens": 2877,
+      "tool_calls": 1,
+      "event_count": 4,
+      "daily_activity": {
+        "2026-05-29": 116
+      },
+      "daily_tokens": {
+        "2026-05-29": 114111
+      },
+      "models": {
+        "claude-opus-4-8": 3
+      },
+      "activity_score": 112,
+      "stage": 3,
+      "recent_activity": 0,
+      "cache_ratio": 0.9745410231276658,
+      "size_level": 2,
+      "size_strength": 0.18486489078144172,
+      "path_inferred": false
     },
     {
       "project_key": "/Users/dipsy/Documents/Codex/2026-05-26/08-24-37-ls-developer-backend",
@@ -471,16 +2017,87 @@
       "daily_activity": {
         "2026-05-26": 319
       },
+      "daily_tokens": {
+        "2026-05-26": 319839
+      },
       "models": {
         "gpt-5.5": 1
       },
       "activity_score": 111,
       "stage": 3,
-      "recent_activity": 319,
+      "recent_activity": 0,
       "cache_ratio": 0.0,
+      "size_level": 3,
+      "size_strength": 0.25572851902058014,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Developer/motionx-synca/gcp",
+      "display_name": "gcp",
+      "project_path": "/Users/dipsy/Developer/motionx-synca/gcp",
+      "sources": {
+        "claude-code": 5
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-09T03:02:57.003000+00:00",
+      "last_seen": "2026-06-09T03:03:10.051000+00:00",
+      "total_tokens": 68997,
+      "input_tokens": 4700,
+      "output_tokens": 210,
+      "cache_read_tokens": 53091,
+      "cache_write_tokens": 10996,
+      "tool_calls": 1,
+      "event_count": 5,
+      "daily_activity": {
+        "2026-06-09": 70
+      },
       "daily_tokens": {
-        "2026-05-26": 319839
-      }
+        "2026-06-09": 68997
+      },
+      "models": {
+        "claude-opus-4-8": 3
+      },
+      "activity_score": 110,
+      "stage": 3,
+      "recent_activity": 0,
+      "cache_ratio": 0.771817349208426,
+      "size_level": 2,
+      "size_strength": 0.13947999113288898,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Codex/2026-05-28/files-mentioned-by-the-user-ios",
+      "display_name": "files-mentioned-by-the-user-ios",
+      "project_path": "/Users/dipsy/Documents/Codex/2026-05-28/files-mentioned-by-the-user-ios",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-09T09:08:09+00:00",
+      "last_seen": "2026-06-09T09:08:09+00:00",
+      "total_tokens": 249045,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-06-09": 249
+      },
+      "daily_tokens": {
+        "2026-06-09": 249045
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 109,
+      "stage": 3,
+      "recent_activity": 0,
+      "cache_ratio": 0.0,
+      "size_level": 2,
+      "size_strength": 0.23578264874269803,
+      "path_inferred": false
     },
     {
       "project_key": "/Users/dipsy/Documents/Codex/2026-05-20/new-chat",
@@ -502,6 +2119,9 @@
       "daily_activity": {
         "2026-05-20": 110
       },
+      "daily_tokens": {
+        "2026-05-20": 110699
+      },
       "models": {
         "gpt-5.5": 1
       },
@@ -509,9 +2129,9 @@
       "stage": 3,
       "recent_activity": 0,
       "cache_ratio": 0.0,
-      "daily_tokens": {
-        "2026-05-20": 110699
-      }
+      "size_level": 2,
+      "size_strength": 0.17775851037389973,
+      "path_inferred": false
     },
     {
       "project_key": "/Users/dipsy/Downloads/LSPosed-v2.0.2-7668-release",
@@ -533,6 +2153,9 @@
       "daily_activity": {
         "2026-05-15": 69
       },
+      "daily_tokens": {
+        "2026-05-15": 69547
+      },
       "models": {
         "gpt-5.5": 1
       },
@@ -540,9 +2163,77 @@
       "stage": 3,
       "recent_activity": 0,
       "cache_ratio": 0.0,
+      "size_level": 2,
+      "size_strength": 0.14527705785161066,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Codex/2026-06-01/mac-ssh-mac-ssh-wsl-mutagen",
+      "display_name": "mac-ssh-mac-ssh-wsl-mutagen",
+      "project_path": "/Users/dipsy/Documents/Codex/2026-06-01/mac-ssh-mac-ssh-wsl-mutagen",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-01T02:29:29+00:00",
+      "last_seen": "2026-06-01T02:29:29+00:00",
+      "total_tokens": 29807,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-06-01": 29
+      },
       "daily_tokens": {
-        "2026-05-15": 69547
-      }
+        "2026-06-01": 29807
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 92,
+      "stage": 3,
+      "recent_activity": 0,
+      "cache_ratio": 0.0,
+      "size_level": 2,
+      "size_strength": 0.08512534066785361,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Codex/2026-06-17/https-aws-amazon-com-cn-events",
+      "display_name": "https-aws-amazon-com-cn-events",
+      "project_path": "/Users/dipsy/Documents/Codex/2026-06-17/https-aws-amazon-com-cn-events",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-17T09:15:33+00:00",
+      "last_seen": "2026-06-17T09:15:33+00:00",
+      "total_tokens": 22563,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-06-17": 22
+      },
+      "daily_tokens": {
+        "2026-06-17": 22563
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 90,
+      "stage": 3,
+      "recent_activity": 22,
+      "cache_ratio": 0.0,
+      "size_level": 2,
+      "size_strength": 0.06353017309313663,
+      "path_inferred": false
     },
     {
       "project_key": "/Users/dipsy/Documents/Codex/2026-05-21/new-chat",
@@ -564,6 +2255,9 @@
       "daily_activity": {
         "2026-05-21": 19
       },
+      "daily_tokens": {
+        "2026-05-21": 19743
+      },
       "models": {
         "gpt-5.5": 1
       },
@@ -571,38 +2265,2137 @@
       "stage": 3,
       "recent_activity": 0,
       "cache_ratio": 0.0,
+      "size_level": 2,
+      "size_strength": 0.05039910616026228,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Codex/2026-06-02/new-chat",
+      "display_name": "new-chat",
+      "project_path": "/Users/dipsy/Documents/Codex/2026-06-02/new-chat",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-06-02T08:20:27+00:00",
+      "last_seen": "2026-06-02T08:20:27+00:00",
+      "total_tokens": 14036,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-06-02": 14
+      },
       "daily_tokens": {
-        "2026-05-21": 19743
-      }
+        "2026-06-02": 14036
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 86,
+      "stage": 3,
+      "recent_activity": 0,
+      "cache_ratio": 0.0,
+      "size_level": 1,
+      "size_strength": 0.019806605143860245,
+      "path_inferred": false
+    },
+    {
+      "project_key": "/Users/dipsy/Documents/Codex/2026-05-28/502-bad-gateway-nginx-1-20",
+      "display_name": "502-bad-gateway-nginx-1-20",
+      "project_path": "/Users/dipsy/Documents/Codex/2026-05-28/502-bad-gateway-nginx-1-20",
+      "sources": {
+        "codex": 1
+      },
+      "sessions": 1,
+      "first_seen": "2026-05-28T06:22:30+00:00",
+      "last_seen": "2026-05-28T06:22:30+00:00",
+      "total_tokens": 14368,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "tool_calls": 0,
+      "event_count": 1,
+      "daily_activity": {
+        "2026-05-28": 14
+      },
+      "daily_tokens": {
+        "2026-05-28": 14368
+      },
+      "models": {
+        "gpt-5.5": 1
+      },
+      "activity_score": 86,
+      "stage": 3,
+      "recent_activity": 0,
+      "cache_ratio": 0.0,
+      "size_level": 1,
+      "size_strength": 0.02650529214417189,
+      "path_inferred": false
     }
   ],
   "sources": {
-    "claude-code": 3333,
-    "codex": 31
+    "claude-code": 26559,
+    "claude-cowork": 6705,
+    "codex": 84
   },
-  "total_events": 3364,
-  "total_tokens": 509554178,
+  "total_events": 33348,
+  "total_tokens": 5101595114,
   "first_seen": "2026-04-30T13:47:52.012000+00:00",
-  "last_seen": "2026-05-28T02:23:04+00:00",
-  "active_projects": 17,
+  "last_seen": "2026-06-18T01:14:02.254000+00:00",
+  "active_projects": 61,
   "daily_tokens": {
-    "2026-04-30": 4121354,
-    "2026-05-01": 7568959,
-    "2026-05-02": 136553327,
-    "2026-05-03": 14644265,
-    "2026-05-05": 45432022,
-    "2026-05-06": 53343556,
-    "2026-05-07": 2869198,
-    "2026-05-08": 659015,
-    "2026-05-12": 12229616,
+    "2026-04-30": 4082692,
+    "2026-05-01": 7528806,
+    "2026-05-02": 78085351,
+    "2026-05-03": 1146734,
+    "2026-05-05": 45758801,
+    "2026-05-06": 53119484,
+    "2026-05-07": 2869396,
+    "2026-05-08": 661930,
+    "2026-05-12": 12246184,
     "2026-05-15": 69547,
-    "2026-05-19": 3309927,
-    "2026-05-20": 10239323,
-    "2026-05-21": 7053595,
-    "2026-05-22": 51740186,
-    "2026-05-25": 75825464,
-    "2026-05-26": 38505102,
-    "2026-05-27": 2990,
-    "2026-05-28": 45386732
-  }
+    "2026-05-19": 3321974,
+    "2026-05-20": 10240156,
+    "2026-05-21": 7054306,
+    "2026-05-22": 48764633,
+    "2026-05-24": 16153702,
+    "2026-05-25": 78354039,
+    "2026-05-26": 87291894,
+    "2026-05-27": 166268532,
+    "2026-05-28": 473107477,
+    "2026-05-29": 141216845,
+    "2026-05-31": 134075,
+    "2026-06-01": 177431037,
+    "2026-06-02": 227113789,
+    "2026-06-03": 83324870,
+    "2026-06-04": 59600024,
+    "2026-06-05": 448713965,
+    "2026-06-08": 113173865,
+    "2026-06-09": 103987154,
+    "2026-06-10": 299283055,
+    "2026-06-11": 83371508,
+    "2026-06-12": 246546406,
+    "2026-06-13": 415105220,
+    "2026-06-14": 313811280,
+    "2026-06-15": 122259713,
+    "2026-06-16": 746982332,
+    "2026-06-17": 367996722,
+    "2026-06-18": 55417616
+  },
+  "heatmap_year": [
+    {
+      "date": "2025-06-19",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-20",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-21",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-22",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-23",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-24",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-25",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-26",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-27",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-28",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-29",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-06-30",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-01",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-02",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-03",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-04",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-05",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-06",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-07",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-08",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-09",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-10",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-11",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-12",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-13",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-14",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-15",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-16",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-17",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-18",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-19",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-20",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-21",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-22",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-23",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-24",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-25",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-26",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-27",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-28",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-29",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-30",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-07-31",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-01",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-02",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-03",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-04",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-05",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-06",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-07",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-08",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-09",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-10",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-11",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-12",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-13",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-14",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-15",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-16",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-17",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-18",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-19",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-20",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-21",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-22",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-23",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-24",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-25",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-26",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-27",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-28",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-29",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-30",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-08-31",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-01",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-02",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-03",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-04",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-05",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-06",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-07",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-08",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-09",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-10",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-11",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-12",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-13",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-14",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-15",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-16",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-17",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-18",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-19",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-20",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-21",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-22",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-23",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-24",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-25",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-26",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-27",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-28",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-29",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-09-30",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-01",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-02",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-03",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-04",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-05",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-06",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-07",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-08",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-09",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-10",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-11",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-12",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-13",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-14",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-15",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-16",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-17",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-18",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-19",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-20",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-21",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-22",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-23",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-24",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-25",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-26",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-27",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-28",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-29",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-30",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-10-31",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-01",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-02",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-03",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-04",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-05",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-06",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-07",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-08",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-09",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-10",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-11",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-12",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-13",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-14",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-15",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-16",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-17",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-18",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-19",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-20",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-21",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-22",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-23",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-24",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-25",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-26",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-27",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-28",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-29",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-11-30",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-01",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-02",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-03",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-04",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-05",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-06",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-07",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-08",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-09",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-10",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-11",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-12",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-13",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-14",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-15",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-16",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-17",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-18",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-19",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-20",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-21",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-22",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-23",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-24",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-25",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-26",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-27",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-28",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-29",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-30",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2025-12-31",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-01",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-02",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-03",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-04",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-05",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-06",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-07",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-08",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-09",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-10",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-11",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-12",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-13",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-14",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-15",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-16",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-17",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-18",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-19",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-20",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-21",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-22",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-23",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-24",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-25",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-26",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-27",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-28",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-29",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-30",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-01-31",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-01",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-02",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-03",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-04",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-05",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-06",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-07",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-08",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-09",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-10",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-11",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-12",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-13",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-14",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-15",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-16",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-17",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-18",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-19",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-20",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-21",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-22",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-23",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-24",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-25",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-26",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-27",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-02-28",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-01",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-02",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-03",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-04",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-05",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-06",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-07",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-08",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-09",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-10",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-11",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-12",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-13",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-14",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-15",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-16",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-17",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-18",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-19",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-20",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-21",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-22",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-23",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-24",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-25",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-26",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-27",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-28",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-29",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-30",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-03-31",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-01",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-02",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-03",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-04",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-05",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-06",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-07",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-08",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-09",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-10",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-11",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-12",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-13",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-14",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-15",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-16",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-17",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-18",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-19",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-20",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-21",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-22",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-23",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-24",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-25",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-26",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-27",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-28",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-29",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-04-30",
+      "value": 4082692,
+      "level": 1
+    },
+    {
+      "date": "2026-05-01",
+      "value": 7528806,
+      "level": 1
+    },
+    {
+      "date": "2026-05-02",
+      "value": 78085351,
+      "level": 1
+    },
+    {
+      "date": "2026-05-03",
+      "value": 1146734,
+      "level": 1
+    },
+    {
+      "date": "2026-05-04",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-05",
+      "value": 45758801,
+      "level": 1
+    },
+    {
+      "date": "2026-05-06",
+      "value": 53119484,
+      "level": 1
+    },
+    {
+      "date": "2026-05-07",
+      "value": 2869396,
+      "level": 1
+    },
+    {
+      "date": "2026-05-08",
+      "value": 661930,
+      "level": 1
+    },
+    {
+      "date": "2026-05-09",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-10",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-11",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-12",
+      "value": 12246184,
+      "level": 1
+    },
+    {
+      "date": "2026-05-13",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-14",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-15",
+      "value": 69547,
+      "level": 1
+    },
+    {
+      "date": "2026-05-16",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-17",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-18",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-19",
+      "value": 3321974,
+      "level": 1
+    },
+    {
+      "date": "2026-05-20",
+      "value": 10240156,
+      "level": 1
+    },
+    {
+      "date": "2026-05-21",
+      "value": 7054306,
+      "level": 1
+    },
+    {
+      "date": "2026-05-22",
+      "value": 48764633,
+      "level": 1
+    },
+    {
+      "date": "2026-05-23",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-24",
+      "value": 16153702,
+      "level": 1
+    },
+    {
+      "date": "2026-05-25",
+      "value": 78354039,
+      "level": 1
+    },
+    {
+      "date": "2026-05-26",
+      "value": 87291894,
+      "level": 1
+    },
+    {
+      "date": "2026-05-27",
+      "value": 166268532,
+      "level": 1
+    },
+    {
+      "date": "2026-05-28",
+      "value": 473107477,
+      "level": 3
+    },
+    {
+      "date": "2026-05-29",
+      "value": 141216845,
+      "level": 1
+    },
+    {
+      "date": "2026-05-30",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-05-31",
+      "value": 134075,
+      "level": 1
+    },
+    {
+      "date": "2026-06-01",
+      "value": 177431037,
+      "level": 1
+    },
+    {
+      "date": "2026-06-02",
+      "value": 227113789,
+      "level": 2
+    },
+    {
+      "date": "2026-06-03",
+      "value": 83324870,
+      "level": 1
+    },
+    {
+      "date": "2026-06-04",
+      "value": 59600024,
+      "level": 1
+    },
+    {
+      "date": "2026-06-05",
+      "value": 448713965,
+      "level": 3
+    },
+    {
+      "date": "2026-06-06",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-06-07",
+      "value": 0,
+      "level": 0
+    },
+    {
+      "date": "2026-06-08",
+      "value": 113173865,
+      "level": 1
+    },
+    {
+      "date": "2026-06-09",
+      "value": 103987154,
+      "level": 1
+    },
+    {
+      "date": "2026-06-10",
+      "value": 299283055,
+      "level": 2
+    },
+    {
+      "date": "2026-06-11",
+      "value": 83371508,
+      "level": 1
+    },
+    {
+      "date": "2026-06-12",
+      "value": 246546406,
+      "level": 2
+    },
+    {
+      "date": "2026-06-13",
+      "value": 415105220,
+      "level": 3
+    },
+    {
+      "date": "2026-06-14",
+      "value": 313811280,
+      "level": 2
+    },
+    {
+      "date": "2026-06-15",
+      "value": 122259713,
+      "level": 1
+    },
+    {
+      "date": "2026-06-16",
+      "value": 746982332,
+      "level": 4
+    },
+    {
+      "date": "2026-06-17",
+      "value": 367996722,
+      "level": 2
+    },
+    {
+      "date": "2026-06-18",
+      "value": 55417616,
+      "level": 1
+    }
+  ],
+  "hour_of_week": [
+    [
+      0,
+      65,
+      368,
+      199,
+      64,
+      14,
+      529,
+      1259,
+      239,
+      714,
+      126,
+      0,
+      84,
+      106,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      29,
+      0
+    ],
+    [
+      210,
+      166,
+      669,
+      955,
+      442,
+      711,
+      1926,
+      659,
+      294,
+      54,
+      14,
+      0,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      63,
+      337,
+      1913,
+      3511,
+      1073,
+      289,
+      501,
+      515,
+      215,
+      180,
+      19,
+      0,
+      44,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      101
+    ],
+    [
+      264,
+      375,
+      157,
+      28,
+      117,
+      129,
+      190,
+      58,
+      127,
+      155,
+      0,
+      0,
+      63,
+      119,
+      374,
+      151,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      54,
+      11
+    ],
+    [
+      153,
+      143,
+      259,
+      501,
+      206,
+      500,
+      488,
+      619,
+      272,
+      138,
+      0,
+      0,
+      11,
+      592,
+      209,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      34
+    ],
+    [
+      304,
+      62,
+      1007,
+      198,
+      0,
+      63,
+      72,
+      0,
+      181,
+      29,
+      93,
+      264,
+      560,
+      1114,
+      116,
+      28,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      13
+    ],
+    [
+      3136,
+      8,
+      28,
+      0,
+      0,
+      0,
+      0,
+      115,
+      21,
+      146,
+      0,
+      0,
+      0,
+      627,
+      5,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  ]
 }

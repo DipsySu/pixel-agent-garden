@@ -12,6 +12,8 @@ import { mountInsightPanel } from './insight-panel.js';
 import { mountSettingsPanel } from './settings-panel.js';
 import { mountPostcardExport } from './postcard.js';
 import { mountReturnDiff } from './return-diff.js';
+import { mountDashboardPanel } from './dashboard-panel.js';
+import { renderHeatmap } from './render-heatmap.js';
 import { groupSprites } from './render-helpers.js';
 import { createGardenRenderer } from './render-garden.js';
 import { renderBaseScene } from './render-svg.js';
@@ -53,12 +55,17 @@ Promise.all([
   // parent (the frame), so it sits flush with footer content.
   const footer = document.querySelector('.pg6-footer');
   let insightPanel = null;
+  let dashboardPanel = null;
   if (footer) {
     insightPanel = mountInsightPanel({
       hostFooter: footer,
       initialSummary: lastSummary,
       onProjectSelect: (projectKey) => renderer.selectProjectByKey(projectKey),
       onOpenTerminal: (path) => openInTerminal(path)
+    });
+    dashboardPanel = mountDashboardPanel({
+      hostFooter: footer,
+      initialSummary: lastSummary
     });
     mountSettingsPanel({
       hostFooter: footer,
@@ -70,6 +77,7 @@ Promise.all([
         renderBaseScene(scene, assetRoot, { settings: currentSettings });
         renderer.renderEverything(groups, lastSummary);
         insightPanel?.update(lastSummary);
+        dashboardPanel?.update(lastSummary);
       }
     });
     mountPostcardExport({
@@ -80,6 +88,22 @@ Promise.all([
     });
   }
 
+  // Mini heatmap strip — ambient ground-floor view of the year's activity.
+  // Clicking anywhere on it opens the full Dashboard panel.
+  const miniStrip = document.getElementById('mini-heatmap-strip');
+  if (miniStrip) {
+    const drawMini = (summary) => {
+      renderHeatmap(miniStrip, summary?.heatmap_year || [], {
+        mode: 'mini',
+        onClickAny: () => dashboardPanel?.open(),
+      });
+    };
+    drawMini(lastSummary);
+    // Stash the drawer so the watcher path below can re-call it without
+    // recapturing references.
+    miniStrip._redraw = drawMini;
+  }
+
   // Watcher updates: always subscribe (cheap), gate re-render on auto_rescan
   // so the user can toggle it from the panel without restart ceremony.
   subscribeGardenScanning(() => {
@@ -88,6 +112,8 @@ Promise.all([
   subscribeGardenUpdates((summary) => {
     lastSummary = summary;
     insightPanel?.update(lastSummary);
+    dashboardPanel?.update(lastSummary);
+    miniStrip?._redraw?.(lastSummary);
     if (currentSettings.data.auto_rescan) {
       renderer.renderEverything(groups, lastSummary);
     } else {

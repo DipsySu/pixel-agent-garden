@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Added activity Dashboard: GitHub-style year heatmap (365 days, self-relative
+  5-band color scale) + hour-of-week punchcard (7×24 grid over the last 90
+  days) + 6 KPI cards (total tokens, active projects, active days, this week
+  vs last week, best day, longest streak). New `Dashboard` button sits next to
+  Insight / Postcard / Settings in the footer. Bumped `SUMMARY_SCHEMA_VERSION`
+  4 → 5 to add `heatmap_year` and `hour_of_week` to `GardenSummary` — both
+  computed in `core/aggregate.rs` so the CLI's `export-web` ships with the
+  same fields the desktop app uses.
+- Added a mini-heatmap strip between the header and the scene: a 53-week
+  wood-eave plaque that gives ambient awareness of the year-of-activity and
+  opens the full Dashboard panel on click. Pure CSS gradient framing so it
+  reads as part of the courtyard frame rather than a separate widget.
 - Repixelated the courtyard wall and path so they read as deliberate, hand-
   crafted pixel art instead of smooth fills. New `web/scene-tiles.js` builds
   seamless pixel-art tiles rendered as SVG `<pattern>`s (drawn once, tiled by
