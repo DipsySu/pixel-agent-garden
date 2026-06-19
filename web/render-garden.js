@@ -1,4 +1,5 @@
 import { CONFIG } from './scene-config.js';
+import { depthToScreen } from './render-svg.js';
 import { fmtLocal, escapeHtml, pick, pickByToken, namedSprite, jitter } from './render-helpers.js';
 import { sparklineSVG, windowTotal } from './render-insight.js';
 import { renderFlowerbed } from './render-flowerbed.js';
@@ -295,18 +296,22 @@ function clearDynamicLayers() {
       : (groups.shrine || []);
     const lanterns = groups.stone_lantern || [];
     const cairns = groups.stone_cairn || [];
-    // Koi pond — a foreground water feature in front of the pavilion (a 水榭 /
-    // water pavilion). The PixelLab sprite is inherently top-down, which clashes
-    // with the side-view scene, so squash it vertically (scaleY from the bottom
-    // edge) to read as a shallow pool at a low angle. Placed right of the cat's
-    // roam band (xMax ~72) so the cat never stands on the water; z above the
-    // pavilion so the near bank overlaps its base. Always present.
+    // Koi pond — the payoff of the 2.5D floor: this PixelLab sprite is inherently
+    // TOP-DOWN, which clashed with the old flat side-view; on the tilted floor a
+    // top-down water surface finally reads correctly, so we relax the squash.
+    // It used to sit at x=82/y=98.6 in front of the pavilion, but the deepened
+    // floor put that behind the right-aligned footer buttons (hidden). Now it
+    // lies on the mid plane at x=38 (yBottom 83, z 16) and RECEDES behind the
+    // near-shore stone group (stone_cat/lantern/cairn, higher z), which read as
+    // standing at the water's near bank — a 池畔 pond-edge vignette. scaleY 0.64
+    // (was 0.55) because the floor itself now provides the low-angle read. The
+    // cat strolls in front of it (see CAT_ROAM). Always present.
     const pondImg = addSprite({ file: 'critters/koi_pond.png' }, {
-      x: 82, y: 98.6, width: 116, z: 40, opacity: 1, className: 'object decor-pond', anchor: 'bottom'
+      x: 38, y: 86, width: 118, z: 16, opacity: 1, className: 'object decor-pond', anchor: 'bottom'
     });
     if (pondImg) {
       pondImg.style.transformOrigin = '50% 100%';
-      pondImg.style.setProperty('--sprite-transform', 'translate(-50%, -100%) scaleY(0.55)');
+      pondImg.style.setProperty('--sprite-transform', 'translate(-50%, -100%) scaleY(0.64)');
     }
     if (bamboo.length) {
       // A small grove of 3 clusters — back/mid/foreground — built from
@@ -319,12 +324,13 @@ function clearDynamicLayers() {
       // [0.6,17.5] while the cherry spans [10.1,25.9] — a 7.4% overlap where the
       // mid cluster shoved into the cherry's left canopy. Tucking the grove into
       // the corner ([0,~12]) clears it.
-      // back row (taller, slightly farther left)
-      addSprite(back,  { x:  4.0, y: 90.0, width: 50, z: 23, opacity: 0.95, className: 'object', anchor: 'bottom' });
-      // mid row (fuller, anchors the grove)
-      addSprite(mid,   { x:  7.5, y: 91.2, width: 58, z: 26, opacity: 0.97, className: 'object', anchor: 'bottom' });
-      // foreground accent (smaller, in front for depth)
-      addSprite(front, { x:  2.5, y: 92.4, width: 34, z: 29, opacity: 1.0,  className: 'object', anchor: 'bottom' });
+      // Depth-seated on the 2.5D floor: the grove sits in the back-left near the
+      // wall, so each cluster is placed via depthToScreen (farther = higher up +
+      // smaller). back is deepest, front nearest — z rises with nearness.
+      const dBack = depthToScreen(0.18), dMid = depthToScreen(0.30), dFront = depthToScreen(0.40);
+      addSprite(back,  { x: 4.0, y: dBack.yBottomPct,  width: Math.round(50 * dBack.scale),  z: 17, opacity: 0.95, className: 'object', anchor: 'bottom' });
+      addSprite(mid,   { x: 7.5, y: dMid.yBottomPct,   width: Math.round(58 * dMid.scale),   z: 21, opacity: 0.97, className: 'object', anchor: 'bottom' });
+      addSprite(front, { x: 2.5, y: dFront.yBottomPct, width: Math.round(34 * dFront.scale), z: 24, opacity: 1.0,  className: 'object', anchor: 'bottom' });
     }
     if (cherries.length) {
       // Cherry is one of two visual anchors (with the pavilion). Sized to
@@ -352,9 +358,9 @@ function clearDynamicLayers() {
       // sit shoulder-to-shoulder with a small gap, cherry clearing the stone cat.
       addSprite(sprite, {
         x: 21,
-        y: 91.4,
-        width: cherryWidth,
-        z: 22,
+        y: depthToScreen(0.34).yBottomPct,
+        width: Math.round(cherryWidth * depthToScreen(0.34).scale),
+        z: 20,
         opacity: 0.98,
         className: 'object decor-cherry',
         anchor: 'bottom'
@@ -367,9 +373,9 @@ function clearDynamicLayers() {
       const sprite = namedSprite(willows, tiers.willow === 'mature' ? 'willow_mature' : 'willow_young') || pickByToken(willows, tiers.willow === 'mature' ? 5 : 2);
       addSprite(sprite, {
         x: 60,
-        y: 90.9,
-        width: tiers.willow === 'mature' ? 105 : 88,
-        z: 21,
+        y: depthToScreen(0.30).yBottomPct,
+        width: Math.round((tiers.willow === 'mature' ? 105 : 88) * depthToScreen(0.30).scale),
+        z: 19,
         opacity: 0.98,
         className: 'object decor-willow',
         anchor: 'bottom'
@@ -384,11 +390,11 @@ function clearDynamicLayers() {
         || pickByToken(stoneCats, wantFull ? 5 : 2);
       const catImg = addSprite(sprite, {
         x: 34,
-        y: 92.3,
-        // wantFull width 58→50: audit found 18.5% overlap with stone_lantern
-        // (x=60, w=31). Cap to 50 → overlap drops to ~14.5 / 47% of lantern.
-        width: wantFull ? 50 : 46,
-        z: 24,
+        // Near-front of the 2.5D plane (d=0.66), standing at the pond's near bank.
+        y: depthToScreen(0.66).yBottomPct,
+        // wantFull base 50 / small 46, scaled by depth (nearer ≈ full size).
+        width: Math.round((wantFull ? 50 : 46) * depthToScreen(0.66).scale),
+        z: 26,
         opacity: 1.0,
         className: 'object cat-interactive',
         anchor: 'bottom'
@@ -426,9 +432,9 @@ function clearDynamicLayers() {
       // along the path between the cat statue and the willow.
       addSprite(sprite, {
         x: 42,
-        y: 91.5,
-        width: 31,
-        z: 25,
+        y: depthToScreen(0.70).yBottomPct,
+        width: Math.round(31 * depthToScreen(0.70).scale),
+        z: 27,
         opacity: lampLit ? 1.0 : 0.82,
         className: 'object decor-lantern ' + (lampLit ? 'is-lit' : 'is-dim'),
         anchor: 'bottom'
@@ -447,9 +453,9 @@ function clearDynamicLayers() {
                   || pickByToken(cairns, wantFull ? 5 : 2);
       addSprite(sprite, {
         x: 48,
-        y: 92,
-        width: wantFull ? 30 : 26,
-        z: 25,
+        y: depthToScreen(0.72).yBottomPct,
+        width: Math.round((wantFull ? 30 : 26) * depthToScreen(0.72).scale),
+        z: 27,
         opacity: 1.0,
         className: 'object',
         anchor: 'bottom'
@@ -533,8 +539,8 @@ function clearDynamicLayers() {
       const spread = count > 1 ? i / (count - 1) : 0.5;
       addSprite(pick(flowers, i), {
         x: 18 + spread * 11 + (jitter(i, 71) - 0.5) * 2.2,  // ~17..30, hugs the cherry base
-        y: 91.6 + jitter(i, 72) * 2.2,                       // 91.6..~93.8 on the ground band
-        width: 25 + jitter(i, 73) * 9,                       // 25..34, small accent
+        y: depthToScreen(0.36).yBottomPct + jitter(i, 72) * 1.6, // on the plane, just in front of the raised cherry
+        width: Math.round((22 + jitter(i, 73) * 8) * depthToScreen(0.36).scale), // small accent, depth-scaled
         z: 23,
         opacity: 0.92,
         className: 'flower',
@@ -679,9 +685,13 @@ function clearDynamicLayers() {
   // Roam box in scene-% coords: a wide courtyard band the cat strolls within.
   // x spans most of the yard (was a fixed ±116px wander on the right only),
   // y is a shallow ground band that also drives a subtle near/far scale.
-  const CAT_ROAM = { xMin: 30, xMax: 72, yMin: 76, yMax: 84 };
+  // Band lifted onto the near/mid 2.5D plane (was y76..84): the cat now strolls
+  // the front lawn in FRONT of the pond (pond body ≈ x29..47 / y73..83), never on
+  // the water. yMin 83 keeps it below the pond's near edge; the y-driven scale
+  // (below) still makes it bigger when nearer the front.
+  const CAT_ROAM = { xMin: 30, xMax: 70, yMin: 83, yMax: 90 };
   // Resting spot used by the static (reduced/off) fallback.
-  const CAT_HOME = { x: 60, y: 80 };
+  const CAT_HOME = { x: 55, y: 86 };
   // 68px sprite cell (~58px of actual cat body with padding). Sized so the
   // displayed cat body lands near the old ~55px width despite the square
   // cell's vertical padding.
@@ -693,12 +703,12 @@ function clearDynamicLayers() {
   // courtyard landmarks: left grass, center, the worn path, the lantern, the
   // pavilion apron, and a rare back-center point.
   const CAT_ZONES = [
-    { x: 36, y: 82, w: 3 },
-    { x: 44, y: 80, w: 2 },
-    { x: 55, y: 83, w: 3 },
-    { x: 62, y: 79, w: 2 },
-    { x: 69, y: 81, w: 2 },
-    { x: 50, y: 77, w: 1 }
+    { x: 36, y: 88, w: 2 },   // left lawn, in front of the pond's near bank
+    { x: 50, y: 85, w: 3 },   // path / center
+    { x: 58, y: 87, w: 3 },   // near the lantern/cairn stone group
+    { x: 64, y: 84, w: 2 },   // toward the pavilion apron
+    { x: 68, y: 86, w: 2 },   // pavilion-side
+    { x: 46, y: 89, w: 1 }    // rare near-front center
   ];
 
   // Sprite sheet is 10 cols × 3 rows (background-size 1000% 300%). Authored as:

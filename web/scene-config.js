@@ -52,7 +52,11 @@ export const CONFIG = {
     // bbox in scene coords. Pulled from manifest sprite sizes.
     pavilionAspect: { small: 223 / 152, mid: 257 / 289, full: 324 / 383 },
 
-    // Pavilion placement on scene
-    pavilionAnchor: { cx_pct: 81.0, bottom_pct: 91.0 },
+    // Pavilion placement on scene. bottom_pct lifted 91 → 86 so the pavilion
+    // sits ON the deepened 2.5D floor (mid plane) instead of glued to the very
+    // bottom edge; trinket / low-table / cushion interior math reads this anchor,
+    // so they ride up with it. (Kept near full size — it's the hero structure —
+    // rather than depth-scaled like the smaller objects.)
+    pavilionAnchor: { cx_pct: 81.0, bottom_pct: 86.0 },
     pavilionWidths: { small: 104, mid: 154, full: 212 }
   };

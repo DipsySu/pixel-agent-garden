@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- 2.5D perspective courtyard floor. The flat front-facing grass band became a
+  ground plane that recedes from the front (screen bottom, "near") back to the
+  wall base ("far"): lawn rows whose heights compress toward the back, aerial
+  haze (far rows lightened/cooled, near rows deep-shaded), grass blades taller
+  and denser toward the front, a stepped-trapezoid flagstone path drifting
+  toward the pavilion, and a wall-base contact shadow — all axis-aligned rects,
+  so it stays pixel-crisp, and all greens still come from the season palette.
+  A new `depthToScreen(d)` (exported from render-svg.js) is the shared contract:
+  the floor and every courtyard sprite sit on the same plane — far objects
+  higher up + smaller, near ones lower + bigger, z following the base. The koi
+  pond was the driver: its top-down sprite finally reads correctly lying on a
+  tilted plane, so it moved from behind the footer buttons (hidden) to the
+  visible mid plane (relaxed squash 0.55→0.64), with the stone cat / lantern /
+  cairn standing at its near bank (池畔). Trees + bamboo recede to the back near
+  the wall; the pavilion lifts off the bottom edge onto the plane; the cat roams
+  the near lawn in front of the water. Added a per-time-of-day `groundShade` so
+  the lawn no longer stays day-bright at dusk/night. No core change, no schema
+  bump.
+
 - UI refresh, wave 3 — the composition + header density that actually make it
   read like the mockup (waves 1–2 only reskinned the chrome). The scene was
   re-proportioned: the wall used to fill ~61% of the frame and start near the

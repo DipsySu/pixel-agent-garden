@@ -242,50 +242,85 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
       s += r(dx, dy, 1 + Math.floor(hash(i, 47) * 2), 1, col);
     }
   } else {
-    s += r(0, WB - 2, W, 6, season.grass[0]);
-    s += r(0, WB + 4, W, 12, season.grass[1]);
-    s += r(0, WB + 16, W, 12, season.grass[2]);
-    s += r(0, WB + 28, W, H - WB - 28, season.grass[3]);
-    // Dither the band seams instead of letting them meet as hard stripes — the
-    // classic pixel-art gradient. Each seam gets a checker of the lower band's
-    // color straddling the boundary line.
-    const ditherSeam = (yMid, col) => {
-      for (let dx = 0; dx < W; dx += 4) {
+    // === 2.5D perspective floor ===================================
+    // The courtyard floor reads as a plane tilted away from the viewer:
+    // receding from the FRONT (screen bottom, "near") back to the wall base
+    // ("far"). Every cue is an axis-aligned <rect>, so it stays pixel-crisp,
+    // and all greens come from the season palette (+ one pale haze tint), so
+    // it reverses sanely across seasons. Object placement (render-garden.js)
+    // seats sprites on this same plane via depthToScreen(). See that fn.
+    //
+    // (a) Lawn ROWS whose heights COMPRESS toward the back (far rows thin, near
+    // rows thick) + aerial haze: the two farthest rows are lightened/cooled
+    // toward `haze`, near rows use the deeper grass tones — "lit far, shaded
+    // near", which reads as the plane catching light as it tilts up.
+    const haze = '#cfdcc0';   // pale cool tint = aerial-perspective distance haze
+    const near = '#1a2410';   // deep shade = the plane darkening toward the viewer
+    const floorRows = [
+      [WB,      8,  blend(season.grass[0], haze, 0.30)], // 0 far — strongest haze (lightest)
+      [WB + 8,  10, blend(season.grass[0], haze, 0.18)], // 1
+      [WB + 18, 13, blend(season.grass[1], haze, 0.07)], // 2
+      [WB + 31, 15, season.grass[1]],                    // 3
+      [WB + 46, 18, season.grass[2]],                    // 4
+      [WB + 64, 21, blend(season.grass[3], near, 0.08)], // 5
+      [WB + 85, 25, blend(season.grass[3], near, 0.18)]  // 6 near — deepest (darkest)
+    ];
+    for (const [ry, rh, rc] of floorRows) s += r(0, ry, W, rh, rc);
+    // (b) Dither the row seams (classic pixel gradient), with the checker
+    // getting DENSER toward the front so the texture compresses with depth too.
+    const ditherSeam = (yMid, col, step) => {
+      for (let dx = 0; dx < W; dx += step) {
         s += r(dx, yMid, 2, 2, col);
         s += r(dx + 2, yMid - 2, 2, 2, col);
       }
     };
-    ditherSeam(WB + 4, season.grass[1]);
-    ditherSeam(WB + 16, season.grass[2]);
-    ditherSeam(WB + 28, season.grass[3]);
-    // Upright pixel grass blades (1px wide, varied height + shade) replace the
-    // old flat 2px specks so the lawn reads as textured pixel art, not a fill.
-    for (let i = 0; i < 96; i++) {
-      const tx = (i * 37 + 5) % W;
-      const ty = WB + 5 + (i % 6) * 6;
-      const blades = 2 + Math.floor(hash(i, 7) * 2);
-      for (let b = 0; b < blades; b++) {
-        const bh = 2 + Math.floor(hash(i + b, 11) * 4);
-        const shade = hash(i + b, 3) > 0.62 ? season.grass[2] : (hash(i + b, 9) > 0.5 ? season.grassDots : season.grass[1]);
-        s += r(tx + b * 2, ty - bh, 1, bh, shade);
+    ditherSeam(WB + 8,  blend(season.grass[0], haze, 0.08), 6);
+    ditherSeam(WB + 18, season.grass[1], 6);
+    ditherSeam(WB + 31, season.grass[1], 5);
+    ditherSeam(WB + 46, season.grass[2], 5);
+    ditherSeam(WB + 64, season.grass[2], 4);
+    ditherSeam(WB + 85, season.grass[3], 3);
+    // Wall-base contact shadow — sells "the ground plane butts into the vertical
+    // wall" rather than a flat color transition.
+    s += r(0, WB, W, 2, 'rgba(30,40,20,0.30)');
+    s += r(0, WB + 2, W, 1, 'rgba(40,55,28,0.18)');
+    // (c) Grass blades: taller + denser toward the FRONT, sparse/short far back
+    // (the two farthest rows get none — sells distance). [rowIndex, y0, y1, count]
+    const bladeRows = [[2, WB + 18, WB + 31, 10], [3, WB + 31, WB + 46, 14], [4, WB + 46, WB + 64, 18], [5, WB + 64, WB + 85, 22], [6, WB + 85, H, 26]];
+    let bi = 0;
+    for (const [ri, ry0, ry1, cnt] of bladeRows) {
+      for (let i = 0; i < cnt; i++, bi++) {
+        const tx = Math.floor(hash(bi, 17) * W);
+        const baseY = ry1 - 1 - Math.floor(hash(bi, 23) * (ry1 - ry0 - 1));
+        const bh = ri + (hash(bi, 11) > 0.6 ? 1 : 0);
+        const shade = hash(bi, 3) > 0.62 ? season.grass[2] : (hash(bi, 9) > 0.5 ? season.grassDots : season.grass[1]);
+        s += r(tx, baseY - bh, 1, bh, shade);
       }
     }
-    // Pixel-art flagstone path — a seamless stepping-stone tile (scene-tiles.js)
-    // tiled along a strip on the courtyard floor, replacing the faint path_stones
-    // sprite (its placement is removed in render-garden.js). The tile's gaps are
-    // transparent so the lawn shows between stones; sprites draw over the strip,
-    // so the path recedes behind the willow / lantern that stand on it.
-    s += '<rect x="276" y="' + PATH_Y + '" width="208" height="20" fill="url(#pg6PathTex)"/>';
-    // Flower spread varies by season — spring/summer get the full bouquet,
-    // autumn switches to warm tones, winter is sparse.
+    // (d) Flagstone path as a crisp STEPPED trapezoid — widest near the viewer,
+    // narrowing + drifting toward the pavilion (back-right) as it recedes. Each
+    // step is the seamless stone tile + a 1px mortar line to seat it.
+    const pathSteps = [[250, WB + 85, 200, 25], [288, WB + 64, 150, 21], [320, WB + 46, 112, 18], [352, WB + 31, 78, 15], [380, WB + 18, 52, 13]];
+    for (const [px, py, pw, ph] of pathSteps) {
+      s += '<rect x="' + px + '" y="' + py + '" width="' + pw + '" height="' + ph + '" fill="url(#pg6PathTex)"/>';
+      s += r(px, py + ph - 1, pw, 1, 'rgba(40,30,20,0.25)');
+    }
+    // (e) Flowers: bias the flecks to the near rows (3..6) so the wildflower
+    // carpet compresses toward the back too; a few small 1px ones sit far.
     const flCol = season.flowers;
     const flowerCount = season.flowerCount;
     for (let i = 0; i < flowerCount; i++) {
       const fx = (i * 19 + 11) % W;
-      const fy = WB + 12 + (i % 4) * 8;
-      s += r(fx, fy, 2, 2, flCol[i % flCol.length]);
+      const near = hash(i, 53) > 0.18;
+      const fy = near ? (WB + 34 + (i % 5) * 16) : (WB + 19 + (i % 2) * 4);
+      const fs = near ? 2 : 1;
+      s += r(fx, fy, fs, fs, flCol[i % flCol.length]);
     }
   }
+
+  // Time-of-day wash over the whole courtyard floor (mirrors wallShade) so the
+  // lawn doesn't stay day-bright at dusk/night.
+  if (time.groundShade) s += r(0, WB, W, H - WB, time.groundShade);
 
   const gx = 480, gy = 220;
   for (let i = 0; i < 22; i++) s += r(gx + i * 2, gy, 2, 3, '#6a8244');
@@ -359,6 +394,26 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   scene.style.setProperty('--wall-top-pct', wallTopPct + '%');
 }
 
+// === 2.5D floor depth → screen mapping =====================================
+// The courtyard floor (render above) is drawn as a plane receding from the
+// FRONT (screen bottom) back to the WALL BASE. This pure function is the shared
+// contract render-garden.js uses to seat sprites ON that plane: given a depth
+// d ∈ [0,1] (0 = far/at the wall base, 1 = near/screen bottom) it returns the
+// bottom-edge y (in scene-%) and a size scale. Perspective easing makes equal
+// real-depth steps compress toward the back, matching the drawn rows that thin
+// out toward the wall. Far objects sit higher + smaller, near ones lower +
+// bigger. Kept here (not render-garden) so floor and objects share one plane.
+export function depthToScreen(d) {
+  const dd = Math.max(0, Math.min(1, d));
+  const e = dd * dd * (1.7 - 0.7 * dd); // ease-in: small slope near 0 (far bunches up)
+  const Y_BACK = 78.0, Y_FRONT = 98.5;  // bottom-edge %: just under wall base → near edge
+  const S_BACK = 0.82, S_FRONT = 1.12;  // size scale: far smaller → near bigger
+  return {
+    yBottomPct: +(Y_BACK + (Y_FRONT - Y_BACK) * e).toFixed(2),
+    scale: +(S_BACK + (S_FRONT - S_BACK) * e).toFixed(3),
+  };
+}
+
 // Mix two hex colors by `t` in [0,1]. Used when a scene config doesn't ship
 // an explicit skyMid stop — gives the gradient a sensible middle anchor.
 function blend(a, b, t) {
@@ -404,7 +459,10 @@ function resolveTimeScene(settings) {
       // wallShade: a time-of-day overlay on the (now light tan) wall band.
       // Day leaves it bare; dusk/night re-darken it so the lifted palette
       // doesn't glow unnaturally bright after sundown.
-      wallShade: null
+      wallShade: null,
+      // groundShade: matching time-of-day wash on the courtyard floor so the
+      // bright lawn doesn't stay day-lit under a dusk/night sky.
+      groundShade: null
     },
     dusk: {
       mode: 'dusk',
@@ -422,7 +480,8 @@ function resolveTimeScene(settings) {
       wood: ['#c69062', '#8e623e', '#4d3322'],
       mountainFarOpacity: 0.50,
       mountainNearOpacity: 0.58,
-      wallShade: 'rgba(120,70,40,0.12)'
+      wallShade: 'rgba(120,70,40,0.12)',
+      groundShade: 'rgba(60,40,46,0.18)'
     },
     night: {
       mode: 'night',
@@ -438,7 +497,8 @@ function resolveTimeScene(settings) {
       wood: ['#8f6748', '#5e432e', '#2f241e'],
       mountainFarOpacity: 0.38,
       mountainNearOpacity: 0.48,
-      wallShade: 'rgba(18,24,42,0.32)'
+      wallShade: 'rgba(18,24,42,0.32)',
+      groundShade: 'rgba(16,22,40,0.42)'
     }
   };
   return scenes[mode] || scenes.day;
