@@ -373,11 +373,12 @@ function clearDynamicLayers() {
       // ENTIRELY inside the mature willow (x=60, bbox [52.3,67.7]) — a regression
       // from moving the willow 48→60 to clear the cherry, which parked it right
       // on top of the lantern (willow droops hid the lantern cap). Move the
-      // lantern into the empty 14%-wide bay between the stone cat (right 37.7)
-      // and the willow (left 52.3), centered — it now lights the path edge with
-      // ~5% clearance on each side instead of being swallowed by the tree.
+      // lantern into the empty bay between the stone cat (right 37.7) and the
+      // willow (left 52.3). x=45→42 (audit F10) to make room for the cairn on
+      // its right: the lantern + cairn now form a small "stone-objects group"
+      // along the path between the cat statue and the willow.
       addSprite(sprite, {
-        x: 45,
+        x: 42,
         y: 91.5,
         width: 31,
         z: 25,
@@ -388,18 +389,17 @@ function clearDynamicLayers() {
     }
     if (cairns.length) {
       // Cairn size piggybacks on the stone_cat tier (both grow with sessions).
-      // Placement is space-constrained: the willow [52.3,67.7] and pavilion
-      // [65.4,96.6] nearly fill the right half, so the cairn lives in the narrow
-      // willow–pavilion gap. Iterated x 78→72→70 + width 42→38→30 / 32→30→26
-      // (audit F7/F9): x=78 stood INSIDE the pavilion on the floor beside the
-      // tea table (indoor-furniture look); x=70 + the downsize tuck it against
-      // the willow's right edge (~0% overlap) as a slim pagoda that clears the
-      // pavilion's front-left column and no longer pokes into the eave.
+      // x 78→72→70→48 (audit F7/F9/F11): the right half (willow [52.3,67.7] +
+      // pavilion [65.4,96.6]) is saturated, so earlier passes wedged the cairn
+      // into the willow–pavilion gap. Per a layout decision it now joins the
+      // lantern in a "stone-objects group" on the path between the stone cat
+      // (right 37.7) and the willow (left 52.3): lantern x=42, cairn x=48, each
+      // ~1.5-2% clear — truly free of the pavilion instead of crowding its post.
       const wantFull = tiers.stone_cat === 'full';
       const sprite = namedSprite(cairns, wantFull ? 'stone_cairn_full' : 'stone_cairn_small')
                   || pickByToken(cairns, wantFull ? 5 : 2);
       addSprite(sprite, {
-        x: 70,
+        x: 48,
         y: 92,
         width: wantFull ? 30 : 26,
         z: 25,

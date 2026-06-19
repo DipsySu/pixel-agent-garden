@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Moved the stone cairn out of the cramped willow–pavilion gap (where it
+  crowded the pavilion's front-left column / read as standing inside it) into a
+  "stone-objects group" with the lantern on the path between the stone cat and
+  the willow (lantern x=45→42, cairn x=70→48; each ~1.5-2% clear, 0% overlap).
+  Per a layout decision: the right half is saturated, so a truly independent
+  spot needed either shrinking a main anchor or this relocation — the pavilion
+  now reads clean. No core change, no schema bump.
 - Postcard "postcard treatment" (P1 from the Codex review): the export now has
   a pixel border framing the card, a season "stamp" top-right (season-tinted
   panel + season label + PIXEL GARDEN), and a circular postmark stamped over the
