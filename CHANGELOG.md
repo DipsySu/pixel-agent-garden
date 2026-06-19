@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- UI refresh, wave 1 — a retro pixel HUD, ported from a Claude Design mockup of
+  the garden (the mockup itself stayed 2D side-view, not isometric; we took its
+  visual language, not its layout). Added local pixel fonts — Silkscreen + VT323
+  in `assets/fonts/`, served from the app's own assets so it stays zero-network
+  under `font-src 'self'`; both are latin-only so CJK text falls back to the
+  sans stack. The header now shows the token total as a big VT323 number (e.g.
+  "5.2B") beneath the title, and the title no longer repeats the total. The
+  season/time meta and the footer buttons became retro paper-on-ink chips with a
+  2px hard drop-shadow (hover lifts, press sinks). No core change, no schema bump.
+- UI refresh, wave 2 — the popover system. The hover info card and the
+  Insight / Settings / Dashboard / Postcard panels were flipped from dark-glass
+  to retro paper shells (paper bg, 2px ink border, hard drop-shadow, ink text),
+  with VT323 numbers, a green source/health bar, retro chip toggles in Settings,
+  and a status dot on the footer freshness. Done as a grouped CSS override block
+  placed after each panel's base rules (per a Codex review) so it wins at equal
+  specificity without rewriting the originals — and without touching the global
+  `--color-text-*` tokens, so the header/scene/empty-state keep their light text.
+  No core change, no schema bump.
 - Added a koi pond as a new foreground garden feature (PixelLab sprite,
   `assets/sprites/critters/koi_pond.png`): a stone-rimmed pool with koi + lily
   pads in front of the pavilion like a 水榭 (water pavilion). The sprite is

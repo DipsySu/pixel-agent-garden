@@ -6,6 +6,7 @@ const MESSAGES = {
     'document.title': 'Local Agent Garden',
     'sr.description': 'Pixel garden: local AI agent activity grows into project vines hanging from the wall or climbing from the ground. Use Tab to enter the vine list, then Left and Right arrows to move between vines.',
     'app.initial': 'Pixel Garden · Your local agent courtyard',
+    'header.localTokens': 'local tokens',
     'app.tokens': 'Pixel Garden · {total} local tokens',
     'footer.privacy': 'Reads local agent data only · zero network requests',
 
@@ -189,6 +190,7 @@ const MESSAGES = {
     'document.title': 'Local Agent Garden',
     'sr.description': '像素花园:本机 AI agent 活动化作墙沿垂落或墙根攀爬的项目藤。使用 Tab 进入项目藤列表,左右方向键在藤之间切换。',
     'app.initial': '像素花园 · 你的数字庭院',
+    'header.localTokens': '本地 token',
     'app.tokens': '像素花园 · {total} local tokens',
     'footer.privacy': '仅读取本机 agent 数据 · 零网络请求',
 

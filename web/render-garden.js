@@ -104,7 +104,7 @@ function renderEverything(groups, summary) {
   // The base SVG stays put — it's static.
   clearDynamicLayers();
 
-  updateHeaderMeta();
+  updateHeaderMeta(summary);
   updateDataFreshness(summary);
   updateDefaultInfo(summary, wallProjects);
   addIvyOverlay(groups, wallProjects);
@@ -204,8 +204,15 @@ function clearDynamicLayers() {
     for (const [cut, termKey] of TERMS_24) if (md >= cut) term = termKey;
     return t(term);
   }
-  function updateHeaderMeta() {
+  function updateHeaderMeta(summary) {
     const now = new Date();
+    const total = document.getElementById('meta-total');
+    if (total) {
+      const n = summary?.total_tokens || 0;
+      total.textContent = n > 0
+        ? new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
+        : '0';
+    }
     const season = document.getElementById('meta-season');
     const time = document.getElementById('meta-time');
     if (season) season.textContent = sceneLabel('seasonLabel', t('season.spring')) + ' · ' + currentSolarTerm(now);
@@ -1751,9 +1758,10 @@ function clearDynamicLayers() {
     // only appears once the user hovers or focuses a project vine.
     const project = projects[0];
     if (project) updateInfoFromProject(project, { reveal: false });
+    // Title is just the garden's name now; the big VT323 count in the header
+    // headline (#meta-total) carries the token total, so it isn't repeated here.
     const app = document.querySelector('.pg6-app');
-    const total = summary ? summary.total_tokens : projects.reduce((sum, item) => sum + (item.total_tokens || 0), 0);
-    if (app) app.textContent = t('app.tokens', { total: fmtLocal(total) });
+    if (app) app.textContent = t('app.initial');
   }
 
   function trinketLabel(trinket) {
