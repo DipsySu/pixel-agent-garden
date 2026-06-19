@@ -17,7 +17,7 @@ import { renderHeatmap } from './render-heatmap.js';
 import { groupSprites } from './render-helpers.js';
 import { createGardenRenderer } from './render-garden.js';
 import { renderBaseScene } from './render-svg.js';
-import { applyStaticTranslations } from './i18n.js';
+import { applyStaticTranslations, currentLocale, setLocale } from './i18n.js';
 
 const scene = document.getElementById('pg6-scene');
 const assetRoot = window.__TAURI__ ? './assets' : '../assets';
@@ -26,6 +26,20 @@ const manifestUrl = spriteRoot + 'ivy_courtyard_manifest.json';
 const dataUrl = './data/garden-summary.json';
 
 applyStaticTranslations();
+
+// Locale toggle: the button shows the language you'd switch TO (zh UI → "EN",
+// en UI → "中"). Persisting + reloading is the simplest correct way to re-render
+// every already-built string (the scene SVG, panels, chips) in the new locale.
+{
+  const localeToggle = document.getElementById('locale-toggle');
+  if (localeToggle) {
+    localeToggle.textContent = currentLocale() === 'zh' ? 'EN' : '中';
+    localeToggle.addEventListener('click', () => {
+      setLocale(currentLocale() === 'zh' ? 'en' : 'zh');
+      window.location.reload();
+    });
+  }
+}
 
 // Wire the toast layer + backend error stream before kicking off any IO,
 // so an early failure (manifest fetch, settings invoke) still surfaces.

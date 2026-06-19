@@ -213,18 +213,45 @@ function clearDynamicLayers() {
         ? new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(n)
         : '0';
     }
+    // Two-line chips: the season name / day-phase sit on the primary line and
+    // the finer-grained solar term / wall-clock drop to a muted secondary line
+    // (matches the design mockup's stacked chips, and keeps each line short
+    // enough that the Silkscreen latin / sans CJK mix doesn't wrap).
     const season = document.getElementById('meta-season');
+    const seasonSub = document.getElementById('meta-season-sub');
     const time = document.getElementById('meta-time');
-    if (season) season.textContent = sceneLabel('seasonLabel', t('season.spring')) + ' · ' + currentSolarTerm(now);
-    if (time) {
+    const timeSub = document.getElementById('meta-time-sub');
+    if (season) season.textContent = sceneLabel('seasonLabel', t('season.spring'));
+    if (seasonSub) seasonSub.textContent = currentSolarTerm(now);
+    if (time) time.textContent = sceneLabel('timeLabel', t('time.day'));
+    if (timeSub) {
       const hh = String(now.getHours()).padStart(2, '0');
       const mm = String(now.getMinutes()).padStart(2, '0');
-      time.textContent = sceneLabel('timeLabel', t('time.day')) + ' · ' + hh + ':' + mm;
+      timeSub.textContent = hh + ':' + mm;
     }
   }
 
   function sceneLabel(key, fallback) {
     return scene?.dataset?.[key] || fallback;
+  }
+
+  // Wall geometry (% of scene height) — published by renderBaseScene as
+  // scene.dataset.wallTop/BottomPct. Everything that hangs on / climbs the wall
+  // reads these instead of the old hard-coded 25 / 86.4 so the composition can
+  // move without re-tuning every placement. Fallbacks are the pre-redesign
+  // values, so a stale scene (no dataset yet) still renders sanely.
+  function wallTopPct() {
+    const v = parseFloat(scene?.dataset?.wallTopPct);
+    return Number.isFinite(v) ? v : 25;
+  }
+  function wallBottomPct() {
+    const v = parseFloat(scene?.dataset?.wallBottomPct);
+    return Number.isFinite(v) ? v : 86.36;
+  }
+  // Map a 0..1 ratio down the wall band to a scene-% y.
+  function wallY(ratio) {
+    const top = wallTopPct();
+    return top + ratio * (wallBottomPct() - top);
   }
 
   // ==========================================================================
@@ -1239,8 +1266,8 @@ function clearDynamicLayers() {
           ? (jitter(projectIndex, profile.level) - 0.5) * spreadX
           : (jitter(projectIndex, strandIndex + 7) - 0.5) * 5);
         const y = useHanging
-          ? 24.65 + jitter(projectIndex, strandIndex + 2) * 0.42
-          : 52 + (5 - profile.level) * 4 + (isPrimary ? 0 : jitter(projectIndex, strandIndex + 3) * 3);
+          ? wallTopPct() - 0.35 + jitter(projectIndex, strandIndex + 2) * 0.42
+          : wallY(0.44 + (5 - profile.level) * 0.065) + (isPrimary ? 0 : jitter(projectIndex, strandIndex + 3) * 3);
         const width = isPrimary ? baseWidth : baseWidth * 0.85;
         const opacity = isPrimary ? profile.opacity : profile.opacity * 0.82;
 
@@ -1308,10 +1335,10 @@ function clearDynamicLayers() {
       const drop = jitter(i, 73) > 0.6 ? jitter(i, 91) * 1.2 : 0;
       addSprite(pick(leafCaps, i), {
         x,
-        // y bumped from 25.18 → 25.4 so the tile's bottom sits ON the wall
-        // edge cover band (top: 25%) instead of floating above it. + drop
-        // pushes individual tiles down into the wall for a draped look.
-        y: 25.4 - ridge + drop,
+        // sits just below the wall top (was a fixed 25.4; now wallTop + 0.4 so
+        // it rides down with the wall-edge cover band instead of floating above
+        // it. + drop pushes individual tiles down into the wall for a drape.
+        y: wallTopPct() + 0.4 - ridge + drop,
         width: tileWidth,
         z: 61 + i,
         // opacity bumped from 0.54..0.59 → 0.78..0.85 so the cornice has the
@@ -1393,11 +1420,13 @@ function clearDynamicLayers() {
 
   function addWallMarks(patches) {
     if (!patches.length) return;
+    // [x, ratio-down-the-wall, width] — ratios (not fixed %) so the marks ride
+    // mid-wall after the composition moved the band.
     const marks = [
-      [18, 49, 36], [56, 48, 32], [84, 57, 34], [36, 58, 30]
+      [18, 0.39, 36], [56, 0.375, 32], [84, 0.52, 34], [36, 0.54, 30]
     ];
-    marks.forEach(([x, y, width], i) => {
-      addSprite(pick(patches, i), { x, y, width, z: 9, opacity: 0.22, className: 'mark' });
+    marks.forEach(([x, ratio, width], i) => {
+      addSprite(pick(patches, i), { x, y: wallY(ratio), width, z: 9, opacity: 0.22, className: 'mark' });
     });
   }
 

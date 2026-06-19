@@ -51,15 +51,21 @@ function pattern(id, grid, palette) {
 // 80×20 px (160×40 units) = 4 bricks wide × 2 offset rows, so it carries enough
 // brick-color variety that the repeat isn't an obvious stamp; the scene adds a
 // sparse weathering overlay on top to break it further.
+// Tan ramp (was a dark brown brick). The mockup's wall reads as a light,
+// airy #b8a079 body; keeping the brick STRUCTURE but lifting the whole ramp
+// toward tan is what makes the scene stop feeling cramped/heavy. The moss
+// stays a muted olive so it still reads as growth against the lighter brick,
+// and the crack drops to a tan-brown (not near-black) so it doesn't punch
+// holes in the lighter wall.
 const WALL_PAL = {
-  a: '#352d2a', // mortar / joint (darkest)
-  b: '#55463d', // shadow
-  c: '#6f5b4d', // body dark
-  d: '#846b55', // body mid
-  e: '#977b60', // body light
-  f: '#b18f6e', // highlight
-  g: '#5f6b4a', // moss
-  h: '#493c35'  // crack
+  a: '#75624f', // mortar / joint (darkest)
+  b: '#92775a', // shadow
+  c: '#a98c68', // body dark
+  d: '#b8a079', // body mid (the mockup's target tone)
+  e: '#c8b28a', // body light
+  f: '#dec99e', // highlight
+  g: '#6f7f4f', // moss
+  h: '#5f4b3f'  // crack
 };
 
 export function wallPattern() {

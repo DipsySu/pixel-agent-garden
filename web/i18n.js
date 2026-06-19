@@ -7,6 +7,8 @@ const MESSAGES = {
     'sr.description': 'Pixel garden: local AI agent activity grows into project vines hanging from the wall or climbing from the ground. Use Tab to enter the vine list, then Left and Right arrows to move between vines.',
     'app.initial': 'Pixel Garden · Your local agent courtyard',
     'header.localTokens': 'local tokens',
+    'header.subtitle': 'Your local AI-agent token usage, grown into a courtyard',
+    'locale.toggleAria': 'Switch language',
     'app.tokens': 'Pixel Garden · {total} local tokens',
     'footer.privacy': 'Reads local agent data only · zero network requests',
 
@@ -191,6 +193,8 @@ const MESSAGES = {
     'sr.description': '像素花园:本机 AI agent 活动化作墙沿垂落或墙根攀爬的项目藤。使用 Tab 进入项目藤列表,左右方向键在藤之间切换。',
     'app.initial': '像素花园 · 你的数字庭院',
     'header.localTokens': '本地 token',
+    'header.subtitle': '把本机 AI 编程 agent 的 token 用量,长成一座庭院',
+    'locale.toggleAria': '切换语言',
     'app.tokens': '像素花园 · {total} local tokens',
     'footer.privacy': '仅读取本机 agent 数据 · 零网络请求',
 
@@ -386,6 +390,20 @@ export function currentLocale() {
     ? navigator.languages
     : [typeof navigator !== 'undefined' ? navigator.language : ''];
   return languages.some((lang) => String(lang || '').toLowerCase().startsWith('zh')) ? 'zh' : 'en';
+}
+
+// Persist an explicit locale choice. The header toggle calls this then reloads
+// so every already-rendered string (static + JS-built) picks up the new locale
+// in one pass — cheaper and less bug-prone than re-running every renderer.
+// Storage may be blocked in some embedded/fallback contexts; that just means
+// the choice doesn't stick (we fall back to navigator default on next load).
+export function setLocale(locale) {
+  if (!SUPPORTED.has(locale)) return;
+  try {
+    window.localStorage && window.localStorage.setItem(STORAGE_KEY, locale);
+  } catch (_) {
+    // ignore — non-persistent session
+  }
 }
 
 export function t(key, vars = {}) {

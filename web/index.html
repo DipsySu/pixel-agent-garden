@@ -100,12 +100,19 @@ body {
   z-index: 120;
 }
 .pg6-head-left { align-items: flex-start; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.pg6-app { color: var(--color-text-primary); font-family: var(--font-pixel); font-size: 13px; font-weight: 400; letter-spacing: 0.5px; min-width: 0; text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55); }
+.pg6-app { color: var(--color-text-primary); font-family: var(--font-pixel); font-size: 18px; font-weight: 400; letter-spacing: 0.5px; min-width: 0; text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55); }
+.pg6-subtitle { color: #e3d6b0; font-size: 12px; letter-spacing: 0.2px; margin: 3px 0 4px; max-width: 52ch; text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.55); }
 .pg6-headline { align-items: baseline; display: flex; gap: 5px; }
-.pg6-total { color: #ffe9a6; font-family: var(--font-num); font-size: 30px; line-height: 0.85; text-shadow: 2px 2px 0 #5a3c12; }
-.pg6-total-unit { color: var(--color-text-secondary); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
-.pg6-meta { align-items: center; display: flex; flex-wrap: wrap; font-size: 12px; gap: 8px; justify-content: flex-end; min-width: 0; }
-.pg6-meta-item { align-items: center; background: var(--paper); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); color: var(--ink); display: flex; gap: 6px; padding: 4px 9px; }
+.pg6-total { color: #ffe9a6; font-family: var(--font-num); font-size: 38px; line-height: 0.82; text-shadow: 2px 2px 0 #5a3c12; }
+.pg6-total-unit { color: var(--color-text-secondary); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+.pg6-meta { align-items: flex-start; display: flex; flex-wrap: wrap; font-size: 12px; gap: 8px; justify-content: flex-end; min-width: 0; }
+.pg6-meta-item { align-items: center; background: var(--paper); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); color: var(--ink); display: flex; gap: 7px; padding: 4px 10px; }
+.pg6-meta-text { display: flex; flex-direction: column; line-height: 1.05; }
+.pg6-meta-primary { font-size: 12px; font-weight: 600; }
+.pg6-meta-secondary { color: #7a6a4e; font-family: var(--font-num); font-size: 13px; line-height: 1; }
+.pg6-locale-toggle { align-self: stretch; background: var(--paper); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); color: var(--ink); cursor: pointer; font-family: var(--font-pixel); font-size: 11px; letter-spacing: 0.5px; padding: 4px 10px; }
+.pg6-locale-toggle:hover, .pg6-locale-toggle:focus-visible { background: #fff6e2; box-shadow: 3px 3px 0 var(--ink); outline: none; transform: translate(-1px, -1px); }
+.pg6-locale-toggle:active { box-shadow: 1px 1px 0 var(--ink); transform: translate(1px, 1px); }
 .pg6-icon { color: currentColor; flex: 0 0 auto; height: 13px; width: 13px; }
 .pg6-scene {
   aspect-ratio: 680 / 440;
@@ -249,13 +256,13 @@ body {
   mix-blend-mode: multiply;
 }
 .pg6-wall-edge-cover {
-  background: #48382a;
+  background: #75624f;
   height: clamp(2px, 0.8%, 6px);
   left: 0;
   opacity: 0.28;
   pointer-events: none;
   position: absolute;
-  top: 25%;
+  top: var(--wall-top-pct, 25%);
   width: 100%;
   z-index: 15;
 }
@@ -534,9 +541,11 @@ body {
   color: var(--ink);
   cursor: pointer;
   display: inline-flex;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
   gap: 6px;
   height: 26px;
   margin-left: 8px;
@@ -1199,11 +1208,13 @@ body {
     <div class="pg6-header" data-tauri-drag-region>
       <div class="pg6-head-left">
         <div class="pg6-app" data-i18n="app.initial">Pixel Garden · Your local agent courtyard</div>
+        <div class="pg6-subtitle" data-i18n="header.subtitle">Your local AI-agent token usage, grown into a courtyard</div>
         <div class="pg6-headline"><span class="pg6-total" id="meta-total">—</span><span class="pg6-total-unit" data-i18n="header.localTokens">local tokens</span></div>
       </div>
       <div class="pg6-meta">
-        <span class="pg6-meta-item"><svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7c2-5 7-3 6 2 5-1 7 4 2 6 3 4-1 8-5 5-2 5-7 3-6-2-5 1-7-4-2-6-3-4 1-8 5-5Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg><span id="meta-season">—</span></span>
-        <span class="pg6-meta-item"><svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16h16M7 20h10M6 12a6 6 0 0 1 12 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span id="meta-time">—</span></span>
+        <span class="pg6-meta-item"><svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7c2-5 7-3 6 2 5-1 7 4 2 6 3 4-1 8-5 5-2 5-7 3-6-2-5 1-7-4-2-6-3-4 1-8 5-5Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg><span class="pg6-meta-text"><span class="pg6-meta-primary" id="meta-season">—</span><span class="pg6-meta-secondary" id="meta-season-sub"></span></span></span>
+        <span class="pg6-meta-item"><svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16h16M7 20h10M6 12a6 6 0 0 1 12 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="pg6-meta-text"><span class="pg6-meta-primary" id="meta-time">—</span><span class="pg6-meta-secondary" id="meta-time-sub"></span></span></span>
+        <button type="button" id="locale-toggle" class="pg6-locale-toggle" data-i18n-aria-label="locale.toggleAria">EN</button>
       </div>
     </div>
     <button

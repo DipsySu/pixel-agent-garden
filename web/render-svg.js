@@ -3,6 +3,18 @@ import { wallPattern, pathPattern } from './scene-tiles.js';
 
 export function renderBaseScene(scene, assetRoot, options = {}) {
   const W = 680, H = 440;
+  // === Scene geometry (single source of truth) =================
+  // The wall used to start at y=110 and run to y=380 — ~61% of the frame, which
+  // read as cramped and heavy. Dropping the wall top to 158 and the wall bottom
+  // to 330 grows the sky to ~30% and the courtyard band, matching the design
+  // mockup's airier composition. Everything that anchors to the wall reads off
+  // these consts (and the dataset emitted at the end) instead of hard-coding.
+  const EAVE_H = 24;          // wooden awning across the very top
+  const WT = 158;             // wall top  (was 110)
+  const WB = 330;             // wall bottom (was 380)
+  const SKY_H = WT - EAVE_H;  // 134 (was 86)
+  const GROUND_H = H - WB;    // 110 — courtyard/grass band height
+  const PATH_Y = H - 48;      // 392 — flagstone path baseline (kept at old y)
   const r = (x, y, w, h, c) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + c + '"/>';
   function hash(a, b) {
     const x = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
@@ -54,7 +66,7 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   s += r(0, 20, W, 4, time.wood[2]);
   // Sky is one tall rect filled with the linear gradient defined above —
   // no more hard y=70 seam between skyTop and skyBottom.
-  s += '<rect x="0" y="24" width="' + W + '" height="86" fill="url(#pg6Sky)"/>';
+  s += '<rect x="0" y="24" width="' + W + '" height="' + SKY_H + '" fill="url(#pg6Sky)"/>';
   // Soft shadow drop from the wood eave onto the top of the sky band; this
   // hides the otherwise-jarring wood→sky transition without losing the eave.
   s += '<rect x="0" y="24" width="' + W + '" height="10" fill="url(#pg6WoodShadow)"/>';
@@ -120,11 +132,11 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   s += r(sunX + 14, sunY + 12, 4, 3, time.orb.accent);
 
   // === Mountains ================================================
-  s += '<image href="' + assetRoot + '/sprites/mountains/mountains_far.png" x="-12" y="54" width="704" height="40" preserveAspectRatio="none" opacity="' + time.mountainFarOpacity + '"/>';
-  // mountains_near now reaches y=110 (wall top, WT) so the silhouette meets
-  // the brick wall edge without leaving a thin sky strip. Height bumped from
-  // 34 to 38.
-  s += '<image href="' + assetRoot + '/sprites/mountains/mountains_near.png" x="-10" y="72" width="700" height="38" preserveAspectRatio="none" opacity="' + time.mountainNearOpacity + '"/>';
+  s += '<image href="' + assetRoot + '/sprites/mountains/mountains_far.png" x="-12" y="' + (WT - 82) + '" width="704" height="48" preserveAspectRatio="none" opacity="' + time.mountainFarOpacity + '"/>';
+  // mountains_near reaches WT (wall top) so the silhouette meets the wall edge
+  // without leaving a thin sky strip. Both ranges are pinned to WT so they
+  // ride down with the wall when the composition changes.
+  s += '<image href="' + assetRoot + '/sprites/mountains/mountains_near.png" x="-10" y="' + (WT - 54) + '" width="700" height="54" preserveAspectRatio="none" opacity="' + time.mountainNearOpacity + '"/>';
 
   // Re-draw the sun in front of the mountain sprites; the first pass above
   // tints the horizon, this pass keeps the core readable. Halo is the same
@@ -145,9 +157,8 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
     s += critter('bird.png', 437, 58, 18, 12, false);
   }
 
-  const WT = 110, WB = 380;
   const BW = 40, BH = 20;
-  s += r(0, WT, W, WB - WT, '#48382a');
+  s += r(0, WT, W, WB - WT, '#75624f');
 
   // Wall = a seamless hand-tuned pixel-art brick tile (scene-tiles.js) tiled
   // across the wall band, over a dark mortar backdrop. A sparse weathering
@@ -157,34 +168,41 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   // Weathering overlay — random (NON-repeating) damp patches, sun-worn patches,
   // moss clumps and hairline cracks scattered across the whole wall, so the
   // tile's ~160-unit repeat reads as one continuous aged wall.
-  for (let i = 0; i < 38; i++) {
+  // Fewer iterations (wall is lighter now, so heavy mottling reads as dirt);
+  // patches/cracks are re-toned for the tan ramp — dark patches are softer and
+  // browner, cracks are tan-brown not near-black, so the weathering ages the
+  // wall without re-darkening it back toward the old heavy brown.
+  for (let i = 0; i < 24; i++) {
     const wx = Math.floor(hash(i + 3, 61) * (W - 24));
     const wy = WT + 6 + Math.floor(hash(i + 9, 17) * (WB - WT - 18));
     const k = hash(i, 41);
     if (k > 0.72) {
       // damp / shadowed patch
-      s += r(wx, wy, 10 + Math.floor(hash(i, 5) * 16), 6 + Math.floor(hash(i, 7) * 7), 'rgba(34,26,22,0.20)');
+      s += r(wx, wy, 10 + Math.floor(hash(i, 5) * 16), 6 + Math.floor(hash(i, 7) * 7), 'rgba(72,54,40,0.13)');
     } else if (k > 0.48) {
       // sun-worn lighter patch
-      s += r(wx, wy, 8 + Math.floor(hash(i, 6) * 14), 4 + Math.floor(hash(i, 8) * 5), 'rgba(198,168,128,0.15)');
+      s += r(wx, wy, 8 + Math.floor(hash(i, 6) * 14), 4 + Math.floor(hash(i, 8) * 5), 'rgba(232,213,172,0.16)');
     } else if (k > 0.24) {
       // moss clump creeping from a joint
       s += r(wx, wy, 5, 2, 'rgba(95,107,74,0.5)');
       s += r(wx + 1, wy - 2, 3, 2, 'rgba(110,124,82,0.42)');
       s += r(wx - 1, wy + 2, 2, 1, 'rgba(80,95,60,0.4)');
     } else {
-      // hairline crack — a short jagged dark run
+      // hairline crack — a short jagged tan-brown run
       const len = 4 + Math.floor(hash(i, 12) * 6);
       let cxk = wx;
       for (let k2 = 0; k2 < len; k2++) {
-        s += r(cxk, wy + k2 * 2, 2, 2, 'rgba(28,20,16,0.5)');
+        s += r(cxk, wy + k2 * 2, 2, 2, 'rgba(95,75,63,0.4)');
         if (hash(i + k2, 3) > 0.6) cxk += hash(i + k2, 9) > 0.5 ? 2 : -2;
       }
     }
   }
 
-  s += r(580, 180, 35, 30, 'rgba(40,28,18,0.18)');
-  s += r(595, 168, 22, 14, 'rgba(40,28,18,0.12)');
+  s += r(580, 180, 35, 30, 'rgba(80,60,44,0.12)');
+  s += r(595, 168, 22, 14, 'rgba(80,60,44,0.08)');
+
+  // Time-of-day wash over the whole wall band (see wallShade in resolveTimeScene).
+  if (time.wallShade) s += r(0, WT, W, WB - WT, time.wallShade);
 
   s += r(0, WB - 4, 50, 10, 'rgba(60,100,40,0.35)');
   s += r(0, WB - 8, 36, 8, 'rgba(70,110,45,0.4)');
@@ -212,12 +230,14 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
     s += r(0, WB - 2, W, 5, '#536a3a');
     s += r(0, WB + 3, W, 10, '#5a3a22');
     s += r(0, WB + 13, W, 14, '#6a4428');
-    s += r(0, WB + 27, W, 20, '#58361f');
+    // Fill the rest of the (now taller) ground band with the deep-soil tone so
+    // the lifted WB doesn't expose a flat dark strip below the bed.
+    s += r(0, WB + 27, W, (H - 12) - (WB + 27), '#58361f');
     s += r(0, H - 12, W, 12, '#2d1d12');
-    // Speckled dirt clods over the bed for texture.
-    for (let i = 0; i < 170; i++) {
+    // Speckled dirt clods over the bed for texture (spread across the full band).
+    for (let i = 0; i < 240; i++) {
       const dx = Math.floor(hash(i, 17) * W);
-      const dy = WB + 4 + Math.floor(hash(i, 31) * 45);
+      const dy = WB + 4 + Math.floor(hash(i, 31) * (GROUND_H - 18));
       const col = hash(i, 43) > 0.62 ? '#7a4d2c' : '#3a2518';
       s += r(dx, dy, 1 + Math.floor(hash(i, 47) * 2), 1, col);
     }
@@ -255,7 +275,7 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
     // sprite (its placement is removed in render-garden.js). The tile's gaps are
     // transparent so the lawn shows between stones; sprites draw over the strip,
     // so the path recedes behind the willow / lantern that stand on it.
-    s += '<rect x="276" y="392" width="208" height="20" fill="url(#pg6PathTex)"/>';
+    s += '<rect x="276" y="' + PATH_Y + '" width="208" height="20" fill="url(#pg6PathTex)"/>';
     // Flower spread varies by season — spring/summer get the full bouquet,
     // autumn switches to warm tones, winter is sparse.
     const flCol = season.flowers;
@@ -328,6 +348,15 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   scene.dataset.season = season.mode;
   scene.dataset.seasonLabel = season.label;
   scene.dataset.flowerbed = flowerbedEnabled ? 'enabled' : 'disabled';
+  // Wall geometry as % of the scene height, so the DOM overlays (wall-edge
+  // cover, hanging/climbing vines, cornice, wall marks) anchor to the wall
+  // instead of re-hardcoding the old 25% / 24.65% constants. render-garden.js
+  // reads wallTopPct/wallBottomPct; the CSS var feeds .pg6-wall-edge-cover.
+  const wallTopPct = +(WT / H * 100).toFixed(2);
+  const wallBottomPct = +(WB / H * 100).toFixed(2);
+  scene.dataset.wallTopPct = String(wallTopPct);
+  scene.dataset.wallBottomPct = String(wallBottomPct);
+  scene.style.setProperty('--wall-top-pct', wallTopPct + '%');
 }
 
 // Mix two hex colors by `t` in [0,1]. Used when a scene config doesn't ship
@@ -371,7 +400,11 @@ function resolveTimeScene(settings) {
       orb: { x: forced === 'system' ? sunArcX : 330, y: forced === 'system' ? sunArcY : 34, fill: '#f0c868', shadow: '#d8a34f', highlight: '#ffe090', accent: '#f0b460' },
       wood: ['#d4a070', '#a07248', '#604028'],
       mountainFarOpacity: 0.42,
-      mountainNearOpacity: 0.52
+      mountainNearOpacity: 0.52,
+      // wallShade: a time-of-day overlay on the (now light tan) wall band.
+      // Day leaves it bare; dusk/night re-darken it so the lifted palette
+      // doesn't glow unnaturally bright after sundown.
+      wallShade: null
     },
     dusk: {
       mode: 'dusk',
@@ -388,7 +421,8 @@ function resolveTimeScene(settings) {
       orb: { x: forced === 'system' ? Math.max(500, sunArcX) : 530, y: forced === 'system' ? Math.max(42, sunArcY) : 46, fill: '#f0a060', shadow: '#e08850', highlight: '#f8b870', accent: '#f4a458' },
       wood: ['#c69062', '#8e623e', '#4d3322'],
       mountainFarOpacity: 0.50,
-      mountainNearOpacity: 0.58
+      mountainNearOpacity: 0.58,
+      wallShade: 'rgba(120,70,40,0.12)'
     },
     night: {
       mode: 'night',
@@ -403,7 +437,8 @@ function resolveTimeScene(settings) {
       orb: { x: 520, y: 34, fill: '#dbe4f0', shadow: '#a8b3c6', highlight: '#f0f4ff', accent: '#c8d4e8' },
       wood: ['#8f6748', '#5e432e', '#2f241e'],
       mountainFarOpacity: 0.38,
-      mountainNearOpacity: 0.48
+      mountainNearOpacity: 0.48,
+      wallShade: 'rgba(18,24,42,0.32)'
     }
   };
   return scenes[mode] || scenes.day;

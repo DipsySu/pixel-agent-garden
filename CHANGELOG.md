@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- UI refresh, wave 3 — the composition + header density that actually make it
+  read like the mockup (waves 1–2 only reskinned the chrome). The scene was
+  re-proportioned: the wall used to fill ~61% of the frame and start near the
+  top; it now starts lower (wall top 25% → 36%, bottom 86% → 75%), so the sky
+  grows to ~30% and the courtyard band gets taller — much airier, less cramped.
+  All wall-anchored bits (mountains, hanging/climbing vines, cornice, wall
+  marks, the wall-edge cover) now read the wall top/bottom off scene-geometry
+  constants + `scene.dataset.wallTop/BottomPct` + a `--wall-top-pct` CSS var,
+  so the band can move without re-tuning each placement by hand. The brick
+  palette was lifted from dark brown to a light tan ramp (matching the mockup's
+  `#b8a079` body) with quieter weathering and a per-time-of-day `wallShade` so
+  night/dusk don't glow. Header gained the descriptive subtitle line, a bigger
+  title + 38px VT323 total, two-line season/solar-term + day-phase/clock chips,
+  and a visible `EN`/`中` locale toggle (persists + reloads). Footer button
+  labels moved to the pixel font. No core change, no schema bump.
 - UI refresh, wave 1 — a retro pixel HUD, ported from a Claude Design mockup of
   the garden (the mockup itself stayed 2D side-view, not isometric; we took its
   visual language, not its layout). Added local pixel fonts — Silkscreen + VT323
