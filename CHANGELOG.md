@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Replaced the courtyard path with stepping stones. The flagstone path was a
+  tiled SVG pattern (`pg6PathTex`) drawn as a stepped trapezoid; on the new 2.5D
+  floor it read as a flat grey grid that clashed with the pixel-art objects.
+  It's now a row of discrete PixelLab stepping-stone sprites (飞石,
+  `critters/stepping_stone.png`) placed via `depthToScreen` so the path recedes
+  from the front lawn toward the pavilion (near = bigger + lower, far = smaller
+  + higher), with low z so the standing furniture and the cat pass in front.
+
 - 2.5D perspective courtyard floor. The flat front-facing grass band became a
   ground plane that recedes from the front (screen bottom, "near") back to the
   wall base ("far"): lawn rows whose heights compress toward the back, aerial

@@ -297,14 +297,10 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
         s += r(tx, baseY - bh, 1, bh, shade);
       }
     }
-    // (d) Flagstone path as a crisp STEPPED trapezoid — widest near the viewer,
-    // narrowing + drifting toward the pavilion (back-right) as it recedes. Each
-    // step is the seamless stone tile + a 1px mortar line to seat it.
-    const pathSteps = [[250, WB + 85, 200, 25], [288, WB + 64, 150, 21], [320, WB + 46, 112, 18], [352, WB + 31, 78, 15], [380, WB + 18, 52, 13]];
-    for (const [px, py, pw, ph] of pathSteps) {
-      s += '<rect x="' + px + '" y="' + py + '" width="' + pw + '" height="' + ph + '" fill="url(#pg6PathTex)"/>';
-      s += r(px, py + ph - 1, pw, 1, 'rgba(40,30,20,0.25)');
-    }
+    // (d) The flagstone path is no longer drawn here as a tiled SVG strip — it
+    // read as a flat grey grid that clashed with the pixel-art objects. It is
+    // now a row of discrete PixelLab stepping-stone sprites placed + depth-scaled
+    // in render-garden.js (addSteppingStones), so it recedes on this same plane.
     // (e) Flowers: bias the flecks to the near rows (3..6) so the wildflower
     // carpet compresses toward the back too; a few small 1px ones sit far.
     const flCol = season.flowers;

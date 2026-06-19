@@ -313,6 +313,26 @@ function clearDynamicLayers() {
       pondImg.style.transformOrigin = '50% 100%';
       pondImg.style.setProperty('--sprite-transform', 'translate(-50%, -100%) scaleY(0.64)');
     }
+    // Stepping stones (飞石) — discrete PixelLab flagstones leading from the front
+    // lawn toward the pavilion. Each sits on the 2.5D plane via depthToScreen so
+    // the path recedes (near = bigger + lower, far = smaller + higher). Replaces
+    // the old tiled flagstone strip that read as a flat grey grid. Low z so the
+    // standing furniture (lantern/cairn) and the cat draw in front of them.
+    const STEPPING_STONES = [
+      { x: 46, d: 0.90 }, { x: 53, d: 0.78 }, { x: 60, d: 0.66 }, { x: 67, d: 0.55 }, { x: 73, d: 0.46 }
+    ];
+    STEPPING_STONES.forEach((st, i) => {
+      const dp = depthToScreen(st.d);
+      addSprite({ file: 'critters/stepping_stone.png' }, {
+        x: st.x,
+        y: dp.yBottomPct,
+        width: Math.round(30 * dp.scale),
+        z: 15 - i,
+        opacity: 0.96,
+        className: 'object decor-steppingstone',
+        anchor: 'bottom'
+      });
+    });
     if (bamboo.length) {
       // A small grove of 3 clusters — back/mid/foreground — built from
       // distinct variants so it doesn't read as one repeated sprite.
