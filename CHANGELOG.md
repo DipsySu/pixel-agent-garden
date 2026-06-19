@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Began replacing the base scene's procedural decorations with PixelLab pixel-
+  art sprites — the elements that still read as "not pixel art". The butterflies
+  (previously a few flat rects that barely resembled butterflies) and the birds
+  (previously `^` polylines) are now sprites in `assets/sprites/critters/`: two
+  butterfly colorways (amber + powder-blue) alternating so the trio isn't one
+  stamp, and a small bird silhouette (mirrored for variety). Both are now gated
+  to daytime/dusk only — no butterflies or birds at night (fireflies own the
+  night); the birds already were, the butterflies now match. Drawn as `<image>`
+  in the base SVG, so the postcard export inlines them automatically. New
+  `critter()` helper in `render-svg.js`. (Clouds + scattered ground flowers
+  left for a follow-up.) No core change, no schema bump.
 - Postcard export overhaul (P0 set from an adversarial Codex 5.5 review),
   turning a buggy screenshot into a trustworthy keepsake (`postcard.js`).
   (1) Completeness — the export silently dropped the live cat (a CSS sprite-

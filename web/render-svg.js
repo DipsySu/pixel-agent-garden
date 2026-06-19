@@ -137,11 +137,12 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   s += r(sunX + 26, sunY + 6, 3, 14, time.orb.fill);
   s += r(sunX + 6, sunY + 4, 6, 4, time.orb.highlight);
 
-  // birds — kept; they're tiny accents
+  // birds — tiny PixelLab silhouettes (daytime/dusk only), some mirrored for
+  // variety. critter() is hoisted (defined with the butterflies below).
   if (time.mode !== 'night') {
-    s += '<polyline points="285,68 290,65 295,68" stroke="#2a1d10" stroke-width="1" fill="none"/>';
-    s += '<polyline points="300,72 305,69 310,72" stroke="#2a1d10" stroke-width="1" fill="none"/>';
-    s += '<polyline points="430,60 437,56 444,60" stroke="#2a1d10" stroke-width="1" fill="none"/>';
+    s += critter('bird.png', 290, 66, 16, 11, false);
+    s += critter('bird.png', 306, 71, 13, 9, true);
+    s += critter('bird.png', 437, 58, 18, 12, false);
   }
 
   const WT = 110, WB = 380;
@@ -278,13 +279,27 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   s += r(gx + 32, gy + 3, 2, 3, '#6a8244');
   s += r(gx + 31, gy + 5, 4, 1, '#6a8244');
 
-  function butterfly(cx, cy, c1, c2) {
+  // Butterflies + birds — PixelLab pixel-art sprites replace the old few-rect /
+  // polyline glyphs. critter() centers a sprite at (cx,cy), optionally mirrored.
+  // Drawn in the base SVG background layer like before; the postcard export
+  // inlines these <image>s so the export still matches.
+  function critter(file, cx, cy, w, h, flip) {
     cx = Math.round(cx); cy = Math.round(cy);
-    return r(cx - 3, cy - 3, 3, 3, c1) + r(cx + 1, cy - 3, 3, 3, c1) + r(cx - 3, cy + 1, 3, 2, c2) + r(cx + 1, cy + 1, 3, 2, c2) + r(cx, cy - 2, 1, 5, '#2a1d10') + r(cx - 2, cy - 2, 1, 1, '#3a2a1a') + r(cx + 2, cy - 2, 1, 1, '#3a2a1a');
+    const x = cx - Math.round(w / 2), y = cy - Math.round(h / 2);
+    const tf = flip ? ' transform="translate(' + (2 * cx) + ' 0) scale(-1 1)"' : '';
+    return '<image href="' + assetRoot + '/sprites/critters/' + file + '" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" image-rendering="pixelated"' + tf + '/>';
   }
-  s += butterfly(230, 340, '#f4d878', '#e8b04a');
-  s += butterfly(160, 380, '#f0c468', '#d49838');
-  s += butterfly(470, 320, '#f4d878', '#e8b04a');
+  // Two color variants alternate so the trio doesn't read as one stamp (44:36).
+  function butterfly(cx, cy, size, variant) {
+    return critter('butterfly_' + (variant || 'amber') + '.png', cx, cy, size, Math.round(size * 36 / 44), false);
+  }
+  // Butterflies are a daytime/dusk accent — none at night (fireflies own the
+  // night), matching the gate the birds already use.
+  if (time.mode !== 'night') {
+    s += butterfly(230, 338, 18, 'amber');
+    s += butterfly(160, 378, 14, 'blue');
+    s += butterfly(470, 320, 16, 'amber');
+  }
 
   for (let i = 0; i < 8; i++) {
     const px = 140 + i * 60 + (i % 3) * 15;
