@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Finished the procedural→sprite pass on the sky: the daytime/dusk clouds
+  (previously 3 stacked rects each) are now a PixelLab pixel-art cloud sprite
+  (`assets/sprites/critters/cloud.png`, 96x48), 4 across the sky via the same
+  `critter()` helper. Scattered ground flowers were intentionally left alone —
+  the base scene already has a full flowerbed sprite system (`flowerbedEnabled`
+  mode, 366 flower sprites); the 2px dots are its lightweight off-mode fallback,
+  not a gap. No core change, no schema bump.
 - Began replacing the base scene's procedural decorations with PixelLab pixel-
   art sprites — the elements that still read as "not pixel art". The butterflies
   (previously a few flat rects that barely resembled butterflies) and the birds

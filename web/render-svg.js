@@ -76,18 +76,18 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   // === Sky / clouds =============================================
   // Soft cream-pink cloud silhouettes BEFORE mountains so they sit
   // farther back in z-order.
+  // PixelLab cloud sprite (critters/cloud.png, 96x48) replaces the old
+  // stacked-rect puffs. [cx, cy, width]; height derives from the 2:1 aspect.
+  // Daytime/dusk only; night shows stars below.
   const clouds = [
-    [60, 42, 38, 5, time.cloud[0]],
-    [110, 38, 22, 4, time.cloud[1]],
-    [320, 48, 30, 4, time.cloud[2]],
-    [600, 38, 46, 5, time.cloud[0]]
+    [72, 42, 88],
+    [300, 36, 60],
+    [605, 40, 96],
+    [470, 28, 50]
   ];
   if (time.mode !== 'night') {
-    for (const [cx, cy, cw, ch, col] of clouds) {
-      // pixel-art puff: 3 vertically stacked rects of decreasing width
-      s += r(cx, cy, cw, ch, col);
-      s += r(cx + 3, cy - 3, cw - 6, 3, col);
-      s += r(cx + 8, cy - 5, Math.max(2, cw - 16), 2, col);
+    for (const [cx, cy, cw] of clouds) {
+      s += critter('cloud.png', cx, cy, cw, Math.round(cw / 2), false);
     }
   } else {
     for (let i = 0; i < 34; i++) {
