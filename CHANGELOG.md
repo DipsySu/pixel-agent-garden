@@ -3,12 +3,14 @@
 ## Unreleased
 
 - Added a koi pond as a new foreground garden feature (PixelLab sprite,
-  `assets/sprites/critters/koi_pond.png`): an oval stone-rimmed pool with koi +
-  lily pads set in front of the pavilion like a 水榭 (water pavilion). Placed to
-  the right of the cat's roam band so the wandering cat never stands on the
-  water; z above the pavilion so the near bank overlaps its base. Always present
-  (a fixed feature), drawn via the existing addSprite path. No core change, no
-  schema bump.
+  `assets/sprites/critters/koi_pond.png`): a stone-rimmed pool with koi + lily
+  pads in front of the pavilion like a 水榭 (water pavilion). The sprite is
+  inherently top-down, which clashes with the pure side-view scene, so it's
+  squashed vertically (scaleY 0.55 from the bottom edge) to read as a shallow
+  pool at a low angle rather than a top-down sticker — the standard 2D way to
+  show water. Placed right of the cat's roam band so the cat never stands on the
+  water; z above the pavilion so the near bank overlaps its base. Always present,
+  drawn via the existing addSprite path. No core change, no schema bump.
 - Moved the stone cairn out of the cramped willow–pavilion gap (where it
   crowded the pavilion's front-left column / read as standing inside it) into a
   "stone-objects group" with the lantern on the path between the stone cat and
