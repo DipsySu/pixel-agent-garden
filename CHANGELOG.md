@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Postcard "postcard treatment" (P1 from the Codex review): the export now has
+  a pixel border framing the card, a season "stamp" top-right (season-tinted
+  panel + season label + PIXEL GARDEN), and a circular postmark stamped over the
+  stamp's corner (arced "LOCAL AGENT GARDEN" + the date) — so it reads as a
+  mailed postcard, not a raw screenshot. All canvas-drawn with system fonts only
+  (no web fonts / paper texture / handwriting, which are fragile across the
+  Tauri webviews). Also renamed the toggle "include busiest project" → "include
+  project name" for clearer privacy intent. No core change, no schema bump.
 - Finished the procedural→sprite pass on the sky: the daytime/dusk clouds
   (previously 3 stacked rects each) are now a PixelLab pixel-art cloud sprite
   (`assets/sprites/critters/cloud.png`, 96x48), 4 across the sky via the same

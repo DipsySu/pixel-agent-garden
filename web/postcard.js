@@ -5,6 +5,9 @@ import { t } from './i18n.js';
 const EXPORT_WIDTH = 1360;
 const EXPORT_HEIGHT = 880;
 const SVG_NS = 'http://www.w3.org/2000/svg';
+// Shared font stack with CJK fallbacks (system fonts only — no web fonts, which
+// are unreliable across the mac/win/linux Tauri webviews).
+const FONT_STACK = 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif';
 
 export async function buildPostcardCanvas({ scene, assetRoot, summary, anonymize }) {
   if (!scene) throw new Error('scene is required');
@@ -25,6 +28,11 @@ export async function buildPostcardCanvas({ scene, assetRoot, summary, anonymize
   await drawGardenCat(ctx, scene);
   drawParticles(ctx, scene);
   drawCaption(ctx, scene, summary, anonymize);
+  // P1 postcard treatment: a season "stamp" top-right, a circular postmark
+  // stamped over it, and a pixel border framing the whole card.
+  drawStamp(ctx, scene);
+  drawPostmark(ctx);
+  drawFrame(ctx);
 
   return canvas;
 }
@@ -293,7 +301,6 @@ function drawParticles(ctx, scene) {
 
 function drawCaption(ctx, scene, summary, anonymize) {
   const stripHeight = 76;
-  const fontStack = 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif';
   const seasonLabel = scene?.dataset?.seasonLabel || t('season.spring');
   const timeLabel = scene?.dataset?.timeLabel || t('time.day');
   const projects = Array.isArray(summary?.projects) ? summary.projects : [];
@@ -322,10 +329,10 @@ function drawCaption(ctx, scene, summary, anonymize) {
   ctx.fillRect(0, EXPORT_HEIGHT - stripHeight, EXPORT_WIDTH, stripHeight);
   ctx.textBaseline = 'middle';
   ctx.fillStyle = 'rgba(246, 238, 222, 0.97)';
-  ctx.font = '600 27px ' + fontStack;
+  ctx.font = '600 27px ' + FONT_STACK;
   ctx.fillText(fitOneLine(ctx, line1, EXPORT_WIDTH - 64), 32, EXPORT_HEIGHT - stripHeight + 27);
   ctx.fillStyle = 'rgba(214, 210, 196, 0.9)';
-  ctx.font = '20px ' + fontStack;
+  ctx.font = '20px ' + FONT_STACK;
   ctx.fillText(fitOneLine(ctx, line2, EXPORT_WIDTH - 64), 32, EXPORT_HEIGHT - stripHeight + 54);
   ctx.restore();
 }
@@ -337,6 +344,104 @@ function topProject(projects) {
   // to project_key — that's typically an absolute local path and would leak the
   // user's directory structure into a shared image.
   return top?.display_name || '';
+}
+
+// --- P1 postcard treatment ------------------------------------------------
+// A pixel border + a season "stamp" + a postmark, all drawn on the canvas with
+// system fonts only (no web fonts, no paper texture / handwriting — those are
+// fragile across the Tauri webviews; the look stays crisp pixel-UI instead).
+
+function drawFrame(ctx) {
+  ctx.save();
+  ctx.globalAlpha = 1;
+  if ('filter' in ctx) ctx.filter = 'none';
+  ctx.strokeStyle = 'rgba(26, 20, 14, 0.92)';   // thick dark outer band
+  ctx.lineWidth = 10;
+  ctx.strokeRect(5, 5, EXPORT_WIDTH - 10, EXPORT_HEIGHT - 10);
+  ctx.strokeStyle = 'rgba(246, 238, 222, 0.85)'; // thin cream inner keyline
+  ctx.lineWidth = 2;
+  ctx.strokeRect(15, 15, EXPORT_WIDTH - 30, EXPORT_HEIGHT - 30);
+  ctx.restore();
+}
+
+// Season → a warm accent for the stamp's inner panel.
+function seasonAccent(mode) {
+  switch (mode) {
+    case 'summer': return '#4f8030';
+    case 'autumn': return '#b0682a';
+    case 'winter': return '#8aa0b4';
+    default:       return '#d98aa8'; // spring
+  }
+}
+
+const STAMP = { w: 132, h: 156, mx: 46, my: 40 };
+
+function drawStamp(ctx, scene) {
+  const label = scene?.dataset?.seasonLabel || t('season.spring');
+  const mode = scene?.dataset?.season || 'spring';
+  const sx = EXPORT_WIDTH - STAMP.w - STAMP.mx, sy = STAMP.my;
+  ctx.save();
+  if ('filter' in ctx) ctx.filter = 'none';
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = 'rgba(245, 239, 227, 0.97)';            // stamp paper
+  ctx.fillRect(sx, sy, STAMP.w, STAMP.h);
+  ctx.strokeStyle = 'rgba(40, 32, 22, 0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(sx + 0.75, sy + 0.75, STAMP.w - 1.5, STAMP.h - 1.5);
+  const pad = 11;                                          // season-tinted panel
+  ctx.fillStyle = seasonAccent(mode);
+  ctx.fillRect(sx + pad, sy + pad, STAMP.w - 2 * pad, STAMP.h - 2 * pad);
+  ctx.fillStyle = 'rgba(248, 244, 236, 0.98)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '600 30px ' + FONT_STACK;
+  ctx.fillText(label, sx + STAMP.w / 2, sy + STAMP.h / 2 - 6);
+  ctx.font = '12px ' + FONT_STACK;
+  ctx.fillText('PIXEL GARDEN', sx + STAMP.w / 2, sy + STAMP.h - 24);
+  ctx.restore();
+}
+
+function drawPostmark(ctx) {
+  // Overlap the stamp's lower-left like a real cancellation mark.
+  const cx = EXPORT_WIDTH - STAMP.w - STAMP.mx + 22;
+  const cy = STAMP.my + STAMP.h - 22;
+  const r = 58;
+  ctx.save();
+  if ('filter' in ctx) ctx.filter = 'none';
+  ctx.globalAlpha = 0.8;
+  ctx.strokeStyle = '#2c4664';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, r - 9, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = '#2c4664';
+  drawArcText(ctx, 'LOCAL AGENT GARDEN', cx, cy, r - 4.5, -Math.PI / 2, 3.0);
+  const d = new Date();
+  const ds = d.getFullYear() + '.' + pad2(d.getMonth() + 1) + '.' + pad2(d.getDate());
+  ctx.font = '700 19px ' + FONT_STACK;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(ds, cx, cy + 2);
+  ctx.restore();
+}
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+// Lay text along a circular arc centered on (cx,cy), centered at `midAngle`
+// (radians; -PI/2 = top), spanning `arcSpan` radians total, letters upright.
+function drawArcText(ctx, text, cx, cy, radius, midAngle, arcSpan) {
+  const chars = [...text];
+  ctx.font = '700 12px ' + FONT_STACK;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const start = midAngle - arcSpan / 2;
+  for (let i = 0; i < chars.length; i++) {
+    const a = start + arcSpan * (chars.length === 1 ? 0.5 : i / (chars.length - 1));
+    ctx.save();
+    ctx.translate(cx + Math.cos(a) * radius, cy + Math.sin(a) * radius);
+    ctx.rotate(a + Math.PI / 2);
+    ctx.fillText(chars[i], 0, 0);
+    ctx.restore();
+  }
 }
 
 function fitOneLine(ctx, text, maxWidth) {
