@@ -11,6 +11,13 @@ review*.png
 pixel_garden_organic_vine.html
 web/sprite-experiment.html
 
+# Local editor / AI-tool state (per-user, not for the repo)
+.claude/
+
+# Claude Design mockup exports — large (3MB+) reference artifacts, kept local.
+# (The garden's own UI lives in web/; docs/garden-ui-overview.md describes it.)
+docs/design/
+
 # Rust workspace
 target/
 **/*.rs.bk
