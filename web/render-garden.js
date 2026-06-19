@@ -261,6 +261,14 @@ function clearDynamicLayers() {
       : (groups.shrine || []);
     const lanterns = groups.stone_lantern || [];
     const cairns = groups.stone_cairn || [];
+    // Koi pond — a foreground water feature set in front of the pavilion like a
+    // 水榭 (water pavilion), so the pavilion reads as standing at the pond's far
+    // bank. Placed right of the cat's roam band (xMax ~72, see CAT_ROAM) so the
+    // wandering cat never ends up standing on the water. z above the pavilion so
+    // the near bank overlaps its base. A fixed garden feature (always present).
+    addSprite({ file: 'critters/koi_pond.png' }, {
+      x: 80, y: 98.6, width: 88, z: 40, opacity: 1, className: 'object decor-pond', anchor: 'bottom'
+    });
     if (bamboo.length) {
       // A small grove of 3 clusters — back/mid/foreground — built from
       // distinct variants so it doesn't read as one repeated sprite.
