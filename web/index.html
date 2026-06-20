@@ -305,6 +305,10 @@ body {
 .pg6-scene[data-time-mode="day"] .pg6-sprite.decor-lantern.is-dim {
   filter: saturate(0.7) brightness(0.88);
 }
+/* Scenic (iso) view: light hover feedback on interactive objects (the guardian
+   cat). The rich info-card panel stays the flat data view's job. */
+.pg6-scene[data-view="iso"] .pg6-sprite.iso-interactive { cursor: pointer; }
+.pg6-scene[data-view="iso"] .pg6-sprite.iso-interactive:hover { filter: brightness(1.1) saturate(1.06); }
 
 /* === Season tints =========================================================
    render-svg.js writes data-season onto .pg6-scene. The ground band colors,

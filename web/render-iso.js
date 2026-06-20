@@ -290,7 +290,13 @@ function placeIsoObjects(scene, spriteRoot, groups, summary, mode) {
     const sp = namedSprite(cats, full ? 'stone_cat_full' : 'stone_cat_small')
             || namedSprite(cats, full ? 'shrine_full' : 'shrine_small')
             || pickByToken(cats, full ? 5 : 2);
-    add(0.44, 0.52, fileOf(sp), 78);
+    // Light interactivity for the scenic view: the guardian cat gets a hover
+    // tooltip with its session stat + a pointer cursor (the rich info-card panel
+    // stays the flat data view's job).
+    add(0.44, 0.52, fileOf(sp), 78, {
+      className: 'iso-interactive',
+      title: t('card.cat.label') + ' · ' + t('card.cat.sessions', { count: tiers.totalSessions || 0 }),
+    });
   }
   // Stone cairn / pagoda — center-front of the cat.
   if (groups.stone_cairn && groups.stone_cairn.length) {
@@ -346,6 +352,7 @@ function placeIsoObjects(scene, spriteRoot, groups, summary, mode) {
     img.style.zIndex = String(20 + i);
     const tf = 'translate(-50%, -100%)' + (it.opts.scaleY ? ' scaleY(' + it.opts.scaleY + ')' : '');
     img.style.setProperty('--sprite-transform', tf);
+    if (it.opts.title) img.title = it.opts.title;
     scene.appendChild(img);
   });
 }
