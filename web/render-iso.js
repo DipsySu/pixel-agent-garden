@@ -59,6 +59,25 @@ function hash(a, b) {
   const x = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
   return x - Math.floor(x);
 }
+// Time-of-day for the iso scene. Same thresholds as render-svg's systemTimeMode
+// (kept local — it's 4 lines and avoids a cross-module export just for this).
+function isoTimeMode(settings) {
+  const forced = settings?.appearance?.time_mode || 'system';
+  if (forced !== 'system') return forced;
+  const now = new Date();
+  const h = now.getHours() + now.getMinutes() / 60;
+  if (h >= 6 && h < 16.5) return 'day';
+  if (h >= 16.5 && h < 19.5) return 'dusk';
+  return 'night';
+}
+// Per-mode sky/sea palette + night dressing. Mirrors the flat view's grade so a
+// scene reads the same time-of-day in either view.
+const ISO_TIME = {
+  day:   { skyTop: '#8fc4e8', skyBot: '#cfe6f0', seaTop: '#bcdcea', seaBot: '#7fa8c4', wallShade: null, vignette: 0, moon: false, lampGlow: false },
+  dusk:  { skyTop: '#8ea2c8', skyBot: '#e4a174', seaTop: '#caa39a', seaBot: '#8f7782', wallShade: 'rgba(120,70,40,0.16)', vignette: 0.26, moon: false, lampGlow: true },
+  night: { skyTop: '#17213a', skyBot: '#2a3550', seaTop: '#2b3a54', seaBot: '#19243c', wallShade: 'rgba(13,18,34,0.5)', vignette: 0.5, moon: true, lampGlow: true },
+};
+
 const pt = (p) => p.x.toFixed(1) + ',' + p.y.toFixed(1);
 const poly = (pts, fill, extra) =>
   '<polygon points="' + pts.map(pt).join(' ') + '" fill="' + fill + '"' + (extra || '') + '/>';
@@ -71,6 +90,8 @@ export function renderIsoScene(scene, assetRoot, options = {}) {
   const c = corners();
   const down = (p, dy) => ({ x: p.x, y: p.y + dy });   // extrude down (slab)
   const up = (p, dy) => ({ x: p.x, y: p.y - dy });     // extrude up (walls)
+  const mode = isoTimeMode(options.settings);
+  const tt = ISO_TIME[mode] || ISO_TIME.day;
 
   let s = '<svg viewBox="0 0 ' + VB_W + ' ' + VB_H + '" width="100%" preserveAspectRatio="xMidYMid meet" ' +
     'shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" role="img">' +
@@ -79,13 +100,28 @@ export function renderIsoScene(scene, assetRoot, options = {}) {
   // === Sky + sea backdrop =======================================
   s += '<defs>' +
     '<linearGradient id="isoSky" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="#8fc4e8"/>' +
-      '<stop offset="100%" stop-color="#cfe6f0"/>' +
+      '<stop offset="0%" stop-color="' + tt.skyTop + '"/>' +
+      '<stop offset="100%" stop-color="' + tt.skyBot + '"/>' +
     '</linearGradient>' +
     '<linearGradient id="isoSea" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="#bcdcea"/>' +
-      '<stop offset="100%" stop-color="#7fa8c4"/>' +
+      '<stop offset="0%" stop-color="' + tt.seaTop + '"/>' +
+      '<stop offset="100%" stop-color="' + tt.seaBot + '"/>' +
     '</linearGradient>' +
+    '<radialGradient id="isoLampGlow" cx="50%" cy="50%" r="50%">' +
+      '<stop offset="0%" stop-color="#ffe6ad" stop-opacity="0.7"/>' +
+      '<stop offset="45%" stop-color="#ffbe6e" stop-opacity="0.28"/>' +
+      '<stop offset="100%" stop-color="#ffb060" stop-opacity="0"/>' +
+    '</radialGradient>' +
+    '<radialGradient id="isoMoonGlow" cx="50%" cy="50%" r="50%">' +
+      '<stop offset="0%" stop-color="#eef4ff" stop-opacity="0.55"/>' +
+      '<stop offset="55%" stop-color="#ccdcfb" stop-opacity="0.16"/>' +
+      '<stop offset="100%" stop-color="#ccdcfb" stop-opacity="0"/>' +
+    '</radialGradient>' +
+    '<radialGradient id="isoVignette" cx="50%" cy="48%" r="72%">' +
+      '<stop offset="0%" stop-color="#070b16" stop-opacity="0"/>' +
+      '<stop offset="58%" stop-color="#070b16" stop-opacity="0"/>' +
+      '<stop offset="100%" stop-color="#070b16" stop-opacity="1"/>' +
+    '</radialGradient>' +
     '</defs>';
   const horizon = 150;
   s += '<rect x="0" y="0" width="' + VB_W + '" height="' + horizon + '" fill="url(#isoSky)"/>';
@@ -179,19 +215,42 @@ export function renderIsoScene(scene, assetRoot, options = {}) {
   s += fenceOnEdge(c.L, c.F, 6);
   s += fenceOnEdge(c.R, c.F, 6);
 
+  // === Time-of-day dressing =====================================
+  // Drawn over the SVG room (under the DOM object sprites). Night/dusk shade the
+  // walls + sea, hang a moon, pool warm light where the lantern stands, and
+  // vignette the frame; day leaves it bright. The lantern's own lit-glow comes
+  // from the shared .pg6-sprite.decor-lantern CSS, gated on data-time-mode.
+  if (tt.wallShade) {
+    s += poly([c.B, c.R, Rt, Bt], tt.wallShade);
+    s += poly([c.B, c.L, Lt, Bt], tt.wallShade);
+  }
+  if (tt.moon) {
+    const mx = 552, my = 76;
+    s += '<circle cx="' + mx + '" cy="' + my + '" r="44" fill="url(#isoMoonGlow)"/>';
+    s += '<circle cx="' + mx + '" cy="' + my + '" r="15" fill="#eef3ff"/>';
+    s += '<circle cx="' + (mx + 6) + '" cy="' + (my - 3) + '" r="13" fill="' + tt.skyTop + '"/>';  // carve a crescent
+  }
+  if (tt.lampGlow) {
+    const lp = isoFloorToScreen(0.68, 0.64);   // mirrors the stone-lantern seat
+    s += '<circle cx="' + lp.x.toFixed(0) + '" cy="' + (lp.y - 24).toFixed(0) + '" r="42" fill="url(#isoLampGlow)"/>';
+  }
+  if (tt.vignette > 0) {
+    s += '<rect x="0" y="0" width="' + VB_W + '" height="' + VB_H + '" fill="url(#isoVignette)" opacity="' + tt.vignette + '"/>';
+  }
+
   s += '</svg>';
   scene.innerHTML = s;
   scene.dataset.view = 'iso';
-  scene.dataset.timeMode = 'day';
+  scene.dataset.timeMode = mode;
 
-  placeIsoObjects(scene, options.spriteRoot, options.groups || {}, options.summary || null);
-  updateIsoHeader(options.summary || null);
+  placeIsoObjects(scene, options.spriteRoot, options.groups || {}, options.summary || null, mode);
+  updateIsoHeader(options.summary || null, mode);
 }
 
 // The header token total + time chip are view-independent; the flat renderer
 // fills them inside renderEverything (which the iso path skips), so mirror the
 // essentials here. (Solar-term sub-line is left to the flat view for now.)
-function updateIsoHeader(summary) {
+function updateIsoHeader(summary, mode) {
   const total = document.getElementById('meta-total');
   if (total) {
     const n = summary?.total_tokens || 0;
@@ -200,7 +259,7 @@ function updateIsoHeader(summary) {
       : '0';
   }
   const timeEl = document.getElementById('meta-time');
-  if (timeEl) timeEl.textContent = t('time.day');
+  if (timeEl) timeEl.textContent = t('time.' + (mode || 'day'));
 }
 
 // --- Objects on the floor --------------------------------------------------
@@ -209,10 +268,13 @@ function updateIsoHeader(summary) {
 // nearer objects overlap them). Each is a DOM <img> billboard standing upright;
 // positioned by left%/top%/width% of the scene (which is locked to this SVG's
 // 680×440 aspect, so the percentages land on the floor plane).
-function placeIsoObjects(scene, spriteRoot, groups, summary) {
+function placeIsoObjects(scene, spriteRoot, groups, summary, mode) {
   if (!spriteRoot) return;
   const projects = summary?.projects?.length ? summary.projects : [];
   const tiers = unlockTier(summary, projects);
+  // Lamp reads as lit when there's activity today OR simply because it's dark
+  // out (matches the flat view, so dusk/night courtyards are always aglow).
+  const lampLit = tiers.lamp === 'lit' || mode === 'night' || mode === 'dusk';
   const items = [];
   // add(u, v, file, width) — width in viewBox px. Skips missing sprites.
   const add = (u, v, file, width, opts) => { if (file) items.push({ u, v, file, width, opts: opts || {} }); };
@@ -257,9 +319,8 @@ function placeIsoObjects(scene, spriteRoot, groups, summary) {
   }
   // Stone lantern — front-right, near the pavilion.
   if (groups.stone_lantern && groups.stone_lantern.length) {
-    const lit = tiers.lamp === 'lit';
-    const sp = namedSprite(groups.stone_lantern, lit ? 'stone_lantern_lit' : 'stone_lantern_unlit') || pickByToken(groups.stone_lantern, lit ? 5 : 1);
-    add(0.68, 0.64, fileOf(sp), 40, { className: 'decor-lantern ' + (lit ? 'is-lit' : 'is-dim') });
+    const sp = namedSprite(groups.stone_lantern, lampLit ? 'stone_lantern_lit' : 'stone_lantern_unlit') || pickByToken(groups.stone_lantern, lampLit ? 5 : 1);
+    add(0.68, 0.64, fileOf(sp), 40, { className: 'decor-lantern ' + (lampLit ? 'is-lit' : 'is-dim') });
   }
   // Bamboo grove — far right edge. (Manifest group is `bamboo_cluster`.)
   if (groups.bamboo_cluster && groups.bamboo_cluster.length) {
