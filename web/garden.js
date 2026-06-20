@@ -93,6 +93,9 @@ Promise.all([
       flowerbedEnabled: shouldRenderFlowerbed(currentSettings),
     });
     renderer.renderEverything(groups, lastSummary);
+    // renderBaseScene doesn't own this marker (renderIsoScene sets 'iso'); set
+    // it here so a flat re-paint clears a stale 'iso' from a prior toggle.
+    scene.dataset.view = 'flat';
   };
   paintScene();
 
