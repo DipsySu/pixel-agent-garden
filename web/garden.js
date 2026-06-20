@@ -25,12 +25,19 @@ const assetRoot = window.__TAURI__ ? './assets' : '../assets';
 const spriteRoot = assetRoot + '/sprites/';
 const manifestUrl = spriteRoot + 'ivy_courtyard_manifest.json';
 const dataUrl = './data/garden-summary.json';
-// Dev flag: `?iso=1` swaps the flat side-elevation for the new isometric 2.5D
-// renderer (render-iso.js). Lives behind a query while the iso view is built
-// out, so the shipping flat view stays the default + untouched.
-const isoView = (() => {
-  try { return new URLSearchParams(window.location.search).get('iso') === '1'; }
-  catch (_) { return false; }
+// Which view is active: the flat side-elevation (render-svg.js) or the
+// isometric 2.5D room (render-iso.js). Toggled by the header button + persisted
+// to localStorage; `?iso=1` / `?iso=0` is a dev override that wins over the
+// persisted choice. Browser fallback mode has no backend settings, so the
+// view preference lives in localStorage rather than settings.toml.
+const VIEW_STORE = 'pg6.view';
+let isoView = (() => {
+  try {
+    const q = new URLSearchParams(window.location.search).get('iso');
+    if (q === '1') return true;
+    if (q === '0') return false;
+    return window.localStorage && window.localStorage.getItem(VIEW_STORE) === 'iso';
+  } catch (_) { return false; }
 })();
 
 applyStaticTranslations();
@@ -88,6 +95,22 @@ Promise.all([
     renderer.renderEverything(groups, lastSummary);
   };
   paintScene();
+
+  // View toggle (flat ↔ isometric). Shows the view it will switch TO, persists
+  // the choice, and re-paints in place. Same pattern as the locale toggle but
+  // without a reload — paintScene() rebuilds the scene for the chosen view.
+  const viewToggle = document.getElementById('view-toggle');
+  if (viewToggle) {
+    const syncViewLabel = () => { viewToggle.textContent = isoView ? '2D' : '2.5D'; };
+    syncViewLabel();
+    viewToggle.addEventListener('click', () => {
+      isoView = !isoView;
+      try { window.localStorage && window.localStorage.setItem(VIEW_STORE, isoView ? 'iso' : 'flat'); } catch (_) { /* non-fatal */ }
+      syncViewLabel();
+      paintScene();
+    });
+  }
+
   const returnDiff = mountReturnDiff({
     hostFrame: document.querySelector('.pg6-frame'),
     initialSummary: lastSummary
