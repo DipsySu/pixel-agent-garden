@@ -11,9 +11,14 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   // these consts (and the dataset emitted at the end) instead of hard-coding.
   const EAVE_H = 24;          // wooden awning across the very top
   const WT = 158;             // wall top  (was 110)
-  const WB = 330;             // wall bottom (was 380)
+  // Wall bottom raised 330 → 300: the wall band was ~39% of the frame and its
+  // lower third sat bare (vines only reach the upper wall), reading wall-heavy.
+  // Lifting the base shrinks the brick to ~32% and grows the courtyard floor to
+  // ~32%, so the garden — not the wall — carries the frame. Objects seat via
+  // depthToScreen() (wall-independent), so they now stand in a more open floor.
+  const WB = 300;             // wall bottom (was 380 → 330)
   const SKY_H = WT - EAVE_H;  // 134 (was 86)
-  const GROUND_H = H - WB;    // 110 — courtyard/grass band height
+  const GROUND_H = H - WB;    // 140 — courtyard/grass band height
   const PATH_Y = H - 48;      // 392 — flagstone path baseline (kept at old y)
   const r = (x, y, w, h, c) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + c + '"/>';
   function hash(a, b) {
@@ -45,6 +50,48 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
      +   '<stop offset="0%"   stop-color="' + time.glow + '" stop-opacity="' + time.glowOpacity + '"/>'
      +   '<stop offset="45%"  stop-color="' + time.glow + '" stop-opacity="' + (time.glowOpacity * 0.42).toFixed(2) + '"/>'
      +   '<stop offset="100%" stop-color="#f8b870" stop-opacity="0"/>'
+     + '</radialGradient>'
+     // Warm pool cast by a lit lantern; Moon's wider cool glow; and a night
+     // vignette (transparent over the garden, darkening to the frame edges so
+     // the bare upper wall + sky recede). All three are only painted at
+     // night/dusk by the atmosphere block near the end of this function.
+     + '<radialGradient id="pg6LampGlow" cx="50%" cy="50%" r="50%">'
+     +   '<stop offset="0%"   stop-color="#ffe6ad" stop-opacity="0.62"/>'
+     +   '<stop offset="42%"  stop-color="#ffbe6e" stop-opacity="0.26"/>'
+     +   '<stop offset="100%" stop-color="#ffb060" stop-opacity="0"/>'
+     + '</radialGradient>'
+     + '<radialGradient id="pg6MoonGlow" cx="50%" cy="50%" r="50%">'
+     +   '<stop offset="0%"   stop-color="#eef4ff" stop-opacity="0.52"/>'
+     +   '<stop offset="55%"  stop-color="#ccdcfb" stop-opacity="0.15"/>'
+     +   '<stop offset="100%" stop-color="#ccdcfb" stop-opacity="0"/>'
+     + '</radialGradient>'
+     + '<radialGradient id="pg6NightVignette" cx="50%" cy="72%" r="80%">'
+     +   '<stop offset="0%"   stop-color="#080b16" stop-opacity="0"/>'
+     +   '<stop offset="56%"  stop-color="#080b16" stop-opacity="0"/>'
+     +   '<stop offset="100%" stop-color="#080b16" stop-opacity="1"/>'
+     + '</radialGradient>'
+     // Top-down darkening: the radial vignette only bites the corners, so the
+     // bare MID-wall (frame center) stayed lit. This fades from dark at the top
+     // (sky + upper wall) to clear at the garden line (~74% = wall base), so the
+     // empty brick recedes and the lit courtyard band becomes the focus.
+     + '<linearGradient id="pg6NightTop" x1="0" y1="0" x2="0" y2="1">'
+     +   '<stop offset="0%"  stop-color="#06090f" stop-opacity="0.58"/>'
+     +   '<stop offset="42%" stop-color="#06090f" stop-opacity="0.40"/>'
+     +   '<stop offset="74%" stop-color="#06090f" stop-opacity="0"/>'
+     + '</linearGradient>'
+     // Day polish: a faint warm sun-wash from the sun (top) + a gentle corner
+     // vignette for focus. Both are subtle and sit UNDER the object sprites, so
+     // they add depth to the background without dimming the crisp pixel objects
+     // or darkening the scene the way the night washes do.
+     + '<radialGradient id="pg6DaySun" cx="48%" cy="8%" r="72%">'
+     +   '<stop offset="0%"   stop-color="#fff4d6" stop-opacity="0.20"/>'
+     +   '<stop offset="45%"  stop-color="#fff4d6" stop-opacity="0.05"/>'
+     +   '<stop offset="100%" stop-color="#fff4d6" stop-opacity="0"/>'
+     + '</radialGradient>'
+     + '<radialGradient id="pg6DayVignette" cx="50%" cy="54%" r="76%">'
+     +   '<stop offset="0%"   stop-color="#241d12" stop-opacity="0"/>'
+     +   '<stop offset="62%"  stop-color="#241d12" stop-opacity="0"/>'
+     +   '<stop offset="100%" stop-color="#241d12" stop-opacity="0.32"/>'
      + '</radialGradient>'
      + '<linearGradient id="pg6Sky" x1="0" y1="0" x2="0" y2="1">'
      +   '<stop offset="0%" stop-color="' + time.skyTop + '"/>'
@@ -116,6 +163,16 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   // The halo is now a single SVG circle filled with a radial gradient — old
   // rgba rectangles showed as flat ghost squares against the mountain sprites.
   const sunX = time.orb.x, sunY = time.orb.y;
+  // Moon/sun pixel disc — shared by the front pass and the night-bloom restamp
+  // (DRY). The behind-mountains pass keeps its own variant with extra side
+  // glints, so it is intentionally not folded in here.
+  const orbDisc = (x, y) =>
+      r(x, y, 26, 22, time.orb.fill)
+    + r(x + 4, y - 4, 18, 4, time.orb.fill)
+    + r(x + 4, y + 22, 18, 3, time.orb.shadow)
+    + r(x - 3, y + 6, 3, 14, time.orb.fill)
+    + r(x + 26, y + 6, 3, 14, time.orb.fill)
+    + r(x + 6, y + 4, 6, 4, time.orb.highlight);
   // halo behind everything (will be partly covered by mountains, that's fine
   // — it pre-tints the sky so the horizon picks up dusk warmth)
   s += '<circle cx="' + (sunX + 13) + '" cy="' + (sunY + 11) + '" r="38" fill="url(#pg6SunGlow)"/>';
@@ -142,12 +199,7 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   // tints the horizon, this pass keeps the core readable. Halo is the same
   // radial gradient — softer than the original rectangle outlines.
   s += '<circle cx="' + (sunX + 13) + '" cy="' + (sunY + 11) + '" r="30" fill="url(#pg6SunGlow)" opacity="' + time.frontGlowOpacity + '"/>';
-  s += r(sunX, sunY, 26, 22, time.orb.fill);
-  s += r(sunX + 4, sunY - 4, 18, 4, time.orb.fill);
-  s += r(sunX + 4, sunY + 22, 18, 3, time.orb.shadow);
-  s += r(sunX - 3, sunY + 6, 3, 14, time.orb.fill);
-  s += r(sunX + 26, sunY + 6, 3, 14, time.orb.fill);
-  s += r(sunX + 6, sunY + 4, 6, 4, time.orb.highlight);
+  s += orbDisc(sunX, sunY);
 
   // birds — tiny PixelLab silhouettes (daytime/dusk only), some mirrored for
   // variety. critter() is hoisted (defined with the butterflies below).
@@ -203,6 +255,30 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
 
   // Time-of-day wash over the whole wall band (see wallShade in resolveTimeScene).
   if (time.wallShade) s += r(0, WT, W, WB - WT, time.wallShade);
+
+  // === Wall ivy backdrop ========================================
+  // A lush curtain of ivy draping the whole wall, BEHIND the data-driven project
+  // vines (those are DOM sprites layered over this entire SVG, so anything drawn
+  // here is automatically behind them). Two PixelLab variants alternate with
+  // per-column jitter so the repeat doesn't read as a stamp. This overgrows the
+  // bare brick the sparse project strands leave exposed, while the interactive
+  // project vines still pop on top. Drawn AFTER wallShade (foliage shouldn't dim
+  // like brick) but BEFORE the night/day grade (so it shares the scene light).
+  const ivyTop = WT;                            // crest at the wall top
+  const ivyBaseH = WB - WT + 6;                 // nominal drape to just past base
+  const ivyW = Math.round(ivyBaseH * 160 / 240);// column width (aspect of 160×240)
+  const ivyStep = Math.round(ivyW * 0.78);      // ~22% column overlap (no brick gaps)
+  for (let i = 0, x = -Math.round(ivyW * 0.3); x < W; i++, x += ivyStep) {
+    // Per-column height jitter so the bottom edge is RAGGED, not a ruled line —
+    // some strands drape short, some past the base. Width stays fixed so columns
+    // keep overlapping (the slight vertical stretch reads fine on organic ivy).
+    const colH = Math.round(ivyBaseH * (0.72 + hash(i, 53) * 0.44));
+    const variant = (hash(i, 91) > 0.42) ? 'wall_ivy_02' : 'wall_ivy_01';  // bias to the leafier drape
+    const jx = Math.round((hash(i, 71) - 0.5) * 12);
+    const jy = Math.round(hash(i, 37) * 6);
+    const op = (0.82 + hash(i, 23) * 0.16).toFixed(2);   // depth: some columns recede
+    s += '<image href="' + assetRoot + '/sprites/decor/' + variant + '.png" x="' + (x + jx) + '" y="' + (ivyTop + jy) + '" width="' + ivyW + '" height="' + colH + '" preserveAspectRatio="none" image-rendering="pixelated" opacity="' + op + '"/>';
+  }
 
   s += r(0, WB - 4, 50, 10, 'rgba(60,100,40,0.35)');
   s += r(0, WB - 8, 36, 8, 'rgba(70,110,45,0.4)');
@@ -359,6 +435,45 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
     if (hash(i, 22) > 0.5) s += r(px + 30, py + 3, 1, 1, '#f8c4d4');
   }
 
+  // === Night / dusk atmosphere ==================================
+  // Layered OVER the painted background but UNDER the DOM object sprites (those
+  // are absolutely-positioned <img>s stacked on this SVG), so the bare upper
+  // wall + sky edges recede into shadow while the lanterns + moon read as real
+  // light sources — the courtyard objects themselves stay bright. Painted into
+  // the SVG (not as DOM) so postcard.js captures it when it rasterizes the
+  // base scene, keeping the export in sync with the live garden.
+  if (time.mode === 'day') {
+    // Gentle daytime grade — warm sun-wash + soft vignette (see defs). Subtle so
+    // the bright pixel palette stays intact; just adds depth + focus.
+    s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#pg6DaySun)"/>';
+    s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#pg6DayVignette)"/>';
+  }
+  if (time.mode === 'night' || time.mode === 'dusk') {
+    // Night only: heavy top-down wash recedes the sky + bare upper wall. Dusk
+    // is bright/warm, so it skips this and relies on the corner vignette alone.
+    if (time.mode === 'night') {
+      s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#pg6NightTop)"/>';
+    }
+    const vig = time.mode === 'night' ? 0.5 : 0.34;
+    s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#pg6NightVignette)" opacity="' + vig + '"/>';
+    // Warm pool around the lit stone lantern (x=42%, depth 0.70 — mirrors the
+    // addCourtyardObjects placement in render-garden.js; cap sits ~30u above base).
+    const lampX = Math.round(0.42 * W);
+    const lampBaseY = Math.round(depthToScreen(0.70).yBottomPct / 100 * H);
+    // Bloom centered on the lit CAP (~46u above the base, measured from the live
+    // sprite box), not the lantern's mid-body, so the light reads as emitted.
+    s += '<circle cx="' + lampX + '" cy="' + (lampBaseY - 46) + '" r="58" fill="url(#pg6LampGlow)"/>';
+    // Warm spill from the pavilion's hanging lantern. The lantern is baked into
+    // the pavilion sprite at its RIGHT eave; coords measured from the live
+    // pavilion box (cx 81%, [444.8,656.8] × [199,378]) → lantern ≈ (642, 332).
+    s += '<circle cx="642" cy="332" r="42" fill="url(#pg6LampGlow)"/>';
+  }
+  if (time.mode === 'night') {
+    // Wider, cooler moonlight bloom + a crisp re-stamp of the disc on top, so
+    // the moon stays sharp over both its own glow and the vignette.
+    s += '<circle cx="' + (sunX + 13) + '" cy="' + (sunY + 11) + '" r="66" fill="url(#pg6MoonGlow)"/>';
+    s += orbDisc(sunX, sunY);
+  }
   s += '</svg>';
 
   scene.innerHTML = s +
@@ -402,8 +517,13 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
 export function depthToScreen(d) {
   const dd = Math.max(0, Math.min(1, d));
   const e = dd * dd * (1.7 - 0.7 * dd); // ease-in: small slope near 0 (far bunches up)
-  const Y_BACK = 78.0, Y_FRONT = 98.5;  // bottom-edge %: just under wall base → near edge
-  const S_BACK = 0.82, S_FRONT = 1.12;  // size scale: far smaller → near bigger
+  // Y range widened (was 78→98.5, a thin 20.5% band that compressed every object
+  // onto ~one baseline AND left the grass between the wall base and the objects
+  // empty). With the wall base lifted to WB=300 (≈68%), starting the far edge at
+  // 70% seats far objects just under the wall and spreads the depth across 29% of
+  // the height — real front-to-back separation instead of a flat shelf.
+  const Y_BACK = 70.0, Y_FRONT = 99.0;  // bottom-edge %: just under wall base → near edge
+  const S_BACK = 0.80, S_FRONT = 1.16;  // size scale: far smaller → near bigger
   return {
     yBottomPct: +(Y_BACK + (Y_FRONT - Y_BACK) * e).toFixed(2),
     scale: +(S_BACK + (S_FRONT - S_BACK) * e).toFixed(3),
@@ -493,7 +613,11 @@ function resolveTimeScene(settings) {
       wood: ['#8f6748', '#5e432e', '#2f241e'],
       mountainFarOpacity: 0.38,
       mountainNearOpacity: 0.48,
-      wallShade: 'rgba(18,24,42,0.32)',
+      // Push the (light tan) brick wall well into shadow at night so the bare
+      // mid-wall recedes and the lit garden + lantern blooms read as the focus.
+      // The lantern glows are painted AFTER this wash, so they re-light the wall
+      // locally — dark wall, warm pools, exactly the night-courtyard look.
+      wallShade: 'rgba(13,18,34,0.52)',
       groundShade: 'rgba(16,22,40,0.42)'
     }
   };
