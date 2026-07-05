@@ -28,6 +28,26 @@
   The 2.5D renderer now uses a dedicated PixelLab isometric asset pass for the
   main courtyard objects (`assets/sprites/isometric_generated/`): pavilion,
   koi pond, willow, cherry, stone cat, stone lantern, and low bamboo hedge.
+- 2.5D 视图风格和谐化(v2 资产 + 房间升级)。首版等距场景混了三种视觉语言
+  (64px 积木体被放大渲染、精绘背景、过平的程序化房间),整体读作"不和谐"。
+  现以经典 WALL 视图/最初设计稿的精绘像素语言为准重做:主体 sprite 全部重新
+  生成为高分辨率 `*_iso_v2_*`(分档对象一档一图:亭 small/mid/full、石猫
+  small/full、柳 young/mature、樱 bud/bloom/petal、灯 lit/unlit——修掉白天
+  灯亮;锦鲤回到正常比例;白玩具猫回归灰石猫语义;统一去掉自带底座,靠接地
+  阴影落座)。房间侧:地板弃用调试网格改草斑/草丛、墙面画出顺砌砖层、栅栏补
+  横栏、岛缘加涟漪光点、删除静止半空花瓣、夜/黄昏为石灯补暖光池。另为岛外
+  水面补近景生命层(松屿/苔石礁、莲叶漂浮簇、锦鲤剪影+涟漪圈、低飞水鸟),
+  填掉画面四角的空旷水域,形成"近景水面—庭院—远山"三层纵深;夜间水景减光、
+  锦鲤水鸟隐去。生命层补完:项目藤蔓贴墙化(槽位收进墙面、藤冠降到帽沿下、
+  新增砌体接触阴影),池塘移出樱竹丛到中前空地并改用无鱼静水 sprite——两条
+  锦鲤成为活体(水流泳道循环,尊重 data-motion),并把经典视图的五亿
+  token 庭院猫移植到 2.5D 地面(巡游/落座,精灵表同款,renderer destroy()
+  负责拆循环)。动画自然化二轮:锦鲤从匀速 CSS 轨道改为鱼头朝向驱动的水流
+  泳道(从池塘一端逆流游到另一端,短暂停顿,再顺水漂回起点循环);庭院猫改为
+  预设庭院路线 + 转向限速的弧线漫步 + 池塘/雕像/亭子软避障,偶尔驻足观望;
+  水面角落再添白鹭(立
+  于右下礁石)、香蒲芦苇两丛与泊在左侧水面的小木船。详见
+  `docs/19-isometric-courtyard-plan.md` 的 Style Harmonization 小节。
   The old side-view courtyard sprites are no longer forced into the isometric
   renderer, which removes the earlier mixed-projection collage feel. The floor
   grid was also softened and each standing object gets a subtle local contact

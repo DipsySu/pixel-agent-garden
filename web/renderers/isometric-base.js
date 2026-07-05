@@ -50,15 +50,31 @@ export function renderIsometricBase(scene, assetRoot, options = {}) {
   s += renderStars(time);
   if (time.mode !== 'night') {
     s += cloud(assetRoot, 68, 54, 76) + cloud(assetRoot, 512, 44, 96);
+    // third, fainter cloud breaks up the empty left-middle sky band
+    s += '<g opacity="0.62">' + cloud(assetRoot, 252, 88, 54) + '</g>';
   }
   s += renderOrb(time, r, assetRoot);
   s += '<image href="' + assetRoot + '/sprites/mountains/mountains_far.png" x="-18" y="104" width="716" height="54" preserveAspectRatio="none" opacity="' + time.mountainFarOpacity + '"/>';
   s += '<image href="' + assetRoot + '/sprites/mountains/mountains_near.png" x="-20" y="124" width="720" height="60" preserveAspectRatio="none" opacity="' + time.mountainNearOpacity + '"/>';
 
+  s += renderWaterContact(time);
+  s += renderWaterLife(time, assetRoot);
   s += renderBackWalls(time, r);
   s += renderFloor(season, r);
   s += renderFence(r);
-  s += renderPetals();
+  // Warm pool where the stone lantern stands (mirrors the DOM sprite's seat at
+  // isometric-renderer's 0.80,0.61 — same constant-mirroring the flat view
+  // uses for its lantern glow). Painted in the SVG so the postcard export
+  // keeps it; the lantern <img> lands on top with its lit windows.
+  if (time.mode === 'night' || time.mode === 'dusk') {
+    const lamp = isoToScreen(0.80, 0.61);
+    s += '<radialGradient id="pg6IsoLampGlow" cx="50%" cy="50%" r="50%">'
+      + '<stop offset="0%" stop-color="#ffe6ad" stop-opacity="0.55"/>'
+      + '<stop offset="45%" stop-color="#ffbe6e" stop-opacity="0.22"/>'
+      + '<stop offset="100%" stop-color="#ffb060" stop-opacity="0"/>'
+      + '</radialGradient>'
+      + '<ellipse cx="' + lamp.x.toFixed(1) + '" cy="' + (lamp.y - 16).toFixed(1) + '" rx="40" ry="26" fill="url(#pg6IsoLampGlow)"/>';
+  }
   s += '</svg>';
 
   scene.innerHTML = s +
@@ -121,21 +137,45 @@ function renderBackWalls(time, r) {
   s += '<polygon points="' + points(WALL_LEFT_TOP, WALL_CORNER_TOP, WALL_RIGHT_TOP, FLOOR_RIGHT, FLOOR_TOP, FLOOR_LEFT) + '" fill="rgba(32,22,16,0.12)"/>';
   s += '<polyline points="' + points(WALL_LEFT_TOP, WALL_CORNER_TOP, WALL_RIGHT_TOP) + '" fill="none" stroke="' + time.wallEdge + '" stroke-width="4" stroke-linejoin="miter"/>';
   s += '<polyline points="' + points(FLOOR_LEFT, FLOOR_TOP, FLOOR_RIGHT) + '" fill="none" stroke="rgba(45,35,26,0.42)" stroke-width="3"/>';
-  for (let i = 1; i < 7; i++) {
-    const a = i / 7;
-    const leftBottom = lerpPoint(FLOOR_LEFT, FLOOR_TOP, a);
-    const leftTop = lerpPoint(WALL_LEFT_TOP, WALL_CORNER_TOP, a);
-    const rightBottom = lerpPoint(FLOOR_TOP, FLOOR_RIGHT, a);
-    const rightTop = lerpPoint(WALL_CORNER_TOP, WALL_RIGHT_TOP, a);
-    s += '<line x1="' + leftBottom.x.toFixed(1) + '" y1="' + leftBottom.y.toFixed(1) + '" x2="' + leftTop.x.toFixed(1) + '" y2="' + leftTop.y.toFixed(1) + '" stroke="rgba(56,44,33,0.26)" stroke-width="2"/>';
-    s += '<line x1="' + rightBottom.x.toFixed(1) + '" y1="' + rightBottom.y.toFixed(1) + '" x2="' + rightTop.x.toFixed(1) + '" y2="' + rightTop.y.toFixed(1) + '" stroke="rgba(56,44,33,0.30)" stroke-width="2"/>';
+  // Coursed masonry instead of the old sparse stud/course lines: horizontal
+  // mortar joints per wall face, staggered head joints per band (running
+  // bond), and cap ticks along the rim. Joint/highlight tones are fixed
+  // low-opacity overlays so the underlying time-of-day wall gradient still
+  // carries dusk/night shading. Aligns the iso wall with the flat view's
+  // sandstone masonry language (scene-tiles.js WALL_PAL family).
+  const ln = (p1, p2, stroke, w) =>
+    '<line x1="' + p1.x.toFixed(1) + '" y1="' + p1.y.toFixed(1) + '" x2="' + p2.x.toFixed(1) +
+    '" y2="' + p2.y.toFixed(1) + '" stroke="' + stroke + '" stroke-width="' + w + '"/>';
+  const lift = (p, h) => ({ x: p.x, y: p.y - h });
+  const COURSES = 5;
+  const JOINTS = 8;
+  const faces = [
+    { a: FLOOR_LEFT, b: FLOOR_TOP, joint: 'rgba(52,41,30,0.28)', hi: 'rgba(236,222,192,0.10)' },
+    { a: FLOOR_TOP, b: FLOOR_RIGHT, joint: 'rgba(52,41,30,0.34)', hi: 'rgba(236,222,192,0.07)' },
+  ];
+  for (const face of faces) {
+    for (let c = 1; c < COURSES; c++) {
+      const h = (WALL_H * c) / COURSES;
+      s += ln(lift(face.a, h), lift(face.b, h), face.joint, 1.5);
+      s += ln(lift(face.a, h + 1.5), lift(face.b, h + 1.5), face.hi, 1);
+    }
+    for (let c = 0; c < COURSES; c++) {
+      const y0 = (WALL_H * c) / COURSES + 1;
+      const y1 = (WALL_H * (c + 1)) / COURSES - 1;
+      for (let j = 1; j <= JOINTS; j++) {
+        const tt = (j - (c % 2) * 0.5) / (JOINTS + 0.5);
+        if (tt <= 0.03 || tt >= 0.97) continue;
+        const b = lerpPoint(face.a, face.b, tt);
+        s += ln(lift(b, y0), lift(b, y1), face.joint, 1);
+      }
+    }
   }
-  for (let i = 1; i < 4; i++) {
-    const a = i / 4;
-    const left = lerpPoint(WALL_LEFT_TOP, FLOOR_LEFT, a);
-    const corner = lerpPoint(WALL_CORNER_TOP, FLOOR_TOP, a);
-    const right = lerpPoint(WALL_RIGHT_TOP, FLOOR_RIGHT, a);
-    s += '<polyline points="' + points(left, corner, right) + '" fill="none" stroke="rgba(56,44,33,0.22)" stroke-width="2"/>';
+  // cap stones: short ticks along the two top rims
+  for (let i = 1; i < 10; i++) {
+    const a = lerpPoint(WALL_LEFT_TOP, WALL_CORNER_TOP, i / 10);
+    const b = lerpPoint(WALL_CORNER_TOP, WALL_RIGHT_TOP, i / 10);
+    s += ln(a, { x: a.x, y: a.y + 3 }, 'rgba(68,51,33,0.5)', 1.5);
+    s += ln(b, { x: b.x, y: b.y + 3 }, 'rgba(68,51,33,0.5)', 1.5);
   }
   for (let i = 0; i < 18; i++) {
     const p = wallSlotToScreen((i + 0.35) / 18);
@@ -170,32 +210,52 @@ function renderFloor(season, r) {
   s += '<polygon points="' + points(FLOOR_RIGHT, FLOOR_FRONT, { x: FLOOR_FRONT.x, y: FLOOR_FRONT.y + sideDrop }, { x: FLOOR_RIGHT.x, y: FLOOR_RIGHT.y + sideDrop }) + '" fill="#563721"/>';
   s += '<polyline points="' + points(FLOOR_LEFT, FLOOR_FRONT, FLOOR_RIGHT) + '" fill="none" stroke="#6f4d2a" stroke-width="3"/>';
   s += '<polyline points="' + points({ x: FLOOR_LEFT.x + 3, y: FLOOR_LEFT.y + 1 }, { x: FLOOR_FRONT.x, y: FLOOR_FRONT.y + 1 }, { x: FLOOR_RIGHT.x - 3, y: FLOOR_RIGHT.y + 1 }) + '" fill="none" stroke="rgba(140,104,55,0.28)" stroke-width="1"/>';
-  for (let i = 1; i < 9; i++) {
-    const t = i / 9;
-    const a = isoToScreen(t, 0);
-    const b = isoToScreen(t, 1);
-    const c = isoToScreen(0, t);
-    const d = isoToScreen(1, t);
-    s += '<line x1="' + a.x.toFixed(1) + '" y1="' + a.y.toFixed(1) + '" x2="' + b.x.toFixed(1) + '" y2="' + b.y.toFixed(1) + '" stroke="rgba(34,52,26,0.12)" stroke-width="1"/>';
-    s += '<line x1="' + c.x.toFixed(1) + '" y1="' + c.y.toFixed(1) + '" x2="' + d.x.toFixed(1) + '" y2="' + d.y.toFixed(1) + '" stroke="rgba(34,52,26,0.12)" stroke-width="1"/>';
+  // Organic ground cover replaces the old u/v debug grid + uniform dots:
+  // mottled tone patches, small three-blade grass tufts, and sparse flecks,
+  // all seated on the floor plane via isoToScreen + the module hash so the
+  // layout is deterministic across repaints. The grid read as a game board;
+  // a garden floor wants irregular growth.
+  for (let i = 0; i < 58; i++) {
+    const p = isoToScreen(0.04 + hash(i, 31) * 0.92, 0.04 + hash(i, 47) * 0.92);
+    const tone = hash(i, 11) > 0.6 ? season.grassDot : (hash(i, 5) > 0.5 ? season.grassLight : season.floorBack);
+    const w = 3 + Math.round(hash(i, 7) * 3);
+    s += r(Math.round(p.x), Math.round(p.y), w, 2, tone);
+    if (hash(i, 13) > 0.55) s += r(Math.round(p.x + w * 0.4), Math.round(p.y - 2), Math.max(2, w - 2), 2, tone);
   }
-  for (let i = 0; i < 42; i++) {
-    const p = isoToScreen(hash(i, 2), hash(i, 7));
-    const c = hash(i, 11) > 0.5 ? season.grassDot : season.grassLight;
-    s += r(Math.round(p.x), Math.round(p.y), 2, 2, c);
+  for (let i = 0; i < 22; i++) {
+    const p = isoToScreen(0.06 + hash(i + 91, 17) * 0.88, 0.06 + hash(i + 91, 23) * 0.88);
+    const x = Math.round(p.x);
+    const y = Math.round(p.y);
+    s += r(x, y - 4, 1, 4, season.grassDot);
+    s += r(x - 2, y - 3, 1, 3, season.grassLight);
+    s += r(x + 2, y - 3, 1, 3, season.grassDot);
+  }
+  for (let i = 0; i < 30; i++) {
+    const p = isoToScreen(hash(i + 200, 2), hash(i + 200, 7));
+    s += r(Math.round(p.x), Math.round(p.y), 2, 2, hash(i + 200, 11) > 0.5 ? season.grassDot : season.grassLight);
   }
   return s;
 }
 
 function renderFence(r) {
-  const posts = [
-    isoToScreen(0.03, 0.74), isoToScreen(0.14, 0.86), isoToScreen(0.26, 0.98),
-    isoToScreen(0.48, 1.00), isoToScreen(0.72, 0.98), isoToScreen(0.91, 0.82),
-    isoToScreen(1.00, 0.62), isoToScreen(0.00, 0.62)
+  // Post chain traces the two near floor edges, ordered left-rim → front
+  // corner → right-rim so the rails can run through them as one polyline.
+  // Rails are drawn FIRST so the posts overlap them — without rails the
+  // posts read as loose stakes, not a courtyard fence. (The two rim posts
+  // that used to float free now anchor the chain's endpoints.)
+  const chain = [
+    isoToScreen(0.00, 0.62), isoToScreen(0.03, 0.74), isoToScreen(0.14, 0.86),
+    isoToScreen(0.26, 0.98), isoToScreen(0.48, 1.00), isoToScreen(0.72, 0.98),
+    isoToScreen(0.91, 0.82), isoToScreen(1.00, 0.62)
   ];
   let s = '';
-  for (let i = 0; i < posts.length; i++) {
-    const p = posts[i];
+  const rail = (h, w, color) => '<polyline points="'
+    + chain.map((p) => p.x.toFixed(1) + ',' + (p.y - h).toFixed(1)).join(' ')
+    + '" fill="none" stroke="' + color + '" stroke-width="' + w + '"/>';
+  s += rail(17, 2.5, '#4e3520');
+  s += rail(8, 2, '#5a3e26');
+  for (let i = 0; i < chain.length; i++) {
+    const p = chain[i];
     s += r(p.x - 3, p.y - 22, 6, 25, '#5a3b26');
     s += r(p.x - 2, p.y - 22, 4, 4, '#7a5536');
   }
@@ -233,12 +293,85 @@ function cloud(assetRoot, cx, cy, w) {
   return '<image href="' + assetRoot + '/sprites/critters/cloud.png" x="' + (cx - w / 2) + '" y="' + (cy - h / 2) + '" width="' + w + '" height="' + h + '" preserveAspectRatio="xMidYMid meet" opacity="0.72"/>';
 }
 
-function renderPetals() {
+// Ripple rings + drifting sparkles around the island slab so it reads as
+// sitting IN the water instead of pasted onto the sky gradient. Replaces the
+// old renderPetals(): those 16 petals were static rects frozen mid-air (some
+// over open water), which read as stray noise — an animated spring-petal pass
+// can return later as a DOM layer like the classic renderer's.
+// Drawn before the walls/floor, so the island body covers the rings' far side.
+function renderWaterContact(time) {
+  const drop = 12;
+  const L = { x: FLOOR_LEFT.x - 11, y: FLOOR_LEFT.y + 2 + drop };
+  const R = { x: FLOOR_RIGHT.x + 11, y: FLOOR_RIGHT.y + 2 + drop };
+  const F = { x: FLOOR_FRONT.x, y: FLOOR_FRONT.y + 8 + drop };
+  const tone = time.mode === 'night' ? 'rgba(150,170,205,' : 'rgba(224,240,246,';
   let s = '';
-  for (let i = 0; i < 16; i++) {
-    const x = Math.round(70 + hash(i, 13) * 560);
-    const y = Math.round(76 + hash(i, 17) * 330);
-    s += '<rect x="' + x + '" y="' + y + '" width="4" height="3" fill="#d9a1b3" opacity="' + (0.25 + hash(i, 19) * 0.45).toFixed(2) + '" transform="rotate(' + Math.round(hash(i, 23) * 30 - 15) + ' ' + x + ' ' + y + ')"/>';
+  // dark contact band hugging the slab's waterline, so the island presses INTO
+  // the water instead of hovering over it (the ripples alone read as drawn-on)
+  s += '<polyline points="'
+    + (L.x - 2).toFixed(1) + ',' + (L.y + 2).toFixed(1) + ' '
+    + F.x.toFixed(1) + ',' + (F.y + 3).toFixed(1) + ' '
+    + (R.x + 2).toFixed(1) + ',' + (R.y + 2).toFixed(1)
+    + '" fill="none" stroke="rgba(10,16,28,0.18)" stroke-width="6"/>';
+  [[7, 0.28], [14, 0.17], [22, 0.09]].forEach(([off, op]) => {
+    s += '<polyline points="'
+      + (L.x - off * 1.6).toFixed(1) + ',' + (L.y + off * 0.35).toFixed(1) + ' '
+      + F.x.toFixed(1) + ',' + (F.y + off).toFixed(1) + ' '
+      + (R.x + off * 1.6).toFixed(1) + ',' + (R.y + off * 0.35).toFixed(1)
+      + '" fill="none" stroke="' + tone + op + ')" stroke-width="2"/>';
+  });
+  for (let i = 0; i < 10; i++) {
+    const t = hash(i + 300, 3);
+    const x = L.x + (R.x - L.x) * t;
+    const y = Math.max(L.y, R.y) + 8 + hash(i + 300, 9) * 26;
+    s += '<rect x="' + Math.round(x) + '" y="' + Math.round(y) + '" width="2" height="1" fill="' + tone + '0.45)"/>';
+  }
+  return s;
+}
+
+// Near-field life on the open water AROUND the island — the four frame
+// corners were flat gradient, which read as "PNG pasted on a void". Rocky
+// islets echo the horizon islands (near > island > horizon = three depth
+// layers), lotus drifts + koi give the water life. Drawn BEFORE the walls /
+// floor, so anything brushing the island silhouette tucks behind it.
+function renderWaterLife(time, assetRoot) {
+  const night = time.mode === 'night';
+  const dim = night ? ' opacity="0.78"' : '';
+  const img = (file, cx, cy, w, h) =>
+    '<image href="' + assetRoot + '/sprites/isometric_generated/' + file + '" x="' + (cx - w / 2) +
+    '" y="' + (cy - h) + '" width="' + w + '" height="' + h + '" image-rendering="pixelated"' + dim + '/>';
+  let s = '';
+  // rocky islets: bottom-left hero, bottom-right smaller, far-left echo
+  s += img('water_islet_iso_v2_pine.png', 150, 412, 64, 64);
+  s += img('water_islet_iso_v2_rocks.png', 566, 392, 44, 44);
+  s += img('water_islet_iso_v2_rocks.png', 86, 312, 30, 30);
+  // corner dressing round 2: reeds flank both islets, a moored rowboat drifts
+  // on the left open water, and an egret stands watch on the right rocks —
+  // the bottom corners now carry a full near-field vignette each.
+  s += img('water_reeds_iso_v2.png', 196, 424, 30, 40);
+  s += img('water_reeds_iso_v2.png', 612, 408, 26, 35);
+  s += img('water_boat_iso_v2.png', 100, 352, 48, 36);
+  s += img('water_egret_iso_v2.png', 569, 374, 32, 32);
+  // lotus drifts (flat on the water: height ≈ 2/3 width per the 96×64 sprite)
+  s += img('water_lotus_iso_v2.png', 256, 420, 44, 29);
+  s += img('water_lotus_iso_v2.png', 500, 408, 36, 24);
+  // koi silhouettes with ripple rings — daytime/dusk accents (they'd glow at
+  // night; the courtyard pond keeps its own koi around the clock)
+  if (!night) {
+    const koi = (cx, cy, flip) => {
+      const rings = '<ellipse cx="' + cx + '" cy="' + cy + '" rx="11" ry="5" fill="none" stroke="rgba(228,242,246,0.35)" stroke-width="1"/>'
+        + '<ellipse cx="' + cx + '" cy="' + cy + '" rx="17" ry="8" fill="none" stroke="rgba(228,242,246,0.18)" stroke-width="1"/>';
+      let body = '<rect x="' + (cx - 4) + '" y="' + (cy - 2) + '" width="7" height="3" fill="#d8763c"/>'
+        + '<rect x="' + (cx - 1) + '" y="' + (cy - 2) + '" width="3" height="3" fill="#f2ede2"/>'
+        + '<rect x="' + (cx + 3) + '" y="' + (cy - 1) + '" width="2" height="2" fill="#d8763c"/>';
+      if (flip) body = '<g transform="translate(' + (2 * cx) + ' 0) scale(-1 1)">' + body + '</g>';
+      return rings + body;
+    };
+    s += koi(118, 352, false);
+    s += koi(598, 414, true);
+    // low waterbirds skimming the left open water
+    s += '<image href="' + assetRoot + '/sprites/critters/bird.png" x="88" y="200" width="16" height="11" image-rendering="pixelated"/>';
+    s += '<image href="' + assetRoot + '/sprites/critters/bird.png" x="120" y="212" width="13" height="9" image-rendering="pixelated" transform="translate(253 0) scale(-1 1)"/>';
   }
   return s;
 }
@@ -254,9 +387,12 @@ function resolveTimeScene(settings) {
       skyTop: '#6ca7df',
       skyMid: '#91bfdf',
       skyBottom: '#b1cfe0',
-      wallLight: '#9a8b74',
-      wallMid: '#83745f',
-      wallDark: '#6f604d',
+      // Warmed toward the flat view's sandstone ramp (scene-tiles WALL_PAL
+      // #b8a079 family) so the two views read as the same wall material.
+      // Dusk/night keep their own darker sets — time shading stays intact.
+      wallLight: '#b09d80',
+      wallMid: '#98866d',
+      wallDark: '#7f6e58',
       wallEdge: '#443321',
       mountainFarOpacity: 0.38,
       mountainNearOpacity: 0.48,
@@ -305,8 +441,11 @@ function resolveSeasonScene(settings) {
   const now = new Date();
   const mode = forced === 'system' ? systemSeasonMode(now) : forced;
   const palettes = {
-    spring: { mode: 'spring', label: t('season.spring'), floorBack: '#426f35', floorFront: '#527d38', grassDot: '#2c4b23', grassLight: '#6e9850' },
-    summer: { mode: 'summer', label: t('season.summer'), floorBack: '#386b32', floorFront: '#477d36', grassDot: '#274723', grassLight: '#659446' },
+    // spring/summer greens pulled slightly gray-ward: the old values read
+    // saturated against the muted painterly backdrop once the floor lost its
+    // grid (flat expanses amplify chroma). autumn/winter were already muted.
+    spring: { mode: 'spring', label: t('season.spring'), floorBack: '#456939', floorFront: '#55763e', grassDot: '#2c4b23', grassLight: '#6e9850' },
+    summer: { mode: 'summer', label: t('season.summer'), floorBack: '#3e6537', floorFront: '#4b733c', grassDot: '#274723', grassLight: '#659446' },
     autumn: { mode: 'autumn', label: t('season.autumn'), floorBack: '#746832', floorFront: '#877238', grassDot: '#4f421e', grassLight: '#9a8248' },
     winter: { mode: 'winter', label: t('season.winter'), floorBack: '#687866', floorFront: '#7d8979', grassDot: '#4d5d51', grassLight: '#9fac9f' },
   };

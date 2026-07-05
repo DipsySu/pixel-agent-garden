@@ -234,6 +234,10 @@ body {
 }
 .pg6-scene[data-renderer="isometric"] .pg6-sprite.pg6-iso-vine {
   animation: none;
+  /* Contact shadow cast onto the masonry: without it the vines hover over the
+     wall face like stickers. Keeps the classic project tint multipliers so
+     health/source hue still applies. */
+  filter: saturate(calc(0.82 * var(--vine-health-sat, 1))) brightness(calc(0.92 * var(--vine-health-bright, 1))) contrast(0.98) hue-rotate(var(--vine-hue-shift, 0deg)) drop-shadow(2px 3px 0 rgba(40, 31, 20, 0.34));
   transform: var(--sprite-transform, translate(-50%, 0)) rotate(var(--iso-vine-tilt, 0deg));
   transform-origin: top center;
 }
@@ -247,6 +251,17 @@ body {
 }
 .pg6-scene[data-renderer="isometric"] .pg6-iso-pond {
   filter: saturate(1.02) brightness(0.94) contrast(1.04) drop-shadow(0 2px 0 rgba(12, 18, 20, 0.24));
+}
+/* Live pond koi. Position + rotation are driven per-frame by the current-lane
+   simulation in isometric-renderer.js (swim upstream → pause → drift back),
+   which reads data-motion itself: off/prefers-reduced = resting fish with no
+   loop, reduced = slowed pace. The old constant-speed CSS orbit read as
+   clockwork. */
+.pg6-iso-koi {
+  image-rendering: pixelated;
+  pointer-events: none;
+  position: absolute;
+  transform: translate(-50%, -50%);
 }
 .pg6-scene[data-renderer="isometric"] .pg6-iso-tree {
   filter: saturate(1.02) brightness(0.96) contrast(1.02) drop-shadow(0 3px 0 rgba(18, 14, 12, 0.24));
@@ -559,17 +574,24 @@ body {
     0%, 100% { filter: saturate(1.12) brightness(1.08) drop-shadow(0 0 4px rgba(240, 160, 96, 0.45)); }
     50%      { filter: saturate(1.22) brightness(1.22) drop-shadow(0 0 7px rgba(240, 160, 96, 0.65)); }
   }
+  /* Fall distances are custom-property-driven (--petal-fall / --particle-fall)
+     with the old fixed values as defaults, so the classic view is unchanged.
+     The iso renderer sets them from the LIVE scene height — the hardcoded
+     500px only reached mid-air there, so leaves visibly dissolved halfway
+     down and popped back in at the top. Fade-out is also compressed into the
+     tail of the run so particles dissolve near their landing, not mid-fall. */
   @keyframes pg6-petal-fall {
     0%   { opacity: 0; transform: translate3d(0, -8px, 0) rotate(0deg); }
     10%  { opacity: 0.65; }
-    90%  { opacity: 0.55; }
-    100% { opacity: 0; transform: translate3d(var(--petal-drift, 18px), 120px, 0) rotate(160deg); }
+    92%  { opacity: 0.55; }
+    100% { opacity: 0; transform: translate3d(var(--petal-drift, 18px), var(--petal-fall, 120px), 0) rotate(160deg); }
   }
   @keyframes pg6-maple-fall {
     0%   { opacity: 0; transform: translate3d(0, 0, 0) rotate(0deg); }
     12%  { opacity: 0.88; }
-    82%  { opacity: 0.82; }
-    100% { opacity: 0; transform: translate3d(var(--particle-drift, 48px), 500px, 0) rotate(260deg); }
+    88%  { opacity: 0.8; }
+    98%  { opacity: 0.35; }
+    100% { opacity: 0; transform: translate3d(var(--particle-drift, 48px), var(--particle-fall, 500px), 0) rotate(260deg); }
   }
   @keyframes pg6-firefly-drift {
     0%, 100% {
@@ -590,8 +612,9 @@ body {
   @keyframes pg6-snow-fall {
     0%   { opacity: 0; transform: translate3d(0, 0, 0) rotate(0deg); }
     16%  { opacity: 0.76; }
-    88%  { opacity: 0.64; }
-    100% { opacity: 0; transform: translate3d(var(--particle-drift, 24px), 520px, 0) rotate(110deg); }
+    90%  { opacity: 0.62; }
+    98%  { opacity: 0.3; }
+    100% { opacity: 0; transform: translate3d(var(--particle-drift, 24px), var(--particle-fall, 520px), 0) rotate(110deg); }
   }
   @keyframes pg6-freshness-pulse {
     0%, 100% { opacity: 0.68; }
