@@ -46,7 +46,10 @@
   泳道(从池塘一端逆流游到另一端,短暂停顿,再顺水漂回起点循环);庭院猫改为
   预设庭院路线 + 转向限速的弧线漫步 + 池塘/雕像/亭子软避障,偶尔驻足观望;
   水面角落再添白鹭(立
-  于右下礁石)、香蒲芦苇两丛与泊在左侧水面的小木船。详见
+  于右下礁石)、香蒲芦苇两丛与泊在左侧水面的小木船。四角水面第三轮再补
+  `water_corner_lotus_v1.png` / `water_corner_reeds_v1.png` /
+  `water_corner_moss_stones_v1.png`: 远角小而淡,近角更细,让沙盘四角不再是
+  平铺水色。详见
   `docs/19-isometric-courtyard-plan.md` 的 Style Harmonization 小节。
   The old side-view courtyard sprites are no longer forced into the isometric
   renderer, which removes the earlier mixed-projection collage feel. The floor

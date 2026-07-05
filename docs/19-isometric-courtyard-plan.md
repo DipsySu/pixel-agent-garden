@@ -219,6 +219,12 @@ original design mockup:
   (`water_egret_iso_v2.png`), reed clumps flank both islets
   (`water_reeds_iso_v2.png`), and a moored rowboat drifts on the left water
   (`water_boat_iso_v2.png`).
+- **Corner dressing round 3**: the four open-water corners gained smaller
+  dedicated sprites so the 2.5D tray no longer floats in a flat gradient:
+  far-left lotus (`water_corner_lotus_v1.png`), far-right moss stones
+  (`water_corner_moss_stones_v1.png`), near-left reeds
+  (`water_corner_reeds_v1.png`), and a near-right lotus echo. Far corners render
+  smaller and quieter; near corners carry more detail.
 - **Seasonal particles** (`addIsoSeasonParticles`): the classic view's four
   seasonal layers now run in 2.5D too — winter snow (18), autumn maple leaves
   (14), summer fireflies (dusk/night only), and spring petals shed from the

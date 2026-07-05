@@ -330,24 +330,33 @@ function renderWaterContact(time) {
 }
 
 // Near-field life on the open water AROUND the island — the four frame
-// corners were flat gradient, which read as "PNG pasted on a void". Rocky
-// islets echo the horizon islands (near > island > horizon = three depth
-// layers), lotus drifts + koi give the water life. Drawn BEFORE the walls /
-// floor, so anything brushing the island silhouette tucks behind it.
+// corners were flat gradient, which read as "PNG pasted on a void". Corner
+// vignettes now give each edge a small subject (stone, reeds, lotus, boat)
+// while staying below the garden itself in visual priority. Drawn BEFORE the
+// walls / floor, so anything brushing the island silhouette tucks behind it.
 function renderWaterLife(time, assetRoot) {
   const night = time.mode === 'night';
-  const dim = night ? ' opacity="0.78"' : '';
-  const img = (file, cx, cy, w, h) =>
-    '<image href="' + assetRoot + '/sprites/isometric_generated/' + file + '" x="' + (cx - w / 2) +
-    '" y="' + (cy - h) + '" width="' + w + '" height="' + h + '" image-rendering="pixelated"' + dim + '/>';
+  const img = (file, cx, cy, w, h, options = {}) => {
+    const opacity = options.opacity == null ? (night ? 0.78 : null) : options.opacity * (night ? 0.78 : 1);
+    const opacityAttr = opacity == null ? '' : ' opacity="' + opacity.toFixed(2) + '"';
+    return '<image href="' + assetRoot + '/sprites/isometric_generated/' + file + '" x="' + (cx - w / 2) +
+      '" y="' + (cy - h) + '" width="' + w + '" height="' + h + '" image-rendering="pixelated"' + opacityAttr + '/>';
+  };
   let s = '';
+
+  // Four-corner water dressing. Far corners are small + quieter; near corners
+  // carry the visual weight, framing the tray without crowding the courtyard.
+  s += img('water_corner_lotus_v1.png', 48, 286, 30, 21, { opacity: 0.76 });
+  s += img('water_corner_moss_stones_v1.png', 638, 300, 30, 23, { opacity: 0.72 });
+  s += img('water_corner_reeds_v1.png', 36, 404, 34, 34, { opacity: 0.86 });
+  s += img('water_corner_lotus_v1.png', 626, 424, 42, 29, { opacity: 0.86 });
+
   // rocky islets: bottom-left hero, bottom-right smaller, far-left echo
   s += img('water_islet_iso_v2_pine.png', 150, 412, 64, 64);
   s += img('water_islet_iso_v2_rocks.png', 566, 392, 44, 44);
   s += img('water_islet_iso_v2_rocks.png', 86, 312, 30, 30);
-  // corner dressing round 2: reeds flank both islets, a moored rowboat drifts
-  // on the left open water, and an egret stands watch on the right rocks —
-  // the bottom corners now carry a full near-field vignette each.
+  // Existing lower-corner subjects: reeds flank both islets, a moored rowboat
+  // drifts on the left open water, and an egret stands watch on the right rocks.
   s += img('water_reeds_iso_v2.png', 196, 424, 30, 40);
   s += img('water_reeds_iso_v2.png', 612, 408, 26, 35);
   s += img('water_boat_iso_v2.png', 100, 352, 48, 36);
@@ -355,6 +364,7 @@ function renderWaterLife(time, assetRoot) {
   // lotus drifts (flat on the water: height ≈ 2/3 width per the 96×64 sprite)
   s += img('water_lotus_iso_v2.png', 256, 420, 44, 29);
   s += img('water_lotus_iso_v2.png', 500, 408, 36, 24);
+  s += img('water_corner_moss_stones_v1.png', 450, 428, 32, 25, { opacity: 0.82 });
   // koi silhouettes with ripple rings — daytime/dusk accents (they'd glow at
   // night; the courtyard pond keeps its own koi around the clock)
   if (!night) {
