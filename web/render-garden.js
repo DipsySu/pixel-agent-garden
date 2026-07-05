@@ -86,7 +86,7 @@ export function createGardenRenderer(options) {
   if (typeof options.isFlowerbedEnabled === 'function') {
     isFlowerbedEnabled = options.isFlowerbedEnabled;
   }
-  return { renderEverything, showScanning, showCached, selectProjectByKey };
+  return { renderEverything, showScanning, showCached, selectProjectByKey, destroy };
 }
 
 function renderEverything(groups, summary) {
@@ -150,6 +150,15 @@ function showCached(summary) {
 
 function clearDynamicLayers() {
   scene.querySelectorAll(dynamicLayerSelector).forEach((el) => el.remove());
+}
+
+function destroy() {
+  if (catWanderStop) {
+    catWanderStop();
+    catWanderStop = null;
+  }
+  scene.querySelectorAll(dynamicLayerSelector + ', .pg6-garden-cat').forEach((el) => el.remove());
+  currentWallProjects = [];
 }
 
   // ==========================================================================

@@ -46,6 +46,39 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
      +   '<stop offset="45%"  stop-color="' + time.glow + '" stop-opacity="' + (time.glowOpacity * 0.42).toFixed(2) + '"/>'
      +   '<stop offset="100%" stop-color="#f8b870" stop-opacity="0"/>'
      + '</radialGradient>'
+     // Night/dusk light effects (painted by the atmosphere block before </svg>):
+     // a warm lantern pool, a wider cool moon glow, a corner vignette, a
+     // top-down darkening, plus a faint daytime sun-wash + soft day vignette.
+     + '<radialGradient id="pg6LampGlow" cx="50%" cy="50%" r="50%">'
+     +   '<stop offset="0%"   stop-color="#ffe6ad" stop-opacity="0.62"/>'
+     +   '<stop offset="42%"  stop-color="#ffbe6e" stop-opacity="0.26"/>'
+     +   '<stop offset="100%" stop-color="#ffb060" stop-opacity="0"/>'
+     + '</radialGradient>'
+     + '<radialGradient id="pg6MoonGlow" cx="50%" cy="50%" r="50%">'
+     +   '<stop offset="0%"   stop-color="#eef4ff" stop-opacity="0.52"/>'
+     +   '<stop offset="55%"  stop-color="#ccdcfb" stop-opacity="0.15"/>'
+     +   '<stop offset="100%" stop-color="#ccdcfb" stop-opacity="0"/>'
+     + '</radialGradient>'
+     + '<radialGradient id="pg6NightVignette" cx="50%" cy="72%" r="80%">'
+     +   '<stop offset="0%"   stop-color="#080b16" stop-opacity="0"/>'
+     +   '<stop offset="56%"  stop-color="#080b16" stop-opacity="0"/>'
+     +   '<stop offset="100%" stop-color="#080b16" stop-opacity="1"/>'
+     + '</radialGradient>'
+     + '<linearGradient id="pg6NightTop" x1="0" y1="0" x2="0" y2="1">'
+     +   '<stop offset="0%"  stop-color="#06090f" stop-opacity="0.58"/>'
+     +   '<stop offset="42%" stop-color="#06090f" stop-opacity="0.40"/>'
+     +   '<stop offset="74%" stop-color="#06090f" stop-opacity="0"/>'
+     + '</linearGradient>'
+     + '<radialGradient id="pg6DaySun" cx="48%" cy="8%" r="72%">'
+     +   '<stop offset="0%"   stop-color="#fff4d6" stop-opacity="0.20"/>'
+     +   '<stop offset="45%"  stop-color="#fff4d6" stop-opacity="0.05"/>'
+     +   '<stop offset="100%" stop-color="#fff4d6" stop-opacity="0"/>'
+     + '</radialGradient>'
+     + '<radialGradient id="pg6DayVignette" cx="50%" cy="54%" r="76%">'
+     +   '<stop offset="0%"   stop-color="#241d12" stop-opacity="0"/>'
+     +   '<stop offset="62%"  stop-color="#241d12" stop-opacity="0"/>'
+     +   '<stop offset="100%" stop-color="#241d12" stop-opacity="0.32"/>'
+     + '</radialGradient>'
      + '<linearGradient id="pg6Sky" x1="0" y1="0" x2="0" y2="1">'
      +   '<stop offset="0%" stop-color="' + time.skyTop + '"/>'
      +   '<stop offset="55%" stop-color="' + (time.skyMid || blend(time.skyTop, time.skyBottom, 0.5)) + '"/>'
@@ -116,20 +149,19 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   // The halo is now a single SVG circle filled with a radial gradient — old
   // rgba rectangles showed as flat ghost squares against the mountain sprites.
   const sunX = time.orb.x, sunY = time.orb.y;
+  // Sun/moon are PixelLab sprites (assets/sprites/sky/{sun,moon}.png) instead of
+  // a hand-plotted pixel disc. orbImage(x, y) takes the same (x,y) orb anchor as
+  // the old disc and draws the sprite centered on it; day/dusk show the sun,
+  // night the moon. Shared by the front pass + the night-bloom restamp.
+  const orbFile = time.mode === 'night' ? 'moon' : 'sun';
+  const ORB = 50;
+  const orbImage = (x, y) =>
+    '<image href="' + assetRoot + '/sprites/sky/' + orbFile + '.png" x="' + (x + 13 - ORB / 2) + '" y="' + (y + 11 - ORB / 2) + '" width="' + ORB + '" height="' + ORB + '" image-rendering="pixelated"/>';
   // halo behind everything (will be partly covered by mountains, that's fine
   // — it pre-tints the sky so the horizon picks up dusk warmth)
   s += '<circle cx="' + (sunX + 13) + '" cy="' + (sunY + 11) + '" r="38" fill="url(#pg6SunGlow)"/>';
-  // sun core (pixel-art disc)
-  s += r(sunX, sunY, 26, 22, time.orb.fill);
-  s += r(sunX + 4, sunY - 4, 18, 4, time.orb.fill);
-  s += r(sunX + 4, sunY + 22, 18, 3, time.orb.shadow);
-  s += r(sunX - 3, sunY + 6, 3, 14, time.orb.fill);
-  s += r(sunX + 26, sunY + 6, 3, 14, time.orb.fill);
-  s += r(sunX - 8, sunY + 10, 4, 6, time.orb.highlight);
-  s += r(sunX + 30, sunY + 8, 4, 6, time.orb.highlight);
-  // inner highlight
-  s += r(sunX + 6, sunY + 4, 6, 4, time.orb.highlight);
-  s += r(sunX + 14, sunY + 12, 4, 3, time.orb.accent);
+  // (orb disc removed — the sprite is drawn in the front pass, after mountains,
+  // so it isn't occluded; this behind pass keeps only the halo to pre-tint.)
 
   // === Mountains ================================================
   s += '<image href="' + assetRoot + '/sprites/mountains/mountains_far.png" x="-12" y="' + (WT - 82) + '" width="704" height="48" preserveAspectRatio="none" opacity="' + time.mountainFarOpacity + '"/>';
@@ -142,12 +174,7 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   // tints the horizon, this pass keeps the core readable. Halo is the same
   // radial gradient — softer than the original rectangle outlines.
   s += '<circle cx="' + (sunX + 13) + '" cy="' + (sunY + 11) + '" r="30" fill="url(#pg6SunGlow)" opacity="' + time.frontGlowOpacity + '"/>';
-  s += r(sunX, sunY, 26, 22, time.orb.fill);
-  s += r(sunX + 4, sunY - 4, 18, 4, time.orb.fill);
-  s += r(sunX + 4, sunY + 22, 18, 3, time.orb.shadow);
-  s += r(sunX - 3, sunY + 6, 3, 14, time.orb.fill);
-  s += r(sunX + 26, sunY + 6, 3, 14, time.orb.fill);
-  s += r(sunX + 6, sunY + 4, 6, 4, time.orb.highlight);
+  s += orbImage(sunX, sunY);
 
   // birds — tiny PixelLab silhouettes (daytime/dusk only), some mirrored for
   // variety. critter() is hoisted (defined with the butterflies below).
@@ -359,6 +386,34 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
     if (hash(i, 22) > 0.5) s += r(px + 30, py + 3, 1, 1, '#f8c4d4');
   }
 
+  // === Day / night atmosphere ===================================
+  // Painted OVER the background but UNDER the DOM object sprites, so the bare
+  // upper wall + sky recede while lanterns + moon read as real light sources;
+  // the courtyard objects stay bright. In the SVG (not DOM) so postcard.js
+  // captures it. (Salvaged from the flat-view polish pass — light effects only,
+  // no geometry changes.)
+  if (time.mode === 'day') {
+    s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#pg6DaySun)"/>';
+    s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#pg6DayVignette)"/>';
+  }
+  if (time.mode === 'night' || time.mode === 'dusk') {
+    if (time.mode === 'night') {
+      s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#pg6NightTop)"/>';
+    }
+    const vig = time.mode === 'night' ? 0.5 : 0.34;
+    s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="url(#pg6NightVignette)" opacity="' + vig + '"/>';
+    // Warm pool around the lit stone lantern (flat view seats it at x=42%,
+    // depth 0.70 — see render-garden.js addCourtyardObjects).
+    const lampX = Math.round(0.42 * W);
+    const lampBaseY = Math.round(depthToScreen(0.70).yBottomPct / 100 * H);
+    s += '<circle cx="' + lampX + '" cy="' + (lampBaseY - 46) + '" r="58" fill="url(#pg6LampGlow)"/>';
+    // Warm spill from the pavilion's right-eave hanging lantern (hand-placed).
+    s += '<circle cx="642" cy="332" r="42" fill="url(#pg6LampGlow)"/>';
+  }
+  if (time.mode === 'night') {
+    s += '<circle cx="' + (sunX + 13) + '" cy="' + (sunY + 11) + '" r="66" fill="url(#pg6MoonGlow)"/>';
+    s += orbImage(sunX, sunY);
+  }
   s += '</svg>';
 
   scene.innerHTML = s +
@@ -371,6 +426,7 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
       '<div class="pg6-info-spark" id="garden-info-spark" aria-hidden="true"></div>' +
     '</div>';
   scene.dataset.timeMode = time.mode;
+  scene.dataset.renderer = 'classic';
   scene.dataset.timeLabel = time.label;
   scene.dataset.motion = options.settings?.appearance?.motion || 'system';
   // Season drives both the SVG ground/flower colors above AND a CSS-level
@@ -493,7 +549,9 @@ function resolveTimeScene(settings) {
       wood: ['#8f6748', '#5e432e', '#2f241e'],
       mountainFarOpacity: 0.38,
       mountainNearOpacity: 0.48,
-      wallShade: 'rgba(18,24,42,0.32)',
+      // Pushed deeper (was 0.32) so the bare mid-wall recedes and the lantern
+      // light-pools (painted after this wash) read as the focus at night.
+      wallShade: 'rgba(13,18,34,0.52)',
       groundShade: 'rgba(16,22,40,0.42)'
     }
   };

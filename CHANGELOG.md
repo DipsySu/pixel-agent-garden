@@ -2,6 +2,50 @@
 
 ## Unreleased
 
+- Started the 2.5D courtyard branch and shipped an experimental renderer behind
+  `?renderer=isometric`. `garden.js` now chooses a scene renderer through
+  `web/renderers/renderer-factory.js`; default `classic` still wraps the
+  existing wall renderer unchanged, while `isometric` renders a separate
+  night-courtyard prototype: folded back walls, diamond floor grid, all project
+  vines hanging from the wall ridge, and depth-seated pavilion / willow / cherry
+  / stone cat / koi pond / bamboo / lantern sprites. Project hover/focus cards,
+  roving keyboard navigation, Insight project selection, freshness states, and
+  the existing HUD/panels continue to work. The dynamic renderer also gained
+  `destroy()` so future renderer switches can tear down the long-lived
+  garden-cat loop and sprite layers. See `docs/19-isometric-courtyard-plan.md`
+  for the reviewed migration plan and remaining extraction work.
+  Tauri desktop sessions now default to `isometric` on this branch because
+  `tauri.conf.json` cannot pass the browser-only `?renderer=isometric` query
+  into a `frontendDist` window. A footer `2.5D` / `Wall` toggle hot-swaps
+  renderers and persists the choice in localStorage, while normal browser
+  fallback still defaults to classic unless the query or stored toggle says
+  otherwise.
+  The isometric wall geometry was tightened after visual review: the two wall
+  planes now use the courtyard floor's rear edges plus a single wall-height
+  offset, so wall tops are parallel to wall bases instead of forming an
+  independent paper-fold peak. Wall grid lines and vine anchors now share the
+  same wall points.
+  The 2.5D renderer now uses a dedicated PixelLab isometric asset pass for the
+  main courtyard objects (`assets/sprites/isometric_generated/`): pavilion,
+  koi pond, willow, cherry, stone cat, stone lantern, and low bamboo hedge.
+  The old side-view courtyard sprites are no longer forced into the isometric
+  renderer, which removes the earlier mixed-projection collage feel. The floor
+  grid was also softened and each standing object gets a subtle local contact
+  shadow so props read as sitting on the same ground plane.
+  Follow-up visual polish tightened the 2.5D hover card into a compact
+  pointer-following tooltip with a high scene z-index, so vines and props no
+  longer cover project details. The isometric platform edge was also softened:
+  the near side is shorter and warm-brown instead of near-black, and the floor
+  grid is quieter so the garden reads less like an editor grid.
+  The courtyard now reads as a UI sand-table rather than a floating island:
+  a shallow warm-wood tray rim sits under the grass plane, with a restrained
+  cast shadow and a slight downward scene placement so the model feels
+  supported by the interface instead of suspended in the sky backdrop.
+  The isometric projection constants were grouped and retuned after tilt
+  review: the rear floor apex moved lower, the wall height dropped, and the
+  front edge was pulled in slightly so the red-line area reads as a low garden
+  wall rather than a tall peaked backdrop.
+
 - Replaced the courtyard path with stepping stones. The flagstone path was a
   tiled SVG pattern (`pg6PathTex`) drawn as a stepped trapezoid; on the new 2.5D
   floor it read as a flat grey grid that clashed with the pixel-art objects.

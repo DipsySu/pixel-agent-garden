@@ -15,8 +15,12 @@ import { mountReturnDiff } from './return-diff.js';
 import { mountDashboardPanel } from './dashboard-panel.js';
 import { renderHeatmap } from './render-heatmap.js';
 import { groupSprites } from './render-helpers.js';
-import { createGardenRenderer } from './render-garden.js';
-import { renderBaseScene } from './render-svg.js';
+import {
+  createSceneRenderer,
+  nextRendererMode,
+  persistRendererMode,
+  rendererModeFromLocation
+} from './renderers/renderer-factory.js';
 import { applyStaticTranslations, currentLocale, setLocale } from './i18n.js';
 
 const scene = document.getElementById('pg6-scene');
@@ -56,16 +60,9 @@ Promise.all([
   // settings panel both pick up whichever changed last.
   let currentSettings = settings;
   let lastSummary = summary;
-  const renderer = createGardenRenderer({
-    scene,
-    spriteRoot,
-    isFlowerbedEnabled: () => shouldRenderFlowerbed(currentSettings),
-  });
-  renderBaseScene(scene, assetRoot, {
-    settings: currentSettings,
-    flowerbedEnabled: shouldRenderFlowerbed(currentSettings),
-  });
-  renderer.renderEverything(groups, lastSummary);
+  let rendererMode = rendererModeFromLocation();
+  let renderer = createRenderer(rendererMode);
+  renderer.paint(groups, lastSummary, currentSettings);
   const returnDiff = mountReturnDiff({
     hostFrame: document.querySelector('.pg6-frame'),
     initialSummary: lastSummary
@@ -88,18 +85,25 @@ Promise.all([
       hostFooter: footer,
       initialSummary: lastSummary
     });
+    mountRendererToggle({
+      hostFooter: footer,
+      initialMode: rendererMode,
+      onChange: (nextMode) => {
+        rendererMode = persistRendererMode(nextMode);
+        renderer.destroy?.();
+        renderer = createRenderer(rendererMode);
+        renderer.paint(groups, lastSummary, currentSettings);
+        insightPanel?.update(lastSummary);
+        dashboardPanel?.update(lastSummary);
+        miniStrip?._redraw?.(lastSummary);
+      }
+    });
     mountSettingsPanel({
       hostFooter: footer,
       initial: currentSettings,
       onChange: (next) => {
         currentSettings = next;
-        // renderBaseScene replaces scene.innerHTML and updates scene.dataset;
-        // renderEverything then rebuilds sprites from that dataset.
-        renderBaseScene(scene, assetRoot, {
-          settings: currentSettings,
-          flowerbedEnabled: shouldRenderFlowerbed(currentSettings),
-        });
-        renderer.renderEverything(groups, lastSummary);
+        renderer.paint(groups, lastSummary, currentSettings);
         insightPanel?.update(lastSummary);
         dashboardPanel?.update(lastSummary);
       }
@@ -145,19 +149,36 @@ Promise.all([
       insightPanel?.update(lastSummary);
       dashboardPanel?.update(lastSummary);
       miniStrip?._redraw?.(lastSummary);
-      renderer.renderEverything(groups, lastSummary);
+      renderer.repaintData(groups, lastSummary);
     } else {
       renderer.showCached(lastSummary);
     }
     returnDiff?.record(lastSummary);
   });
+
+  function createRenderer(mode) {
+    return createSceneRenderer({
+      mode,
+      scene,
+      assetRoot,
+      spriteRoot,
+      isFlowerbedEnabled: () => shouldRenderFlowerbed(currentSettings),
+    });
+  }
 }).catch((err) => {
   // Bootstrap failed (manifest fetch error, etc.). Best-effort: still paint
   // the base scene with default settings so the page doesn't sit blank with
   // dash placeholders. Sprites won't render — but at least there's a sky.
   logGardenError('garden bootstrap failed', err);
   try {
-    renderBaseScene(scene, assetRoot, { settings: null });
+    const fallback = createSceneRenderer({
+      mode: 'classic',
+      scene,
+      assetRoot,
+      spriteRoot,
+      isFlowerbedEnabled: () => false,
+    });
+    fallback.renderBase(null);
   } catch (renderErr) {
     logGardenError('fallback base scene render failed', renderErr);
   }
@@ -167,7 +188,7 @@ Promise.all([
 //   - persisted settings.appearance.flowerbed === 'enabled'
 //   - URL `?flowerbed=enabled` override (lets reviewers preview without
 //     touching their settings.toml)
-// Returns boolean. Lives at module scope so renderEverything's
+// Returns boolean. Lives at module scope so the renderer's flowerbed getter
 // `isFlowerbedEnabled` getter always reads the live currentSettings.
 function shouldRenderFlowerbed(settings) {
   const override = flowerbedQueryOverride();
@@ -185,4 +206,27 @@ function flowerbedQueryOverride() {
     return null;
   }
   return null;
+}
+
+function mountRendererToggle({ hostFooter, initialMode, onChange }) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'pg6-footer-insight pg6-footer-renderer';
+  let current = initialMode === 'isometric' ? 'isometric' : 'classic';
+  sync();
+  button.addEventListener('click', () => {
+    current = nextRendererMode(current);
+    sync();
+    onChange(current);
+  });
+  hostFooter.appendChild(button);
+
+  function sync() {
+    const isIso = current === 'isometric';
+    button.textContent = isIso ? 'Wall' : '2.5D';
+    button.title = isIso ? 'Switch to classic wall renderer' : 'Switch to 2.5D courtyard renderer';
+    button.setAttribute('aria-label', button.title);
+    button.setAttribute('aria-pressed', String(isIso));
+    button.classList.toggle('is-active', isIso);
+  }
 }

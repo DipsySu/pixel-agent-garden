@@ -129,6 +129,9 @@ body {
   width: 100vw;
   z-index: 10;
 }
+.pg6-scene[data-renderer="isometric"] {
+  top: 51%;
+}
 .pg6-scene svg { display: block; height: 100%; width: 100%; }
 .pg6-sprite {
   /* --vine-hue-shift is set per-project via JS to tint each vine by primary
@@ -207,6 +210,53 @@ body {
   filter: saturate(0.82) brightness(0.92) contrast(0.96);
   pointer-events: none;          /* accents must never block vine / cat / trinket hover */
   transform-origin: bottom center;
+}
+.pg6-scene[data-renderer="isometric"] .pg6-iso-svg {
+  background: #0c0f1f;
+}
+.pg6-scene[data-renderer="isometric"] .pg6-sprite.pg6-iso-dynamic {
+  filter: saturate(0.92) brightness(0.88) contrast(0.98) drop-shadow(0 3px 0 rgba(18, 14, 12, 0.34)) hue-rotate(var(--vine-hue-shift, 0deg));
+}
+.pg6-scene[data-renderer="isometric"] .pg6-sprite.pg6-iso-dynamic.object {
+  filter: saturate(0.96) brightness(0.92) contrast(1.02) drop-shadow(0 4px 0 rgba(18, 14, 12, 0.38));
+}
+.pg6-scene[data-renderer="isometric"] .pg6-iso-shadow {
+  background: radial-gradient(ellipse at center, rgba(16, 14, 10, 0.42) 0%, rgba(16, 14, 10, 0.22) 48%, rgba(16, 14, 10, 0) 72%);
+  height: 2.2%;
+  image-rendering: pixelated;
+  pointer-events: none;
+  position: absolute;
+  transform: translate(-50%, -50%) scaleY(0.58);
+  transform-origin: center center;
+}
+.pg6-scene[data-renderer="isometric"] .pg6-sprite.pg6-iso-generated.object {
+  filter: saturate(1.02) brightness(0.96) contrast(1.02) drop-shadow(0 3px 0 rgba(18, 14, 12, 0.26));
+}
+.pg6-scene[data-renderer="isometric"] .pg6-sprite.pg6-iso-vine {
+  animation: none;
+  transform: var(--sprite-transform, translate(-50%, 0)) rotate(var(--iso-vine-tilt, 0deg));
+  transform-origin: top center;
+}
+.pg6-scene[data-renderer="isometric"] .pg6-sprite.pg6-iso-vine:hover,
+.pg6-scene[data-renderer="isometric"] .pg6-sprite.pg6-iso-vine:focus-visible {
+  filter: saturate(1.08) brightness(1.04) contrast(1.03) drop-shadow(0 0 4px rgba(244, 216, 120, 0.4)) hue-rotate(var(--vine-hue-shift, 0deg));
+  transform: var(--sprite-transform, translate(-50%, 0)) rotate(var(--iso-vine-tilt, 0deg)) translateY(-4px) scale(1.04);
+}
+.pg6-scene[data-renderer="isometric"] .pg6-sprite.pg6-iso-vine.is-active {
+  filter: saturate(1.12) brightness(1.08) contrast(1.04) drop-shadow(0 0 5px rgba(244, 216, 120, 0.45)) hue-rotate(var(--vine-hue-shift, 0deg));
+}
+.pg6-scene[data-renderer="isometric"] .pg6-iso-pond {
+  filter: saturate(1.02) brightness(0.94) contrast(1.04) drop-shadow(0 2px 0 rgba(12, 18, 20, 0.24));
+}
+.pg6-scene[data-renderer="isometric"] .pg6-iso-tree {
+  filter: saturate(1.02) brightness(0.96) contrast(1.02) drop-shadow(0 3px 0 rgba(18, 14, 12, 0.24));
+}
+.pg6-scene[data-renderer="isometric"] .pg6-iso-pavilion {
+  filter: saturate(1.04) brightness(0.96) contrast(1.04) drop-shadow(0 4px 0 rgba(18, 14, 12, 0.32));
+}
+.pg6-scene[data-renderer="isometric"] .pg6-iso-statue,
+.pg6-scene[data-renderer="isometric"] .pg6-iso-cairn {
+  filter: saturate(0.92) brightness(0.9) contrast(1.06) drop-shadow(0 3px 0 rgba(18, 14, 12, 0.30));
 }
 /* === Flowerbed (D PoC view, opt-in) ===================================== */
 .pg6-flower {
@@ -287,6 +337,43 @@ body {
   z-index: 200;
 }
 .pg6-info.is-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.pg6-scene[data-renderer="isometric"] .pg6-info {
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.32);
+  font-size: 11px;
+  line-height: 1.38;
+  min-width: 0;
+  padding: 8px 10px;
+  width: clamp(178px, 16.5vw, 224px);
+  z-index: 4000;
+}
+.pg6-scene[data-renderer="isometric"] .pg6-info.is-visible {
+  pointer-events: none;
+}
+.pg6-scene[data-renderer="isometric"] .pg6-info-name {
+  font-size: 12px;
+  margin: 2px 0 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pg6-scene[data-renderer="isometric"] .pg6-info-bar {
+  height: 5px;
+  margin-top: 5px;
+}
+.pg6-scene[data-renderer="isometric"] .pg6-info-detail {
+  gap: 2px;
+  margin-top: 5px;
+}
+.pg6-scene[data-renderer="isometric"] .pg6-info-meta {
+  font-size: 10px;
+}
+.pg6-scene[data-renderer="isometric"] .pg6-info-spark {
+  height: 18px;
+  margin-top: 5px;
+}
+.pg6-scene[data-renderer="isometric"] .pg6-info-spark .pg6-spark-svg {
+  height: 17px;
+}
 .pg6-trinket-sprite {
   cursor: pointer;
   transform-origin: center center;
