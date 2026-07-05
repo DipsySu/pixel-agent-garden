@@ -178,7 +178,15 @@ original design mockup:
   two rails; ripple rings + sparkles seat the island in the water; the 16
   static mid-air petals were removed (an animated spring layer can return as
   a DOM pass later); night/dusk paints a lantern light-pool mirroring the
-  sprite seat (0.80, 0.61).
+  DOM lantern sprite seat (0.80, 0.61). The sky orb is now sprite-driven by
+  local time + a deterministic date hash: a softened base sun, back-cloud sun,
+  cloudy sun, overcast sun, haze sun, and sunset glow variant. This is
+  atmosphere only: it does not call a weather API or encode usage data.
+- **Water frame**: four-corner dressing uses the same near/far hierarchy as the
+  tray. Far lotus/stones are smaller and lower-opacity; near reeds/lotus carry
+  the foreground weight; secondary moss, reeds, and lotus clusters break the
+  one-object-per-corner rhythm so the sand-table edge no longer feels pasted
+  onto empty water.
 
 - **Open-water fill** (`renderWaterLife` in isometric-base.js): the frame
   corners around the island were flat gradient and read as a void. Near-field

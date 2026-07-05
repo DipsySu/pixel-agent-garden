@@ -48,11 +48,7 @@ export function renderIsometricBase(scene, assetRoot, options = {}) {
 
   s += r(0, 0, W, H, 'url(#pg6IsoSky)');
   s += renderStars(time);
-  if (time.mode !== 'night') {
-    s += cloud(assetRoot, 68, 54, 76) + cloud(assetRoot, 512, 44, 96);
-    // third, fainter cloud breaks up the empty left-middle sky band
-    s += '<g opacity="0.62">' + cloud(assetRoot, 252, 88, 54) + '</g>';
-  }
+  s += renderSkyClouds(time, assetRoot);
   s += renderOrb(time, r, assetRoot);
   s += '<image href="' + assetRoot + '/sprites/mountains/mountains_far.png" x="-18" y="104" width="716" height="54" preserveAspectRatio="none" opacity="' + time.mountainFarOpacity + '"/>';
   s += '<image href="' + assetRoot + '/sprites/mountains/mountains_near.png" x="-20" y="124" width="720" height="60" preserveAspectRatio="none" opacity="' + time.mountainNearOpacity + '"/>';
@@ -90,6 +86,7 @@ export function renderIsometricBase(scene, assetRoot, options = {}) {
   scene.dataset.renderer = 'isometric';
   scene.dataset.timeMode = time.mode;
   scene.dataset.timeLabel = time.label;
+  scene.dataset.weather = time.weather;
   scene.dataset.motion = options.settings?.appearance?.motion || 'system';
   scene.dataset.season = season.mode;
   scene.dataset.seasonLabel = season.label;
@@ -275,17 +272,44 @@ function renderStars(time) {
 }
 
 function renderOrb(time, r, assetRoot) {
-  // Sun/moon are PixelLab sprites (assets/sprites/sky/{sun,moon}.png) — the
-  // sprite carries its own corona/halo, so no extra gradient is needed. Night
-  // uses the moon at its old crescent anchor; day/dusk use the sun at the
-  // scene's orb anchor (centered on the old 23×21 orb box).
+  // Weather-specific sky sprites keep the garden from always showing the same
+  // literal sun. Selection is local and deterministic; ?weather=... is only a
+  // preview hook for visual QA screenshots.
   const isNight = time.mode === 'night';
-  const file = isNight ? 'moon' : 'sun';
+  const skyFiles = {
+    soft: 'sun_soft',
+    back_cloud: 'sun_back_cloud',
+    cloudy: 'sun_cloudy',
+    overcast: 'sun_overcast',
+    sunset: 'sunset_glow',
+    haze: 'sun_haze',
+  };
+  const file = isNight ? 'moon' : (skyFiles[time.weather] || 'sun_soft');
   const cx = isNight ? 600 : (time.orbX + 11);
   const cy = isNight ? 80 : (time.orbY + 10);
-  const sz = 56;
+  const sz = isNight ? 56 : (time.weather === 'cloudy' || time.weather === 'overcast' ? 68 : 60);
   return '<image href="' + assetRoot + '/sprites/sky/' + file + '.png" x="' + (cx - sz / 2) +
     '" y="' + (cy - sz / 2) + '" width="' + sz + '" height="' + sz + '" image-rendering="pixelated"/>';
+}
+
+function renderSkyClouds(time, assetRoot) {
+  if (time.mode === 'night') return '';
+  let s = '';
+  s += cloud(assetRoot, 68, 54, 76) + cloud(assetRoot, 512, 44, 96);
+  // third, fainter cloud breaks up the empty left-middle sky band
+  s += '<g opacity="0.62">' + cloud(assetRoot, 252, 88, 54) + '</g>';
+  if (time.weather === 'cloudy' || time.weather === 'overcast') {
+    s += '<g opacity="' + (time.weather === 'overcast' ? '0.68' : '0.42') + '">';
+    s += cloud(assetRoot, 382, 62, 88) + cloud(assetRoot, 602, 92, 62);
+    s += '</g>';
+  }
+  if (time.weather === 'overcast') {
+    s += '<g opacity="0.38">' + cloud(assetRoot, 172, 92, 92) + cloud(assetRoot, 452, 102, 78) + '</g>';
+  }
+  if (time.weather === 'sunset') {
+    s += '<g opacity="0.32">' + cloud(assetRoot, 420, 76, 70) + '</g>';
+  }
+  return s;
 }
 
 function cloud(assetRoot, cx, cy, w) {
@@ -344,12 +368,18 @@ function renderWaterLife(time, assetRoot) {
   };
   let s = '';
 
-  // Four-corner water dressing. Far corners are small + quieter; near corners
-  // carry the visual weight, framing the tray without crowding the courtyard.
-  s += img('water_corner_lotus_v1.png', 48, 286, 30, 21, { opacity: 0.76 });
-  s += img('water_corner_moss_stones_v1.png', 638, 300, 30, 23, { opacity: 0.72 });
-  s += img('water_corner_reeds_v1.png', 36, 404, 34, 34, { opacity: 0.86 });
-  s += img('water_corner_lotus_v1.png', 626, 424, 42, 29, { opacity: 0.86 });
+  // Four-corner water dressing. Far corners stay quiet and smaller; near
+  // corners get broader silhouettes, so the tray feels grounded without
+  // competing with the courtyard hero sprites.
+  s += img('water_corner_lotus_v1.png', 50, 286, 34, 24, { opacity: 0.72 });
+  s += img('water_corner_moss_stones_v1.png', 636, 300, 34, 26, { opacity: 0.70 });
+  s += img('water_corner_reeds_v1.png', 36, 407, 44, 44, { opacity: 0.84 });
+  s += img('water_corner_lotus_v1.png', 626, 424, 50, 35, { opacity: 0.84 });
+  // Secondary edge growth breaks the old "one object per corner" rhythm.
+  s += img('water_corner_moss_stones_v1.png', 88, 322, 24, 18, { opacity: 0.58 });
+  s += img('water_corner_reeds_v1.png', 642, 372, 30, 30, { opacity: 0.64 });
+  s += img('water_corner_lotus_v1.png', 214, 426, 32, 22, { opacity: 0.62 });
+  s += img('water_corner_moss_stones_v1.png', 482, 430, 28, 22, { opacity: 0.72 });
 
   // rocky islets: bottom-left hero, bottom-right smaller, far-left echo
   s += img('water_islet_iso_v2_pine.png', 150, 412, 64, 64);
@@ -357,14 +387,14 @@ function renderWaterLife(time, assetRoot) {
   s += img('water_islet_iso_v2_rocks.png', 86, 312, 30, 30);
   // Existing lower-corner subjects: reeds flank both islets, a moored rowboat
   // drifts on the left open water, and an egret stands watch on the right rocks.
-  s += img('water_reeds_iso_v2.png', 196, 424, 30, 40);
-  s += img('water_reeds_iso_v2.png', 612, 408, 26, 35);
+  s += img('water_reeds_iso_v2.png', 196, 424, 34, 45);
+  s += img('water_reeds_iso_v2.png', 612, 408, 30, 40);
   s += img('water_boat_iso_v2.png', 100, 352, 48, 36);
   s += img('water_egret_iso_v2.png', 569, 374, 32, 32);
   // lotus drifts (flat on the water: height ≈ 2/3 width per the 96×64 sprite)
-  s += img('water_lotus_iso_v2.png', 256, 420, 44, 29);
-  s += img('water_lotus_iso_v2.png', 500, 408, 36, 24);
-  s += img('water_corner_moss_stones_v1.png', 450, 428, 32, 25, { opacity: 0.82 });
+  s += img('water_lotus_iso_v2.png', 256, 420, 48, 32);
+  s += img('water_lotus_iso_v2.png', 500, 408, 40, 27);
+  s += img('water_corner_moss_stones_v1.png', 450, 428, 34, 26, { opacity: 0.80 });
   // koi silhouettes with ripple rings — daytime/dusk accents (they'd glow at
   // night; the courtyard pond keeps its own koi around the clock)
   if (!night) {
@@ -388,7 +418,8 @@ function renderWaterLife(time, assetRoot) {
 
 function resolveTimeScene(settings) {
   const forced = settings?.appearance?.time_mode || 'system';
-  const hour = new Date().getHours() + new Date().getMinutes() / 60;
+  const now = new Date();
+  const hour = now.getHours() + now.getMinutes() / 60;
   const mode = forced === 'system' ? systemTimeMode(hour) : forced;
   const scenes = {
     day: {
@@ -443,7 +474,35 @@ function resolveTimeScene(settings) {
       orb: '#d6d6c8',
     },
   };
-  return scenes[mode] || scenes.day;
+  const scene = scenes[mode] || scenes.day;
+  return { ...scene, weather: resolveWeatherScene(scene.mode, now) };
+}
+
+function resolveWeatherScene(mode, date) {
+  const forced = forcedWeatherScene();
+  const allowed = new Set(['soft', 'back_cloud', 'cloudy', 'overcast', 'sunset', 'haze']);
+  if (forced && allowed.has(forced)) return forced;
+  if (mode === 'night') return 'moon';
+  if (mode === 'dusk') return hash(dayNumber(date), 71) > 0.46 ? 'sunset' : 'back_cloud';
+  const roll = hash(dayNumber(date), 97);
+  if (roll < 0.16) return 'overcast';
+  if (roll < 0.40) return 'cloudy';
+  if (roll < 0.62) return 'back_cloud';
+  if (roll < 0.80) return 'haze';
+  return 'soft';
+}
+
+function forcedWeatherScene() {
+  try {
+    const params = new URLSearchParams(globalThis.location?.search || '');
+    return params.get('weather') || '';
+  } catch (_) {
+    return '';
+  }
+}
+
+function dayNumber(date) {
+  return Math.floor(date.getTime() / 86400000);
 }
 
 function resolveSeasonScene(settings) {

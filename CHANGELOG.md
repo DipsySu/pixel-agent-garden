@@ -68,6 +68,14 @@
   review: the rear floor apex moved lower, the wall height dropped, and the
   front edge was pulled in slightly so the red-line area reads as a low garden
   wall rather than a tall peaked backdrop.
+  Sky treatment now uses a quieter `sun.png` plus local weather variants
+  (`sun_back_cloud`, `sun_cloudy`, `sun_overcast`, `sun_haze`,
+  `sunset_glow`) so the 2.5D courtyard no longer shows the same literal
+  yellow sun every day. Weather is chosen deterministically from local date and
+  time, with `?weather=` as a visual QA override; no weather API or network
+  request is involved. The open-water edge pass was also rebalanced: far-corner
+  sprites are smaller and quieter, near-corner reeds/lotus are larger, and
+  secondary stones/reeds/lotus clusters now soften the tray-to-water boundary.
 
 - Replaced the courtyard path with stepping stones. The flagstone path was a
   tiled SVG pattern (`pg6PathTex`) drawn as a stepped trapezoid; on the new 2.5D
