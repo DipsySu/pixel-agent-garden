@@ -165,6 +165,14 @@ export function renderIsoScene(scene, assetRoot, options = {}) {
     s += line(up(c.B, ISO.wallH * f), up(c.R, ISO.wallH * f), '#92775a', 1, 0.5);
     s += line(up(c.B, ISO.wallH * f), up(c.L, ISO.wallH * f), '#7d6850', 1, 0.5);
   }
+  // vertical panel seams (a few per wall) so the brick reads as coursed masonry
+  // rather than a flat tan sheet — each runs straight up from a point on the
+  // bottom edge to the matching point on the top edge.
+  for (let i = 1; i < 5; i++) {
+    const f = i / 5;
+    const rb = lerp2(c.B, c.R, f); s += line(rb, up(rb, ISO.wallH), '#92775a', 1, 0.32);
+    const lb = lerp2(c.B, c.L, f); s += line(lb, up(lb, ISO.wallH), '#7d6850', 1, 0.32);
+  }
   // wall top caps (a thin rim)
   s += line(Bt, Rt, '#6f5f4a', 2, 0.9);
   s += line(Bt, Lt, '#5f5040', 2, 0.9);
@@ -203,6 +211,11 @@ export function renderIsoScene(scene, assetRoot, options = {}) {
   const postH = 26;
   const fenceOnEdge = (a, b, count) => {
     let out = '';
+    // Two rails running along the edge (at constant screen-height above it, so
+    // they parallel the slope) — drawn FIRST so the posts sit in front of them.
+    // Without the rails the posts read as loose stakes, not a courtyard fence.
+    out += line(up(a, postH * 0.84), up(b, postH * 0.84), '#5a3e24', 2.5, 0.95);
+    out += line(up(a, postH * 0.46), up(b, postH * 0.46), '#5a3e24', 2, 0.78);
     for (let i = 1; i < count; i++) {
       const p = lerp2(a, b, i / count);
       out += '<rect x="' + (p.x - 2.5).toFixed(1) + '" y="' + (p.y - postH).toFixed(1) +
@@ -231,8 +244,13 @@ export function renderIsoScene(scene, assetRoot, options = {}) {
     s += '<circle cx="' + (mx + 6) + '" cy="' + (my - 3) + '" r="13" fill="' + tt.skyTop + '"/>';  // carve a crescent
   }
   if (tt.lampGlow) {
-    const lp = isoFloorToScreen(0.68, 0.64);   // mirrors the stone-lantern seat
+    const lp = isoFloorToScreen(0.58, 0.80);   // mirrors the stone-lantern seat
     s += '<circle cx="' + lp.x.toFixed(0) + '" cy="' + (lp.y - 24).toFixed(0) + '" r="42" fill="url(#isoLampGlow)"/>';
+    // warm glow inside the pavilion (mirrors its seat) so the open interior reads
+    // as lamplit at night instead of a black void. Sits in the SVG behind the
+    // pavilion DOM sprite, so it shows through the structure's open bays.
+    const pv = isoFloorToScreen(0.79, 0.46);
+    s += '<ellipse cx="' + pv.x.toFixed(0) + '" cy="' + (pv.y - 38).toFixed(0) + '" rx="48" ry="34" fill="url(#isoLampGlow)" opacity="0.62"/>';
   }
   if (tt.vignette > 0) {
     s += '<rect x="0" y="0" width="' + VB_W + '" height="' + VB_H + '" fill="url(#isoVignette)" opacity="' + tt.vignette + '"/>';
@@ -280,8 +298,9 @@ function placeIsoObjects(scene, spriteRoot, groups, summary, mode) {
   const add = (u, v, file, width, opts) => { if (file) items.push({ u, v, file, width, opts: opts || {} }); };
   const fileOf = (sprite) => (sprite && sprite.file) || null;
 
-  // Pond — top-down koi sprite, squashed a touch; back-left of the floor.
-  add(0.26, 0.45, 'critters/koi_pond.png', 130, { scaleY: 0.66 });
+  // Pond — top-down koi sprite, squashed a touch; left of the floor. `flat`:
+  // lies on the ground, so it gets no contact shadow.
+  add(0.22, 0.52, 'critters/koi_pond.png', 130, { scaleY: 0.66, flat: true });
 
   // Stone cat (招财猫) — open left-center, clear of the pavilion.
   if (tiers.stone_cat !== 'hidden') {
@@ -293,7 +312,7 @@ function placeIsoObjects(scene, spriteRoot, groups, summary, mode) {
     // Light interactivity for the scenic view: the guardian cat gets a hover
     // tooltip with its session stat + a pointer cursor (the rich info-card panel
     // stays the flat data view's job).
-    add(0.44, 0.52, fileOf(sp), 78, {
+    add(0.42, 0.56, fileOf(sp), 78, {
       className: 'iso-interactive',
       title: t('card.cat.label') + ' · ' + t('card.cat.sessions', { count: tiers.totalSessions || 0 }),
     });
@@ -302,7 +321,7 @@ function placeIsoObjects(scene, spriteRoot, groups, summary, mode) {
   if (groups.stone_cairn && groups.stone_cairn.length) {
     const full = tiers.stone_cat === 'full';
     const sp = namedSprite(groups.stone_cairn, full ? 'stone_cairn_full' : 'stone_cairn_small') || pickByToken(groups.stone_cairn, 3);
-    add(0.45, 0.68, fileOf(sp), 42);
+    add(0.35, 0.80, fileOf(sp), 42);
   }
   // Cherry — back-center peer anchor.
   if (groups.cherry_tree && groups.cherry_tree.length) {
@@ -326,21 +345,43 @@ function placeIsoObjects(scene, spriteRoot, groups, summary, mode) {
   // Stone lantern — front-right, near the pavilion.
   if (groups.stone_lantern && groups.stone_lantern.length) {
     const sp = namedSprite(groups.stone_lantern, lampLit ? 'stone_lantern_lit' : 'stone_lantern_unlit') || pickByToken(groups.stone_lantern, lampLit ? 5 : 1);
-    add(0.68, 0.64, fileOf(sp), 40, { className: 'decor-lantern ' + (lampLit ? 'is-lit' : 'is-dim') });
+    add(0.58, 0.80, fileOf(sp), 40, { className: 'decor-lantern ' + (lampLit ? 'is-lit' : 'is-dim') });
   }
   // Bamboo grove — far right edge. (Manifest group is `bamboo_cluster`.)
   if (groups.bamboo_cluster && groups.bamboo_cluster.length) {
     const sp = namedSprite(groups.bamboo_cluster, 'bamboo_cluster_02') || groups.bamboo_cluster[0];
     add(0.90, 0.46, fileOf(sp), 74);
   }
-  // Stepping stones — a short path crossing the floor toward the pavilion.
-  const stones = [[0.40, 0.74], [0.50, 0.78], [0.60, 0.74]];
-  stones.forEach(([u, v]) => add(u, v, 'critters/stepping_stone.png', 30));
+  // Stepping stones — a path from the front-left toward the pavilion, leading
+  // the eye across the (previously empty) front of the floor. `flat`: no shadow.
+  const stones = [[0.30, 0.90], [0.41, 0.85], [0.52, 0.80], [0.63, 0.73]];
+  stones.forEach(([u, v]) => add(u, v, 'critters/stepping_stone.png', 30, { flat: true }));
 
   // Depth sort: farther (smaller u+v) drawn first → nearer objects overlap.
   items.sort((a, b) => (a.u + a.v) - (b.u + b.v));
   items.forEach((it, i) => {
     const p = isoFloorToScreen(it.u, it.v);
+    const z = 20 + i * 2;
+    // Contact shadow — a soft flat ellipse pooled on the floor at the object's
+    // base, so standing objects read as planted, not pasted. Flat objects (pond,
+    // stepping stones) already lie on the ground and skip it. Drawn at z just
+    // below its own object (so the object always sits on top of its shadow).
+    if (!it.opts.flat) {
+      const wpx = it.width * 0.72;
+      const sh = document.createElement('div');
+      sh.className = 'pg6-iso-shadow';
+      sh.style.position = 'absolute';
+      sh.style.left = (p.x / VB_W * 100) + '%';
+      sh.style.top = (p.y / VB_H * 100) + '%';
+      sh.style.width = (wpx / VB_W * 100) + '%';
+      sh.style.height = (wpx * 0.34 / VB_H * 100) + '%';
+      sh.style.transform = 'translate(-50%, -55%)';
+      sh.style.borderRadius = '50%';
+      sh.style.background = 'radial-gradient(ellipse at center, rgba(8,16,6,0.34) 0%, rgba(8,16,6,0) 70%)';
+      sh.style.pointerEvents = 'none';
+      sh.style.zIndex = String(z);
+      scene.appendChild(sh);
+    }
     const img = document.createElement('img');
     img.className = 'pg6-sprite object' + (it.opts.className ? ' ' + it.opts.className : '');
     img.src = spriteRoot + it.file;
@@ -349,7 +390,7 @@ function placeIsoObjects(scene, spriteRoot, groups, summary, mode) {
     img.style.left = (p.x / VB_W * 100) + '%';
     img.style.top = (p.y / VB_H * 100) + '%';
     img.style.width = (it.width / VB_W * 100) + '%';
-    img.style.zIndex = String(20 + i);
+    img.style.zIndex = String(z + 1);
     const tf = 'translate(-50%, -100%)' + (it.opts.scaleY ? ' scaleY(' + it.opts.scaleY + ')' : '');
     img.style.setProperty('--sprite-transform', tf);
     if (it.opts.title) img.title = it.opts.title;
