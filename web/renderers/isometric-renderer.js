@@ -35,8 +35,8 @@ const ISO_ASSETS = {
     full: { file: 'isometric_generated/pavilion_iso_v2_full.png' },
   },
   stoneCat: {
-    small: { file: 'isometric_generated/stone_cat_iso_v2_small.png' },
-    full: { file: 'isometric_generated/stone_cat_iso_v2_full.png' },
+    small: { file: 'isometric_generated/octo_cat_statue_iso_v1_small.png' },
+    full: { file: 'isometric_generated/octo_cat_statue_iso_v1_full.png' },
   },
   stoneLantern: {
     unlit: { file: 'isometric_generated/stone_lantern_iso_v2_unlit.png' },
@@ -64,6 +64,7 @@ export function createIsometricRenderer(options) {
     updateDataFreshness(summary);
     updateDefaultInfo(summary, projects);
     addProjectVines(options.scene, options.spriteRoot, groups, projects);
+    addProgrammingStickers(options.scene, options.spriteRoot);
     addCourtyardObjects(options.scene, options.spriteRoot, groups, tiers);
     addIsoGardenCat(options.scene, options.spriteRoot, groups, tiers);
     addIsoSeasonParticles(options.scene, options.spriteRoot, groups, tiers);
@@ -188,6 +189,28 @@ function addProjectVines(scene, spriteRoot, groups, projects) {
   });
 }
 
+function addProgrammingStickers(scene, spriteRoot) {
+  (CONFIG.programmingStickers || []).forEach((sticker, index) => {
+    const top = wallSlotToScreen(sticker.isoSlot ?? ((sticker.x || 50) / 100));
+    const width = (sticker.isoW ?? Math.max(10, (sticker.w || 18) * 0.62)) * 1.35;
+    const sideNudge = top.side === 'left' ? -2 : 2;
+    const img = addSprite(scene, spriteRoot, { file: sticker.file }, {
+      x: top.x + sideNudge,
+      y: top.y + (sticker.isoDown ?? 28),
+      width,
+      z: 150 + index,
+      opacity: sticker.isoOpacity ?? 0.82,
+      anchor: 'top',
+      className: 'code-sticker pg6-iso-sticker pg6-iso-dynamic',
+      title: sticker.title,
+    });
+    if (!img) return;
+    const rotate = Number.isFinite(sticker.rotate) ? sticker.rotate * 0.7 : 0;
+    const skew = top.side === 'left' ? -3 : 3;
+    img.style.setProperty('--sprite-transform', 'translate(-50%, -50%) rotate(' + (rotate + skew).toFixed(1) + 'deg)');
+  });
+}
+
 function addCourtyardObjects(scene, spriteRoot, groups, tiers) {
   void groups;
 
@@ -269,6 +292,7 @@ function addCourtyardObjects(scene, spriteRoot, groups, tiers) {
     zOffset: 32,
     shadowOpacity: 0.32,
   });
+  addIsoPavilionTrinkets(scene, spriteRoot, tiers, pavilionWidth);
 
   // lit/unlit is now a sprite PAIR (v1 had the warm windows baked into the
   // only file, so the lantern glowed at 8am). CSS drop-shadow glow still
@@ -277,6 +301,48 @@ function addCourtyardObjects(scene, spriteRoot, groups, tiers) {
   addFloorSprite(scene, spriteRoot, ISO_ASSETS.stoneLantern[lit ? 'lit' : 'unlit'], 0.80, 0.61, lit ? 46 : 42, {
     className: 'object decor-lantern ' + (lit ? 'is-lit' : 'is-dim') + ' pg6-iso-generated pg6-iso-lantern',
     zOffset: 44,
+  });
+}
+
+function addIsoPavilionTrinkets(scene, spriteRoot, tiers, pavilionWidth) {
+  const unlocked = new Set(tiers.pavilionTrinkets || []);
+  if (!unlocked.size) return;
+
+  const p = isoToScreen(0.77, 0.48);
+  const width = Math.round(pavilionWidth * p.scale);
+  const bbox = {
+    left: p.x - width / 2,
+    top: p.y - width,
+    width,
+    height: width,
+  };
+  const interior = { left: 0.20, right: 0.80, top: 0.37, bottom: 0.80 };
+  const intLeft = bbox.left + interior.left * bbox.width;
+  const intTop = bbox.top + interior.top * bbox.height;
+  const intWidth = (interior.right - interior.left) * bbox.width;
+  const intHeight = (interior.bottom - interior.top) * bbox.height;
+
+  CONFIG.pavilionTrinkets.forEach((trinket, index) => {
+    if (!unlocked.has(trinket.id)) return;
+    // In 2.5D, sleeping_cat unlocks the live roaming cat; keeping the static
+    // shelf version too makes the pavilion read crowded and duplicates the beat.
+    if (trinket.id === 'sleeping_cat') return;
+    const x = intLeft + (trinket.slot.x / 100) * intWidth;
+    const y = intTop + (trinket.slot.y / 100) * intHeight;
+    const spriteWidth = Math.max(8, Math.round(trinket.w * p.scale * 1.18));
+    const img = addSprite(scene, spriteRoot, { file: trinket.file }, {
+      x,
+      y,
+      width: spriteWidth,
+      z: p.z + 66 + index,
+      anchor: trinket.anchor === 'bottom' ? 'bottom' : 'center',
+      className: 'object pg6-trinket-sprite pg6-iso-trinket',
+      title: trinketLabel(trinket),
+    });
+    if (!img) return;
+    img.tabIndex = 0;
+    img.setAttribute('role', 'img');
+    img.setAttribute('aria-label', trinketLabel(trinket));
   });
 }
 
@@ -791,7 +857,11 @@ function addSprite(scene, spriteRoot, sprite, options) {
   img.style.width = (options.width / W * 100).toFixed(3) + '%';
   img.style.zIndex = String(options.z || 10);
   img.style.opacity = String(options.opacity ?? 1);
-  const anchor = options.anchor === 'top' ? 'translate(-50%, 0)' : 'translate(-50%, -100%)';
+  const anchor = options.anchor === 'top'
+    ? 'translate(-50%, 0)'
+    : options.anchor === 'center'
+      ? 'translate(-50%, -50%)'
+      : 'translate(-50%, -100%)';
   const scaleY = options.scaleY ? ' scaleY(' + options.scaleY + ')' : '';
   img.style.setProperty('--sprite-transform', anchor + scaleY);
   if (options.hueShift) img.style.setProperty('--vine-hue-shift', options.hueShift);
@@ -1047,6 +1117,9 @@ function unlockTier(summary, projects) {
   const recentActivity = list.reduce((sum, project) => sum + (project.recent_activity || 0), 0);
   const todayKey = new Date().toISOString().slice(0, 10);
   const todayActivity = list.reduce((sum, project) => sum + ((project.daily_activity || {})[todayKey] || 0), 0);
+  const trinkets = CONFIG.pavilionTrinkets
+    .filter((trinket) => totalTokens >= trinket.threshold)
+    .map((trinket) => trinket.id);
   const c = CONFIG;
   return {
     totalTokens,
@@ -1061,7 +1134,14 @@ function unlockTier(summary, projects) {
     lamp: todayActivity > 0 ? 'lit' : 'unlit',
     stool: maxStage >= c.stool.min_stage ? 'visible' : 'hidden',
     cushion: maxStage >= c.cushion.min_stage ? 'visible' : 'hidden',
+    pavilionTrinkets: trinkets,
   };
+}
+
+function trinketLabel(trinket) {
+  const name = t('trinket.' + trinket.id + '.name');
+  const hint = t('trinket.' + trinket.id + '.hint');
+  return name + ' · ' + hint;
 }
 
 function tokenSizeProfile(project, maxTokens, sortedTokens) {

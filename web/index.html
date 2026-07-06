@@ -320,6 +320,23 @@ body {
 .pg6-sprite.mark {
   mix-blend-mode: multiply;
 }
+.pg6-sprite.code-sticker {
+  filter: saturate(0.88) brightness(0.94) contrast(0.96) drop-shadow(1px 1px 0 rgba(50, 36, 24, 0.36));
+  image-rendering: pixelated;
+  mix-blend-mode: normal;
+  pointer-events: none;
+  transform-origin: center center;
+}
+.pg6-scene[data-renderer="isometric"] .pg6-sprite.code-sticker {
+  filter: saturate(0.82) brightness(0.90) contrast(0.95) drop-shadow(1px 1px 0 rgba(35, 25, 18, 0.30));
+  mix-blend-mode: normal;
+}
+.pg6-scene[data-time-mode="night"] .pg6-sprite.code-sticker {
+  opacity: 0.44 !important;
+}
+.pg6-scene[data-season="winter"] .pg6-sprite.code-sticker {
+  filter: saturate(0.52) brightness(0.82) contrast(0.9);
+}
 .pg6-wall-edge-cover {
   background: #75624f;
   height: clamp(2px, 0.8%, 6px);
@@ -940,16 +957,27 @@ body {
   z-index: 156;
 }
 .pg6-insight-panel[hidden] { display: none; }
-/* Scoped dark scrollbar for the two scrollable popovers, so the OS default
+/* Sticky-head variant (Token Insight): the panel shell stops scrolling and
+   only the project list does, so head / summary / search stay put and the
+   "show all" toggle stays pinned below the list. The dashboard panel keeps
+   the plain whole-panel scroll. */
+.pg6-insight-sticky-head { display: flex; flex-direction: column; overflow: hidden; }
+.pg6-insight-sticky-head > :not(.pg6-insight-list) { flex: 0 0 auto; }
+.pg6-insight-sticky-head .pg6-insight-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+/* Scoped dark scrollbar for the scrollable popovers, so the OS default
    (light, chunky) bar never shows through the pixel theme. Kept off the
-   global scope on purpose — only these two containers scroll. */
+   global scope on purpose — only these containers scroll. */
 .pg6-insight-panel,
+.pg6-insight-list,
 .pg6-settings-panel { scrollbar-width: thin; scrollbar-color: var(--color-border-tertiary) transparent; }
 .pg6-insight-panel::-webkit-scrollbar,
+.pg6-insight-list::-webkit-scrollbar,
 .pg6-settings-panel::-webkit-scrollbar { width: 10px; height: 10px; }
 .pg6-insight-panel::-webkit-scrollbar-track,
+.pg6-insight-list::-webkit-scrollbar-track,
 .pg6-settings-panel::-webkit-scrollbar-track { background: transparent; }
 .pg6-insight-panel::-webkit-scrollbar-thumb,
+.pg6-insight-list::-webkit-scrollbar-thumb,
 .pg6-settings-panel::-webkit-scrollbar-thumb {
   background: var(--color-border-tertiary);
   background-clip: padding-box;
@@ -957,8 +985,10 @@ body {
   border-radius: 6px;
 }
 .pg6-insight-panel::-webkit-scrollbar-thumb:hover,
+.pg6-insight-list::-webkit-scrollbar-thumb:hover,
 .pg6-settings-panel::-webkit-scrollbar-thumb:hover { background: var(--color-text-tertiary); background-clip: padding-box; }
 .pg6-insight-panel::-webkit-scrollbar-corner,
+.pg6-insight-list::-webkit-scrollbar-corner,
 .pg6-settings-panel::-webkit-scrollbar-corner { background: transparent; }
 .pg6-insight-head { align-items: center; display: flex; justify-content: space-between; margin-bottom: 10px; }
 .pg6-insight-label { color: var(--color-text-tertiary); font-size: 10px; letter-spacing: 0.3px; text-transform: uppercase; }

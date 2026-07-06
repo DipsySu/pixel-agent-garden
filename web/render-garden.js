@@ -111,6 +111,7 @@ function renderEverything(groups, summary) {
   addIvyOverlay(groups, wallProjects);
   addWallEdgeCover();
   addWallMarks(groups.plaster_patch || []);
+  addProgrammingStickers();
   addGroundOverlay(groups);
   // Flowerbed view (D PoC, opt-in). When enabled, the base scene swaps the
   // grass strips for a dirt bed (see render-svg.js) and we lay 366 flower
@@ -1466,6 +1467,23 @@ function destroy() {
     ];
     marks.forEach(([x, ratio, width], i) => {
       addSprite(pick(patches, i), { x, y: wallY(ratio), width, z: 9, opacity: 0.22, className: 'mark' });
+    });
+  }
+
+  function addProgrammingStickers() {
+    (CONFIG.programmingStickers || []).forEach((sticker, index) => {
+      const img = addSprite({ file: sticker.file }, {
+        x: sticker.x,
+        y: wallY(sticker.wall),
+        width: sticker.w * 1.14,
+        z: 11 + (index % 4),
+        opacity: sticker.opacity ?? 0.88,
+        className: 'code-sticker',
+        title: sticker.title
+      });
+      if (!img) return;
+      const rotate = Number.isFinite(sticker.rotate) ? sticker.rotate : 0;
+      img.style.setProperty('--sprite-transform', 'translate(-50%, -50%) rotate(' + rotate + 'deg)');
     });
   }
 

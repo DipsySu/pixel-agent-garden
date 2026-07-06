@@ -27,8 +27,9 @@ The page reads only local files served by the local dev server:
 - `assets/sprites/ivy_courtyard/**/*.png`
 - `assets/sprites/courtyard_objects/**/*.png`
 - `assets/sprites/courtyard_style/**/*.png`
+- `assets/sprites/octo_cat_statue/**/*.png`
 - `assets/sprites/pavilion_trinkets/**/*.png`
-- `assets/sprites/stone_cat/**/*.png`
+- `assets/sprites/programming_stickers/**/*.png`
 - `assets/sprites/mountains/**/*.png`
 
 There are no external fonts, icon CDNs, analytics, or API calls. Refreshing data is an explicit local CLI step in v1.

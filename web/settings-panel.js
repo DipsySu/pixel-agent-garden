@@ -7,6 +7,7 @@
 // still render so the user can see what's configured.
 
 import { setSettings, isTauriRuntime } from './data-source.js';
+import { joinPopoverGroup } from './popover-group.js';
 import { t } from './i18n.js';
 
 const SAVE_DEBOUNCE_MS = 300;
@@ -71,8 +72,11 @@ export function mountSettingsPanel({ hostFooter, initial, onChange }) {
   hostFooter.appendChild(button);
   hostFooter.parentElement.appendChild(panel);
 
+  const closeOthers = joinPopoverGroup(() => togglePanel(false));
+
   function togglePanel(force) {
     const open = typeof force === 'boolean' ? force : panel.hidden;
+    if (open) closeOthers();
     panel.hidden = !open;
     button.setAttribute('aria-expanded', open ? 'true' : 'false');
     button.classList.toggle('is-active', open);

@@ -5,6 +5,7 @@
 // muscle memory.
 
 import { renderHeatmap, renderHourOfWeek } from './render-heatmap.js';
+import { joinPopoverGroup } from './popover-group.js';
 import { t } from './i18n.js';
 
 const PALETTE_FALLBACK = ['—', 'Low', 'Mid', 'High', 'Peak'];
@@ -57,8 +58,11 @@ export function mountDashboardPanel({ hostFooter, initialSummary }) {
 
   render();
 
+  const closeOthers = joinPopoverGroup(() => toggle(false));
+
   function toggle(force) {
     const open = typeof force === 'boolean' ? force : panel.hidden;
+    if (open) closeOthers();
     panel.hidden = !open;
     button.setAttribute('aria-expanded', open ? 'true' : 'false');
     button.classList.toggle('is-active', open);

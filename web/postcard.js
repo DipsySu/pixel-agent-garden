@@ -1,5 +1,6 @@
 import { savePostcard } from './data-source.js';
 import { fmtLocal } from './render-helpers.js';
+import { joinPopoverGroup } from './popover-group.js';
 import { t } from './i18n.js';
 
 const EXPORT_WIDTH = 1360;
@@ -131,8 +132,11 @@ export function mountPostcardExport({ scene, assetRoot, getSummary, onError }) {
     }
   }
 
+  const closeOthers = joinPopoverGroup(() => togglePanel(false));
+
   function togglePanel(force) {
     const open = typeof force === 'boolean' ? force : panel.hidden;
+    if (open) closeOthers();
     panel.hidden = !open;
     button.setAttribute('aria-expanded', open ? 'true' : 'false');
     button.classList.toggle('is-active', open);

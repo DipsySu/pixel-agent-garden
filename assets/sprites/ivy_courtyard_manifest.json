@@ -1119,14 +1119,14 @@
     {
       "group": "stone_cat",
       "name": "stone_cat_small",
-      "file": "stone_cat/stone_cat_small.png",
+      "file": "octo_cat_statue/octo_cat_statue_small.png",
       "w": 338,
       "h": 408
     },
     {
       "group": "stone_cat",
       "name": "stone_cat_full",
-      "file": "stone_cat/stone_cat_full.png",
+      "file": "octo_cat_statue/octo_cat_statue_full.png",
       "w": 486,
       "h": 606
     },
@@ -1157,13 +1157,6 @@
       "file": "pavilion_trinkets/trinket_tea_set.png",
       "w": 84,
       "h": 55
-    },
-    {
-      "group": "pavilion_trinket",
-      "name": "trinket_lucky_cat",
-      "file": "pavilion_trinkets/trinket_lucky_cat.png",
-      "w": 196,
-      "h": 278
     },
     {
       "group": "pavilion_trinket",

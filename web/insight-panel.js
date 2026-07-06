@@ -1,5 +1,6 @@
 import { fmtLocal } from './render-helpers.js';
 import { insightPanelHTML } from './render-insight.js';
+import { joinPopoverGroup } from './popover-group.js';
 import { t } from './i18n.js';
 
 const DAYS = 14;
@@ -22,7 +23,10 @@ export function mountInsightPanel({ hostFooter, initialSummary, onProjectSelect,
   button.innerHTML = insightSvg() + '<span>Insight</span>';
 
   const panel = document.createElement('div');
-  panel.className = 'pg6-insight-panel';
+  // Sticky-head variant: the panel shell stops scrolling and only the
+  // project list does, so title/summary/search stay put (dashboard keeps
+  // the plain whole-panel scroll).
+  panel.className = 'pg6-insight-panel pg6-insight-sticky-head';
   panel.id = 'token-insight-panel';
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-label', t('insight.dialogAria'));
@@ -128,8 +132,11 @@ export function mountInsightPanel({ hostFooter, initialSummary, onProjectSelect,
     }
   }
 
+  const closeOthers = joinPopoverGroup(() => togglePanel(false));
+
   function togglePanel(force) {
     const open = typeof force === 'boolean' ? force : panel.hidden;
+    if (open) closeOthers();
     panel.hidden = !open;
     button.setAttribute('aria-expanded', open ? 'true' : 'false');
     button.classList.toggle('is-active', open);
