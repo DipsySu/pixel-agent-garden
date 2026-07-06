@@ -8,6 +8,7 @@ build/
 *.egg-info/
 .DS_Store
 review*.png
+garden-*.png
 pixel_garden_organic_vine.html
 web/sprite-experiment.html
 

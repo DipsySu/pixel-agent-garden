@@ -147,10 +147,14 @@ Automated pass on 2026-07-06:
 - `cargo tauri build` produced the unsigned macOS app and DMG:
   `target/release/bundle/macos/Local Agent Garden.app` and
   `target/release/bundle/dmg/Local Agent Garden_1.1.0_x64.dmg`
+- Garden Postcard native save was verified from the bundled app by saving a real
+  PNG (`garden-winter-20260706.png`, local validation artifact, not committed):
+  1360x880 RGBA, SHA-256 prefix `3c5e13226f5eb14b6453af7b`. The saved image
+  includes the full 2.5D scene, wall stickers, sprite layers, stamp/postmark,
+  and the explicit `Include project name` caption path.
 
-Still requires a human desktop click-through before tagging:
+Optional final human desktop check before tagging:
 
 - Open WebView devtools and confirm no CSP violation messages.
-- Click through the native Postcard save dialog, save a PNG, inspect the file,
-  and repeat once with `Include project name` enabled.
-- Run the unsigned bundled app and repeat the same CSP/Postcard smoke checks.
+- Re-open the bundled app once and confirm the default Postcard checkbox remains
+  off before enabling `Include project name`.
