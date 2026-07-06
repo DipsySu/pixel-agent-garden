@@ -250,12 +250,14 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 - ✅ 打包产物(`tauri-action` 出 dmg / deb+AppImage / NSIS,`release.yml` 发真 Release)
 - ✅ 公开发布信任底座(LICENSE / PRIVACY.md / 锁 CSP / CI zero-network gate)
 - ✅ 双语 UI、Garden Postcard、本地 return diff、README 新截图和公开文案
-- ⚠️ 下一个 Release 前必须桌面验证 CSP + Postcard 原生保存
+- ⚠️ 下一个 Release 前必须按 `docs/20-release-validation-checklist.md`
+  桌面验证 CSP + Postcard 原生保存
 - ⏳ 代码签名(目前是 unsigned bundle)
 - ⏳ Tauri updater(自动更新尚未接线)
 
-最近的零散修复见 `## Unreleased`:路径归一化/推测路径标记、Insight 同名消歧、
-深色滚动条、`.gitattributes`、发布信任加固、Postcard、return diff、README 刷新。
+最近的零散修复见 `## Unreleased`:2.5D 庭院、编程贴纸、octo-cat 守护像、
+Insight sticky head、footer popover 互斥、发布信任加固、Postcard、return diff、
+README 刷新。
 
 ## 如果你不确定
 

@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+- Added the final 2.5D wall-sticker pass for the public-release courtyard:
+  28 local PNG programming decals (Go, Rust, MySQL, Git, Terminal, Python,
+  Ruby, Docker, Java, JavaScript/TypeScript, HTML/CSS, Linux, React, Vue,
+  Node.js, npm, Vite, Next.js, Tailwind, Kubernetes, Redis, MongoDB,
+  PostgreSQL, AWS/cloud) now render on both the classic wall and the 2.5D wall
+  faces as muted, aged wall stickers. The generated source notes live in
+  `assets/sprites/programming_stickers/SOURCES.md`; no runtime network fetches
+  were added.
+- Replaced the stone-cat guardian art with an octo-cat guardian statue in both
+  renderers (`assets/sprites/octo_cat_statue/` and
+  `assets/sprites/isometric_generated/octo_cat_statue_*`). Removed the now-unused
+  old stone-cat and `trinket_lucky_cat` sprites so the sprite tree does not keep
+  ambiguous duplicate cat statues around.
+- Tightened footer popovers for the desktop release pass: Insight, Dashboard,
+  Postcard, and Settings now join a tiny mutual-exclusion group so only one
+  panel is open at a time. Insight also gained a sticky header/search/summary
+  shell with only the project list scrolling, which keeps the "show all"
+  affordance reachable on dense local datasets.
+- Added a release verification checklist for the remaining desktop gate:
+  `docs/20-release-validation-checklist.md` now spells out the true Tauri-window
+  CSP pass, the Garden Postcard native-save pass, zero-network observation, and
+  unsigned-bundle smoke checks to complete before tagging `v1.1.0`.
+- Refreshed the README hero screenshot (`docs/images/garden.png`) to show the
+  current 2.5D courtyard, wall stickers, octo-cat guardian, pavilion trinkets,
+  water edge details, and footer controls instead of the older flat-wall scene.
+- Bumped crate and Tauri package metadata from `0.1.2` to `1.1.0` so the first
+  public release tag and generated desktop bundle filenames line up.
+
 - Started the 2.5D courtyard branch and shipped an experimental renderer behind
   `?renderer=isometric`. `garden.js` now chooses a scene renderer through
   `web/renderers/renderer-factory.js`; default `classic` still wraps the
