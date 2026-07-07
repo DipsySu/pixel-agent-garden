@@ -56,8 +56,9 @@ impl Default for DataSettings {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct DesktopSettings {
-    /// Future autostart integration. Stored now so the PRD 2.0 settings contract
-    /// exists; the OS login item implementation lands with the autostart plugin.
+    /// Source of truth for the OS login item. The Tauri shell's `autostart`
+    /// module reconciles OS state to this value at startup and after each
+    /// settings save; core itself never touches the OS (spec §10 rule 1).
     pub launch_at_login: bool,
     /// When true, closing the main window hides it and keeps the tray resident.
     /// When false, the platform default close behavior is allowed.

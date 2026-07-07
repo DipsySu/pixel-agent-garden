@@ -88,6 +88,8 @@ export function mountSettingsPanel({ hostFooter, initial, onChange }) {
     const next = cloneSettings(current);
     if (target.name === 'auto_rescan') {
       next.data.auto_rescan = target.checked;
+    } else if (target.name === 'launch_at_login') {
+      next.desktop.launch_at_login = target.checked;
     } else if (target.name === 'close_to_tray') {
       next.desktop.close_to_tray = target.checked;
     } else if (target.name in next.appearance) {
@@ -142,6 +144,13 @@ function buildPanelHtml(settings, canPersist) {
       )
     ]) +
     section(t('settings.desktop'), [
+      checkbox(
+        'launch_at_login',
+        t('settings.launchAtLogin'),
+        t('settings.launchAtLoginHint'),
+        settings.desktop.launch_at_login,
+        disabledAttr
+      ),
       checkbox(
         'close_to_tray',
         t('settings.closeToTray'),

@@ -98,10 +98,13 @@ pub async fn get_settings() -> Result<Settings, String> {
 }
 
 #[tauri::command]
-pub async fn set_settings(settings: Settings) -> Result<Settings, String> {
+pub async fn set_settings(app: tauri::AppHandle, settings: Settings) -> Result<Settings, String> {
     tokio::task::spawn_blocking(move || {
         let path = local_agent_garden_core::settings::default_settings_path();
         local_agent_garden_core::settings::save(&path, &settings).map_err(|e| e.to_string())?;
+        // Only a persisted value is the truth — project launch_at_login onto
+        // the OS login item after the save lands (no-op when already in sync).
+        crate::autostart::reconcile(&app, settings.desktop.launch_at_login);
         Ok(settings)
     })
     .await
