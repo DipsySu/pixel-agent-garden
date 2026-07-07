@@ -1,12 +1,20 @@
+// Token Insight content — the "Projects" tab of the data drawer (PRD 2.0
+// §5.3 information architecture, decision §8.1: Insight + Dashboard merge
+// behind one footer button). This module is a content provider: it renders
+// the project ranking + live search INTO the host element the drawer hands
+// it, and owns only what happens inside that host. The footer button, panel
+// shell, TabBar, open/close and Escape handling live in web/data-drawer.js —
+// so do their styles; nothing here knows the drawer exists beyond the
+// onRequestClose callback.
+
 import { fmtLocal } from './render-helpers.js';
 import { insightPanelHTML } from './render-insight.js';
-import { joinPopoverGroup } from './popover-group.js';
 import { t } from './i18n.js';
 
 const DAYS = 14;
 const LIMIT = 10;
 
-export function mountInsightPanel({ hostFooter, initialSummary, onProjectSelect, onOpenTerminal }) {
+export function mountInsightContent({ host, initialSummary, onProjectSelect, onOpenTerminal, onRequestClose }) {
   let currentSummary = initialSummary || null;
   // Client-side view state, preserved across re-renders (watcher ticks):
   // `query` filters rows by the row's data-search haystack; `showAll` lifts the
@@ -15,32 +23,19 @@ export function mountInsightPanel({ hostFooter, initialSummary, onProjectSelect,
   let query = '';
   let showAll = false;
 
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'pg6-footer-insight';
-  button.setAttribute('aria-label', t('insight.openAria'));
-  button.setAttribute('aria-expanded', 'false');
-  button.innerHTML = insightSvg() + '<span>Insight</span>';
-
-  const panel = document.createElement('div');
-  // Sticky-head variant: the panel shell stops scrolling and only the
-  // project list does, so title/summary/search stay put (dashboard keeps
-  // the plain whole-panel scroll).
-  panel.className = 'pg6-insight-panel pg6-insight-sticky-head pg6-popover-scroll';
-  panel.id = 'token-insight-panel';
-  panel.setAttribute('role', 'dialog');
-  panel.setAttribute('aria-label', t('insight.dialogAria'));
-  panel.hidden = true;
+  // Sticky-head layout (head/summary/search pinned, only the list scrolls) is
+  // this content's own contract, so the class travels with the content rather
+  // than with the drawer shell. The list brings its own pg6-popover-scroll
+  // class from render-insight.js.
+  host.classList.add('pg6-insight-sticky-head');
   render();
 
-  button.addEventListener('click', () => togglePanel());
-  panel.addEventListener('click', (event) => {
+  host.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target : null;
     if (!target) return;
     const close = target.closest('.pg6-insight-close');
     if (close) {
-      togglePanel(false);
-      button.focus();
+      if (typeof onRequestClose === 'function') onRequestClose();
       return;
     }
     const showall = target.closest('.pg6-insight-showall');
@@ -60,38 +55,28 @@ export function mountInsightPanel({ hostFooter, initialSummary, onProjectSelect,
     const key = row.dataset.projectKey;
     if (key && typeof onProjectSelect === 'function') {
       onProjectSelect(key);
-      panel.querySelectorAll('.pg6-insight-row').forEach((item) => {
+      host.querySelectorAll('.pg6-insight-row').forEach((item) => {
         item.classList.toggle('is-active', item === row);
       });
     }
   });
   // Live search — delegated so it survives re-renders. Pure show/hide.
-  panel.addEventListener('input', (event) => {
+  host.addEventListener('input', (event) => {
     if (!(event.target instanceof Element)) return;
     if (!event.target.classList.contains('pg6-insight-search-input')) return;
     query = event.target.value.trim().toLowerCase();
     applyFilter();
   });
-  panel.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      togglePanel(false);
-      button.focus();
-    }
-  });
 
-  hostFooter.appendChild(button);
-  hostFooter.parentElement.appendChild(panel);
-
-  // Re-render the panel HTML, then re-apply the live view state and restore the
-  // search box (value + focus + caret) so a watcher tick mid-search isn't
+  // Re-render the content HTML, then re-apply the live view state and restore
+  // the search box (value + focus + caret) so a watcher tick mid-search isn't
   // disruptive.
   function render() {
-    const input = panel.querySelector('.pg6-insight-search-input');
+    const input = host.querySelector('.pg6-insight-search-input');
     const hadFocus = input && document.activeElement === input;
     const caret = input ? input.selectionStart : null;
-    panel.innerHTML = insightPanelHTML(currentSummary, { days: DAYS, limit: LIMIT, format: fmtLocal });
-    const fresh = panel.querySelector('.pg6-insight-search-input');
+    host.innerHTML = insightPanelHTML(currentSummary, { days: DAYS, limit: LIMIT, format: fmtLocal });
+    const fresh = host.querySelector('.pg6-insight-search-input');
     if (fresh && query) fresh.value = query;
     if (fresh && hadFocus) {
       fresh.focus();
@@ -104,44 +89,31 @@ export function mountInsightPanel({ hostFooter, initialSummary, onProjectSelect,
 
   // The single source of truth for what's visible: a search query overrides the
   // top-N cap (search reaches every project); otherwise the cap applies unless
-  // "show all" is on. Driven by two panel classes the CSS keys off.
+  // "show all" is on. Driven by two host classes the CSS keys off.
   function applyFilter() {
     const searching = query.length > 0;
-    panel.classList.toggle('is-searching', searching);
-    panel.classList.toggle('is-showing-all', showAll);
+    host.classList.toggle('is-searching', searching);
+    host.classList.toggle('is-showing-all', showAll);
 
     let visible = 0;
-    panel.querySelectorAll('.pg6-insight-row-line').forEach((line) => {
+    host.querySelectorAll('.pg6-insight-row-line').forEach((line) => {
       const haystack = line.dataset.search || '';
       const match = !searching || haystack.includes(query);
       line.hidden = !match;
       if (match && (showAll || searching || !line.classList.contains('is-extra'))) visible += 1;
     });
 
-    const empty = panel.querySelector('.pg6-insight-noresults');
+    const empty = host.querySelector('.pg6-insight-noresults');
     if (empty) empty.hidden = !(searching && visible === 0);
 
     // While searching, the cap is irrelevant — hide the toggle. Otherwise label
     // it for the current direction.
-    const toggle = panel.querySelector('.pg6-insight-showall');
+    const toggle = host.querySelector('.pg6-insight-showall');
     if (toggle) {
       toggle.hidden = searching;
       const extra = Number(toggle.dataset.extra || 0);
       const topn = Number(toggle.dataset.topn || 0);
       toggle.textContent = showAll ? t('insight.showTop', { count: topn }) : t('insight.showAll', { count: extra });
-    }
-  }
-
-  const closeOthers = joinPopoverGroup(() => togglePanel(false));
-
-  function togglePanel(force) {
-    const open = typeof force === 'boolean' ? force : panel.hidden;
-    if (open) closeOthers();
-    panel.hidden = !open;
-    button.setAttribute('aria-expanded', open ? 'true' : 'false');
-    button.classList.toggle('is-active', open);
-    if (open) {
-      (panel.querySelector('.pg6-insight-search-input') || panel.querySelector('.pg6-insight-close'))?.focus();
     }
   }
 
@@ -151,13 +123,4 @@ export function mountInsightPanel({ hostFooter, initialSummary, onProjectSelect,
       render();
     }
   };
-}
-
-function insightSvg() {
-  return (
-    '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">' +
-    '<path d="M4 17h16M6 14l3-5 4 3 5-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
-    '<path d="M6 19h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
-    '</svg>'
-  );
 }

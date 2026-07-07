@@ -120,8 +120,12 @@ const MESSAGES = {
     'choice.enabled': 'Enabled',
     'choice.disabled': 'Disabled',
 
-    'insight.openAria': 'Open Token Insight',
-    'insight.dialogAria': 'Token Insight',
+    'drawer.button': 'Data',
+    'drawer.openAria': 'Open the data drawer',
+    'drawer.dialogAria': 'Data drawer',
+    'drawer.tab.overview': 'Overview',
+    'drawer.tab.projects': 'Projects',
+
     'insight.sparkLabel': 'Last {days} days token total: {total}',
     'insight.empty': 'Waiting for local agent activity',
     'insight.label': 'Token Insight',
@@ -141,9 +145,6 @@ const MESSAGES = {
     'insight.inferredTooltip': '≈ {path} (inferred path; may be inaccurate)',
     'insight.rowRecent': 'Last {days} days {total}',
 
-    'dashboard.openAria': 'Open activity dashboard',
-    'dashboard.button': 'Dashboard',
-    'dashboard.dialogAria': 'Activity dashboard',
     'dashboard.closeAria': 'Close dashboard',
     'dashboard.label': 'Dashboard',
     'dashboard.title': 'Activity overview',
@@ -330,8 +331,12 @@ const MESSAGES = {
     'choice.enabled': '启用',
     'choice.disabled': '禁用',
 
-    'insight.openAria': '打开 Token Insight',
-    'insight.dialogAria': 'Token Insight',
+    'drawer.button': '数据',
+    'drawer.openAria': '打开数据抽屉',
+    'drawer.dialogAria': '数据抽屉',
+    'drawer.tab.overview': '概览',
+    'drawer.tab.projects': '项目',
+
     'insight.sparkLabel': '近 {days} 天 token：合计 {total}',
     'insight.empty': '等待本地 agent 活动',
     'insight.label': 'Token Insight',
@@ -351,9 +356,6 @@ const MESSAGES = {
     'insight.inferredTooltip': '≈ {path}(推测路径,可能不准)',
     'insight.rowRecent': '近 {days} 天 {total}',
 
-    'dashboard.openAria': '打开活动 dashboard',
-    'dashboard.button': '看板',
-    'dashboard.dialogAria': '活动看板',
     'dashboard.closeAria': '关闭看板',
     'dashboard.label': '看板',
     'dashboard.title': '活动总览',

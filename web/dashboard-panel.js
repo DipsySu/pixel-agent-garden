@@ -1,82 +1,47 @@
-// Dashboard panel — footer button + full-screen overlay showing the
-// year heatmap, the hour-of-week punchcard, and a row of KPI summary
-// cards. Uses the same footer-button / dialog pattern as Insight and
-// Postcard so users get one consistent "click this gear-shape to expand"
-// muscle memory.
+// Dashboard content — the "Overview" tab of the data drawer (PRD 2.0 §5.3
+// information architecture, decision §8.1: Insight + Dashboard merge behind
+// one footer button). This module is a content provider: it renders the KPI
+// summary cards, the year heatmap and the hour-of-week punchcard INTO the
+// host element the drawer hands it. The footer button and panel shell this
+// module used to own live in web/data-drawer.js now; removing this view
+// later = deleting this module plus its tab entry in the drawer.
 
 import { renderHeatmap, renderHourOfWeek } from './render-heatmap.js';
-import { joinPopoverGroup } from './popover-group.js';
 import { t } from './i18n.js';
-
-const PALETTE_FALLBACK = ['—', 'Low', 'Mid', 'High', 'Peak'];
 
 /**
  * @param {{
- *   hostFooter: HTMLElement,
+ *   host: HTMLElement,
  *   initialSummary: object | null,
+ *   onRequestClose?: () => void,
  * }} opts
- * @returns {{ update: (summary: object | null) => void, open: () => void }}
+ * @returns {{ update: (summary: object | null) => void }}
  */
-export function mountDashboardPanel({ hostFooter, initialSummary }) {
+export function mountDashboardContent({ host, initialSummary, onRequestClose }) {
   let currentSummary = initialSummary || null;
 
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'pg6-footer-insight pg6-footer-dashboard';
-  button.setAttribute('aria-label', t('dashboard.openAria'));
-  button.setAttribute('aria-expanded', 'false');
-  button.setAttribute('aria-controls', 'dashboard-panel');
-  button.innerHTML = dashboardSvg() + '<span data-i18n="dashboard.button">Dashboard</span>';
-
-  const panel = document.createElement('div');
-  panel.className = 'pg6-insight-panel pg6-dashboard-panel pg6-popover-scroll';
-  panel.id = 'dashboard-panel';
-  panel.setAttribute('role', 'dialog');
-  panel.setAttribute('aria-label', t('dashboard.dialogAria'));
-  panel.hidden = true;
-  panel.innerHTML = shellHtml();
-
-  button.addEventListener('click', () => toggle());
-  panel.addEventListener('click', (event) => {
+  host.innerHTML = contentHtml();
+  host.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target : null;
     if (!target) return;
-    if (target.closest('.pg6-insight-close')) {
-      toggle(false);
-      button.focus();
+    if (target.closest('.pg6-insight-close') && typeof onRequestClose === 'function') {
+      onRequestClose();
     }
   });
-  panel.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      toggle(false);
-      button.focus();
-    }
-  });
-
-  hostFooter.appendChild(button);
-  hostFooter.parentElement.appendChild(panel);
-
   render();
 
-  const closeOthers = joinPopoverGroup(() => toggle(false));
-
-  function toggle(force) {
-    const open = typeof force === 'boolean' ? force : panel.hidden;
-    if (open) closeOthers();
-    panel.hidden = !open;
-    button.setAttribute('aria-expanded', open ? 'true' : 'false');
-    button.classList.toggle('is-active', open);
-    if (open) render();
-  }
-
+  // Unlike the old standalone panel (which rendered lazily on open), the
+  // content re-renders on every update even while its tab is hidden: the
+  // heatmap/punchcard SVGs are fixed-size (no layout measuring), and an
+  // always-warm tab means the drawer never has to signal visibility to its
+  // providers — the same policy the insight list already follows.
   function render() {
-    if (panel.hidden) return;
-    renderKpis(panel, currentSummary);
-    const heatmapHost = panel.querySelector('[data-slot="heatmap"]');
+    renderKpis(host, currentSummary);
+    const heatmapHost = host.querySelector('[data-slot="heatmap"]');
     if (heatmapHost) {
       renderHeatmap(heatmapHost, currentSummary?.heatmap_year || [], { mode: 'full' });
     }
-    const punchcardHost = panel.querySelector('[data-slot="punchcard"]');
+    const punchcardHost = host.querySelector('[data-slot="punchcard"]');
     if (punchcardHost) {
       renderHourOfWeek(punchcardHost, currentSummary?.hour_of_week || []);
     }
@@ -87,11 +52,10 @@ export function mountDashboardPanel({ hostFooter, initialSummary }) {
       currentSummary = summary;
       render();
     },
-    open: () => toggle(true),
   };
 }
 
-function shellHtml() {
+function contentHtml() {
   const close = `
     <button class="pg6-insight-close" type="button" aria-label="${escape(t('dashboard.closeAria'))}">
       <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
@@ -132,11 +96,11 @@ function shellHtml() {
     </div>`;
 }
 
-function renderKpis(panel, summary) {
-  const host = panel.querySelector('[data-slot="kpis"]');
-  if (!host) return;
+function renderKpis(host, summary) {
+  const slot = host.querySelector('[data-slot="kpis"]');
+  if (!slot) return;
   const k = computeKpis(summary);
-  host.innerHTML = `
+  slot.innerHTML = `
     ${kpiCard(t('dashboard.kpi.totalTokens'), formatTokens(k.totalTokens), '')}
     ${kpiCard(t('dashboard.kpi.activeProjects'), String(k.activeProjects), '')}
     ${kpiCard(t('dashboard.kpi.activeDays'), `${k.activeDays} / 365`, '')}
@@ -203,19 +167,6 @@ function kpiCard(label, value, sub) {
       <div class="pg6-dashboard-kpi-value">${escape(value)}</div>
       ${sub ? `<div class="pg6-dashboard-kpi-sub">${escape(sub)}</div>` : ''}
     </div>`;
-}
-
-function dashboardSvg() {
-  // Four-square dashboard icon — distinguishable from gear (settings) and
-  // postcard (square + sun). Keeps with the existing 14×14 button icon
-  // convention.
-  return `
-    <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-      <rect x="4"  y="4"  width="7" height="7" fill="none" stroke="currentColor" stroke-width="2"/>
-      <rect x="13" y="4"  width="7" height="7" fill="none" stroke="currentColor" stroke-width="2"/>
-      <rect x="4"  y="13" width="7" height="7" fill="none" stroke="currentColor" stroke-width="2"/>
-      <rect x="13" y="13" width="7" height="7" fill="none" stroke="currentColor" stroke-width="2"/>
-    </svg>`;
 }
 
 function formatTokens(n) {
