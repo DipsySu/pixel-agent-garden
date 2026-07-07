@@ -713,6 +713,61 @@ body {
   width: 100%;
 }
 
+/* === In-scene unlock banner (PRD 2.0 §5.4-B, P1-2) ==========================
+   Paper card on the halo layer: rises from the scene's bottom edge (240ms,
+   steps(6)), dwells 4s, sinks 240ms. scene-banner.js owns the timing chain;
+   these rules own the look and the two motion variants. z=152 per the §5.2
+   ladder (scene sprites 10–149 → stickers 150 → banner 152 → hover 154). */
+.pg6-banner {
+  align-items: center;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  bottom: 14px;
+  box-shadow: 2px 2px 0 var(--ink);
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  font-size: 12px;
+  gap: 6px;
+  left: 50%;
+  line-height: 1.35;
+  max-width: 60%;
+  padding: 6px 14px;
+  position: absolute;
+  transform: translate(-50%, calc(100% + 20px));
+  transition: transform 240ms steps(6);
+  white-space: nowrap;
+  z-index: 152;
+}
+.pg6-banner-icon { flex: 0 0 auto; }
+.pg6-banner-text { overflow: hidden; text-overflow: ellipsis; }
+.pg6-banner.is-in { transform: translate(-50%, 0); }
+/* Reduced motion (app data-motion off/reduced OR prefers-reduced-motion —
+   scene-banner.js applies the same rule as the renderers): the banner sits in
+   place and fades in/out instead of sliding; durations stay 240ms. */
+.pg6-banner.is-fade {
+  opacity: 0;
+  transform: translate(-50%, 0);
+  transition: opacity 240ms steps(6);
+}
+.pg6-banner.is-fade.is-in { opacity: 1; }
+/* Click-to-focus pulse: a one-shot 2-frame blink (300ms steps(2) × 4 ≈ 1.2s)
+   on the celebrated object; unlock-moments.js adds/removes the class.
+   !important mirrors the house motion-gating style — the blink must briefly
+   preempt ambient loops (e.g. the lit lantern's own infinite pulse), and the
+   off/reduced gates below must in turn preempt the blink. */
+.pg6-banner-pulse { animation: pg6-banner-pulse 300ms steps(2) 4 !important; }
+@keyframes pg6-banner-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.pg6-scene[data-motion="off"] .pg6-banner-pulse,
+.pg6-scene[data-motion="reduced"] .pg6-banner-pulse { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .pg6-banner-pulse { animation: none !important; }
+}
+
 /* === Mini heatmap strip (sits between header and scene) ====================
    ~50 px tall horizontal band — a quick at-a-glance view of the rolling
    year of activity. Visually styled like a wood-eave plaque (the same wood
