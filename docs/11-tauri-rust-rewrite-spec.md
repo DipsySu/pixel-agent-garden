@@ -112,6 +112,10 @@ courtyard unlocks therefore use a separate local memory file,
   core path. `cache::summary_from_cache_or_scan*` also records/applies rings on
   cache hits, so upgrades can seed `rings.json` from a fresh existing cache and
   restarting the app cannot shrink the garden.
+- Rings are an auxiliary memory layer, not a serving dependency. If
+  `rings.json` is corrupt or temporarily unwritable, core logs the failure and
+  serves the freshly computed/current `GardenSummary` instead of blocking the
+  garden. The accounting cache must keep working without the memory layer.
 - Frontend code may diff two visible `summary.tiers` frames to celebrate a
   change, but it never writes `rings.json` and never decides what counts as
   history.
@@ -122,6 +126,12 @@ counters. Live states stay live: cherry bloom follows recent activity, and the
 lantern follows today's activity/time of day. This preserves the PRD 2.0 split:
 Insight answers "what is true now"; the garden remembers "what has ever
 bloomed".
+
+`rings.json` and `events.json` writes use a shared sibling-temp-file plus
+atomic-rename helper, so a process crash cannot leave a half JSON document.
+CLI summary views apply the same rings high-water display layer as the Tauri
+desktop summary. CLI `usage` remains a raw accounting view over current events
+and is not high-watered.
 
 ## Settings
 

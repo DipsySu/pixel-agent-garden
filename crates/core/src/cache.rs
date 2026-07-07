@@ -53,11 +53,11 @@ pub fn summary_from_cache_or_scan_at(
         if let Some(stored) = cache.fingerprint {
             if stored == source_fingerprint(ctx) {
                 let summary = aggregate::summarize(&cache.events);
-                return rings::record_summary(
+                return Ok(rings::record_summary_best_effort(
                     summary,
-                    &rings_path_for_cache(cache_path),
+                    &rings::path_for_events_cache(cache_path),
                     chrono::Utc::now(),
-                );
+                ));
             }
         }
     }
@@ -93,26 +93,11 @@ pub fn refresh_summary_at(
     let result = scan::collect_events(ctx, sources_filter)?;
     storage::save_events_with_fingerprint(&result.events, Some(fingerprint), cache_path)?;
     let summary = aggregate::summarize(&result.events);
-    rings::record_summary(
+    Ok(rings::record_summary_best_effort(
         summary,
-        &rings_path_for_cache(cache_path),
+        &rings::path_for_events_cache(cache_path),
         chrono::Utc::now(),
-    )
-}
-
-fn rings_path_for_cache(cache_path: &Path) -> PathBuf {
-    if cache_path == default_events_path() {
-        return rings::default_rings_path();
-    }
-    let parent = cache_path.parent().map(Path::to_path_buf);
-    let stem = cache_path
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .filter(|s| !s.is_empty())
-        .unwrap_or("events");
-    parent
-        .map(|p| p.join(format!("{stem}.rings.json")))
-        .unwrap_or_else(rings::default_rings_path)
+    ))
 }
 
 /// Fingerprint every source file the active adapters watch: total bytes, newest
@@ -239,10 +224,56 @@ mod tests {
         assert_eq!(summary.total_tokens, 42);
         assert_eq!(summary.projects[0].display_name, "pixel-agent-garden");
         assert!(
-            rings_path_for_cache(&path).exists(),
+            rings::path_for_events_cache(&path).exists(),
             "fresh cache hits should seed rings.json from cached events"
         );
-        std::fs::remove_file(rings_path_for_cache(&path)).ok();
+        std::fs::remove_file(rings::path_for_events_cache(&path)).ok();
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn corrupt_rings_does_not_block_fresh_cache_summary() {
+        let path = tmp_path("corrupt-rings-hit");
+        let _ = std::fs::remove_file(&path);
+        let rings_path = rings::path_for_events_cache(&path);
+        let _ = std::fs::remove_file(&rings_path);
+        let ctx = AdapterContext::with_home(
+            std::env::temp_dir().join(format!("lag-cache-corrupt-hit-home-{}", std::process::id())),
+        );
+        let fp = source_fingerprint(&ctx);
+        storage::save_events_with_fingerprint(&[sample_event()], Some(fp), &path).unwrap();
+        std::fs::write(&rings_path, "{not-valid-json").unwrap();
+
+        let summary = summary_from_cache_or_scan_at(&ctx, None, &path).unwrap();
+
+        assert_eq!(summary.total_events, 1);
+        assert_eq!(summary.total_tokens, 42);
+        std::fs::remove_file(&rings_path).ok();
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn corrupt_rings_does_not_block_refresh_summary() {
+        let home = std::env::temp_dir().join(format!(
+            "lag-cache-corrupt-refresh-home-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&home);
+        write_session(&home, "proj-a", "s1.jsonl", 77);
+        let ctx = AdapterContext::with_home(&home);
+        let path = tmp_path("corrupt-rings-refresh");
+        let _ = std::fs::remove_file(&path);
+        let rings_path = rings::path_for_events_cache(&path);
+        let _ = std::fs::remove_file(&rings_path);
+        std::fs::write(&rings_path, "{not-valid-json").unwrap();
+
+        let summary = refresh_summary_at(&ctx, None, &path).unwrap();
+
+        assert_eq!(summary.total_events, 1);
+        assert_eq!(summary.total_tokens, 77);
+        assert!(path.exists(), "events cache should still be written");
+        std::fs::remove_dir_all(&home).ok();
+        std::fs::remove_file(&rings_path).ok();
         std::fs::remove_file(&path).ok();
     }
 
@@ -259,7 +290,7 @@ mod tests {
 
         // The sentinel (42 tokens) is discarded; the empty-env rescan wins.
         assert_eq!(summary.total_events, 0);
-        std::fs::remove_file(rings_path_for_cache(&path)).ok();
+        std::fs::remove_file(rings::path_for_events_cache(&path)).ok();
         std::fs::remove_file(&path).ok();
     }
 

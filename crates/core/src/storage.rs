@@ -66,6 +66,34 @@ pub fn default_state_dir() -> PathBuf {
     home.join(".local-agent-garden")
 }
 
+/// Atomically replace a UTF-8 state file with `text`.
+///
+/// The write happens through a sibling temp file followed by `rename`, so
+/// readers never observe a half-written JSON document. This is intended for
+/// product-owned cache/state files under `~/.local-agent-garden/`; tests also
+/// use it with temp paths.
+pub(crate) fn write_text_atomic(path: &Path, text: &str) -> Result<(), Error> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| Error::io(parent, e))?;
+    }
+    let tmp = atomic_tmp_path(path);
+    std::fs::write(&tmp, text).map_err(|e| Error::io(&tmp, e))?;
+    std::fs::rename(&tmp, path).map_err(|e| {
+        let _ = std::fs::remove_file(&tmp);
+        Error::io(path, e)
+    })?;
+    Ok(())
+}
+
+fn atomic_tmp_path(path: &Path) -> PathBuf {
+    let file_name = path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .filter(|s| !s.is_empty())
+        .unwrap_or("state");
+    path.with_file_name(format!(".{file_name}.tmp-{}", std::process::id()))
+}
+
 /// Write events to disk wrapped in the versioned envelope, with no source
 /// fingerprint. Used by callers (e.g. the CLI `scan --out`) that don't track
 /// freshness; the resulting cache is treated as always-stale by `crate::cache`.
@@ -80,16 +108,13 @@ pub fn save_events_with_fingerprint(
     fingerprint: Option<SourceFingerprint>,
     path: &Path,
 ) -> Result<(), Error> {
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| Error::io(parent, e))?;
-    }
     let cache = EventsCache {
         schema_version: EVENTS_SCHEMA_VERSION,
         events: events.to_vec(),
         fingerprint,
     };
     let json = serde_json::to_string_pretty(&cache).map_err(|e| Error::json(path, e))?;
-    std::fs::write(path, json).map_err(|e| Error::io(path, e))?;
+    write_text_atomic(path, &json)?;
     Ok(())
 }
 
@@ -221,6 +246,21 @@ mod tests {
         let parsed: serde_json::Value = serde_json::from_str(&text).unwrap();
         assert_eq!(parsed["schema_version"], 1);
         assert!(parsed["events"].is_array());
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn atomic_text_write_replaces_existing_file() {
+        let path = tmp("atomic");
+        let _ = std::fs::remove_file(&path);
+        write_text_atomic(&path, "one").unwrap();
+        write_text_atomic(&path, "two").unwrap();
+
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "two");
+        assert!(
+            !atomic_tmp_path(&path).exists(),
+            "temp file should not be left behind after successful rename"
+        );
         std::fs::remove_file(&path).ok();
     }
 

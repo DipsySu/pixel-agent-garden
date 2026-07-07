@@ -14,6 +14,11 @@
   `garden_rings` Tauri command and `loadRings()` data boundary are in place for
   the future 年轮 UI; frontend tier rendering now trusts `summary.tiers` when
   present and falls back to the old JS derivation for browser/demo summaries.
+- Hardened the PRD 2.0 garden-memory pass after review: corrupt or unwritable
+  `rings.json` now logs and degrades to the current `GardenSummary` instead of
+  blocking cache hits or refreshes; CLI summary views use the same rings
+  high-water display layer as the desktop app; and `events.json` now shares the
+  atomic temp-file + rename write helper used by rings.
 - Started the PRD 2.0 tray-watch vertical slice. Settings now have a dedicated
   `[desktop]` section (`launch_at_login`, `close_to_tray`) and the settings
   panel round-trips `appearance`, `data`, `integrations`, and `desktop` without

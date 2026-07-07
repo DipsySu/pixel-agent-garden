@@ -8,6 +8,7 @@ use local_agent_garden_core::adapter::AdapterContext;
 use local_agent_garden_core::aggregate::{self, GardenSummary};
 use local_agent_garden_core::event::AgentEvent;
 use local_agent_garden_core::registry;
+use local_agent_garden_core::rings;
 use local_agent_garden_core::scan;
 use local_agent_garden_core::storage;
 use serde_json::json;
@@ -341,7 +342,15 @@ fn build_summary(
     from_cache: Option<&std::path::Path>,
 ) -> Result<GardenSummary, ExitCode> {
     let events = build_events(ctx, sources_filter, from_cache)?;
-    Ok(aggregate::summarize(&events))
+    let summary = aggregate::summarize(&events);
+    let rings_path = from_cache
+        .map(rings::path_for_events_cache)
+        .unwrap_or_else(rings::default_rings_path);
+    Ok(rings::record_summary_best_effort(
+        summary,
+        &rings_path,
+        chrono::Utc::now(),
+    ))
 }
 
 fn build_events(

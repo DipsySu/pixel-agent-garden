@@ -21,6 +21,26 @@ pub fn default_rings_path() -> PathBuf {
     storage::default_state_dir().join("rings.json")
 }
 
+/// Sidecar rings path for an events cache.
+///
+/// The default product cache (`~/.local-agent-garden/events.json`) maps to the
+/// canonical `rings.json`. Custom caches get a sibling `<stem>.rings.json`, so
+/// tests and ad-hoc CLI views do not mutate the user's main garden memory.
+pub fn path_for_events_cache(cache_path: &Path) -> PathBuf {
+    if cache_path == storage::default_state_dir().join("events.json") {
+        return default_rings_path();
+    }
+    let parent = cache_path.parent().map(Path::to_path_buf);
+    let stem = cache_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .filter(|s| !s.is_empty())
+        .unwrap_or("events");
+    parent
+        .map(|p| p.join(format!("{stem}.rings.json")))
+        .unwrap_or_else(default_rings_path)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RingBook {
     pub schema_version: u32,
@@ -40,7 +60,7 @@ impl Default for RingBook {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct RingSnapshot {
     #[serde(default)]
     pub tiers: GardenTiers,
@@ -48,7 +68,7 @@ pub struct RingSnapshot {
     pub projects: BTreeMap<String, ProjectSnapshot>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct ProjectSnapshot {
     pub display_name: String,
     #[serde(default, with = "crate::aggregate::opt_ts_serde")]
@@ -92,23 +112,6 @@ pub fn load(path: &Path) -> Result<RingBook, Error> {
     Ok(book)
 }
 
-/// Apply rings memory to `summary.tiers` without writing to disk. Used when a
-/// fresh cache can be served directly and no new scan happened.
-pub fn apply_snapshot_tiers(
-    mut summary: GardenSummary,
-    path: &Path,
-) -> Result<GardenSummary, Error> {
-    let book = load(path)?;
-    if !book.events.is_empty() || !book.snapshot.projects.is_empty() {
-        let observed = summary
-            .tiers
-            .clone()
-            .unwrap_or_else(|| crate::aggregate::derive_tiers(&summary));
-        summary.tiers = Some(merge_display_tiers(&book.snapshot.tiers, &observed));
-    }
-    Ok(summary)
-}
-
 /// Update `rings.json` from the current summary and return the display summary.
 /// Permanent tiers merge with high-water state; daily/seasonal states stay live.
 pub fn record_summary(
@@ -127,22 +130,53 @@ pub fn record_summary(
     let mut events = derive_project_events(&summary, &book.snapshot.projects, &utc_date);
     events.extend(derive_tier_events(&previous, &observed, &utc_date));
     events.extend(derive_trinket_events(&previous, &observed, &utc_date));
-    append_unique_events(&mut book.events, events);
+    let mut changed = append_unique_events(&mut book.events, events);
 
-    book.snapshot.tiers = merge_display_tiers(&previous, &observed);
+    let merged = merge_display_tiers(&previous, &observed);
+    if book.snapshot.tiers != merged {
+        book.snapshot.tiers = merged;
+        changed = true;
+    }
     for project in &summary.projects {
-        book.snapshot
-            .projects
-            .entry(project.project_key.clone())
-            .or_insert_with(|| ProjectSnapshot {
-                display_name: project.display_name.clone(),
-                first_seen: project.first_seen,
-            });
+        if !book.snapshot.projects.contains_key(&project.project_key) {
+            book.snapshot.projects.insert(
+                project.project_key.clone(),
+                ProjectSnapshot {
+                    display_name: project.display_name.clone(),
+                    first_seen: project.first_seen,
+                },
+            );
+            changed = true;
+        }
     }
 
-    save_atomic(&book, path)?;
+    if changed {
+        save(&book, path)?;
+    }
     summary.tiers = Some(book.snapshot.tiers.clone());
     Ok(summary)
+}
+
+/// Record garden memory if possible; otherwise serve the current summary.
+///
+/// Rings are an auxiliary memory layer. A corrupt or unwritable `rings.json`
+/// must never prevent the product from showing the freshly computed summary.
+pub fn record_summary_best_effort(
+    summary: GardenSummary,
+    path: &Path,
+    now: DateTime<Utc>,
+) -> GardenSummary {
+    match record_summary(summary.clone(), path, now) {
+        Ok(summary) => summary,
+        Err(err) => {
+            eprintln!(
+                "garden memory update failed at {}: {}; serving current summary",
+                path.display(),
+                err
+            );
+            summary
+        }
+    }
 }
 
 /// Merge permanent courtyard unlocks upward while preserving live states.
@@ -299,24 +333,21 @@ fn derive_trinket_events(
         .collect()
 }
 
-fn append_unique_events(existing: &mut Vec<RingEvent>, incoming: Vec<RingEvent>) {
+fn append_unique_events(existing: &mut Vec<RingEvent>, incoming: Vec<RingEvent>) -> bool {
     let mut seen: BTreeSet<String> = existing.iter().map(|event| event.id.clone()).collect();
+    let mut changed = false;
     for event in incoming {
         if seen.insert(event.id.clone()) {
             existing.push(event);
+            changed = true;
         }
     }
+    changed
 }
 
-fn save_atomic(book: &RingBook, path: &Path) -> Result<(), Error> {
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| Error::io(parent, e))?;
-    }
+fn save(book: &RingBook, path: &Path) -> Result<(), Error> {
     let json = serde_json::to_string_pretty(book).map_err(|e| Error::json(path, e))?;
-    let tmp = path.with_extension("json.tmp");
-    std::fs::write(&tmp, json).map_err(|e| Error::io(&tmp, e))?;
-    std::fs::rename(&tmp, path).map_err(|e| Error::io(path, e))?;
-    Ok(())
+    storage::write_text_atomic(path, &json)
 }
 
 fn event_id(event_type: &str, entity: &str, to: &str, utc_date: &str) -> String {
