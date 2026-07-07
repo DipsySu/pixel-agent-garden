@@ -722,7 +722,7 @@ body {
 .pg6-share-back[hidden] { display: none; }
 .pg6-share-menu { display: grid; gap: 8px; }
 .pg6-share-menu[hidden] { display: none; }
-.pg6-share-row {
+.pg6-share-item {
   align-items: center;
   background: none;
   border: 1px solid var(--color-border-tertiary);
@@ -735,12 +735,12 @@ body {
   text-align: left;
   width: 100%;
 }
-.pg6-share-row-icon { flex: 0 0 auto; font-size: 16px; line-height: 1; }
-.pg6-share-row-text { display: grid; gap: 2px; min-width: 0; }
-.pg6-share-row-name,
-.pg6-share-row-hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pg6-share-row-name { font-weight: 600; }
-.pg6-share-row-hint { font-size: 10px; opacity: 0.75; }
+.pg6-share-item-icon { flex: 0 0 auto; font-size: 16px; line-height: 1; }
+.pg6-share-item-text { display: grid; gap: 2px; min-width: 0; }
+.pg6-share-item-name,
+.pg6-share-item-hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg6-share-item-name { font-weight: 600; }
+.pg6-share-item-hint { font-size: 10px; opacity: 0.75; }
 .pg6-weekly-preview {
   aspect-ratio: 960 / 1280;
   background: #f4ecd8;
@@ -1386,12 +1386,12 @@ body {
 .pg6-share-back { border: 2px solid transparent; color: #8a7656; }
 .pg6-share-back:hover,
 .pg6-share-back:focus-visible { background: rgba(44, 35, 22, 0.1); color: var(--ink); outline: none; }
-.pg6-share-row { background: #fffaf0; border: 2px solid var(--ink); border-radius: 0; box-shadow: 2px 2px 0 var(--ink); }
-.pg6-share-row:hover,
-.pg6-share-row:focus-visible { background: #fff6e2; outline: none; }
-.pg6-share-row:active { box-shadow: 1px 1px 0 var(--ink); transform: translate(1px, 1px); }
-.pg6-share-row-name { color: var(--ink); }
-.pg6-share-row-hint { color: #8a7656; opacity: 1; }
+.pg6-share-item { background: #fffaf0; border: 2px solid var(--ink); border-radius: 0; box-shadow: 2px 2px 0 var(--ink); }
+.pg6-share-item:hover,
+.pg6-share-item:focus-visible { background: #fff6e2; outline: none; }
+.pg6-share-item:active { box-shadow: 1px 1px 0 var(--ink); transform: translate(1px, 1px); }
+.pg6-share-item-name { color: var(--ink); }
+.pg6-share-item-hint { color: #8a7656; opacity: 1; }
 .pg6-weekly-preview { border: 2px solid var(--ink); border-radius: 0; }
 .pg6-postcard-export {
   background: #6f9c3f; border: 2px solid var(--ink); border-radius: 0;

@@ -61,7 +61,7 @@ export function mountShareDrawer({ scene, assetRoot, getSummary, onError }) {
   button.addEventListener('click', () => toggle());
   back.addEventListener('click', () => showMenu({ focus: true }));
   menu.addEventListener('click', (event) => {
-    const row = event.target instanceof Element ? event.target.closest('.pg6-share-row') : null;
+    const row = event.target instanceof Element ? event.target.closest('.pg6-share-item') : null;
     if (row && row.dataset.flow) openFlow(row.dataset.flow);
   });
   panel.addEventListener('keydown', (event) => {
@@ -97,7 +97,7 @@ export function mountShareDrawer({ scene, assetRoot, getSummary, onError }) {
     hosts.forEach((host) => {
       host.hidden = true;
     });
-    if (focus) menu.querySelector('.pg6-share-row')?.focus();
+    if (focus) menu.querySelector('.pg6-share-item')?.focus();
   }
 
   function openFlow(flowId) {
@@ -125,11 +125,11 @@ export function mountShareDrawer({ scene, assetRoot, getSummary, onError }) {
 
 function shellHtml() {
   const rows = FLOWS.map((flow) =>
-    '<button class="pg6-share-row" type="button" data-flow="' + flow.id + '">' +
-    '<span class="pg6-share-row-icon" aria-hidden="true">' + flow.icon + '</span>' +
-    '<span class="pg6-share-row-text">' +
-    '<span class="pg6-share-row-name">' + escapeHtml(t(flow.nameKey)) + '</span>' +
-    '<span class="pg6-share-row-hint">' + escapeHtml(t(flow.hintKey)) + '</span>' +
+    '<button class="pg6-share-item" type="button" data-flow="' + flow.id + '">' +
+    '<span class="pg6-share-item-icon" aria-hidden="true">' + flow.icon + '</span>' +
+    '<span class="pg6-share-item-text">' +
+    '<span class="pg6-share-item-name">' + escapeHtml(t(flow.nameKey)) + '</span>' +
+    '<span class="pg6-share-item-hint">' + escapeHtml(t(flow.hintKey)) + '</span>' +
     '</span>' +
     '</button>'
   ).join('');

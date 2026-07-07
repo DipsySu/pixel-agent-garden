@@ -20,7 +20,7 @@ import {
 test('previousIsoWeek crosses the year boundary on ISO rules', () => {
   // 2026-01-01 is the Thursday that makes Mon 2025-12-29 the start of ISO
   // week 2026-W01; the week before runs 2025-12-22 – 2025-12-28.
-  const week = previousIsoWeek(new Date(Date.UTC(2026, 0, 1, 12, 0, 0)));
+  const week = previousIsoWeek({ year: 2026, month: 1, day: 1 });
   assert.equal(week.start, '2025-12-22');
   assert.equal(week.end, '2025-12-28');
   assert.deepEqual(week.days, [
@@ -32,16 +32,16 @@ test('previousIsoWeek crosses the year boundary on ISO rules', () => {
 test('on a Monday the previous FULL week is returned, not a partial one', () => {
   // 2026-07-06 is a Monday: the new week has only just begun, so the card
   // covers Mon 06-29 … Sun 07-05 — the PRD's own example range.
-  const week = previousIsoWeek(new Date(Date.UTC(2026, 6, 6, 0, 0, 0)));
+  const week = previousIsoWeek({ year: 2026, month: 7, day: 6 });
   assert.equal(week.start, '2026-06-29');
   assert.equal(week.end, '2026-07-05');
   assert.equal(week.days.length, 7);
 });
 
 test('every day of one ISO week maps to the same previous week', () => {
-  const fromMonday = previousIsoWeek(new Date(Date.UTC(2026, 6, 6)));
-  const fromWednesday = previousIsoWeek(new Date(Date.UTC(2026, 6, 8, 23, 59, 59)));
-  const fromSunday = previousIsoWeek(new Date(Date.UTC(2026, 6, 12, 23, 59, 59)));
+  const fromMonday = previousIsoWeek({ year: 2026, month: 7, day: 6 });
+  const fromWednesday = previousIsoWeek({ year: 2026, month: 7, day: 8 });
+  const fromSunday = previousIsoWeek({ year: 2026, month: 7, day: 12 });
   assert.deepEqual(fromWednesday, fromMonday);
   assert.deepEqual(fromSunday, fromMonday);
 });
@@ -50,7 +50,7 @@ test('every day of one ISO week maps to the same previous week', () => {
 
 // Window under test: 2026-06-29 … 2026-07-05. The fixture plants tokens on
 // both neighbors of the window so leakage in either direction fails loudly.
-const WEEK = previousIsoWeek(new Date(Date.UTC(2026, 6, 6)));
+const WEEK = previousIsoWeek({ year: 2026, month: 7, day: 6 });
 
 function craftedSummary() {
   return {

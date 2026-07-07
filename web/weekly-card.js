@@ -49,13 +49,28 @@ const FONT_NUM = '"VT323", ui-monospace, monospace';
 // --- pure week math (node-testable, no DOM) ---------------------------------
 
 /**
- * The ISO week BEFORE the one containing `now`, computed on the UTC calendar
- * (ISO 8601: weeks run Monday–Sunday). Pure Monday arithmetic — week NUMBERS
- * are never materialized, so the year boundary needs no special case. Returns
- * the seven day keys in `daily_tokens` format ('YYYY-MM-DD', UTC days).
+ * The user's LOCAL calendar day as a plain {year, month, day} tuple (month
+ * 1-based). Exported so tests can pass explicit tuples and stay
+ * timezone-independent (house style: parameterize, don't mock the clock).
  */
-export function previousIsoWeek(now = new Date()) {
-  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+export function localCalendarDay(now = new Date()) {
+  return { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
+}
+
+/**
+ * The ISO week BEFORE the one containing the given calendar day (ISO 8601:
+ * weeks run Monday–Sunday). Anchored on the LOCAL calendar on purpose — "last
+ * week" is the user's ritual calendar (契约: trigger local), so a UTC+8
+ * Monday at 07:00 already means the week that just ended locally; a pure-UTC
+ * anchor served the week BEFORE last until 08:00. The arithmetic itself runs
+ * in timezone-free UTC-ms space, and the seven returned keys are plain
+ * calendar dates that index the UTC-keyed `daily_tokens` — the ≤1-evening
+ * attribution skew at the window edges is the documented, accepted trade.
+ * Week NUMBERS are never materialized, so the year boundary needs no special
+ * case.
+ */
+export function previousIsoWeek(anchor = localCalendarDay()) {
+  const todayUtc = Date.UTC(anchor.year, anchor.month - 1, anchor.day);
   // getUTCDay(): Sunday=0 … Saturday=6 → ISO offset Monday=0 … Sunday=6.
   const isoDow = (new Date(todayUtc).getUTCDay() + 6) % 7;
   const previousMonday = todayUtc - (isoDow + 7) * DAY_MS;
@@ -144,7 +159,7 @@ const OFFERED_KEY = 'pg6.weekly.offered';
 export function shouldOfferWeeklyRecap({ summary, now = new Date(), storage }) {
   const mondayKey = localDateKey(mostRecentLocalMonday(now));
   if (readOffered(storage) === mondayKey) return null;
-  const stats = weeklyStats(summary, previousIsoWeek(now));
+  const stats = weeklyStats(summary, previousIsoWeek(localCalendarDay(now)));
   if (stats.totalTokens <= 0) return null;
   return mondayKey;
 }
@@ -192,7 +207,7 @@ export function suggestedWeeklyName(week) {
  * can name the file without recomputing.
  */
 export async function buildWeeklyCanvas({ summary, now = new Date() }) {
-  const week = previousIsoWeek(now);
+  const week = previousIsoWeek(localCalendarDay(now));
   const stats = weeklyStats(summary, week);
   const canvas = document.createElement('canvas');
   canvas.width = CARD_W;
