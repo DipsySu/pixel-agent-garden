@@ -833,7 +833,7 @@ body {
    year of activity. Visually styled like a wood-eave plaque (the same wood
    tones as the scene's awning) so it reads as part of the courtyard frame
    rather than a separate widget. Whole strip is a button — click anywhere
-   to open the full Dashboard panel. */
+   to open the data drawer on its Overview tab. */
 .pg6-mini-heatmap-strip {
   background: linear-gradient(to bottom,
     rgba(74, 56, 42, 0.55),
@@ -1074,10 +1074,10 @@ body {
   z-index: 156;
 }
 .pg6-insight-panel[hidden] { display: none; }
-/* Sticky-head variant (Token Insight): the panel shell stops scrolling and
-   only the project list does, so head / summary / search stay put and the
-   "show all" toggle stays pinned below the list. The dashboard panel keeps
-   the plain whole-panel scroll. */
+/* Sticky-head variant (Token Insight content — the data drawer's Projects
+   tab): the content root stops scrolling and only the project list does, so
+   head / summary / search stay put and the "show all" toggle stays pinned
+   below the list. The Overview tab keeps the plain whole-content scroll. */
 .pg6-insight-sticky-head { display: flex; flex-direction: column; overflow: hidden; }
 .pg6-insight-sticky-head > :not(.pg6-insight-list) { flex: 0 0 auto; }
 .pg6-insight-sticky-head .pg6-insight-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
@@ -1144,8 +1144,10 @@ body {
   border-color: rgba(244, 216, 120, 0.5);
   outline: none;
 }
-/* Cap to top-N: extra rows hide unless "show all" or an active search. */
-.pg6-insight-panel:not(.is-showing-all):not(.is-searching) .pg6-insight-row-line.is-extra { display: none; }
+/* Cap to top-N: extra rows hide unless "show all" or an active search. The
+   state classes live on the insight content root, which always carries the
+   sticky-head class (see mountInsightContent). */
+.pg6-insight-sticky-head:not(.is-showing-all):not(.is-searching) .pg6-insight-row-line.is-extra { display: none; }
 /* Explicit, higher-specificity rule so the search `hidden` attr actually wins
    over `.pg6-insight-row-line { display: flex }`. */
 .pg6-insight-row-line[hidden] { display: none; }
@@ -1353,6 +1355,51 @@ body {
 .pg6-footer-freshness.is-paused::before { background: #aeb78a; box-shadow: none; }
 .pg6-footer-freshness.is-demo::before { background: #d6a258; box-shadow: none; }
 
+/* === Data drawer (PRD 2.0 §5.3 / §5.4-D — Insight + Dashboard merged) ======
+   The drawer reuses the .pg6-insight-panel paper shell; this block only adds
+   the pill TabBar and the per-tab scroll split (TabBar pinned, each tab
+   scrolls independently). Pills follow the settings-pill recipe: paper/ink,
+   radius 0, hard shadow, action-green selected state. */
+.pg6-drawer-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* The 720px the dashboard variant intends; restated here because the shared
+     shell's 520px width otherwise wins the cascade (it comes later in this
+     stylesheet than .pg6-dashboard-panel). */
+  max-width: min(720px, calc(100vw - var(--edge-pad) * 2));
+  width: min(720px, calc(100vw - var(--edge-pad) * 2));
+}
+.pg6-drawer-tabs { display: flex; flex: 0 0 auto; gap: 6px; margin-bottom: 10px; }
+.pg6-drawer-tab {
+  background: #ece1c6;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  box-shadow: 1px 1px 0 var(--ink);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 12px;
+  transition: transform 90ms ease, box-shadow 90ms ease, background 90ms ease;
+  user-select: none;
+}
+.pg6-drawer-tab:hover,
+.pg6-drawer-tab:focus-visible {
+  background: #fff6e2;
+  box-shadow: 2px 2px 0 var(--ink);
+  outline: none;
+  transform: translate(-1px, -1px);
+}
+.pg6-drawer-tab[aria-selected="true"] { background: #6f9c3f; border-color: var(--ink); color: #f4ecd8; }
+.pg6-drawer-tab[aria-selected="true"]:hover,
+.pg6-drawer-tab[aria-selected="true"]:focus-visible { background: #7daf48; }
+.pg6-drawer-tabpanel { flex: 1 1 auto; min-height: 0; }
+/* Overview (and any future plain tab) scrolls as one block; the Projects tab
+   overrides this via its sticky-head class, where only the list scrolls. */
+.pg6-drawer-tabpanel:not(.pg6-insight-sticky-head) { overflow-y: auto; }
+.pg6-drawer-tabpanel[hidden] { display: none; }
+
 @media (max-width: 520px) {
   .pg6-settings-row { flex-direction: column; align-items: flex-start; }
   .pg6-settings-label { flex-basis: auto; }
@@ -1500,7 +1547,7 @@ body {
       id="mini-heatmap-strip"
       class="pg6-mini-heatmap-strip"
       data-i18n-aria-label="dashboard.miniStripAria"
-      aria-controls="dashboard-panel"
+      aria-controls="data-drawer-panel"
     ></button>
     <div class="pg6-scene" id="pg6-scene"></div>
     <div class="pg6-footer">

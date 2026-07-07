@@ -12,11 +12,10 @@ import { mountEmptyState } from './empty-state.js';
 import { mountErrorToast } from './error-toast.js';
 import { mountScanCurtain } from './scan-curtain.js';
 import { runGrowthReveal } from './first-run.js';
-import { mountInsightPanel } from './insight-panel.js';
+import { mountDataDrawer } from './data-drawer.js';
 import { mountSettingsPanel } from './settings-panel.js';
 import { mountPostcardExport } from './postcard.js';
 import { mountReturnDiff } from './return-diff.js';
-import { mountDashboardPanel } from './dashboard-panel.js';
 import { mountSceneBanner } from './scene-banner.js';
 import { mountUnlockMoments, pulseMomentTarget } from './unlock-moments.js';
 import { unlockTier } from './garden-tiers.js';
@@ -129,18 +128,15 @@ Promise.all([
   // Footer is the host; the panel inserts itself after the footer in the same
   // parent (the frame), so it sits flush with footer content.
   const footer = document.querySelector('.pg6-footer');
-  let insightPanel = null;
-  let dashboardPanel = null;
+  let dataDrawer = null;
   if (footer) {
-    insightPanel = mountInsightPanel({
+    // Data drawer (PRD 2.0 §8.1): the single footer entry for the former
+    // Insight + Dashboard panels, now the Projects / Overview tabs.
+    dataDrawer = mountDataDrawer({
       hostFooter: footer,
       initialSummary: visibleSummary,
       onProjectSelect: (projectKey) => renderer.selectProjectByKey(projectKey),
       onOpenTerminal: (path) => openInTerminal(path)
-    });
-    dashboardPanel = mountDashboardPanel({
-      hostFooter: footer,
-      initialSummary: visibleSummary
     });
     mountRendererToggle({
       hostFooter: footer,
@@ -150,8 +146,7 @@ Promise.all([
         renderer.destroy?.();
         renderer = createRenderer(rendererMode);
         renderer.paint(groups, visibleSummary, currentSettings);
-        insightPanel?.update(visibleSummary);
-        dashboardPanel?.update(visibleSummary);
+        dataDrawer?.update(visibleSummary);
         miniStrip?._redraw?.(visibleSummary);
         emptyState.update(visibleSummary);
         applyDemoFreshness();
@@ -169,8 +164,7 @@ Promise.all([
         currentSettings = next;
         if (resumed) visibleSummary = latestSummary;
         renderer.paint(groups, visibleSummary, currentSettings);
-        insightPanel?.update(visibleSummary);
-        dashboardPanel?.update(visibleSummary);
+        dataDrawer?.update(visibleSummary);
         emptyState.update(visibleSummary);
         if (resumed) {
           miniStrip?._redraw?.(visibleSummary);
@@ -188,13 +182,14 @@ Promise.all([
   }
 
   // Mini heatmap strip — ambient ground-floor view of the year's activity.
-  // Clicking anywhere on it opens the full Dashboard panel.
+  // Clicking anywhere on it opens the data drawer on the Overview tab (the
+  // former Dashboard content).
   const miniStrip = document.getElementById('mini-heatmap-strip');
   if (miniStrip) {
     const drawMini = (summary) => {
       renderHeatmap(miniStrip, summary?.heatmap_year || [], {
         mode: 'mini',
-        onClickAny: () => dashboardPanel?.open(),
+        onClickAny: () => dataDrawer?.open('overview'),
       });
     };
     drawMini(visibleSummary);
@@ -211,14 +206,13 @@ Promise.all([
   subscribeGardenUpdates((summary) => {
     latestSummary = summary;
     // auto_rescan off = the user paused live updates. Keep EVERY view on the
-    // VISIBLE frame — the scene, the mini-heatmap strip, the dashboard, AND
-    // the insight panel — not just the scene; only the latest-frame ledger
+    // VISIBLE frame — the scene, the mini-heatmap strip, AND both tabs of the
+    // data drawer — not just the scene; only the latest-frame ledger
     // advances. returnDiff still records the real latest summary below so the
     // "while you were away" diff stays truthful regardless of the pause.
     if (currentSettings.data.auto_rescan) {
       visibleSummary = summary;
-      insightPanel?.update(visibleSummary);
-      dashboardPanel?.update(visibleSummary);
+      dataDrawer?.update(visibleSummary);
       miniStrip?._redraw?.(visibleSummary);
       renderer.repaintData(groups, visibleSummary);
       // Sign tracks the rendered frame: when paused (else branch) the scene
