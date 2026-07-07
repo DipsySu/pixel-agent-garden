@@ -19,12 +19,16 @@ import { t } from './i18n.js';
 // Last-open tab survives restarts (§5.4-D: "打开默认回上次 tab").
 const TAB_STORAGE_KEY = 'pg6.drawer.tab';
 const DEFAULT_TAB = 'overview';
+// `scroll` marks tabs whose whole panel scrolls (they get pg6-popover-scroll);
+// Projects keeps the sticky-head variant where only its inner list scrolls.
+// One spec array — a new tab that forgets `scroll: true` overflows visibly in
+// review instead of silently missing from a second hand-maintained list.
 const TABS = [
-  { id: 'overview', labelKey: 'drawer.tab.overview' },
-  { id: 'projects', labelKey: 'drawer.tab.projects' },
-  { id: 'composition', labelKey: 'drawer.tab.composition' },
-  { id: 'cost', labelKey: 'drawer.tab.cost' },
-  { id: 'rings', labelKey: 'drawer.tab.rings' },
+  { id: 'overview', labelKey: 'drawer.tab.overview', scroll: true },
+  { id: 'projects', labelKey: 'drawer.tab.projects', scroll: false },
+  { id: 'composition', labelKey: 'drawer.tab.composition', scroll: true },
+  { id: 'cost', labelKey: 'drawer.tab.cost', scroll: true },
+  { id: 'rings', labelKey: 'drawer.tab.rings', scroll: true },
 ];
 
 /**
@@ -47,6 +51,9 @@ export function mountDataDrawer({
   loadRings,
 }) {
   let activeTab = restoreTab();
+  // Latest visible-frame summary; hidden tabs replay it on activation instead
+  // of receiving every watcher tick.
+  let pendingSummary = initialSummary || null;
 
   const button = document.createElement('button');
   button.type = 'button';
@@ -95,13 +102,10 @@ export function mountDataDrawer({
     tabPanels.set(tab.id, tabPanel);
   });
 
-  // Scroll split (§5.4-D: "各 tab 独立滚动", TabBar stays pinned): Overview
-  // scrolls as one block, so the scrollbar skin goes on its tab panel.
-  // Projects keeps the sticky-head variant where only the list scrolls — the
-  // content module adds that class itself, and the list already carries
-  // pg6-popover-scroll from render-insight.js.
-  ['overview', 'composition', 'cost', 'rings'].forEach((id) => {
-    tabPanels.get(id)?.classList.add('pg6-popover-scroll');
+  // Scroll split (§5.4-D: "各 tab 独立滚动", TabBar stays pinned) — driven by
+  // the TABS spec so there is exactly one list to maintain.
+  TABS.filter((tab) => tab.scroll).forEach((tab) => {
+    tabPanels.get(tab.id)?.classList.add('pg6-popover-scroll');
   });
 
   panel.appendChild(tablist);
@@ -146,7 +150,7 @@ export function mountDataDrawer({
     }
   });
   // ARIA tabs pattern: Left/Right arrows move + select within the tablist
-  // (selection follows focus — with two tabs there is nothing to preview).
+  // (selection follows focus, wrapping across all tabs).
   tablist.addEventListener('keydown', (event) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
     event.preventDefault();
@@ -169,9 +173,12 @@ export function mountDataDrawer({
     panel.hidden = !open;
     button.setAttribute('aria-expanded', open ? 'true' : 'false');
     button.classList.toggle('is-active', open);
-    // Focus lands on the active tab: one predictable target for keyboard
-    // users, and the search box (Projects) stays a single Tab press away.
-    if (open) tabButtons.get(activeTab)?.focus();
+    if (open) {
+      flushToActive();
+      // Focus lands on the active tab: one predictable target for keyboard
+      // users, and the search box (Projects) stays a single Tab press away.
+      tabButtons.get(activeTab)?.focus();
+    }
   }
 
   function closeAndRefocus() {
@@ -184,6 +191,18 @@ export function mountDataDrawer({
     activeTab = tabId;
     persistTab(tabId);
     syncTabs();
+    if (!panel.hidden) flushToActive();
+  }
+
+  // Bring the tab the user is actually looking at up to date: replay the last
+  // summary (ticks are not forwarded while hidden) and let the provider run
+  // its activation work (rings re-reads its book, cost retries a failed price
+  // load). Providers without activate() just get the summary.
+  function flushToActive() {
+    const provider = providers[activeTab];
+    if (!provider) return;
+    provider.update(pendingSummary);
+    provider.activate?.();
   }
 
   function syncTabs() {
@@ -198,11 +217,14 @@ export function mountDataDrawer({
   }
 
   return {
-    // Every visible-frame update reaches BOTH tabs (exactly as the two
-    // standalone panels were fed before the merge); the drawer just forwards
-    // and stays ignorant of the summary shape.
+    // Visible-frame updates only reach the tab the user can see; hidden tabs
+    // (and a closed drawer) stash the frame and catch up in flushToActive()
+    // when they become visible. This keeps five providers from re-rendering
+    // — and rings from touching the disk — on every watcher tick (review
+    // finding). The drawer stays ignorant of the summary shape.
     update: (summary) => {
-      Object.values(providers).forEach((provider) => provider.update(summary));
+      pendingSummary = summary;
+      if (!panel.hidden) providers[activeTab]?.update(summary);
     },
     open: (tab) => {
       if (tab) selectTab(tab);

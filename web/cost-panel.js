@@ -3,7 +3,7 @@
 // GardenSummary.models. All figures are local estimates, never billing truth.
 
 import { estimateCost, formatUsd, normalizeUsage } from './cost-estimate.js';
-import { escapeHtml, fmtLocal } from './render-helpers.js';
+import { closeButton, escapeHtml, fmtLocal, kpiCard } from './render-helpers.js';
 import { t } from './i18n.js';
 
 export function mountCostContent({ host, initialSummary, loadPrices, onRequestClose }) {
@@ -51,6 +51,11 @@ export function mountCostContent({ host, initialSummary, loadPrices, onRequestCl
     update: (summary) => {
       currentSummary = summary || null;
       render();
+    },
+    // A transient load_prices failure at mount must not brick the tab for the
+    // session (review finding): retry when the user actually opens the tab.
+    activate: () => {
+      if (!priceTable && !loading) refreshPrices();
     },
   };
 }
@@ -114,7 +119,6 @@ function modelRows(tokensByModel, estimate, priceTable) {
       return {
         model,
         total: normalized.total_tokens,
-        cache: normalized.cache_read_tokens + normalized.cache_write_tokens,
         priced,
         price,
       };
@@ -166,22 +170,4 @@ function sumCacheTokens(tokensByModel) {
     const u = normalizeUsage(usage);
     return sum + u.cache_read_tokens + u.cache_write_tokens;
   }, 0);
-}
-
-function kpiCard(label, value, sub) {
-  return `
-    <div class="pg6-dashboard-kpi">
-      <div class="pg6-dashboard-kpi-label">${escapeHtml(label)}</div>
-      <div class="pg6-dashboard-kpi-value">${escapeHtml(value)}</div>
-      ${sub ? `<div class="pg6-dashboard-kpi-sub">${escapeHtml(sub)}</div>` : ''}
-    </div>`;
-}
-
-function closeButton(label) {
-  return `
-    <button class="pg6-insight-close" type="button" aria-label="${escapeHtml(label)}">
-      <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-        <path d="M6 6 18 18 M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </button>`;
 }

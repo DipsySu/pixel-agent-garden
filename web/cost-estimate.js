@@ -65,7 +65,10 @@ export function modelTotalTokens(usage) {
 
 export function formatUsd(value) {
   const n = Number(value || 0);
-  if (n >= 1000) return '$' + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  // Locale pinned to 'en' like the repo's other number formatters: with the
+  // browser default, de/nl/es grouping renders $1,235 as "$1.235" — a 1000x
+  // misread on a money figure (review finding).
+  if (n >= 1000) return '$' + n.toLocaleString('en', { maximumFractionDigits: 0 });
   if (n >= 100) return '$' + n.toFixed(1);
   return '$' + n.toFixed(2);
 }

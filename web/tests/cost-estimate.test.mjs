@@ -56,3 +56,10 @@ test('formatUsd keeps small estimates readable', () => {
   assert.equal(formatUsd(0.125), '$0.13');
   assert.equal(formatUsd(120.25), '$120.3');
 });
+
+test('formatUsd pins en grouping so $1,235 never reads as one dollar', () => {
+  // Regression: toLocaleString(undefined) followed the browser locale, and
+  // de/nl/es grouping rendered "$1.235" (review finding).
+  assert.equal(formatUsd(1235), '$1,235');
+  assert.equal(formatUsd(1234567.4), '$1,234,567');
+});

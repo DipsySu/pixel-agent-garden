@@ -3,7 +3,7 @@
 // share. Pure summary rendering; no backend calls.
 
 import { modelTotalTokens } from './cost-estimate.js';
-import { escapeHtml, fmtLocal } from './render-helpers.js';
+import { closeButton, escapeHtml, fmtLocal, sourceLabel } from './render-helpers.js';
 import { t } from './i18n.js';
 
 export function mountCompositionContent({ host, initialSummary, onRequestClose }) {
@@ -75,8 +75,10 @@ function modelRows(summary) {
 }
 
 function sourceRows(summary) {
+  // Adapter ids become the same friendly names the project info card uses
+  // (review finding: raw 'claude-code' / 'manual-jsonl' leaked into the UI).
   const rows = Object.entries(summary?.sources || {})
-    .map(([name, value]) => ({ name, value: Number(value || 0) }))
+    .map(([name, value]) => ({ name: sourceLabel(name, t), value: Number(value || 0) }))
     .filter((row) => row.value > 0);
   return rowsWithShare(rows);
 }
@@ -90,7 +92,7 @@ function rowsWithShare(rows) {
   }));
 }
 
-export function shareList(rows, { empty, valueLabel }) {
+function shareList(rows, { empty, valueLabel }) {
   if (!rows.length) {
     return '<div class="pg6-data-empty">' + escapeHtml(empty) + '</div>';
   }
@@ -113,11 +115,3 @@ function shareRow(row, value) {
     </div>`;
 }
 
-function closeButton(label) {
-  return `
-    <button class="pg6-insight-close" type="button" aria-label="${escapeHtml(label)}">
-      <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
-        <path d="M6 6 18 18 M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </button>`;
-}

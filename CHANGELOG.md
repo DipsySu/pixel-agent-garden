@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- Review pass over the drawer content wave (14 findings + 4 sweep addenda).
+  Privacy: the shipped demo sample was rebuilt from the pre-leak public
+  project set with a synthetic model split (the schema-8 regeneration had
+  pulled 20 unpublished project names/paths into the public repo), and demo
+  mode now gates loadRings/loadPrices so a desktop `?demo=1` session can
+  never surface real garden memory or prices. Behavior: the drawer forwards
+  watcher ticks only to the visible tab (hidden tabs replay the latest frame
+  on activation), the Rings tab caches its book — re-reading only on tab
+  activation instead of every tick — and the Cost tab retries a failed price
+  load on activation instead of staying broken all session; `formatUsd` pins
+  en grouping so EU locales can't read $1,235 as one dollar. Rings journal
+  polish per §P1-3: localized month-grouped timeline with a "这座庭院 N 天了"
+  age line, tier rows reuse the unlock-banner copy instead of raw
+  `entity/to` tokens, sentinel subtitles ("seen"/"unlocked") dropped in
+  favor of the first-seen project path, and PRD-defined future event types
+  are pre-titled. Cleanup: composition sources use the shared friendly-name
+  helper, `kpiCard`/`closeButton`/`sourceLabel` hoisted into
+  render-helpers.js, the dead `savePrices` shim and the impossible
+  `event_type` fallback (plus its fixture test) removed, and the stale
+  garden_rings TODO replaced with a real doc comment.
+
 - Filled the v1.5 data drawer content wave: Composition now shows model-token
   and adapter-source share, Cost reads the local price table for conservative
   estimates, and Rings consumes the durable garden memory file from the same

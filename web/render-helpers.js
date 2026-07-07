@@ -52,3 +52,36 @@ export function isMotionStill(host) {
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     return mode === 'off' || mode === 'reduced' || prefersReduced;
   }
+
+// Friendly display name for an adapter source id. Brand names stay as-is
+// across locales; only the generic manual source is translated — the same
+// rule render-garden's info card uses, shared so the composition tab and any
+// future surface can't drift from it.
+export function sourceLabel(id, translate) {
+    const pretty = { 'claude-code': 'Claude Code', 'claude-cowork': 'Cowork', codex: 'Codex' };
+    if (pretty[id]) return pretty[id];
+    if (id === 'manual-jsonl' && typeof translate === 'function') return translate('source.manual');
+    return id;
+  }
+
+// Shared KPI card markup (Overview / Cost / Rings tabs). One template so the
+// card structure cannot drift between tabs.
+export function kpiCard(label, value, sub) {
+    return (
+      '<div class="pg6-dashboard-kpi">' +
+      '<div class="pg6-dashboard-kpi-label">' + escapeHtml(label) + '</div>' +
+      '<div class="pg6-dashboard-kpi-value">' + escapeHtml(value) + '</div>' +
+      (sub ? '<div class="pg6-dashboard-kpi-sub">' + escapeHtml(sub) + '</div>' : '') +
+      '</div>'
+    );
+  }
+
+// Shared close button for drawer tab heads (and future paper panels).
+export function closeButton(label) {
+    return (
+      '<button class="pg6-insight-close" type="button" aria-label="' + escapeHtml(label) + '">' +
+      '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">' +
+      '<path d="M6 6 18 18 M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+      '</svg></button>'
+    );
+  }

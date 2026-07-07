@@ -59,6 +59,11 @@ export async function loadSettings() {
   }
 
 export async function loadRings() {
+    // Demo gate (review finding): the canned garden must never surface the
+    // user's REAL memory — a desktop app opened with ?demo=1 would otherwise
+    // render real project names in the Rings tab while the scene shows the
+    // sample. Same rule as loadSummary.
+    if (isDemoMode()) return null;
     const api = tauriApi();
     if (!api?.core?.invoke) return null;
     try {
@@ -70,23 +75,15 @@ export async function loadRings() {
   }
 
 export async function loadPrices() {
+    // Demo gate: real prices.json is user data; demo mode shows the
+    // unavailable state instead.
+    if (isDemoMode()) return null;
     const api = tauriApi();
     if (!api?.core?.invoke) return null;
     try {
       return await api.core.invoke('load_prices');
     } catch (err) {
       logGardenError('load_prices invoke failed', err);
-      return null;
-    }
-  }
-
-export async function savePrices(table) {
-    const api = tauriApi();
-    if (!api?.core?.invoke) return null;
-    try {
-      return await api.core.invoke('save_prices', { table });
-    } catch (err) {
-      logGardenError('save_prices invoke failed', err);
       return null;
     }
   }
