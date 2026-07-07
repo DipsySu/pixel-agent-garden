@@ -233,6 +233,9 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 
 - 代码注释 / commit / spec 用英文；UI 文案走 `web/i18n.js` 的 en/zh 双语层；
   RUST.md / CHANGELOG 以中文为主
+- **例外**:tray / 系统菜单文案读不到 web 层(native 菜单先于 webview 存在),
+  en/zh 对以 `tr(en, zh)` 形式住 `crates/tauri-app/src/tray.rs`,语言由系统
+  locale 决定(`sys-locale`)。不要为它加 settings 语言字段或前端推送通道
 - Rust 用 thiserror 的 enum Error,**不要** anyhow
 - 文档注释解释**为什么**(理由 / spec 引用 / 失败模式),不要复读签名
 - 测试用 fixture 风格(临时目录 + 写 JSON 字符串),不要依赖真实 home 目录

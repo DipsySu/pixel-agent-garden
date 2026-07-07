@@ -10,10 +10,12 @@ use chrono::Utc;
 use local_agent_garden_core::adapter::AdapterContext;
 use local_agent_garden_core::aggregate::{GardenSummary, top_by_tokens};
 use local_agent_garden_core::cache;
+use local_agent_garden_core::rings;
 use local_agent_garden_core::settings::{self, Settings};
 use local_agent_garden_core::storage;
 use std::path::Path;
 use std::process::Command;
+use std::sync::OnceLock;
 use tauri::menu::{IsMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{App, AppHandle, Emitter, Listener, Manager, Runtime, Window, WindowEvent};
@@ -34,6 +36,24 @@ const MENU_OPEN_DATA_DIR: &str = "garden-open-data-dir";
 const MENU_QUIT: &str = "garden-quit";
 const MENU_STATUS: &str = "garden-status";
 const MENU_TODAY_TOKENS: &str = "garden-today-tokens";
+
+/// Tray copy is the one bilingual surface that cannot go through
+/// `web/i18n.js`: native menus exist before (and without) the webview. The
+/// en/zh pairs live at their call sites via `tr`, picked once by system
+/// locale — the webview's `navigator.language` derives from the same system
+/// setting, so both layers agree without a settings field or IPC.
+fn locale_is_zh() -> bool {
+    static IS_ZH: OnceLock<bool> = OnceLock::new();
+    *IS_ZH.get_or_init(|| {
+        sys_locale::get_locale()
+            .map(|locale| locale.to_ascii_lowercase().starts_with("zh"))
+            .unwrap_or(false)
+    })
+}
+
+fn tr(en: &'static str, zh: &'static str) -> &'static str {
+    if locale_is_zh() { zh } else { en }
+}
 
 pub fn setup(app: &mut App) -> tauri::Result<()> {
     // Initial menu has no project rows yet (the watcher only emits on change).
@@ -177,22 +197,45 @@ fn build_tray_menu<R: Runtime>(
     let show = MenuItem::with_id(
         app,
         MENU_SHOW,
-        "Show Garden",
+        tr("Show Garden", "显示庭院"),
         true,
         Some("CmdOrCtrl+Shift+G"),
     )?;
-    let hide = MenuItem::with_id(app, MENU_HIDE, "Hide Window", true, Some("CmdOrCtrl+H"))?;
-    let scan = MenuItem::with_id(app, MENU_SCAN, "Scan Now", true, Some("CmdOrCtrl+R"))?;
-    let open_settings =
-        MenuItem::with_id(app, MENU_OPEN_SETTINGS, "Open Settings", true, None::<&str>)?;
-    let open_data_dir = MenuItem::with_id(
+    let hide = MenuItem::with_id(
         app,
-        MENU_OPEN_DATA_DIR,
-        "Open Data Folder",
+        MENU_HIDE,
+        tr("Hide Window", "隐藏窗口"),
+        true,
+        Some("CmdOrCtrl+H"),
+    )?;
+    let scan = MenuItem::with_id(
+        app,
+        MENU_SCAN,
+        tr("Scan Now", "立即扫描"),
+        true,
+        Some("CmdOrCtrl+R"),
+    )?;
+    let open_settings = MenuItem::with_id(
+        app,
+        MENU_OPEN_SETTINGS,
+        tr("Open Settings", "打开设置"),
         true,
         None::<&str>,
     )?;
-    let quit = MenuItem::with_id(app, MENU_QUIT, "Quit", true, Some("CmdOrCtrl+Q"))?;
+    let open_data_dir = MenuItem::with_id(
+        app,
+        MENU_OPEN_DATA_DIR,
+        tr("Open Data Folder", "打开数据目录"),
+        true,
+        None::<&str>,
+    )?;
+    let quit = MenuItem::with_id(
+        app,
+        MENU_QUIT,
+        tr("Quit", "退出"),
+        true,
+        Some("CmdOrCtrl+Q"),
+    )?;
     let sep1 = PredefinedMenuItem::separator(app)?;
     let sep2 = PredefinedMenuItem::separator(app)?;
 
@@ -232,7 +275,11 @@ fn build_top_projects_submenu<R: Runtime>(
         items.push(MenuItem::with_id(
             app,
             MENU_TODAY_TOKENS,
-            format!("Today {}", fmt_tokens(today_tokens(summary))),
+            format!(
+                "{} {}",
+                tr("Today", "今日"),
+                fmt_tokens(today_tokens(summary))
+            ),
             false,
             None::<&str>,
         )?);
@@ -270,36 +317,56 @@ fn build_top_projects_submenu<R: Runtime>(
     }
 
     let refs: Vec<&dyn IsMenuItem<R>> = items.iter().map(|i| i as &dyn IsMenuItem<R>).collect();
-    Submenu::with_items(app, "Top Token Projects", true, &refs)
+    Submenu::with_items(app, tr("Top Token Projects", "Token 项目排行"), true, &refs)
 }
 
+/// The PRD P1-1 glance contract: say what happened, never lead with numbers.
+/// Lantern state comes from core tiers (`lamp` stays live, not high-watered);
+/// "new growth" is the count of ring events recorded today — the system-layer
+/// equivalent of the frontend's seen-set diff, and already on disk.
 fn tray_status_label(summary: Option<&GardenSummary>) -> String {
-    let Some(summary) = summary else {
-        return "Garden is quiet today".to_string();
-    };
-    let active = today_active_projects(summary);
-    if active == 0 {
-        "Garden is quiet today".to_string()
-    } else {
-        format!(
-            "🏮 Lantern lit · {active} active {}",
-            if active == 1 { "project" } else { "projects" }
+    let lit = summary
+        .and_then(|summary| summary.tiers.as_ref())
+        .map(|tiers| tiers.lamp == "lit")
+        .unwrap_or(false);
+    if !lit {
+        return tr("Garden is quiet today", "庭院今日安静").to_string();
+    }
+    match today_ring_growth() {
+        0 => tr(
+            "🏮 Lantern lit · garden growing quietly",
+            "🏮 灯已亮 · 庭院平静生长",
         )
+        .to_string(),
+        n if locale_is_zh() => format!("🏮 灯已亮 · {n} 处新生长"),
+        n => format!("🏮 Lantern lit · {n} new growth"),
     }
 }
 
-fn today_tokens(summary: &GardenSummary) -> u64 {
-    let key = Utc::now().format("%Y-%m-%d").to_string();
-    summary.daily_tokens.get(&key).copied().unwrap_or(0)
+/// Best-effort: a missing or unreadable rings file simply reads as "no new
+/// growth" — the status line must never error over auxiliary memory.
+fn today_ring_growth() -> usize {
+    let key = utc_today_key();
+    rings::load(&rings::default_rings_path())
+        .map(|book| {
+            book.events
+                .iter()
+                .filter(|event| event.utc_date == key)
+                .count()
+        })
+        .unwrap_or(0)
 }
 
-fn today_active_projects(summary: &GardenSummary) -> usize {
-    let key = Utc::now().format("%Y-%m-%d").to_string();
+fn utc_today_key() -> String {
+    Utc::now().format("%Y-%m-%d").to_string()
+}
+
+fn today_tokens(summary: &GardenSummary) -> u64 {
     summary
-        .projects
-        .iter()
-        .filter(|project| project.daily_activity.get(&key).copied().unwrap_or(0) > 0)
-        .count()
+        .daily_tokens
+        .get(&utc_today_key())
+        .copied()
+        .unwrap_or(0)
 }
 
 /// Compact token count for menu labels (e.g. `213.4M`, `45.0k`). Display-only;
@@ -318,22 +385,45 @@ fn build_control_submenu<R: Runtime>(app: &AppHandle<R>, title: &str) -> tauri::
     let show = MenuItem::with_id(
         app,
         MENU_SHOW,
-        "Show Garden",
+        tr("Show Garden", "显示庭院"),
         true,
         Some("CmdOrCtrl+Shift+G"),
     )?;
-    let hide = MenuItem::with_id(app, MENU_HIDE, "Hide Window", true, Some("CmdOrCtrl+H"))?;
-    let scan = MenuItem::with_id(app, MENU_SCAN, "Scan Now", true, Some("CmdOrCtrl+R"))?;
-    let open_settings =
-        MenuItem::with_id(app, MENU_OPEN_SETTINGS, "Open Settings", true, None::<&str>)?;
-    let open_data_dir = MenuItem::with_id(
+    let hide = MenuItem::with_id(
         app,
-        MENU_OPEN_DATA_DIR,
-        "Open Data Folder",
+        MENU_HIDE,
+        tr("Hide Window", "隐藏窗口"),
+        true,
+        Some("CmdOrCtrl+H"),
+    )?;
+    let scan = MenuItem::with_id(
+        app,
+        MENU_SCAN,
+        tr("Scan Now", "立即扫描"),
+        true,
+        Some("CmdOrCtrl+R"),
+    )?;
+    let open_settings = MenuItem::with_id(
+        app,
+        MENU_OPEN_SETTINGS,
+        tr("Open Settings", "打开设置"),
         true,
         None::<&str>,
     )?;
-    let quit = MenuItem::with_id(app, MENU_QUIT, "Quit", true, Some("CmdOrCtrl+Q"))?;
+    let open_data_dir = MenuItem::with_id(
+        app,
+        MENU_OPEN_DATA_DIR,
+        tr("Open Data Folder", "打开数据目录"),
+        true,
+        None::<&str>,
+    )?;
+    let quit = MenuItem::with_id(
+        app,
+        MENU_QUIT,
+        tr("Quit", "退出"),
+        true,
+        Some("CmdOrCtrl+Q"),
+    )?;
     let sep1 = PredefinedMenuItem::separator(app)?;
     let sep2 = PredefinedMenuItem::separator(app)?;
 

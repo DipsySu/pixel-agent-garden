@@ -31,6 +31,11 @@ chrono = { workspace = true }
 # File watcher — used by watcher.rs to subscribe to adapter watch_paths
 notify = "6"
 
+# System locale for tray copy (en/zh). Local read only, no network. The tray
+# cannot reach web/i18n.js (native menus exist before the webview), so this is
+# the system-shell layer's own locale signal.
+sys-locale = "0.3"
+
 # Tokio for async commands + debounce timer. Single-thread runtime to keep
 # the binary small; we only use mpsc channels and sleep, no heavy concurrency.
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "time", "macros"] }

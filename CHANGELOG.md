@@ -19,6 +19,19 @@
   blocking cache hits or refreshes; CLI summary views use the same rings
   high-water display layer as the desktop app; and `events.json` now shares the
   atomic temp-file + rename write helper used by rings.
+- Closed the review's residual memory gap: a malformed `rings.json` no longer
+  leaves garden memory silently dead forever — it is quarantined to a dated
+  `rings.json.corrupt-*` sibling and rings restart from an empty book, while a
+  future `schema_version` (written by a newer binary) still degrades without
+  touching the file, so downgrades cannot destroy real history.
+- Localized the tray / system menu (en/zh via system locale, `sys-locale`,
+  no settings field and no frontend push — native menus exist before the
+  webview, so tray copy lives Rust-side as `tr(en, zh)` pairs; CLAUDE.md
+  records the exception). The glance row now follows the PRD P1-1 narrative
+  contract: lantern state comes from core `tiers.lamp`, and "new growth"
+  counts today's ring events instead of "active projects", with a quiet
+  `garden growing quietly` variant when the lantern is lit but no ring event
+  landed yet.
 - Started the PRD 2.0 tray-watch vertical slice. Settings now have a dedicated
   `[desktop]` section (`launch_at_login`, `close_to_tray`) and the settings
   panel round-trips `appearance`, `data`, `integrations`, and `desktop` without
