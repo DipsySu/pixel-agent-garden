@@ -342,7 +342,7 @@ fn build_top_projects_submenu<R: Runtime>(
         items.push(MenuItem::with_id(
             app,
             "garden-term-empty",
-            "No token activity yet",
+            tr("No token activity yet", "还没有 token 活动"),
             false,
             None::<&str>,
         )?);

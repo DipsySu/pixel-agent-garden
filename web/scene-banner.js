@@ -27,6 +27,24 @@ export function mountSceneBanner({ host }) {
   let timers = new Set();
   let destroyed = false;
 
+  // Full repaints (renderer switch, settings re-paint) wipe the scene's
+  // children, taking a showing banner with them. Watch for that and hand the
+  // slot to the next queued entry immediately instead of letting the wiped
+  // banner's dwell timer hold the queue hostage (review finding).
+  const detachWatch = typeof MutationObserver === 'function'
+    ? new MutationObserver(() => {
+        if (!element || element.isConnected) return;
+        element = null;
+        current = null;
+        const next = queue.shift();
+        if (next) {
+          current = next;
+          show(next);
+        }
+      })
+    : null;
+  detachWatch?.observe(host, { childList: true });
+
   function later(fn, ms) {
     const id = window.setTimeout(() => {
       timers.delete(id);
@@ -126,6 +144,7 @@ export function mountSceneBanner({ host }) {
 
   function destroy() {
     destroyed = true;
+    detachWatch?.disconnect();
     timers.forEach((id) => window.clearTimeout(id));
     timers.clear();
     element?.remove();

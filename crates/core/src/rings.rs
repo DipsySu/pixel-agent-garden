@@ -147,10 +147,17 @@ fn quarantine_path(path: &Path, now: DateTime<Utc>) -> PathBuf {
         .and_then(|s| s.to_str())
         .filter(|s| !s.is_empty())
         .unwrap_or("rings.json");
-    path.with_file_name(format!(
-        "{file_name}.corrupt-{}",
-        now.format("%Y%m%d%H%M%S")
-    ))
+    let stamp = now.format("%Y%m%d%H%M%S");
+    let mut candidate = path.with_file_name(format!("{file_name}.corrupt-{stamp}"));
+    // Same-second repeat corruption: on Windows, rename onto an existing
+    // target fails, which would demote quarantine back to permanent degrade.
+    // Bump a numeric suffix until the name is free.
+    let mut n = 0u32;
+    while candidate.exists() {
+        n += 1;
+        candidate = path.with_file_name(format!("{file_name}.corrupt-{stamp}-{n}"));
+    }
+    candidate
 }
 
 /// Update `rings.json` from the current summary and return the display summary.
@@ -541,6 +548,35 @@ mod tests {
         );
         std::fs::remove_file(&path).ok();
         std::fs::remove_file(&quarantine).ok();
+    }
+
+    #[test]
+    fn quarantine_survives_same_second_collision() {
+        let path = tmp_path("quarantine-collision");
+        let _ = std::fs::remove_file(&path);
+        let now = Utc.with_ymd_and_hms(2026, 7, 7, 12, 0, 0).unwrap();
+        let file_name = path.file_name().unwrap().to_str().unwrap().to_string();
+        let base = path.with_file_name(format!("{file_name}.corrupt-20260707120000"));
+        let suffixed = path.with_file_name(format!("{file_name}.corrupt-20260707120000-1"));
+        std::fs::write(&base, "occupied").unwrap();
+        let _ = std::fs::remove_file(&suffixed);
+        std::fs::write(&path, "{not-valid-json").unwrap();
+        let summary = aggregate::summarize_at(&[event("/repo/big", 42_000, "s1")], now);
+
+        record_summary(summary, &path, now).unwrap();
+
+        assert_eq!(
+            std::fs::read_to_string(&base).unwrap(),
+            "occupied",
+            "an existing quarantine file must never be clobbered"
+        );
+        assert!(
+            suffixed.exists(),
+            "same-second corruption must quarantine under a bumped suffix"
+        );
+        std::fs::remove_file(&path).ok();
+        std::fs::remove_file(&base).ok();
+        std::fs::remove_file(&suffixed).ok();
     }
 
     #[test]

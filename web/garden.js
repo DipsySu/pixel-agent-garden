@@ -61,21 +61,26 @@ Promise.all([
   loadSettings()
 ]).then(([manifest, summary, settings]) => {
   const groups = groupSprites(manifest.sprites || []);
-  // Hold the latest summary + settings so the watcher-driven re-render and the
-  // settings panel both pick up whichever changed last.
+  // Two summary frames on purpose (review finding): `latestSummary` is
+  // whatever the watcher last delivered; `visibleSummary` is the frame the
+  // user actually SEES. With auto_rescan off the two diverge — every paint
+  // path below must use `visibleSummary`, otherwise a settings tweak or a
+  // renderer switch would silently leak paused data onto the screen.
+  // Re-enabling auto_rescan folds latest back into visible.
   let currentSettings = settings;
-  let lastSummary = summary;
+  let visibleSummary = summary;
+  let latestSummary = summary;
   let rendererMode = rendererModeFromLocation();
   let renderer = createRenderer(rendererMode);
-  renderer.paint(groups, lastSummary, currentSettings);
+  renderer.paint(groups, visibleSummary, currentSettings);
   // P5-2 wood sign — mounted on the scene host (renderer-agnostic) and
   // refreshed alongside every paint below, since base paints wipe the scene.
   const emptyState = mountEmptyState({ host: scene });
-  emptyState.update(lastSummary);
+  emptyState.update(visibleSummary);
   applyDemoFreshness();
   const returnDiff = mountReturnDiff({
     hostFrame: document.querySelector('.pg6-frame'),
-    initialSummary: lastSummary
+    initialSummary: visibleSummary
   });
 
   // Unlock moments (P1-2): celebrate tier changes against the last frame the
@@ -85,17 +90,23 @@ Promise.all([
   // events) and registers for later frames; those are fed below inside the
   // same auto_rescan gate as the panels, because a paused garden keeps
   // showing the cached frame and must not celebrate tiers it isn't showing.
-  const sceneBanner = mountSceneBanner({ host: scene });
+  // Demo mode shows a frozen canned garden: diffing it against the user's
+  // REAL last-seen frame would both fire fake banners and overwrite the real
+  // `pg6.seen.tiers` with demo tiers, poisoning the next live session
+  // (review finding). No banner, no moments, no seen-frame writes.
   let onVisibleFrame = null;
-  mountUnlockMoments({
-    banner: sceneBanner,
-    getTiers: (summary) => unlockTier(summary, summary?.projects || []),
-    subscribe: (onSummary) => {
-      onVisibleFrame = onSummary;
-      if (lastSummary) onSummary(lastSummary);
-    },
-    onFocus: (moment) => pulseMomentTarget(scene, moment)
-  });
+  if (!isDemoMode()) {
+    const sceneBanner = mountSceneBanner({ host: scene });
+    mountUnlockMoments({
+      banner: sceneBanner,
+      getTiers: (summary) => unlockTier(summary, summary?.projects || []),
+      subscribe: (onSummary) => {
+        onVisibleFrame = onSummary;
+        if (visibleSummary) onSummary(visibleSummary);
+      },
+      onFocus: (moment) => pulseMomentTarget(scene, moment)
+    });
+  }
 
   // Settings panel — drives both live-apply (scene re-paint) and persistence.
   // Footer is the host; the panel inserts itself after the footer in the same
@@ -106,13 +117,13 @@ Promise.all([
   if (footer) {
     insightPanel = mountInsightPanel({
       hostFooter: footer,
-      initialSummary: lastSummary,
+      initialSummary: visibleSummary,
       onProjectSelect: (projectKey) => renderer.selectProjectByKey(projectKey),
       onOpenTerminal: (path) => openInTerminal(path)
     });
     dashboardPanel = mountDashboardPanel({
       hostFooter: footer,
-      initialSummary: lastSummary
+      initialSummary: visibleSummary
     });
     mountRendererToggle({
       hostFooter: footer,
@@ -121,11 +132,11 @@ Promise.all([
         rendererMode = persistRendererMode(nextMode);
         renderer.destroy?.();
         renderer = createRenderer(rendererMode);
-        renderer.paint(groups, lastSummary, currentSettings);
-        insightPanel?.update(lastSummary);
-        dashboardPanel?.update(lastSummary);
-        miniStrip?._redraw?.(lastSummary);
-        emptyState.update(lastSummary);
+        renderer.paint(groups, visibleSummary, currentSettings);
+        insightPanel?.update(visibleSummary);
+        dashboardPanel?.update(visibleSummary);
+        miniStrip?._redraw?.(visibleSummary);
+        emptyState.update(visibleSummary);
         applyDemoFreshness();
       }
     });
@@ -133,18 +144,28 @@ Promise.all([
       hostFooter: footer,
       initial: currentSettings,
       onChange: (next) => {
+        // Turning auto_rescan back ON is the moment the pause ends: fold the
+        // watcher's latest frame into the visible one BEFORE repainting, so
+        // the user re-enters live data deliberately rather than a settings
+        // tweak leaking it mid-pause.
+        const resumed = !currentSettings.data.auto_rescan && next.data.auto_rescan;
         currentSettings = next;
-        renderer.paint(groups, lastSummary, currentSettings);
-        insightPanel?.update(lastSummary);
-        dashboardPanel?.update(lastSummary);
-        emptyState.update(lastSummary);
+        if (resumed) visibleSummary = latestSummary;
+        renderer.paint(groups, visibleSummary, currentSettings);
+        insightPanel?.update(visibleSummary);
+        dashboardPanel?.update(visibleSummary);
+        emptyState.update(visibleSummary);
+        if (resumed) {
+          miniStrip?._redraw?.(visibleSummary);
+          onVisibleFrame?.(visibleSummary);
+        }
         applyDemoFreshness();
       }
     });
     mountPostcardExport({
       scene,
       assetRoot,
-      getSummary: () => lastSummary,
+      getSummary: () => visibleSummary,
       onError: logGardenError
     });
   }
@@ -159,7 +180,7 @@ Promise.all([
         onClickAny: () => dashboardPanel?.open(),
       });
     };
-    drawMini(lastSummary);
+    drawMini(visibleSummary);
     // Stash the drawer so the watcher path below can re-call it without
     // recapturing references.
     miniStrip._redraw = drawMini;
@@ -171,28 +192,28 @@ Promise.all([
     renderer.showScanning();
   });
   subscribeGardenUpdates((summary) => {
-    lastSummary = summary;
+    latestSummary = summary;
     // auto_rescan off = the user paused live updates. Keep EVERY view on the
-    // cached frame — the scene, the mini-heatmap strip, the dashboard, AND the
-    // insight panel — not just the scene. Updating the year-views while the
-    // garden stays cached made the two diverge (heatmap showed today, flowers
-    // showed yesterday). returnDiff still records the real latest summary below
-    // so the "while you were away" diff stays truthful regardless of the pause.
+    // VISIBLE frame — the scene, the mini-heatmap strip, the dashboard, AND
+    // the insight panel — not just the scene; only the latest-frame ledger
+    // advances. returnDiff still records the real latest summary below so the
+    // "while you were away" diff stays truthful regardless of the pause.
     if (currentSettings.data.auto_rescan) {
-      insightPanel?.update(lastSummary);
-      dashboardPanel?.update(lastSummary);
-      miniStrip?._redraw?.(lastSummary);
-      renderer.repaintData(groups, lastSummary);
+      visibleSummary = summary;
+      insightPanel?.update(visibleSummary);
+      dashboardPanel?.update(visibleSummary);
+      miniStrip?._redraw?.(visibleSummary);
+      renderer.repaintData(groups, visibleSummary);
       // Sign tracks the rendered frame: when paused (else branch) the scene
       // stays on the cached frame, so the sign must stay in step with it too.
-      emptyState.update(lastSummary);
+      emptyState.update(visibleSummary);
       // After repaint on purpose: the isometric renderer rebuilds the scene's
       // children on paint, and a banner pushed first would be wiped mid-rise.
-      onVisibleFrame?.(lastSummary);
+      onVisibleFrame?.(visibleSummary);
     } else {
-      renderer.showCached(lastSummary);
+      renderer.showCached(visibleSummary);
     }
-    returnDiff?.record(lastSummary);
+    returnDiff?.record(latestSummary);
   });
 
   function createRenderer(mode) {

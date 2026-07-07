@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Sealed the state-semantics edges the batch review found: demo mode no
+  longer mounts unlock moments (a canned garden diffed against the user's
+  real seen-frame fired fake banners AND overwrote `pg6.seen.tiers`);
+  `garden.js` now keeps `visibleSummary` and `latestSummary` apart so a
+  settings tweak or renderer switch can no longer leak paused watcher data
+  onto screen (resuming auto_rescan folds latest into visible deliberately);
+  a banner wiped by a full repaint hands its slot to the next queued entry
+  immediately via a childList observer; rings quarantine names get a numeric
+  suffix on same-second collisions (Windows rename-onto-existing fails);
+  and the tray's "No token activity yet" empty row joined `tr(en, zh)`.
 - Landed the v1.4 watch-mode batch (PRD 2.0 §6.1, four parallel worktrees
   merged): **unlock banners** — a paper/ink SceneBanner rises from the scene
   when `summary.tiers` gains a tier (queue of 3 + "+N more changes" overflow,
