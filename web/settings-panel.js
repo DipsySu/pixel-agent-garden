@@ -61,7 +61,7 @@ export function mountSettingsPanel({ hostFooter, initial, onChange }) {
   // Panel — appended after the footer. Hidden by default. Inline expansion
   // keeps the scene unobstructed; mobile gets a stacked variant via CSS.
   const panel = document.createElement('div');
-  panel.className = 'pg6-settings-panel';
+  panel.className = 'pg6-settings-panel pg6-popover-scroll';
   panel.id = 'settings-panel';
   panel.hidden = true;
   panel.innerHTML = buildPanelHtml(current, canPersist);

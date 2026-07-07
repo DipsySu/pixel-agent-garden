@@ -1,4 +1,5 @@
 import { CONFIG } from './scene-config.js';
+import { unlockTier } from './garden-tiers.js';
 import { depthToScreen } from './render-svg.js';
 import { fmtLocal, escapeHtml, pick, pickByToken, namedSprite, jitter } from './render-helpers.js';
 import { sparklineSVG, windowTotal } from './render-insight.js';
@@ -590,57 +591,6 @@ function destroy() {
 
   function pavilionWidth(tier) {
     return CONFIG.pavilionWidths[tier] || CONFIG.pavilionWidths.small;
-  }
-
-  function unlockTier(summary, projects) {
-    const list = projects || [];
-    const totalTokens = summary?.total_tokens || list.reduce((sum, project) => sum + (project.total_tokens || 0), 0);
-    const maxProjectTokens = Math.max(...list.map((project) => project.total_tokens || 0), 0);
-    const totalSessions = list.reduce((sum, project) => sum + (project.sessions || 0), 0);
-    const maxStage = Math.max(...list.map((project) => project.stage || 1), 1);
-    const recentActivity = list.reduce((sum, project) => sum + (project.recent_activity || 0), 0);
-    const now = new Date();
-    const todayKey = [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, '0'),
-      String(now.getDate()).padStart(2, '0')
-    ].join('-');
-    const todayActivity = list.reduce((sum, project) => {
-      const daily = project.daily_activity || {};
-      return sum + (daily[todayKey] || 0);
-    }, 0);
-
-    const trinkets = CONFIG.pavilionTrinkets
-      .filter((t) => totalTokens >= t.threshold)
-      .map((t) => t.id);
-
-    const c = CONFIG;
-    return {
-      totalTokens,
-      maxProjectTokens,
-      totalSessions,
-      recentActivity,
-      todayActivity,
-      pavilion:
-        maxProjectTokens >= c.pavilion.full ? 'full'
-        : maxProjectTokens >= c.pavilion.mid ? 'mid'
-        : 'small',
-      cherry:
-        recentActivity >= c.cherry.petal ? 'petal'
-        : recentActivity >= c.cherry.bloom ? 'bloom'
-        : 'bud',
-      willow:
-        (totalTokens >= c.willow.mature_tokens || list.length >= c.willow.mature_projects)
-          ? 'mature' : 'young',
-      stone_cat:
-        totalSessions >= c.stone_cat.full ? 'full'
-        : totalSessions >= c.stone_cat.small ? 'small'
-        : 'hidden',
-      lamp: todayActivity > 0 ? 'lit' : 'unlit',
-      stool: maxStage >= c.stool.min_stage ? 'visible' : 'hidden',
-      cushion: maxStage >= c.cushion.min_stage ? 'visible' : 'hidden',
-      pavilionTrinkets: trinkets
-    };
   }
 
   // ========================================================================
@@ -1479,7 +1429,7 @@ function destroy() {
         z: 11 + (index % 4),
         opacity: sticker.opacity ?? 0.88,
         className: 'code-sticker',
-        title: sticker.title
+        title: t('sticker.title', { name: sticker.name })
       });
       if (!img) return;
       const rotate = Number.isFinite(sticker.rotate) ? sticker.rotate : 0;

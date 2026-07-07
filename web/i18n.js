@@ -185,7 +185,9 @@ const MESSAGES = {
     'trinket.incense.name': 'Incense burner',
     'trinket.incense.hint': '100M tokens · incense burner on the table',
     'trinket.sleeping_cat.name': 'Sleeping cat',
-    'trinket.sleeping_cat.hint': '500M tokens · hidden final trinket'
+    'trinket.sleeping_cat.hint': '500M tokens · hidden final trinket',
+
+    'sticker.title': '{name} sticker'
   },
 
   zh: {
@@ -371,7 +373,9 @@ const MESSAGES = {
     'trinket.incense.name': '香炉',
     'trinket.incense.hint': '亿 token · 桌上香炉',
     'trinket.sleeping_cat.name': '睡猫',
-    'trinket.sleeping_cat.hint': '五亿 token · 隐藏终极'
+    'trinket.sleeping_cat.hint': '五亿 token · 隐藏终极',
+
+    'sticker.title': '{name} 贴纸'
   }
 };
 

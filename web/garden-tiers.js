@@ -3,9 +3,10 @@
 // bloom, willow maturity, stone-cat, lamp lit, trinkets unlocked, etc.).
 //
 // Extracted to its own module so BOTH the flat renderer (render-garden.js) and
-// the isometric one (render-iso.js) read the SAME thresholds — bump a value in
-// scene-config once and both views follow, instead of drifting apart. No DOM /
-// view / projection assumptions live here; it's a function of the data alone.
+// the isometric one (renderers/isometric-renderer.js) read the SAME thresholds —
+// bump a value in scene-config once and both views follow, instead of drifting
+// apart. No DOM / view / projection assumptions live here; it's a function of
+// the data alone.
 import { CONFIG } from './scene-config.js';
 
 export function unlockTier(summary, projects) {
@@ -15,12 +16,11 @@ export function unlockTier(summary, projects) {
   const totalSessions = list.reduce((sum, project) => sum + (project.sessions || 0), 0);
   const maxStage = Math.max(...list.map((project) => project.stage || 1), 1);
   const recentActivity = list.reduce((sum, project) => sum + (project.recent_activity || 0), 0);
-  const now = new Date();
-  const todayKey = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, '0'),
-    String(now.getDate()).padStart(2, '0')
-  ].join('-');
+  // UTC on purpose: daily_activity keys come from core's aggregate.rs, which
+  // formats DateTime<Utc> as %Y-%m-%d. A local-date key here returns 0 for
+  // "today" between local midnight and UTC midnight (e.g. 00:00-08:00 in
+  // UTC+8), wrongly unlighting the lamp.
+  const todayKey = new Date().toISOString().slice(0, 10);
   const todayActivity = list.reduce((sum, project) => {
     const daily = project.daily_activity || {};
     return sum + (daily[todayKey] || 0);

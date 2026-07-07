@@ -26,7 +26,7 @@ export function mountInsightPanel({ hostFooter, initialSummary, onProjectSelect,
   // Sticky-head variant: the panel shell stops scrolling and only the
   // project list does, so title/summary/search stay put (dashboard keeps
   // the plain whole-panel scroll).
-  panel.className = 'pg6-insight-panel pg6-insight-sticky-head';
+  panel.className = 'pg6-insight-panel pg6-insight-sticky-head pg6-popover-scroll';
   panel.id = 'token-insight-panel';
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-label', t('insight.dialogAria'));

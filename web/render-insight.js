@@ -151,7 +151,7 @@ export function insightPanelHTML(summary, opts = {}) {
       '<input type="search" class="pg6-insight-search-input" autocomplete="off" spellcheck="false" ' +
         'placeholder="' + escapeAttr(t('insight.searchPlaceholder')) + '" aria-label="' + escapeAttr(t('insight.searchPlaceholder')) + '">' +
     '</div>' +
-    '<div class="pg6-insight-list" role="list">' + rows + '</div>' +
+    '<div class="pg6-insight-list pg6-popover-scroll" role="list">' + rows + '</div>' +
     '<div class="pg6-insight-noresults" hidden>' + escapeHtml(t('insight.noResults')) + '</div>' +
     showAll
   );

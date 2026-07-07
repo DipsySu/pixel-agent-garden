@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Post-review fix pass over the 07-06 commits. The biggest one is a timezone
+  correctness bug: `daily_activity` keys are produced by core's `aggregate.rs`
+  from `DateTime<Utc>`, but the flat renderer (and the new `garden-tiers.js`)
+  looked "today" up with a local-date key, so between local midnight and UTC
+  midnight (00:00–08:00 in UTC+8) the WALL view zeroed `todayActivity` and
+  unlit the lantern while the 2.5D view stayed lit. All tier math now lives in
+  one place: both renderers import `unlockTier` from `web/garden-tiers.js`
+  (UTC day keys), their two diverged local copies are gone, and the orphaned
+  `web/render-iso.js` prototype (399 lines, never imported) is deleted.
+  Also from the review: sticker hover titles now go through the i18n layer
+  (`sticker.title` en/zh + config `name` field) instead of hardcoded English;
+  the 2.5D renderer clamps `isoDown` to the wall-face height so a config typo
+  can't drop a sticker onto the lawn again; and the six hand-synchronized
+  dark-scrollbar selector lists collapsed into one `.pg6-popover-scroll`
+  marker class — which also fixes the paper-theme thumb color the insight
+  list was missing.
 - Added the final 2.5D wall-sticker pass for the public-release courtyard:
   28 local PNG programming decals (Go, Rust, MySQL, Git, Terminal, Python,
   Ruby, Docker, Java, JavaScript/TypeScript, HTML/CSS, Linux, React, Vue,

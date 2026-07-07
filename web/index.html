@@ -966,30 +966,21 @@ body {
 .pg6-insight-sticky-head .pg6-insight-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 /* Scoped dark scrollbar for the scrollable popovers, so the OS default
    (light, chunky) bar never shows through the pixel theme. Kept off the
-   global scope on purpose — only these containers scroll. */
-.pg6-insight-panel,
-.pg6-insight-list,
-.pg6-settings-panel { scrollbar-width: thin; scrollbar-color: var(--color-border-tertiary) transparent; }
-.pg6-insight-panel::-webkit-scrollbar,
-.pg6-insight-list::-webkit-scrollbar,
-.pg6-settings-panel::-webkit-scrollbar { width: 10px; height: 10px; }
-.pg6-insight-panel::-webkit-scrollbar-track,
-.pg6-insight-list::-webkit-scrollbar-track,
-.pg6-settings-panel::-webkit-scrollbar-track { background: transparent; }
-.pg6-insight-panel::-webkit-scrollbar-thumb,
-.pg6-insight-list::-webkit-scrollbar-thumb,
-.pg6-settings-panel::-webkit-scrollbar-thumb {
+   global scope on purpose — only containers that scroll carry the
+   .pg6-popover-scroll marker class (set in JS where each panel/list is
+   built), so new popovers opt in with one class instead of appending
+   themselves to every rule below. */
+.pg6-popover-scroll { scrollbar-width: thin; scrollbar-color: var(--color-border-tertiary) transparent; }
+.pg6-popover-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+.pg6-popover-scroll::-webkit-scrollbar-track { background: transparent; }
+.pg6-popover-scroll::-webkit-scrollbar-thumb {
   background: var(--color-border-tertiary);
   background-clip: padding-box;
   border: 2px solid transparent;
   border-radius: 6px;
 }
-.pg6-insight-panel::-webkit-scrollbar-thumb:hover,
-.pg6-insight-list::-webkit-scrollbar-thumb:hover,
-.pg6-settings-panel::-webkit-scrollbar-thumb:hover { background: var(--color-text-tertiary); background-clip: padding-box; }
-.pg6-insight-panel::-webkit-scrollbar-corner,
-.pg6-insight-list::-webkit-scrollbar-corner,
-.pg6-settings-panel::-webkit-scrollbar-corner { background: transparent; }
+.pg6-popover-scroll::-webkit-scrollbar-thumb:hover { background: var(--color-text-tertiary); background-clip: padding-box; }
+.pg6-popover-scroll::-webkit-scrollbar-corner { background: transparent; }
 .pg6-insight-head { align-items: center; display: flex; justify-content: space-between; margin-bottom: 10px; }
 .pg6-insight-label { color: var(--color-text-tertiary); font-size: 10px; letter-spacing: 0.3px; text-transform: uppercase; }
 .pg6-insight-title { color: var(--color-text-primary); font-size: 13px; font-weight: 600; margin-top: 1px; }
@@ -1234,8 +1225,7 @@ body {
 .pg6-dashboard-h3-hint { color: #8a7656; }
 .pg6-dashboard-kpi-value { color: #3a2f25; font-family: var(--font-num); font-size: 28px; font-weight: 400; }
 .pg6-dashboard-h3 { color: var(--ink); }
-.pg6-insight-panel::-webkit-scrollbar-thumb,
-.pg6-settings-panel::-webkit-scrollbar-thumb { background: #c9b790; }
+.pg6-popover-scroll::-webkit-scrollbar-thumb { background: #c9b790; }
 /* Footer freshness: a status dot before the text (green = live). */
 .pg6-footer-freshness::before {
   content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px;

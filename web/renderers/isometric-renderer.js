@@ -1,4 +1,5 @@
 import { CONFIG } from '../scene-config.js';
+import { unlockTier } from '../garden-tiers.js';
 import { fmtLocal, escapeHtml, pick, jitter } from '../render-helpers.js';
 import { sparklineSVG, windowTotal } from '../render-insight.js';
 import { t } from '../i18n.js';
@@ -189,6 +190,11 @@ function addProjectVines(scene, spriteRoot, groups, projects) {
   });
 }
 
+// The brick face below the wall cap is only ~54px tall at scene scale; a
+// deeper offset walks the sticker off the wall onto the lawn (happened with
+// isoDown 58-62 during authoring), so clamp rather than trust the config.
+const ISO_STICKER_MAX_DOWN = 54;
+
 function addProgrammingStickers(scene, spriteRoot) {
   (CONFIG.programmingStickers || []).forEach((sticker, index) => {
     const top = wallSlotToScreen(sticker.isoSlot ?? ((sticker.x || 50) / 100));
@@ -196,13 +202,13 @@ function addProgrammingStickers(scene, spriteRoot) {
     const sideNudge = top.side === 'left' ? -2 : 2;
     const img = addSprite(scene, spriteRoot, { file: sticker.file }, {
       x: top.x + sideNudge,
-      y: top.y + (sticker.isoDown ?? 28),
+      y: top.y + Math.min(sticker.isoDown ?? 28, ISO_STICKER_MAX_DOWN),
       width,
       z: 150 + index,
       opacity: sticker.isoOpacity ?? 0.82,
       anchor: 'top',
       className: 'code-sticker pg6-iso-sticker pg6-iso-dynamic',
-      title: sticker.title,
+      title: t('sticker.title', { name: sticker.name }),
     });
     if (!img) return;
     const rotate = Number.isFinite(sticker.rotate) ? sticker.rotate * 0.7 : 0;
@@ -1106,36 +1112,6 @@ function clearDynamic(scene) {
 
 function projectsForGarden(projects) {
   return [...projects].sort((a, b) => (b.total_tokens || 0) - (a.total_tokens || 0));
-}
-
-function unlockTier(summary, projects) {
-  const list = projects || [];
-  const totalTokens = summary?.total_tokens || list.reduce((sum, project) => sum + (project.total_tokens || 0), 0);
-  const maxProjectTokens = Math.max(...list.map((project) => project.total_tokens || 0), 0);
-  const totalSessions = list.reduce((sum, project) => sum + (project.sessions || 0), 0);
-  const maxStage = Math.max(...list.map((project) => project.stage || 1), 1);
-  const recentActivity = list.reduce((sum, project) => sum + (project.recent_activity || 0), 0);
-  const todayKey = new Date().toISOString().slice(0, 10);
-  const todayActivity = list.reduce((sum, project) => sum + ((project.daily_activity || {})[todayKey] || 0), 0);
-  const trinkets = CONFIG.pavilionTrinkets
-    .filter((trinket) => totalTokens >= trinket.threshold)
-    .map((trinket) => trinket.id);
-  const c = CONFIG;
-  return {
-    totalTokens,
-    maxProjectTokens,
-    totalSessions,
-    recentActivity,
-    todayActivity,
-    pavilion: maxProjectTokens >= c.pavilion.full ? 'full' : maxProjectTokens >= c.pavilion.mid ? 'mid' : 'small',
-    cherry: recentActivity >= c.cherry.petal ? 'petal' : recentActivity >= c.cherry.bloom ? 'bloom' : 'bud',
-    willow: (totalTokens >= c.willow.mature_tokens || list.length >= c.willow.mature_projects) ? 'mature' : 'young',
-    stone_cat: totalSessions >= c.stone_cat.full ? 'full' : totalSessions >= c.stone_cat.small ? 'small' : 'hidden',
-    lamp: todayActivity > 0 ? 'lit' : 'unlit',
-    stool: maxStage >= c.stool.min_stage ? 'visible' : 'hidden',
-    cushion: maxStage >= c.cushion.min_stage ? 'visible' : 'hidden',
-    pavilionTrinkets: trinkets,
-  };
 }
 
 function trinketLabel(trinket) {

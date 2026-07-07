@@ -29,7 +29,7 @@ export function mountDashboardPanel({ hostFooter, initialSummary }) {
   button.innerHTML = dashboardSvg() + '<span data-i18n="dashboard.button">Dashboard</span>';
 
   const panel = document.createElement('div');
-  panel.className = 'pg6-insight-panel pg6-dashboard-panel';
+  panel.className = 'pg6-insight-panel pg6-dashboard-panel pg6-popover-scroll';
   panel.id = 'dashboard-panel';
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-label', t('dashboard.dialogAria'));
