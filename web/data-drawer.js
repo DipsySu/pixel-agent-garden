@@ -4,12 +4,16 @@
 // owns the SHELL only: the footer button, the dialog panel, the pill TabBar,
 // tab switching + memory, Escape-to-close and popover-group membership. What
 // each tab shows is owned by its content provider (web/dashboard-panel.js →
-// Overview, web/insight-panel.js → Projects); dropping a view later means
+// Overview, web/insight-panel.js → Projects, plus the v1.5 data tabs);
+// dropping a view later means
 // deleting its module, its TABS entry and its mount call below — nothing else.
 
 import { joinPopoverGroup } from './popover-group.js';
+import { mountCompositionContent } from './composition-panel.js';
+import { mountCostContent } from './cost-panel.js';
 import { mountDashboardContent } from './dashboard-panel.js';
 import { mountInsightContent } from './insight-panel.js';
+import { mountRingsContent } from './rings-panel.js';
 import { t } from './i18n.js';
 
 // Last-open tab survives restarts (§5.4-D: "打开默认回上次 tab").
@@ -18,6 +22,9 @@ const DEFAULT_TAB = 'overview';
 const TABS = [
   { id: 'overview', labelKey: 'drawer.tab.overview' },
   { id: 'projects', labelKey: 'drawer.tab.projects' },
+  { id: 'composition', labelKey: 'drawer.tab.composition' },
+  { id: 'cost', labelKey: 'drawer.tab.cost' },
+  { id: 'rings', labelKey: 'drawer.tab.rings' },
 ];
 
 /**
@@ -26,10 +33,19 @@ const TABS = [
  *   initialSummary: object | null,
  *   onProjectSelect?: (projectKey: string) => void,
  *   onOpenTerminal?: (path: string) => void,
+ *   loadPrices?: () => Promise<object | null>,
+ *   loadRings?: () => Promise<object | null>,
  * }} opts
  * @returns {{ update: (summary: object | null) => void, open: (tab?: string) => void }}
  */
-export function mountDataDrawer({ hostFooter, initialSummary, onProjectSelect, onOpenTerminal }) {
+export function mountDataDrawer({
+  hostFooter,
+  initialSummary,
+  onProjectSelect,
+  onOpenTerminal,
+  loadPrices,
+  loadRings,
+}) {
   let activeTab = restoreTab();
 
   const button = document.createElement('button');
@@ -84,7 +100,9 @@ export function mountDataDrawer({ hostFooter, initialSummary, onProjectSelect, o
   // Projects keeps the sticky-head variant where only the list scrolls — the
   // content module adds that class itself, and the list already carries
   // pg6-popover-scroll from render-insight.js.
-  tabPanels.get('overview').classList.add('pg6-popover-scroll');
+  ['overview', 'composition', 'cost', 'rings'].forEach((id) => {
+    tabPanels.get(id)?.classList.add('pg6-popover-scroll');
+  });
 
   panel.appendChild(tablist);
   TABS.forEach((tab) => panel.appendChild(tabPanels.get(tab.id)));
@@ -100,6 +118,22 @@ export function mountDataDrawer({ hostFooter, initialSummary, onProjectSelect, o
       initialSummary,
       onProjectSelect,
       onOpenTerminal,
+      onRequestClose: closeAndRefocus,
+    }),
+    composition: mountCompositionContent({
+      host: tabPanels.get('composition'),
+      initialSummary,
+      onRequestClose: closeAndRefocus,
+    }),
+    cost: mountCostContent({
+      host: tabPanels.get('cost'),
+      initialSummary,
+      loadPrices,
+      onRequestClose: closeAndRefocus,
+    }),
+    rings: mountRingsContent({
+      host: tabPanels.get('rings'),
+      loadRings,
       onRequestClose: closeAndRefocus,
     }),
   };

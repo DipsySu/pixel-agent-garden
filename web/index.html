@@ -1400,6 +1400,109 @@ body {
 .pg6-drawer-tabpanel:not(.pg6-insight-sticky-head) { overflow-y: auto; }
 .pg6-drawer-tabpanel[hidden] { display: none; }
 
+.pg6-data-empty,
+.pg6-data-note {
+  color: #8a7656;
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 8px 2px;
+}
+.pg6-data-note {
+  border-top: 1px dashed var(--paper-edge);
+  margin-top: 10px;
+  padding-top: 8px;
+}
+.pg6-share-list,
+.pg6-cost-list,
+.pg6-ring-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pg6-share-row,
+.pg6-cost-row,
+.pg6-ring-row {
+  background: #fffaf0;
+  border: 2px solid var(--paper-edge);
+  box-shadow: 1px 1px 0 rgba(58, 47, 37, 0.28);
+  color: var(--ink);
+}
+.pg6-share-row { padding: 7px 8px 8px; }
+.pg6-share-line,
+.pg6-cost-row,
+.pg6-ring-row {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+.pg6-share-line {
+  justify-content: space-between;
+  min-width: 0;
+}
+.pg6-share-name,
+.pg6-cost-main strong,
+.pg6-ring-main strong {
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pg6-share-value,
+.pg6-cost-main small,
+.pg6-cost-amount small,
+.pg6-ring-main small {
+  color: #8a7656;
+  font-size: 10px;
+}
+.pg6-share-value { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+.pg6-share-track {
+  background: #e4d6b9;
+  border: 1px solid #b9a985;
+  height: 8px;
+  margin-top: 6px;
+}
+.pg6-share-track span {
+  background: #6f9c3f;
+  display: block;
+  height: 100%;
+  min-width: 2px;
+}
+.pg6-cost-row { justify-content: space-between; padding: 7px 8px; }
+.pg6-cost-main,
+.pg6-ring-main {
+  min-width: 0;
+}
+.pg6-cost-main strong,
+.pg6-cost-main small,
+.pg6-ring-main strong,
+.pg6-ring-main small {
+  display: block;
+}
+.pg6-cost-amount {
+  flex: 0 0 auto;
+  min-width: 86px;
+  text-align: right;
+}
+.pg6-cost-amount b {
+  color: #3a2f25;
+  display: block;
+  font-family: var(--font-num);
+  font-size: 15px;
+  font-weight: 400;
+}
+.pg6-ring-row {
+  align-items: flex-start;
+  padding: 7px 8px;
+}
+.pg6-ring-date {
+  color: #6f9c3f;
+  flex: 0 0 82px;
+  font-family: var(--font-num);
+  font-size: 11px;
+}
+
 @media (max-width: 520px) {
   .pg6-settings-row { flex-direction: column; align-items: flex-start; }
   .pg6-settings-label { flex-basis: auto; }

@@ -58,9 +58,6 @@ export async function loadSettings() {
     return defaultSettings();
   }
 
-// TODO(prd-2.0 §6.1 I7): no caller yet — the 年轮 (rings) tab consumes this
-// when the data drawer lands. Wired ahead of time so the command boundary is
-// exercised by the same review that shipped rings; remove this note then.
 export async function loadRings() {
     const api = tauriApi();
     if (!api?.core?.invoke) return null;
@@ -68,6 +65,28 @@ export async function loadRings() {
       return await api.core.invoke('garden_rings');
     } catch (err) {
       logGardenError('garden_rings invoke failed', err);
+      return null;
+    }
+  }
+
+export async function loadPrices() {
+    const api = tauriApi();
+    if (!api?.core?.invoke) return null;
+    try {
+      return await api.core.invoke('load_prices');
+    } catch (err) {
+      logGardenError('load_prices invoke failed', err);
+      return null;
+    }
+  }
+
+export async function savePrices(table) {
+    const api = tauriApi();
+    if (!api?.core?.invoke) return null;
+    try {
+      return await api.core.invoke('save_prices', { table });
+    } catch (err) {
+      logGardenError('save_prices invoke failed', err);
       return null;
     }
   }

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Filled the v1.5 data drawer content wave: Composition now shows model-token
+  and adapter-source share, Cost reads the local price table for conservative
+  estimates, and Rings consumes the durable garden memory file from the same
+  drawer shell as Overview and Projects.
+
 - Opened the v1.4.x/v1.5 line with two parallel worktrees. **Data drawer
   (PRD §8.1 landed):** the Insight and Dashboard footer buttons merged into
   one 数据/Data entry opening a tabbed drawer — 概览 hosts the dashboard

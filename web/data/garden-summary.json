@@ -1,10 +1,10 @@
 {
-  "schema_version": 7,
+  "schema_version": 8,
   "projects": [
     {
-      "project_key": "/Users/dipsy/Developer/tool-lib/pay-module",
-      "display_name": "pay-module",
-      "project_path": "/Users/dipsy/Developer/tool-lib/pay-module",
+      "project_key": "/demo/projects/demo-garden-core",
+      "display_name": "demo-garden-core",
+      "project_path": "/demo/projects/demo-garden-core",
       "sources": {
         "claude-code": 8907,
         "claude-cowork": 2454,
@@ -82,9 +82,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/motionx-synca/motionx-backend",
-      "display_name": "motionx-backend",
-      "project_path": "/Users/dipsy/Developer/motionx-synca/motionx-backend",
+      "project_key": "/demo/projects/demo-vine-wall",
+      "display_name": "demo-vine-wall",
+      "project_path": "/demo/projects/demo-vine-wall",
       "sources": {
         "claude-code": 6326,
         "codex": 10
@@ -133,9 +133,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/不知道叫什么",
-      "display_name": "不知道叫什么",
-      "project_path": "/Users/dipsy/Documents/不知道叫什么",
+      "project_key": "/demo/projects/demo-token-bridge",
+      "display_name": "demo-token-bridge",
+      "project_path": "/demo/projects/demo-token-bridge",
       "sources": {
         "claude-code": 1529,
         "claude-cowork": 1792,
@@ -183,9 +183,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/hexo_blog",
-      "display_name": "hexo_blog",
-      "project_path": "/Users/dipsy/Documents/hexo_blog",
+      "project_key": "/demo/projects/demo-agent-orchard",
+      "display_name": "demo-agent-orchard",
+      "project_path": "/demo/projects/demo-agent-orchard",
       "sources": {
         "claude-code": 2484,
         "codex": 5
@@ -226,9 +226,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/motionx-synca",
-      "display_name": "motionx-synca",
-      "project_path": "/Users/dipsy/Developer/motionx-synca",
+      "project_key": "/demo/projects/demo-shell-prompt",
+      "display_name": "demo-shell-prompt",
+      "project_path": "/demo/projects/demo-shell-prompt",
       "sources": {
         "claude-code": 912,
         "codex": 3
@@ -275,9 +275,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/xiaowo",
-      "display_name": "xiaowo",
-      "project_path": "/Users/dipsy/Documents/xiaowo",
+      "project_key": "/demo/projects/demo-cost-ledger",
+      "display_name": "demo-cost-ledger",
+      "project_path": "/demo/projects/demo-cost-ledger",
       "sources": {
         "claude-code": 851,
         "codex": 3
@@ -328,9 +328,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/xiaowo/xiaowo_sport",
-      "display_name": "xiaowo_sport",
-      "project_path": "/Users/dipsy/Documents/xiaowo/xiaowo_sport",
+      "project_key": "/demo/projects/demo-ring-memory",
+      "display_name": "demo-ring-memory",
+      "project_path": "/demo/projects/demo-ring-memory",
       "sources": {
         "claude-code": 1369,
         "codex": 1
@@ -381,9 +381,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/backend",
-      "display_name": "backend",
-      "project_path": "/Users/dipsy/Developer/backend",
+      "project_key": "/demo/projects/demo-postcard-lab",
+      "display_name": "demo-postcard-lab",
+      "project_path": "/demo/projects/demo-postcard-lab",
       "sources": {
         "claude-cowork": 914,
         "codex": 2
@@ -421,9 +421,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/motionx-synca/motionx-backend/services/core-api",
-      "display_name": "core-api",
-      "project_path": "/Users/dipsy/Developer/motionx-synca/motionx-backend/services/core-api",
+      "project_key": "/demo/projects/demo-pixel-sprites",
+      "display_name": "demo-pixel-sprites",
+      "project_path": "/demo/projects/demo-pixel-sprites",
       "sources": {
         "claude-code": 1623
       },
@@ -466,9 +466,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/tool-lib/pay-module/unibee-api",
-      "display_name": "unibee-api",
-      "project_path": "/Users/dipsy/Developer/tool-lib/pay-module/unibee-api",
+      "project_key": "/demo/projects/demo-tray-watch",
+      "display_name": "demo-tray-watch",
+      "project_path": "/demo/projects/demo-tray-watch",
       "sources": {
         "claude-code": 1229
       },
@@ -518,9 +518,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/test/未命名文件夹",
-      "display_name": "未命名文件夹",
-      "project_path": "/Users/dipsy/Developer/test/未命名文件夹",
+      "project_key": "/demo/projects/demo-terminal-launcher",
+      "display_name": "demo-terminal-launcher",
+      "project_path": "/demo/projects/demo-terminal-launcher",
       "sources": {
         "claude-code": 475,
         "codex": 1
@@ -564,9 +564,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/tool-lib/pay-module/unibee-admin-portal",
-      "display_name": "unibee-admin-portal",
-      "project_path": "/Users/dipsy/Developer/tool-lib/pay-module/unibee-admin-portal",
+      "project_key": "/demo/projects/demo-settings-pavilion",
+      "display_name": "demo-settings-pavilion",
+      "project_path": "/demo/projects/demo-settings-pavilion",
       "sources": {
         "claude-code": 418
       },
@@ -607,9 +607,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/test/未命名文件夹/ai-skill-ppt/ppt",
-      "display_name": "ppt",
-      "project_path": "/Users/dipsy/Developer/test/未命名文件夹/ai-skill-ppt/ppt",
+      "project_key": "/demo/projects/demo-cache-workshop",
+      "display_name": "demo-cache-workshop",
+      "project_path": "/demo/projects/demo-cache-workshop",
       "sources": {
         "claude-code": 276
       },
@@ -646,9 +646,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Library/Application Support/Claude/local-agent-mode-sessions/d8cf20b3-5a87-4f52-a73c-9b60c2fef529/7210a4ee-491d-4d88-8808-0840724f4a53/local_d5da5864-2231-4ccb-8b26-c440ce855b92/outputs",
-      "display_name": "outputs",
-      "project_path": "/Users/dipsy/Library/Application Support/Claude/local-agent-mode-sessions/d8cf20b3-5a87-4f52-a73c-9b60c2fef529/7210a4ee-491d-4d88-8808-0840724f4a53/local_d5da5864-2231-4ccb-8b26-c440ce855b92/outputs",
+      "project_key": "/demo/projects/demo-adapter-claude",
+      "display_name": "demo-adapter-claude",
+      "project_path": "/demo/projects/demo-adapter-claude",
       "sources": {
         "claude-cowork": 554
       },
@@ -680,9 +680,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Library/Application Support/Claude/local-agent-mode-sessions/d8cf20b3-5a87-4f52-a73c-9b60c2fef529/7210a4ee-491d-4d88-8808-0840724f4a53/local_992db141-d8a2-49bb-8448-8ea1319f25e5/outputs",
-      "display_name": "outputs",
-      "project_path": "/Users/dipsy/Library/Application Support/Claude/local-agent-mode-sessions/d8cf20b3-5a87-4f52-a73c-9b60c2fef529/7210a4ee-491d-4d88-8808-0840724f4a53/local_992db141-d8a2-49bb-8448-8ea1319f25e5/outputs",
+      "project_key": "/demo/projects/demo-adapter-codex",
+      "display_name": "demo-adapter-codex",
+      "project_path": "/demo/projects/demo-adapter-codex",
       "sources": {
         "claude-cowork": 432
       },
@@ -715,9 +715,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Library/Application Support/Claude/local-agent-mode-sessions/d8cf20b3-5a87-4f52-a73c-9b60c2fef529/7210a4ee-491d-4d88-8808-0840724f4a53/local_f0816e4e-bc3d-439b-9361-72ce8fbbd964/outputs",
-      "display_name": "outputs",
-      "project_path": "/Users/dipsy/Library/Application Support/Claude/local-agent-mode-sessions/d8cf20b3-5a87-4f52-a73c-9b60c2fef529/7210a4ee-491d-4d88-8808-0840724f4a53/local_f0816e4e-bc3d-439b-9361-72ce8fbbd964/outputs",
+      "project_key": "/demo/projects/demo-adapter-cowork",
+      "display_name": "demo-adapter-cowork",
+      "project_path": "/demo/projects/demo-adapter-cowork",
       "sources": {
         "claude-cowork": 456
       },
@@ -753,9 +753,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/xiaowo/plan_data_and_source",
-      "display_name": "plan_data_and_source",
-      "project_path": "/Users/dipsy/Documents/xiaowo/plan_data_and_source",
+      "project_key": "/demo/projects/demo-privacy-gate",
+      "display_name": "demo-privacy-gate",
+      "project_path": "/demo/projects/demo-privacy-gate",
       "sources": {
         "claude-code": 126
       },
@@ -789,9 +789,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/tool-lib/pay-module/unibee",
-      "display_name": "unibee",
-      "project_path": "/Users/dipsy/Developer/tool-lib/pay-module/unibee",
+      "project_key": "/demo/projects/demo-heatmap-studio",
+      "display_name": "demo-heatmap-studio",
+      "project_path": "/demo/projects/demo-heatmap-studio",
       "sources": {
         "claude-code": 68
       },
@@ -828,9 +828,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/sessions/zealous/gallant/einstein",
-      "display_name": "einstein",
-      "project_path": "/sessions/zealous/gallant/einstein",
+      "project_key": "/demo/projects/demo-flowerbed-lab",
+      "display_name": "demo-flowerbed-lab",
+      "project_path": "/demo/projects/demo-flowerbed-lab",
       "sources": {
         "claude-cowork": 62
       },
@@ -863,12 +863,12 @@
       "cache_ratio": 0.7968829579680974,
       "size_level": 3,
       "size_strength": 0.46652917513263414,
-      "path_inferred": true
+      "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/AdbBar",
-      "display_name": "AdbBar",
-      "project_path": "/Users/dipsy/Documents/AdbBar",
+      "project_key": "/demo/projects/demo-cat-playground",
+      "display_name": "demo-cat-playground",
+      "project_path": "/demo/projects/demo-cat-playground",
       "sources": {
         "claude-code": 49,
         "codex": 2
@@ -909,9 +909,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/test/未命名文件夹/ai-skill-ppt",
-      "display_name": "ai-skill-ppt",
-      "project_path": "/Users/dipsy/Developer/test/未命名文件夹/ai-skill-ppt",
+      "project_key": "/demo/projects/demo-sticker-wall",
+      "display_name": "demo-sticker-wall",
+      "project_path": "/demo/projects/demo-sticker-wall",
       "sources": {
         "claude-code": 50
       },
@@ -947,9 +947,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/test",
-      "display_name": "test",
-      "project_path": "/Users/dipsy/Developer/test",
+      "project_key": "/demo/projects/demo-night-mode",
+      "display_name": "demo-night-mode",
+      "project_path": "/demo/projects/demo-night-mode",
       "sources": {
         "claude-code": 32,
         "codex": 4
@@ -998,9 +998,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/private/tmp/codex_verify",
-      "display_name": "codex_verify",
-      "project_path": "/private/tmp/codex_verify",
+      "project_key": "/demo/projects/demo-release-forge",
+      "display_name": "demo-release-forge",
+      "project_path": "/demo/projects/demo-release-forge",
       "sources": {
         "claude-code": 31,
         "codex": 1
@@ -1034,9 +1034,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/tool-lib/pay-module/unibee-api/manifest/deploy/mysql",
-      "display_name": "mysql",
-      "project_path": "/Users/dipsy/Developer/tool-lib/pay-module/unibee-api/manifest/deploy/mysql",
+      "project_key": "/demo/projects/demo-docs-courtyard",
+      "display_name": "demo-docs-courtyard",
+      "project_path": "/demo/projects/demo-docs-courtyard",
       "sources": {
         "claude-code": 31
       },
@@ -1070,9 +1070,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/tool-lib/pay-module/devops_config",
-      "display_name": "devops_config",
-      "project_path": "/Users/dipsy/Developer/tool-lib/pay-module/devops_config",
+      "project_key": "/demo/projects/demo-price-table",
+      "display_name": "demo-price-table",
+      "project_path": "/demo/projects/demo-price-table",
       "sources": {
         "claude-code": 26
       },
@@ -1104,9 +1104,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/motionx-synca/motionx-backend/services/core-api/internal/repo/postgres/migrations",
-      "display_name": "migrations",
-      "project_path": "/Users/dipsy/Developer/motionx-synca/motionx-backend/services/core-api/internal/repo/postgres/migrations",
+      "project_key": "/demo/projects/demo-summary-export",
+      "display_name": "demo-summary-export",
+      "project_path": "/demo/projects/demo-summary-export",
       "sources": {
         "claude-code": 23
       },
@@ -1138,9 +1138,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/motionx-synca/motionx-backend/services/prompt-lab-api",
-      "display_name": "prompt-lab-api",
-      "project_path": "/Users/dipsy/Developer/motionx-synca/motionx-backend/services/prompt-lab-api",
+      "project_key": "/demo/projects/demo-widget-shell",
+      "display_name": "demo-widget-shell",
+      "project_path": "/demo/projects/demo-widget-shell",
       "sources": {
         "claude-code": 20
       },
@@ -1172,9 +1172,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/sessions/exciting/relaxed/keller",
-      "display_name": "keller",
-      "project_path": "/sessions/exciting/relaxed/keller",
+      "project_key": "/demo/projects/demo-dashboard-drawer",
+      "display_name": "demo-dashboard-drawer",
+      "project_path": "/demo/projects/demo-dashboard-drawer",
       "sources": {
         "claude-cowork": 23
       },
@@ -1205,12 +1205,12 @@
       "cache_ratio": 0.5937371455234189,
       "size_level": 3,
       "size_strength": 0.34674826934402025,
-      "path_inferred": true
+      "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/test/gcp",
-      "display_name": "gcp",
-      "project_path": "/Users/dipsy/Developer/test/gcp",
+      "project_key": "/demo/projects/demo-project-insight",
+      "display_name": "demo-project-insight",
+      "project_path": "/demo/projects/demo-project-insight",
       "sources": {
         "codex": 3
       },
@@ -1246,9 +1246,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/other/ar-sky",
-      "display_name": "ar-sky",
-      "project_path": "/Users/dipsy/Developer/other/ar-sky",
+      "project_key": "/demo/projects/demo-first-run",
+      "display_name": "demo-first-run",
+      "project_path": "/demo/projects/demo-first-run",
       "sources": {
         "codex": 3
       },
@@ -1282,9 +1282,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Claude/Projects/none_name",
-      "display_name": "none_name",
-      "project_path": "/Users/dipsy/Claude/Projects/none_name",
+      "project_key": "/demo/projects/demo-watchdog",
+      "display_name": "demo-watchdog",
+      "project_path": "/demo/projects/demo-watchdog",
       "sources": {
         "claude-cowork": 18
       },
@@ -1319,9 +1319,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/private/tmp",
-      "display_name": "tmp",
-      "project_path": "/private/tmp",
+      "project_key": "/demo/projects/demo-rings-archive",
+      "display_name": "demo-rings-archive",
+      "project_path": "/demo/projects/demo-rings-archive",
       "sources": {
         "claude-code": 15
       },
@@ -1353,9 +1353,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Codex/2026-05-20/http-tomatogenetics-cau-edu-cn-download",
-      "display_name": "http-tomatogenetics-cau-edu-cn-download",
-      "project_path": "/Users/dipsy/Documents/Codex/2026-05-20/http-tomatogenetics-cau-edu-cn-download",
+      "project_key": "/demo/projects/demo-ci-greenhouse",
+      "display_name": "demo-ci-greenhouse",
+      "project_path": "/demo/projects/demo-ci-greenhouse",
       "sources": {
         "codex": 2
       },
@@ -1388,9 +1388,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/xiaowo/xiaowo_sport_server",
-      "display_name": "xiaowo_sport_server",
-      "project_path": "/Users/dipsy/Documents/xiaowo/xiaowo_sport_server",
+      "project_key": "/demo/projects/demo-tauri-window",
+      "display_name": "demo-tauri-window",
+      "project_path": "/demo/projects/demo-tauri-window",
       "sources": {
         "claude-code": 11
       },
@@ -1422,9 +1422,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Codex/2026-06-05/inter-mac-mini-type-c-2",
-      "display_name": "inter-mac-mini-type-c-2",
-      "project_path": "/Users/dipsy/Documents/Codex/2026-06-05/inter-mac-mini-type-c-2",
+      "project_key": "/demo/projects/demo-menu-bar",
+      "display_name": "demo-menu-bar",
+      "project_path": "/demo/projects/demo-menu-bar",
       "sources": {
         "codex": 1
       },
@@ -1456,9 +1456,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/nas",
-      "display_name": "nas",
-      "project_path": "/Users/dipsy/Documents/nas",
+      "project_key": "/demo/projects/demo-local-fixtures",
+      "display_name": "demo-local-fixtures",
+      "project_path": "/demo/projects/demo-local-fixtures",
       "sources": {
         "codex": 1
       },
@@ -1490,9 +1490,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Obsidian Vault",
-      "display_name": "Obsidian Vault",
-      "project_path": "/Users/dipsy/Documents/Obsidian Vault",
+      "project_key": "/demo/projects/demo-jsonl-reader",
+      "display_name": "demo-jsonl-reader",
+      "project_path": "/demo/projects/demo-jsonl-reader",
       "sources": {
         "codex": 2
       },
@@ -1524,9 +1524,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/xiaowo/xiaowo_sport/lib/app/modules/workout",
-      "display_name": "workout",
-      "project_path": "/Users/dipsy/Documents/xiaowo/xiaowo_sport/lib/app/modules/workout",
+      "project_key": "/demo/projects/demo-usage-monitor",
+      "display_name": "demo-usage-monitor",
+      "project_path": "/demo/projects/demo-usage-monitor",
       "sources": {
         "claude-code": 8
       },
@@ -1558,9 +1558,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/garden-d-poc",
-      "display_name": "garden-d-poc",
-      "project_path": "/Users/dipsy/Documents/garden-d-poc",
+      "project_key": "/demo/projects/demo-vine-layout",
+      "display_name": "demo-vine-layout",
+      "project_path": "/demo/projects/demo-vine-layout",
       "sources": {
         "codex": 1
       },
@@ -1592,9 +1592,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/test-build",
-      "display_name": "test-build",
-      "project_path": "/Users/dipsy/Documents/test-build",
+      "project_key": "/demo/projects/demo-asset-pipeline",
+      "display_name": "demo-asset-pipeline",
+      "project_path": "/demo/projects/demo-asset-pipeline",
       "sources": {
         "codex": 1
       },
@@ -1626,9 +1626,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/ppt-master",
-      "display_name": "ppt-master",
-      "project_path": "/Users/dipsy/Documents/ppt-master",
+      "project_key": "/demo/projects/demo-sprite-manifest",
+      "display_name": "demo-sprite-manifest",
+      "project_path": "/demo/projects/demo-sprite-manifest",
       "sources": {
         "codex": 1
       },
@@ -1660,9 +1660,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Desktop/ai-ppt",
-      "display_name": "ai-ppt",
-      "project_path": "/Users/dipsy/Desktop/ai-ppt",
+      "project_key": "/demo/projects/demo-browser-preview",
+      "display_name": "demo-browser-preview",
+      "project_path": "/demo/projects/demo-browser-preview",
       "sources": {
         "codex": 1
       },
@@ -1694,9 +1694,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/8-bit",
-      "display_name": "8-bit",
-      "project_path": "/Users/dipsy/Documents/8-bit",
+      "project_key": "/demo/projects/demo-cli-ascii",
+      "display_name": "demo-cli-ascii",
+      "project_path": "/demo/projects/demo-cli-ascii",
       "sources": {
         "codex": 1
       },
@@ -1728,9 +1728,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/xiaowo/xiaowo_sport/lib/app/modules/workout/widgets",
-      "display_name": "widgets",
-      "project_path": "/Users/dipsy/Documents/xiaowo/xiaowo_sport/lib/app/modules/workout/widgets",
+      "project_key": "/demo/projects/demo-scan-cache",
+      "display_name": "demo-scan-cache",
+      "project_path": "/demo/projects/demo-scan-cache",
       "sources": {
         "claude-code": 6
       },
@@ -1762,9 +1762,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/xiaowo/xiaowo_sport_server/functions",
-      "display_name": "functions",
-      "project_path": "/Users/dipsy/Documents/xiaowo/xiaowo_sport_server/functions",
+      "project_key": "/demo/projects/demo-source-index",
+      "display_name": "demo-source-index",
+      "project_path": "/demo/projects/demo-source-index",
       "sources": {
         "claude-code": 6
       },
@@ -1796,9 +1796,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Codex/2026-06-17/ai-broker-ble-ai-broker-ble",
-      "display_name": "ai-broker-ble-ai-broker-ble",
-      "project_path": "/Users/dipsy/Documents/Codex/2026-06-17/ai-broker-ble-ai-broker-ble",
+      "project_key": "/demo/projects/demo-session-rollup",
+      "display_name": "demo-session-rollup",
+      "project_path": "/demo/projects/demo-session-rollup",
       "sources": {
         "codex": 2
       },
@@ -1830,9 +1830,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Codex/2026-06-11/files-mentioned-by-the-user-0531d7f8",
-      "display_name": "files-mentioned-by-the-user-0531d7f8",
-      "project_path": "/Users/dipsy/Documents/Codex/2026-06-11/files-mentioned-by-the-user-0531d7f8",
+      "project_key": "/demo/projects/demo-model-mix",
+      "display_name": "demo-model-mix",
+      "project_path": "/demo/projects/demo-model-mix",
       "sources": {
         "codex": 1
       },
@@ -1864,9 +1864,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Codex/2026-06-05/files-mentioned-by-the-user-14",
-      "display_name": "files-mentioned-by-the-user-14",
-      "project_path": "/Users/dipsy/Documents/Codex/2026-06-05/files-mentioned-by-the-user-14",
+      "project_key": "/demo/projects/demo-unlock-banner",
+      "display_name": "demo-unlock-banner",
+      "project_path": "/demo/projects/demo-unlock-banner",
       "sources": {
         "codex": 1
       },
@@ -1898,9 +1898,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Codex/2026-06-17/use-the-little-girl-figurine-from",
-      "display_name": "use-the-little-girl-figurine-from",
-      "project_path": "/Users/dipsy/Documents/Codex/2026-06-17/use-the-little-girl-figurine-from",
+      "project_key": "/demo/projects/demo-koi-pond",
+      "display_name": "demo-koi-pond",
+      "project_path": "/demo/projects/demo-koi-pond",
       "sources": {
         "codex": 1
       },
@@ -1932,9 +1932,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Codex/2026-06-01/developer-16-42-19-developer-16",
-      "display_name": "developer-16-42-19-developer-16",
-      "project_path": "/Users/dipsy/Documents/Codex/2026-06-01/developer-16-42-19-developer-16",
+      "project_key": "/demo/projects/demo-bamboo-grove",
+      "display_name": "demo-bamboo-grove",
+      "project_path": "/demo/projects/demo-bamboo-grove",
       "sources": {
         "codex": 1
       },
@@ -1966,9 +1966,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/AdbBar/src-tauri",
-      "display_name": "src-tauri",
-      "project_path": "/Users/dipsy/Documents/AdbBar/src-tauri",
+      "project_key": "/demo/projects/demo-cherry-tree",
+      "display_name": "demo-cherry-tree",
+      "project_path": "/demo/projects/demo-cherry-tree",
       "sources": {
         "claude-code": 4
       },
@@ -2000,9 +2000,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Codex/2026-05-26/08-24-37-ls-developer-backend",
-      "display_name": "08-24-37-ls-developer-backend",
-      "project_path": "/Users/dipsy/Documents/Codex/2026-05-26/08-24-37-ls-developer-backend",
+      "project_key": "/demo/projects/demo-willow-shade",
+      "display_name": "demo-willow-shade",
+      "project_path": "/demo/projects/demo-willow-shade",
       "sources": {
         "codex": 1
       },
@@ -2034,9 +2034,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Developer/motionx-synca/gcp",
-      "display_name": "gcp",
-      "project_path": "/Users/dipsy/Developer/motionx-synca/gcp",
+      "project_key": "/demo/projects/demo-lantern-light",
+      "display_name": "demo-lantern-light",
+      "project_path": "/demo/projects/demo-lantern-light",
       "sources": {
         "claude-code": 5
       },
@@ -2068,9 +2068,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Codex/2026-05-28/files-mentioned-by-the-user-ios",
-      "display_name": "files-mentioned-by-the-user-ios",
-      "project_path": "/Users/dipsy/Documents/Codex/2026-05-28/files-mentioned-by-the-user-ios",
+      "project_key": "/demo/projects/demo-stone-path",
+      "display_name": "demo-stone-path",
+      "project_path": "/demo/projects/demo-stone-path",
       "sources": {
         "codex": 1
       },
@@ -2102,9 +2102,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Codex/2026-05-20/new-chat",
-      "display_name": "new-chat",
-      "project_path": "/Users/dipsy/Documents/Codex/2026-05-20/new-chat",
+      "project_key": "/demo/projects/demo-wood-table",
+      "display_name": "demo-wood-table",
+      "project_path": "/demo/projects/demo-wood-table",
       "sources": {
         "codex": 1
       },
@@ -2136,9 +2136,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Downloads/LSPosed-v2.0.2-7668-release",
-      "display_name": "LSPosed-v2.0.2-7668-release",
-      "project_path": "/Users/dipsy/Downloads/LSPosed-v2.0.2-7668-release",
+      "project_key": "/demo/projects/demo-tea-set",
+      "display_name": "demo-tea-set",
+      "project_path": "/demo/projects/demo-tea-set",
       "sources": {
         "codex": 1
       },
@@ -2170,9 +2170,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Codex/2026-06-01/mac-ssh-mac-ssh-wsl-mutagen",
-      "display_name": "mac-ssh-mac-ssh-wsl-mutagen",
-      "project_path": "/Users/dipsy/Documents/Codex/2026-06-01/mac-ssh-mac-ssh-wsl-mutagen",
+      "project_key": "/demo/projects/demo-incense-smoke",
+      "display_name": "demo-incense-smoke",
+      "project_path": "/demo/projects/demo-incense-smoke",
       "sources": {
         "codex": 1
       },
@@ -2204,9 +2204,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Codex/2026-06-17/https-aws-amazon-com-cn-events",
-      "display_name": "https-aws-amazon-com-cn-events",
-      "project_path": "/Users/dipsy/Documents/Codex/2026-06-17/https-aws-amazon-com-cn-events",
+      "project_key": "/demo/projects/demo-trinket-shelf",
+      "display_name": "demo-trinket-shelf",
+      "project_path": "/demo/projects/demo-trinket-shelf",
       "sources": {
         "codex": 1
       },
@@ -2238,9 +2238,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Codex/2026-05-21/new-chat",
-      "display_name": "new-chat",
-      "project_path": "/Users/dipsy/Documents/Codex/2026-05-21/new-chat",
+      "project_key": "/demo/projects/demo-annual-card",
+      "display_name": "demo-annual-card",
+      "project_path": "/demo/projects/demo-annual-card",
       "sources": {
         "codex": 1
       },
@@ -2272,9 +2272,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Codex/2026-06-02/new-chat",
-      "display_name": "new-chat",
-      "project_path": "/Users/dipsy/Documents/Codex/2026-06-02/new-chat",
+      "project_key": "/demo/projects/demo-weekly-postcard",
+      "display_name": "demo-weekly-postcard",
+      "project_path": "/demo/projects/demo-weekly-postcard",
       "sources": {
         "codex": 1
       },
@@ -2306,9 +2306,9 @@
       "path_inferred": false
     },
     {
-      "project_key": "/Users/dipsy/Documents/Codex/2026-05-28/502-bad-gateway-nginx-1-20",
-      "display_name": "502-bad-gateway-nginx-1-20",
-      "project_path": "/Users/dipsy/Documents/Codex/2026-05-28/502-bad-gateway-nginx-1-20",
+      "project_key": "/demo/projects/demo-sandbox-fixture",
+      "display_name": "demo-sandbox-fixture",
+      "project_path": "/demo/projects/demo-sandbox-fixture",
       "sources": {
         "codex": 1
       },
@@ -6252,5 +6252,35 @@
       "incense",
       "sleeping_cat"
     ]
+  },
+  "models": {
+    "claude-sonnet-4-6": {
+      "input_tokens": 163273518,
+      "output_tokens": 81636759,
+      "cache_read_tokens": 2122555738,
+      "cache_write_tokens": 353759290,
+      "total_tokens": 2721225305
+    },
+    "claude-opus-4-5": {
+      "input_tokens": 70647195,
+      "output_tokens": 56517756,
+      "cache_read_tokens": 1130355126,
+      "cache_write_tokens": 155423831,
+      "total_tokens": 1412943908
+    },
+    "gpt-5-codex": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 889631350
+    },
+    "unknown": {
+      "input_tokens": 104662512,
+      "output_tokens": 104662512,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "total_tokens": 209325023
+    }
   }
 }

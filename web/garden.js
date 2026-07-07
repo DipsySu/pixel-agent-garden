@@ -1,5 +1,7 @@
 import {
   isDemoMode,
+  loadPrices,
+  loadRings,
   loadSettings,
   loadSummary,
   subscribeGardenScanning,
@@ -136,7 +138,9 @@ Promise.all([
       hostFooter: footer,
       initialSummary: visibleSummary,
       onProjectSelect: (projectKey) => renderer.selectProjectByKey(projectKey),
-      onOpenTerminal: (path) => openInTerminal(path)
+      onOpenTerminal: (path) => openInTerminal(path),
+      loadPrices,
+      loadRings
     });
     mountRendererToggle({
       hostFooter: footer,
