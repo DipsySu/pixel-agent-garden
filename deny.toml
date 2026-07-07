@@ -17,6 +17,7 @@ yanked = "deny"
 unmaintained = "workspace"
 ignore = [
   { id = "RUSTSEC-2026-0009", reason = "time >=0.3.47 fixes the RFC2822 parser stack-exhaustion issue but requires Rust 1.88; this workspace is pinned to MSRV 1.85 and does not directly parse untrusted RFC2822 input with time. Remove once MSRV/Tauri deps can move to the patched time release." },
+  { id = "RUSTSEC-2026-0195", reason = "quick-xml >=0.41.0 fixes NsReader namespace-allocation DoS, but the path is Tauri -> plist 1.8 -> quick-xml ^0.38. plist 1.9+/1.10 require Rust 1.88 while this workspace is pinned to MSRV 1.85. The app does not directly parse untrusted XML with quick-xml/NsReader; remove once MSRV or Tauri/plist can move to the patched quick-xml release." },
 ]
 
 [bans]
