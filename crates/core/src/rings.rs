@@ -112,6 +112,47 @@ pub fn load(path: &Path) -> Result<RingBook, Error> {
     Ok(book)
 }
 
+/// Load rings for an update pass, quarantining malformed files.
+///
+/// A malformed `rings.json` (e.g. truncated before atomic writes existed)
+/// would otherwise leave the memory layer silently dead forever behind the
+/// best-effort callers: every load fails, nothing is ever written again. So
+/// malformed JSON is renamed to a dated `.corrupt-*` sibling and memory
+/// restarts from an empty book. I/O errors and future schema versions still
+/// propagate: the former may be transient, and the latter is real history
+/// written by a newer binary that a downgraded reader must not destroy.
+fn load_for_update(path: &Path, now: DateTime<Utc>) -> Result<RingBook, Error> {
+    match load(path) {
+        Err(Error::Json { .. }) => {
+            let quarantine = quarantine_path(path, now);
+            match std::fs::rename(path, &quarantine) {
+                Ok(()) => {
+                    eprintln!(
+                        "garden memory at {} is malformed; quarantined to {} and restarting rings",
+                        path.display(),
+                        quarantine.display()
+                    );
+                    Ok(RingBook::default())
+                }
+                Err(err) => Err(Error::io(path, err)),
+            }
+        }
+        other => other,
+    }
+}
+
+fn quarantine_path(path: &Path, now: DateTime<Utc>) -> PathBuf {
+    let file_name = path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .filter(|s| !s.is_empty())
+        .unwrap_or("rings.json");
+    path.with_file_name(format!(
+        "{file_name}.corrupt-{}",
+        now.format("%Y%m%d%H%M%S")
+    ))
+}
+
 /// Update `rings.json` from the current summary and return the display summary.
 /// Permanent tiers merge with high-water state; daily/seasonal states stay live.
 pub fn record_summary(
@@ -123,7 +164,7 @@ pub fn record_summary(
         .tiers
         .clone()
         .unwrap_or_else(|| crate::aggregate::derive_tiers_at(&summary, now));
-    let mut book = load(path)?;
+    let mut book = load_for_update(path, now)?;
     let previous = book.snapshot.tiers.clone();
     let utc_date = now.format("%Y-%m-%d").to_string();
 
@@ -453,6 +494,61 @@ mod tests {
             ids.len(),
             ids.iter().copied().collect::<BTreeSet<_>>().len()
         );
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn malformed_rings_is_quarantined_and_memory_restarts() {
+        let path = tmp_path("quarantine");
+        let _ = std::fs::remove_file(&path);
+        std::fs::write(&path, "{not-valid-json").unwrap();
+        let now = Utc.with_ymd_and_hms(2026, 7, 7, 12, 0, 0).unwrap();
+        let quarantine = quarantine_path(&path, now);
+        let _ = std::fs::remove_file(&quarantine);
+        let summary = aggregate::summarize_at(&[event("/repo/big", 120_000_000, "s1")], now);
+
+        let served = record_summary(summary, &path, now).unwrap();
+
+        assert_eq!(
+            served.tiers.as_ref().map(|t| t.pavilion.as_str()),
+            Some("full"),
+            "summary must be served with fresh tiers after quarantine"
+        );
+        assert!(
+            quarantine.exists(),
+            "malformed file should be preserved as a dated .corrupt sibling"
+        );
+        let book = load(&path).unwrap();
+        assert!(
+            !book.events.is_empty(),
+            "memory must restart accumulating after quarantine"
+        );
+        std::fs::remove_file(&path).ok();
+        std::fs::remove_file(&quarantine).ok();
+    }
+
+    #[test]
+    fn future_schema_rings_degrades_without_touching_the_file() {
+        let path = tmp_path("future-schema");
+        let _ = std::fs::remove_file(&path);
+        let future = format!(
+            "{{\"schema_version\":{},\"snapshot\":{{}},\"events\":[]}}",
+            RINGS_SCHEMA_VERSION + 1
+        );
+        std::fs::write(&path, &future).unwrap();
+        let now = Utc.with_ymd_and_hms(2026, 7, 7, 12, 0, 0).unwrap();
+        let summary = aggregate::summarize_at(&[event("/repo/big", 42_000, "s1")], now);
+
+        let result = record_summary(summary.clone(), &path, now);
+
+        assert!(result.is_err(), "future schema must not be overwritten");
+        assert_eq!(
+            std::fs::read_to_string(&path).unwrap(),
+            future,
+            "a newer binary's history must survive a downgraded reader untouched"
+        );
+        let served = record_summary_best_effort(summary, &path, now);
+        assert_eq!(served.total_tokens, 42_000);
         std::fs::remove_file(&path).ok();
     }
 }

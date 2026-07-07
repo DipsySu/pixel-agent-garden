@@ -99,8 +99,13 @@ Insight, heatmaps, and CLI usage views read from the current scan result. If an
 upstream agent rotates or deletes old logs, the next refresh may legitimately
 lower those current totals.
 
-The visual garden must not be demolished by that source-log rotation. Permanent
-courtyard unlocks therefore use a separate local memory file,
+The visual garden must not be demolished by that source-log rotation. This is
+the PRD 2.0 **I0 decision**, recorded here on purpose: we chose *display =
+high-water memory, accounting = live truth* over the rejected alternative of
+retaining vanished-source events inside `events.json` forever — retention
+would have made the accounting surface quietly dishonest, while the split
+keeps Insight truthful and lets the garden remember. Permanent courtyard
+unlocks therefore use a separate local memory file,
 `~/.local-agent-garden/rings.json`, written only by `core`:
 
 - `aggregate::summarize*` derives current `summary.tiers` from the current
@@ -116,6 +121,12 @@ courtyard unlocks therefore use a separate local memory file,
   `rings.json` is corrupt or temporarily unwritable, core logs the failure and
   serves the freshly computed/current `GardenSummary` instead of blocking the
   garden. The accounting cache must keep working without the memory layer.
+- Malformed `rings.json` (e.g. truncated before atomic writes existed) is
+  quarantined to a dated `rings.json.corrupt-*` sibling and memory restarts
+  from an empty book — otherwise the memory layer would stay silently dead
+  behind the best-effort callers. A `schema_version` newer than the reader is
+  NOT quarantined: that file is real history written by a newer binary, and a
+  downgraded reader must degrade without touching it.
 - Frontend code may diff two visible `summary.tiers` frames to celebrate a
   change, but it never writes `rings.json` and never decides what counts as
   history.
