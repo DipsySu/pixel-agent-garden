@@ -659,6 +659,8 @@ body {
 .pg6-footer-freshness.is-stale { color: #d6a258; cursor: help; }
 .pg6-footer-freshness.is-scanning { color: #d6c58a; }
 .pg6-footer-freshness.is-paused { color: #aeb78a; cursor: help; }
+/* Demo mode (?demo=1): amber = "status, not live data" per constitution §5.1. */
+.pg6-footer-freshness.is-demo { color: #d6a258; }
 .pg6-footer-insight {
   align-items: center;
   background: var(--paper);
@@ -1234,6 +1236,7 @@ body {
 .pg6-footer-freshness:empty::before { display: none; }
 .pg6-footer-freshness.is-stale::before { background: #d6a258; box-shadow: 0 0 6px #d6a258; }
 .pg6-footer-freshness.is-paused::before { background: #aeb78a; box-shadow: none; }
+.pg6-footer-freshness.is-demo::before { background: #d6a258; box-shadow: none; }
 
 @media (max-width: 520px) {
   .pg6-settings-row { flex-direction: column; align-items: flex-start; }
@@ -1250,23 +1253,53 @@ body {
   filter: saturate(1.08) brightness(1.06);
   transform: var(--sprite-transform, translate(-50%, 0)) translateY(-2px) scale(1.03);
 }
-.pg6-empty {
-  background: rgba(23, 27, 20, 0.84);
-  border: 1px solid rgba(244, 234, 216, 0.14);
-  border-radius: 8px;
-  color: #f4ead8;
+/* P5-2 empty-state wood sign: a paper board on a wooden post, lower-center of
+   the scene. Constitution §5.1: text sits on paper (--paper/--ink), hard 2px
+   shadow, zero radius. z-index 150 = sticker rung of the §5.2 ladder (above
+   scene sprites, below hover cards/popovers). It overlays the scene host, so
+   both renderers show it identically. */
+.pg6-woodsign {
+  align-items: center;
+  bottom: 15%;
+  display: flex;
+  flex-direction: column;
   left: 50%;
-  line-height: 1.5;
-  padding: 12px 16px;
+  line-height: 1.5; /* scene host zeroes line-height for sprite layout */
+  pointer-events: none;
   position: absolute;
   text-align: center;
-  top: 58%;
-  transform: translate(-50%, -50%);
-  width: min(82%, 360px);
-  z-index: 50;
+  transform: translateX(-50%);
+  width: min(78%, 340px); /* % resolves against the scene (abspos containing block) */
+  z-index: 150;
 }
-.pg6-empty-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-.pg6-empty-hint { color: #b9af9b; font-size: 11px; }
+/* display:flex above would defeat the UA [hidden] rule — restore it. */
+.pg6-woodsign[hidden] { display: none; }
+.pg6-woodsign-board {
+  align-self: stretch; /* board spans the sign; the post below stays content-sized */
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  box-shadow: 2px 2px 0 var(--ink);
+  color: var(--ink);
+  padding: 10px 14px;
+}
+.pg6-woodsign-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.pg6-woodsign-body { font-size: 12px; }
+.pg6-woodsign-agents { color: #8a7656; font-size: 11px; margin-top: 6px; }
+.pg6-woodsign-post {
+  background: #8a6b45; /* plain wood brown — a post, not a data surface */
+  border: 2px solid var(--ink);
+  border-top: 0;
+  box-shadow: 2px 2px 0 var(--ink);
+  height: 34px;
+  width: 10px;
+}
+/* Legacy renderer-drawn empty toast — superseded by the wood sign above. Both
+   renderers still append it (renderer files are out of scope for I8); keep it
+   invisible so two empty states never show at once.
+   TODO(prd-2.0 §P5-2): delete renderEmptyState from both renderers, then drop
+   this rule and the empty.title/empty.hint fallback copy. */
+.pg6-empty { display: none; }
 .pg6-petal {
   background: #f4b8c8;
   height: 3px;

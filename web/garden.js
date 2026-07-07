@@ -1,4 +1,5 @@
 import {
+  isDemoMode,
   loadSettings,
   loadSummary,
   subscribeGardenScanning,
@@ -7,6 +8,7 @@ import {
   logGardenError,
   openInTerminal
 } from './data-source.js';
+import { mountEmptyState } from './empty-state.js';
 import { mountErrorToast } from './error-toast.js';
 import { mountInsightPanel } from './insight-panel.js';
 import { mountSettingsPanel } from './settings-panel.js';
@@ -21,7 +23,7 @@ import {
   persistRendererMode,
   rendererModeFromLocation
 } from './renderers/renderer-factory.js';
-import { applyStaticTranslations, currentLocale, setLocale } from './i18n.js';
+import { applyStaticTranslations, currentLocale, setLocale, t } from './i18n.js';
 
 const scene = document.getElementById('pg6-scene');
 const assetRoot = window.__TAURI__ ? './assets' : '../assets';
@@ -63,6 +65,11 @@ Promise.all([
   let rendererMode = rendererModeFromLocation();
   let renderer = createRenderer(rendererMode);
   renderer.paint(groups, lastSummary, currentSettings);
+  // P5-2 wood sign — mounted on the scene host (renderer-agnostic) and
+  // refreshed alongside every paint below, since base paints wipe the scene.
+  const emptyState = mountEmptyState({ host: scene });
+  emptyState.update(lastSummary);
+  applyDemoFreshness();
   const returnDiff = mountReturnDiff({
     hostFrame: document.querySelector('.pg6-frame'),
     initialSummary: lastSummary
@@ -96,6 +103,8 @@ Promise.all([
         insightPanel?.update(lastSummary);
         dashboardPanel?.update(lastSummary);
         miniStrip?._redraw?.(lastSummary);
+        emptyState.update(lastSummary);
+        applyDemoFreshness();
       }
     });
     mountSettingsPanel({
@@ -106,6 +115,8 @@ Promise.all([
         renderer.paint(groups, lastSummary, currentSettings);
         insightPanel?.update(lastSummary);
         dashboardPanel?.update(lastSummary);
+        emptyState.update(lastSummary);
+        applyDemoFreshness();
       }
     });
     mountPostcardExport({
@@ -150,6 +161,9 @@ Promise.all([
       dashboardPanel?.update(lastSummary);
       miniStrip?._redraw?.(lastSummary);
       renderer.repaintData(groups, lastSummary);
+      // Sign tracks the rendered frame: when paused (else branch) the scene
+      // stays on the cached frame, so the sign must stay in step with it too.
+      emptyState.update(lastSummary);
     } else {
       renderer.showCached(lastSummary);
     }
@@ -183,6 +197,22 @@ Promise.all([
     logGardenError('fallback base scene render failed', renderErr);
   }
 });
+
+// Demo mode (?demo=1): both renderers stamp the freshness pill from
+// summary.last_seen on every paint, which would present the bundled sample as
+// live (or stale) local data. Rather than teaching each renderer about demo
+// mode, rewrite the pill right after the synchronous paint calls — watcher
+// events are already muted in demo mode (data-source.js), so nothing
+// overwrites this label afterwards.
+function applyDemoFreshness() {
+  if (!isDemoMode()) return;
+  const el = document.getElementById('data-freshness');
+  if (!el) return;
+  el.textContent = t('fresh.demo');
+  el.classList.remove('is-scanning', 'is-stale', 'is-paused');
+  el.classList.add('is-demo');
+  el.removeAttribute('title');
+}
 
 // Flowerbed (D PoC) opt-in. Two ways to enable:
 //   - persisted settings.appearance.flowerbed === 'enabled'

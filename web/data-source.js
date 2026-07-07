@@ -8,14 +8,34 @@ export function isTauriRuntime() {
     return tauriApi() !== null;
   }
 
+/**
+ * Demo mode (PRD 2.0 §P5-3): `?demo=1` pins the garden to the bundled sample
+ * summary so the website "try it online" page — and a desktop app opened with
+ * the same flag — render a mature canned garden instead of live local data.
+ * This is THE single decision point for the summary source; callers must not
+ * re-check the URL themselves.
+ */
+export function isDemoMode() {
+    if (typeof window === 'undefined' || !window.location) return false;
+    try {
+      return new URLSearchParams(window.location.search).get('demo') === '1';
+    } catch (_) {
+      return false;
+    }
+  }
+
 export async function loadSummary({ dataUrl }) {
-    const api = tauriApi();
-    if (api?.core?.invoke) {
-      try {
-        return await api.core.invoke('garden_summary');
-      } catch (err) {
-        logGardenError('garden_summary invoke failed', err);
-        return null;
+    // Demo mode skips the backend entirely and falls through to the same
+    // fetch path the browser fallback uses (web/data/garden-summary.json).
+    if (!isDemoMode()) {
+      const api = tauriApi();
+      if (api?.core?.invoke) {
+        try {
+          return await api.core.invoke('garden_summary');
+        } catch (err) {
+          logGardenError('garden_summary invoke failed', err);
+          return null;
+        }
       }
     }
     try {
@@ -116,6 +136,8 @@ export async function savePostcard(blob, suggestedName) {
   }
 
 export function subscribeGardenUpdates(onSummary) {
+    // Demo mode shows a frozen sample; a live watcher push must not replace it.
+    if (isDemoMode()) return;
     const api = tauriApi();
     if (!api?.event || typeof api.event.listen !== 'function') return;
     api.event
@@ -124,6 +146,10 @@ export function subscribeGardenUpdates(onSummary) {
   }
 
 export function subscribeGardenScanning(onScanning) {
+    // Demo mode never rescans — without this, a background scan would flip the
+    // freshness pill to "Scanning..." and (updates being muted above) leave it
+    // stuck there.
+    if (isDemoMode()) return;
     const api = tauriApi();
     if (!api?.event || typeof api.event.listen !== 'function') return;
     api.event
