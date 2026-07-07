@@ -135,6 +135,15 @@ motion = "system"         # system | reduced | off
 
 [data]
 auto_rescan = true
+
+[integrations]
+terminal = "iterm"
+terminal_command = ""
+tray_top_n = 5
+
+[desktop]
+launch_at_login = false
+close_to_tray = false
 ```
 
 `core/src/settings.rs` is the only settings I/O entry point. Tauri exposes:

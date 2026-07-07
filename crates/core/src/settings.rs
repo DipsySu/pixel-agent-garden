@@ -23,6 +23,7 @@ pub struct Settings {
     pub appearance: Appearance,
     pub data: DataSettings,
     pub integrations: Integrations,
+    pub desktop: DesktopSettings,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -48,6 +49,19 @@ impl Default for DataSettings {
     fn default() -> Self {
         Self { auto_rescan: true }
     }
+}
+
+/// Desktop shell behavior. This is separate from `integrations` (terminal
+/// launcher configuration) and from `appearance` (garden rendering choices).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct DesktopSettings {
+    /// Future autostart integration. Stored now so the PRD 2.0 settings contract
+    /// exists; the OS login item implementation lands with the autostart plugin.
+    pub launch_at_login: bool,
+    /// When true, closing the main window hides it and keeps the tray resident.
+    /// When false, the platform default close behavior is allowed.
+    pub close_to_tray: bool,
 }
 
 /// Launcher integration settings (spec §Deferred — launcher integration).
@@ -227,6 +241,10 @@ mod tests {
                 terminal_command: String::new(),
                 tray_top_n: 8,
             },
+            desktop: DesktopSettings {
+                launch_at_login: true,
+                close_to_tray: true,
+            },
         };
         save(&path, &s).unwrap();
         let back = load(&path).unwrap();
@@ -269,6 +287,10 @@ mod tests {
                 terminal_command: String::new(),
                 tray_top_n: 5,
             },
+            desktop: DesktopSettings {
+                launch_at_login: false,
+                close_to_tray: true,
+            },
         };
         let text = toml::to_string(&s).unwrap();
         assert!(text.contains("time_mode = \"dusk\""), "got: {text}");
@@ -276,6 +298,7 @@ mod tests {
         assert!(text.contains("motion = \"off\""), "got: {text}");
         assert!(text.contains("auto_rescan = true"), "got: {text}");
         assert!(text.contains("terminal = \"iterm\""), "got: {text}");
+        assert!(text.contains("close_to_tray = true"), "got: {text}");
     }
 
     #[test]
@@ -294,6 +317,7 @@ mod tests {
         std::fs::write(&path, "[appearance]\ntime_mode = \"day\"\n").unwrap();
         let got = load(&path).unwrap();
         assert_eq!(got.integrations, Integrations::default());
+        assert_eq!(got.desktop, DesktopSettings::default());
         std::fs::remove_file(&path).ok();
     }
 

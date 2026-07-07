@@ -14,6 +14,14 @@
   `garden_rings` Tauri command and `loadRings()` data boundary are in place for
   the future 年轮 UI; frontend tier rendering now trusts `summary.tiers` when
   present and falls back to the old JS derivation for browser/demo summaries.
+- Started the PRD 2.0 tray-watch vertical slice. Settings now have a dedicated
+  `[desktop]` section (`launch_at_login`, `close_to_tray`) and the settings
+  panel round-trips `appearance`, `data`, `integrations`, and `desktop` without
+  dropping untouched sections. `close_to_tray` is wired to the native close
+  handler; launch-at-login stays stored but hidden until the autostart backend
+  lands. The tray menu now opens with a quiet/lit garden status row and puts
+  today's token total inside the Top Token Projects submenu instead of making
+  raw numbers the system-layer headline.
 - Post-review fix pass over the 07-06 commits. The biggest one is a timezone
   correctness bug: `daily_activity` keys are produced by core's `aggregate.rs`
   from `DateTime<Utc>`, but the flat renderer (and the new `garden-tiers.js`)

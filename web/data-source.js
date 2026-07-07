@@ -161,6 +161,10 @@ function defaultSettings() {
         terminal: 'iterm',
         terminal_command: '',
         tray_top_n: 5
+      },
+      desktop: {
+        launch_at_login: false,
+        close_to_tray: false
       }
     };
   }
@@ -173,6 +177,7 @@ function normalizeSettings(value) {
     // UI doesn't edit these yet, so we must round-trip them untouched —
     // dropping the section would reset the user's terminal choice on every save.
     const integrations = value && typeof value.integrations === 'object' ? value.integrations : {};
+    const desktop = value && typeof value.desktop === 'object' ? value.desktop : {};
     return {
       appearance: {
         time_mode: validChoice(appearance.time_mode, ['system', 'day', 'dusk', 'night'], base.appearance.time_mode),
@@ -187,6 +192,10 @@ function normalizeSettings(value) {
         terminal: validChoice(integrations.terminal, ['system', 'iterm', 'warp', 'custom'], base.integrations.terminal),
         terminal_command: typeof integrations.terminal_command === 'string' ? integrations.terminal_command : base.integrations.terminal_command,
         tray_top_n: validPositiveInteger(integrations.tray_top_n, base.integrations.tray_top_n)
+      },
+      desktop: {
+        launch_at_login: typeof desktop.launch_at_login === 'boolean' ? desktop.launch_at_login : base.desktop.launch_at_login,
+        close_to_tray: typeof desktop.close_to_tray === 'boolean' ? desktop.close_to_tray : base.desktop.close_to_tray
       }
     };
   }

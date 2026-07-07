@@ -88,6 +88,8 @@ export function mountSettingsPanel({ hostFooter, initial, onChange }) {
     const next = cloneSettings(current);
     if (target.name === 'auto_rescan') {
       next.data.auto_rescan = target.checked;
+    } else if (target.name === 'close_to_tray') {
+      next.desktop.close_to_tray = target.checked;
     } else if (target.name in next.appearance) {
       next.appearance[target.name] = target.value;
     } else {
@@ -136,6 +138,15 @@ function buildPanelHtml(settings, canPersist) {
         t('settings.autoRescan'),
         t('settings.autoRescanHint'),
         settings.data.auto_rescan,
+        disabledAttr
+      )
+    ]) +
+    section(t('settings.desktop'), [
+      checkbox(
+        'close_to_tray',
+        t('settings.closeToTray'),
+        t('settings.closeToTrayHint'),
+        settings.desktop.close_to_tray,
         disabledAttr
       )
     ])
@@ -211,6 +222,17 @@ function cloneSettings(value) {
     },
     data: {
       auto_rescan: value?.data?.auto_rescan !== false
+    },
+    integrations: {
+      terminal: value?.integrations?.terminal || 'iterm',
+      terminal_command: value?.integrations?.terminal_command || '',
+      tray_top_n: Number.isInteger(value?.integrations?.tray_top_n) && value.integrations.tray_top_n > 0
+        ? value.integrations.tray_top_n
+        : 5
+    },
+    desktop: {
+      launch_at_login: value?.desktop?.launch_at_login === true,
+      close_to_tray: value?.desktop?.close_to_tray === true
     }
   };
 }

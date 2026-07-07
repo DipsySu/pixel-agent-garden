@@ -6,6 +6,7 @@
 
 use crate::events::{ErrorPayload, GARDEN_ERROR, GARDEN_SCANNING, GARDEN_UPDATED, ScanningPayload};
 use crate::watcher;
+use chrono::Utc;
 use local_agent_garden_core::adapter::AdapterContext;
 use local_agent_garden_core::aggregate::{GardenSummary, top_by_tokens};
 use local_agent_garden_core::cache;
@@ -31,6 +32,8 @@ const MENU_SCAN: &str = "garden-scan";
 const MENU_OPEN_SETTINGS: &str = "garden-open-settings";
 const MENU_OPEN_DATA_DIR: &str = "garden-open-data-dir";
 const MENU_QUIT: &str = "garden-quit";
+const MENU_STATUS: &str = "garden-status";
+const MENU_TODAY_TOKENS: &str = "garden-today-tokens";
 
 pub fn setup(app: &mut App) -> tauri::Result<()> {
     // Initial menu has no project rows yet (the watcher only emits on change).
@@ -91,6 +94,9 @@ fn refresh_tray_menu(app: &AppHandle, summary: GardenSummary) {
                 if let Err(err) = tray.set_menu(Some(menu)) {
                     eprintln!("[tray] set_menu failed: {err}");
                 }
+                if let Err(err) = tray.set_tooltip(Some(&tray_status_label(Some(&summary)))) {
+                    eprintln!("[tray] set_tooltip failed: {err}");
+                }
             }
         }
         Err(err) => eprintln!("[tray] rebuild menu failed: {err}"),
@@ -141,6 +147,12 @@ pub fn handle_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) 
     }
 
     if let WindowEvent::CloseRequested { api, .. } = event {
+        let close_to_tray = settings::load(&settings::default_settings_path())
+            .map(|settings| settings.desktop.close_to_tray)
+            .unwrap_or(false);
+        if !close_to_tray {
+            return;
+        }
         api.prevent_close();
         if let Err(err) = window.hide() {
             eprintln!("[tray] hide on close failed: {err}");
@@ -152,8 +164,16 @@ fn build_tray_menu<R: Runtime>(
     app: &AppHandle<R>,
     summary: Option<&GardenSummary>,
 ) -> tauri::Result<Menu<R>> {
+    let status = MenuItem::with_id(
+        app,
+        MENU_STATUS,
+        tray_status_label(summary),
+        false,
+        None::<&str>,
+    )?;
     let top = build_top_projects_submenu(app, summary)?;
     let sep0 = PredefinedMenuItem::separator(app)?;
+    let sep_top = PredefinedMenuItem::separator(app)?;
     let show = MenuItem::with_id(
         app,
         MENU_SHOW,
@@ -179,8 +199,10 @@ fn build_tray_menu<R: Runtime>(
     Menu::with_items(
         app,
         &[
-            &top,
+            &status,
             &sep0,
+            &top,
+            &sep_top,
             &show,
             &hide,
             &sep1,
@@ -207,6 +229,13 @@ fn build_top_projects_submenu<R: Runtime>(
 
     let mut items: Vec<MenuItem<R>> = Vec::new();
     if let Some(summary) = summary {
+        items.push(MenuItem::with_id(
+            app,
+            MENU_TODAY_TOKENS,
+            format!("Today {}", fmt_tokens(today_tokens(summary))),
+            false,
+            None::<&str>,
+        )?);
         for (i, project) in top_by_tokens(summary, top_n).into_iter().enumerate() {
             let label = format!(
                 "{} · {}",
@@ -242,6 +271,35 @@ fn build_top_projects_submenu<R: Runtime>(
 
     let refs: Vec<&dyn IsMenuItem<R>> = items.iter().map(|i| i as &dyn IsMenuItem<R>).collect();
     Submenu::with_items(app, "Top Token Projects", true, &refs)
+}
+
+fn tray_status_label(summary: Option<&GardenSummary>) -> String {
+    let Some(summary) = summary else {
+        return "Garden is quiet today".to_string();
+    };
+    let active = today_active_projects(summary);
+    if active == 0 {
+        "Garden is quiet today".to_string()
+    } else {
+        format!(
+            "🏮 Lantern lit · {active} active {}",
+            if active == 1 { "project" } else { "projects" }
+        )
+    }
+}
+
+fn today_tokens(summary: &GardenSummary) -> u64 {
+    let key = Utc::now().format("%Y-%m-%d").to_string();
+    summary.daily_tokens.get(&key).copied().unwrap_or(0)
+}
+
+fn today_active_projects(summary: &GardenSummary) -> usize {
+    let key = Utc::now().format("%Y-%m-%d").to_string();
+    summary
+        .projects
+        .iter()
+        .filter(|project| project.daily_activity.get(&key).copied().unwrap_or(0) > 0)
+        .count()
 }
 
 /// Compact token count for menu labels (e.g. `213.4M`, `45.0k`). Display-only;
