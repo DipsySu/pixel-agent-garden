@@ -784,7 +784,7 @@
   Cowork sessions also benefit from Windows drive-name decoding and the POSIX
   logic lives in one place.
 - Added best-effort Windows decoding for Claude project directory fallbacks.
-  Directory names like `D--code-xiaowo` now decode to `D:\code\xiaowo`; when a
+  Directory names like `D--code-demo-app` now decode to `D:\code\demo-app`; when a
   component may contain literal hyphens, the decoder chooses a single existing
   local path candidate if one is available, otherwise falls back to the
   separator-split form. These paths remain `path_source=inferred`: the UI still
@@ -807,7 +807,7 @@
   `\\?\` verbatim prefix, unifies `/`→`\`, drops trailing separators, and
   upper-cases the drive letter — so `\\?\D:\code\x`, `D:/code/x/`, and
   `d:\code\x` collapse to one aggregation key. This is spelling-only: it never
-  merges genuinely distinct directories (two real dirs named `xiaowo_sport`
+  merges genuinely distinct directories (two real dirs named `demo-service`
   stay separate), keeps POSIX paths and the dash-decoded Claude fallback
   untouched, and does not change any on-disk JSON shape (no `schema_version`
   bump). The lossy `-Users-foo-` directory-name fallback is intentionally left

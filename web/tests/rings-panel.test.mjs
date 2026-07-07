@@ -11,8 +11,8 @@ import { t } from '../i18n.js';
 
 test('first-seen rows carry the project name', () => {
   assert.equal(
-    ringEventTitle({ type: 'first_seen_project', label: 'pay-module' }),
-    t('rings.event.firstSeen', { name: 'pay-module' })
+    ringEventTitle({ type: 'first_seen_project', label: 'demo-garden-core' }),
+    t('rings.event.firstSeen', { name: 'demo-garden-core' })
   );
 });
 

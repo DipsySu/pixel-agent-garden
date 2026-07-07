@@ -110,7 +110,7 @@ export function insightPanelHTML(summary, opts = {}) {
   const extra = Math.max(0, projects.length - topN);
 
   // Same project basename can appear on several rows because aggregation keys
-  // on full path, not display name (two real dirs named "xiaowo_sport" are
+  // on full path, not display name (two real dirs named "demo-service" are
   // legitimately distinct). Count names so we can surface a disambiguating
   // path line only where it's actually needed.
   const nameCounts = new Map();
