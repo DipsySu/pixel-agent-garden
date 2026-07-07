@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- Landed the v1.4 watch-mode batch (PRD 2.0 §6.1, four parallel worktrees
+  merged): **unlock banners** — a paper/ink SceneBanner rises from the scene
+  when `summary.tiers` gains a tier (queue of 3 + "+N more changes" overflow,
+  steps(6) motion with a reduced-motion fade, click pulses the object; frames
+  persist at `pg6.seen.tiers` so a reinstall seeds silently instead of
+  celebrating history); **tray lantern icon** goes two-state — lit when
+  `tiers.lamp` is lit, unlit otherwise, with macOS template variants whose lit
+  silhouette punches the lamp window out so monochrome stays readable;
+  **launch-at-login** is now real — `tauri-plugin-autostart` reconciles the
+  OS login item from `desktop.launch_at_login` at startup and after every
+  settings save (settings.toml stays the single truth; unreadable settings
+  skip rather than guess), with a Desktop-section checkbox; **empty state &
+  demo** — a zero-project garden shows a CSS pixel wood-sign invitation, and
+  `?demo=1` pins the page to the bundled sample summary with a "Demo data"
+  freshness pill (watcher pushes muted so the canned garden can't be
+  replaced); doc 20 gains the watch-mode validation section. 19 web tests +
+  111 Rust tests green; banner and demo verified in the browser preview.
+
 - Started the PRD 2.0 branch with the core garden-memory foundation. Core now
   owns `GardenSummary.tiers` (`SUMMARY_SCHEMA_VERSION` 7) with the former
   frontend unlock thresholds ported into Rust, and writes a local
