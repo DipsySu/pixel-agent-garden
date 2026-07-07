@@ -989,7 +989,7 @@ mod tests {
             make_event(EventFixture {
                 source: "claude-code",
                 ts,
-                project: Some("/a/pay-module"),
+                project: Some("/a/demo-pay"),
                 session: Some("s1"),
                 input: 100,
                 output: 50,
@@ -1000,7 +1000,7 @@ mod tests {
             make_event(EventFixture {
                 source: "claude-code",
                 ts: ts + chrono::Duration::seconds(1),
-                project: Some("/a/pay-module"),
+                project: Some("/a/demo-pay"),
                 session: Some("s1"),
                 input: 200,
                 output: 100,
@@ -1026,8 +1026,8 @@ mod tests {
         assert_eq!(s.total_tokens, 525); // 150 + 300 + 75
         assert_eq!(s.sources["claude-code"], 2);
         assert_eq!(s.sources["codex"], 1);
-        // pay-module has more activity → first
-        assert_eq!(s.projects[0].project_path.as_deref(), Some("/a/pay-module"));
+        // demo-pay has more activity → first
+        assert_eq!(s.projects[0].project_path.as_deref(), Some("/a/demo-pay"));
         assert_eq!(s.projects[0].event_count, 2);
         assert_eq!(s.projects[0].input_tokens, 300);
         assert_eq!(s.projects[0].total_tokens, 450);
@@ -1035,7 +1035,7 @@ mod tests {
         assert_eq!(s.projects[0].sessions, 1);
         assert_eq!(s.projects[0].sources["claude-code"], 2);
         assert_eq!(s.projects[0].models["m1"], 2);
-        assert_eq!(s.projects[0].display_name, "pay-module");
+        assert_eq!(s.projects[0].display_name, "demo-pay");
         // Per-model token rollup keeps the split, not just totals.
         let m1 = &s.projects[0].model_tokens["m1"];
         assert_eq!(m1.input_tokens, 300);
@@ -1107,7 +1107,7 @@ mod tests {
 
     #[test]
     fn activity_score_matches_reference_examples() {
-        // pay-module: total_tokens=226_880_048, event_count=1724, sessions=8, tool_calls=481
+        // demo-pay: total_tokens=226_880_048, event_count=1724, sessions=8, tool_calls=481
         // Expected from real garden-summary.json: activity_score=610
         let score = activity_score(226_880_048, 1724, 8, 481);
         assert_eq!(score, 610);
@@ -1152,10 +1152,7 @@ mod tests {
 
     #[test]
     fn display_name_falls_back_to_unknown_strip() {
-        assert_eq!(
-            display_name(Some("/foo/pay-module"), "ignored"),
-            "pay-module"
-        );
+        assert_eq!(display_name(Some("/foo/demo-pay"), "ignored"), "demo-pay");
         assert_eq!(display_name(None, "unknown:codex"), "codex");
         assert_eq!(display_name(Some(""), "unknown:claude-code"), "claude-code");
         assert_eq!(display_name(Some("/"), "fb"), "/"); // path with no basename
@@ -1479,9 +1476,9 @@ mod tests {
             model: None,
         };
         let events = vec![
-            make_event(mk(r"\\?\D:\code\xiaowo")),
-            make_event(mk("D:/code/xiaowo/")),
-            make_event(mk(r"d:\code\xiaowo")),
+            make_event(mk(r"\\?\D:\code\demo-notes")),
+            make_event(mk("D:/code/demo-notes/")),
+            make_event(mk(r"d:\code\demo-notes")),
         ];
         let s = summarize(&events);
         assert_eq!(
@@ -1489,13 +1486,13 @@ mod tests {
             1,
             "all spellings must collapse to one key"
         );
-        assert_eq!(s.projects[0].project_key, r"D:\code\xiaowo");
+        assert_eq!(s.projects[0].project_key, r"D:\code\demo-notes");
     }
 
     #[test]
     fn same_basename_different_parents_stay_distinct() {
         // Regression: distinct directories that merely share a basename
-        // (`xiaowo_sport`) must NOT be merged — keying is on full path, never on
+        // (`demo-notes-plus`) must NOT be merged — keying is on full path, never on
         // display name. Guards against an over-eager "merge by name" fix.
         let ts = Utc.with_ymd_and_hms(2026, 5, 27, 10, 0, 0).unwrap();
         let mk = |proj: &'static str| EventFixture {
@@ -1510,8 +1507,8 @@ mod tests {
             model: None,
         };
         let events = vec![
-            make_event(mk("/Users/me/dev/xiaowo_sport")),
-            make_event(mk("/Users/me/work/xiaowo_sport")),
+            make_event(mk("/Users/me/dev/demo-notes-plus")),
+            make_event(mk("/Users/me/work/demo-notes-plus")),
         ];
         let s = summarize(&events);
         assert_eq!(s.projects.len(), 2, "different parents must stay distinct");

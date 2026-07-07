@@ -47,7 +47,7 @@ cargo test --workspace
 cargo run --release -p local-agent-garden-cli -- adapters
 cargo run --release -p local-agent-garden-cli -- scan --out /tmp/events.json
 cargo run --release -p local-agent-garden-cli -- projects
-cargo run --release -p local-agent-garden-cli -- inspect --project pay-module
+cargo run --release -p local-agent-garden-cli -- inspect --project demo-pay
 cargo run --release -p local-agent-garden-cli -- garden        # ASCII vine wall
 cargo run --release -p local-agent-garden-cli -- export-web    # 写 web/data/garden-summary.json
 

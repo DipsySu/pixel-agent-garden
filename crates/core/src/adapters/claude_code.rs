@@ -223,7 +223,7 @@ mod tests {
             "timestamp": "2026-05-27T04:05:25Z",
             "type": "assistant",
             "sessionId": "abc-123",
-            "cwd": "/Users/dipsy/Developer/pay-module",
+            "cwd": "/Users/demo/Developer/demo-pay",
             "gitBranch": "main",
             "message": {
                 "model": "claude-sonnet-4-6",
@@ -248,7 +248,7 @@ mod tests {
         // cwd overrides inferred path
         assert_eq!(
             ev.project_path.as_deref(),
-            Some("/Users/dipsy/Developer/pay-module")
+            Some("/Users/demo/Developer/demo-pay")
         );
         assert_eq!(ev.session_id.as_deref(), Some("abc-123"));
         assert_eq!(ev.event_type, "assistant");

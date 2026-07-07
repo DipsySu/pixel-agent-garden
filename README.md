@@ -100,7 +100,7 @@ Use the Rust CLI directly:
 cargo run --release -p local-agent-garden-cli -- adapters
 cargo run --release -p local-agent-garden-cli -- scan --out ~/.local-agent-garden/events.json
 cargo run --release -p local-agent-garden-cli -- projects
-cargo run --release -p local-agent-garden-cli -- inspect --project pay-module
+cargo run --release -p local-agent-garden-cli -- inspect --project demo-pay
 cargo run --release -p local-agent-garden-cli -- usage
 cargo run --release -p local-agent-garden-cli -- usage --date yesterday --json
 cargo run --release -p local-agent-garden-cli -- garden
@@ -252,7 +252,7 @@ cargo tauri build      # 产物在 target/release/bundle/
 cargo run --release -p local-agent-garden-cli -- adapters
 cargo run --release -p local-agent-garden-cli -- scan --out ~/.local-agent-garden/events.json
 cargo run --release -p local-agent-garden-cli -- projects
-cargo run --release -p local-agent-garden-cli -- inspect --project pay-module
+cargo run --release -p local-agent-garden-cli -- inspect --project demo-pay
 cargo run --release -p local-agent-garden-cli -- usage
 cargo run --release -p local-agent-garden-cli -- usage --date yesterday --json
 cargo run --release -p local-agent-garden-cli -- garden

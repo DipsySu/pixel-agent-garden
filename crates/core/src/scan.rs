@@ -99,7 +99,7 @@ mod tests {
             source,
             Utc.with_ymd_and_hms(2026, 5, 27, 9, 0, second).unwrap(),
         );
-        event.project_path = Some(r"D:\code\xiaowo".to_string());
+        event.project_path = Some(r"D:\code\demo-notes".to_string());
         event.session_id = Some("session-a".to_string());
         event.usage.total_tokens = 100;
         event.raw_ref = Some(raw_ref.to_string());
@@ -147,17 +147,17 @@ mod tests {
     #[test]
     fn dedupe_events_uses_fallback_row_key_and_chronological_order() {
         let mut early = event("manual-source", 1, "manual.jsonl:1");
-        early.project_path = Some("D:/code/xiaowo/".to_string());
+        early.project_path = Some("D:/code/demo-notes/".to_string());
         early.metadata.clear();
 
         let mut duplicate = early.clone();
-        duplicate.project_path = Some(r"d:\code\xiaowo".to_string());
+        duplicate.project_path = Some(r"d:\code\demo-notes".to_string());
 
         let mut same_event_different_row = early.clone();
         same_event_different_row.raw_ref = Some("manual.jsonl:2".to_string());
 
         let mut later = event("manual-source", 2, "manual.jsonl:3");
-        later.project_path = Some(r"D:\code\xiaowo".to_string());
+        later.project_path = Some(r"D:\code\demo-notes".to_string());
         later.metadata.clear();
 
         let events = dedupe_events(vec![later, duplicate, same_event_different_row, early]);

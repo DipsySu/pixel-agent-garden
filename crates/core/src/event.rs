@@ -342,10 +342,10 @@ mod tests {
             "claude-code",
             Utc.with_ymd_and_hms(2026, 5, 27, 0, 0, 0).unwrap(),
         );
-        ev.project_path = Some("/Users/dipsy/Developer/pay-module".to_string());
+        ev.project_path = Some("/Users/demo/Developer/demo-pay".to_string());
         assert_eq!(
             ev.project_key(),
-            "/Users/dipsy/Developer/pay-module".to_string()
+            "/Users/demo/Developer/demo-pay".to_string()
         );
     }
 
@@ -383,13 +383,16 @@ mod tests {
     #[test]
     fn normalize_windows_path_canonicalizes_spellings() {
         // The three spellings from the bug report collapse to one key.
-        assert_eq!(normalize_path(r"\\?\D:\code\xiaowo"), r"D:\code\xiaowo");
-        assert_eq!(normalize_path("D:/code/xiaowo/"), r"D:\code\xiaowo");
-        assert_eq!(normalize_path(r"d:\code\xiaowo"), r"D:\code\xiaowo");
+        assert_eq!(
+            normalize_path(r"\\?\D:\code\demo-notes"),
+            r"D:\code\demo-notes"
+        );
+        assert_eq!(normalize_path("D:/code/demo-notes/"), r"D:\code\demo-notes");
+        assert_eq!(normalize_path(r"d:\code\demo-notes"), r"D:\code\demo-notes");
         // All identical → one aggregation key.
-        let a = normalize_path(r"\\?\D:\code\xiaowo");
-        let b = normalize_path("D:/code/xiaowo/");
-        let c = normalize_path(r"d:\code\xiaowo");
+        let a = normalize_path(r"\\?\D:\code\demo-notes");
+        let b = normalize_path("D:/code/demo-notes/");
+        let c = normalize_path(r"d:\code\demo-notes");
         assert_eq!(a, b);
         assert_eq!(b, c);
     }
@@ -404,12 +407,15 @@ mod tests {
     #[test]
     fn normalize_path_leaves_posix_and_fallback_untouched() {
         // POSIX absolute paths keep forward slashes — no Windows mangling.
-        assert_eq!(normalize_path("/Users/dipsy/xiaowo"), "/Users/dipsy/xiaowo");
+        assert_eq!(
+            normalize_path("/Users/demo/demo-notes"),
+            "/Users/demo/demo-notes"
+        );
         // Trailing slash on POSIX is NOT stripped (would change a real key
         // shape we don't own); only drive paths are trimmed.
         assert_eq!(
-            normalize_path("/Users/dipsy/xiaowo/"),
-            "/Users/dipsy/xiaowo/"
+            normalize_path("/Users/demo/demo-notes/"),
+            "/Users/demo/demo-notes/"
         );
         // The dash-decoded Claude fallback shape is passed through verbatim.
         assert_eq!(normalize_path("/a/b/c"), "/a/b/c");
@@ -420,8 +426,8 @@ mod tests {
         // Same basename, different parents must stay distinct keys — the whole
         // point of keying on full path, not display name.
         assert_ne!(
-            normalize_path(r"D:\dev\xiaowo_sport"),
-            normalize_path(r"D:\work\xiaowo_sport"),
+            normalize_path(r"D:\dev\demo-notes-plus"),
+            normalize_path(r"D:\work\demo-notes-plus"),
         );
     }
 

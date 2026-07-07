@@ -63,7 +63,7 @@ So an export must composite **base SVG + DOM sprites** into one raster.
    (`translate(-50%,0)` top vs `translate(-50%,-100%)` bottom), then `drawImage`.
 5. **Caption strip** along the bottom: a localized one-liner via `t()`
    (new i18n keys) — e.g. `Spring · 7 vines · 2.1M tokens` (+ optional
-   `busiest: pay-module`, gated by §3). One line, NOT a stat collage.
+   `busiest: demo-pay`, gated by §3). One line, NOT a stat collage.
 6. **Export** `canvas.toBlob('image/png')` → save locally (see §4).
 
 ## 3. Anonymize (safe default)

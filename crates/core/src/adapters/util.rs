@@ -46,9 +46,9 @@ pub fn read_jsonl(path: &Path) -> impl Iterator<Item = JsonlRow> {
 
 /// Convert a Claude project directory name back to its absolute path.
 ///
-/// Claude encodes POSIX `/Users/dipsy/Developer/foo` as
-/// `-Users-dipsy-Developer-foo` and Windows `D:\code\xiaowo` as
-/// `D--code-xiaowo`. Returns None when the directory name doesn't look encoded
+/// Claude encodes POSIX `/Users/demo/Developer/foo` as
+/// `-Users-demo-Developer-foo` and Windows `D:\code\demo-notes` as
+/// `D--code-demo-notes`. Returns None when the directory name doesn't look encoded
 /// (e.g. tests, scratch dirs).
 ///
 /// LOSSY/AMBIGUOUS: both encodings collapse path separators and literal `-`
@@ -289,27 +289,25 @@ mod tests {
 
     #[test]
     fn project_from_claude_dir_decodes_dashes() {
-        let path = PathBuf::from("-Users-dipsy-Developer-pay-module");
+        let path = PathBuf::from("-Users-demo-Developer-demo-pay");
         let decoded = project_from_claude_dir(Path::new(&path));
         // NB: this is the same lossy mapping Claude's dash encoding forces —
-        // paths with real dashes in their components get split too.
-        assert_eq!(
-            decoded,
-            Some("/Users/dipsy/Developer/pay/module".to_string())
-        );
+        // paths with real dashes in their components get split too
+        // ("demo-pay" comes back as "demo/pay").
+        assert_eq!(decoded, Some("/Users/demo/Developer/demo/pay".to_string()));
     }
 
     #[test]
     fn project_from_claude_dir_decodes_windows_drive_names() {
-        let path = PathBuf::from("D--code-xiaowo");
+        let path = PathBuf::from("D--code-notes");
         let decoded = project_from_claude_dir(Path::new(&path));
-        assert_eq!(decoded, Some(r"D:\code\xiaowo".to_string()));
+        assert_eq!(decoded, Some(r"D:\code\notes".to_string()));
     }
 
     #[test]
     fn project_from_claude_dir_decodes_lowercase_windows_drive_names() {
-        let decoded = decode_windows_claude_project_name_with("d--code-xiaowo", |_| false);
-        assert_eq!(decoded, Some(r"D:\code\xiaowo".to_string()));
+        let decoded = decode_windows_claude_project_name_with("d--code-notes", |_| false);
+        assert_eq!(decoded, Some(r"D:\code\notes".to_string()));
     }
 
     #[test]
