@@ -22,6 +22,9 @@ local-agent-garden-core = { workspace = true }
 # Tauri 2.x
 tauri = { version = "2", features = ["protocol-asset", "tray-icon", "image-png"] }
 tauri-plugin-dialog = "2"
+# OS login item for desktop.launch_at_login. Local-only: writes a LaunchAgent
+# plist / registry key / .desktop entry — zero network, per PRIVACY.md.
+tauri-plugin-autostart = "2"
 
 # Shared workspace deps
 serde = { workspace = true }

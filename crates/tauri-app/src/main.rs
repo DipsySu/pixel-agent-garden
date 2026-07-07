@@ -11,6 +11,7 @@
     windows_subsystem = "windows"
 )]
 
+mod autostart;
 mod commands;
 mod events;
 mod terminal;
@@ -18,11 +19,19 @@ mod tray;
 mod watcher;
 
 use crate::events::{ErrorPayload, GARDEN_ERROR};
+use local_agent_garden_core::settings;
 use tauri::{Emitter, Manager};
+use tauri_plugin_autostart::MacosLauncher;
 
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        // Registers the autolaunch manager only — enable/disable decisions
+        // live in autostart::reconcile, driven by settings.toml.
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            None,
+        ))
         .menu(tray::build_app_menu)
         .on_menu_event(tray::handle_menu_event)
         .on_window_event(tray::handle_window_event)
@@ -41,6 +50,17 @@ fn main() {
             tray::setup(app)?;
             if let Some(window) = app.get_webview_window(tray::WINDOW_LABEL) {
                 window.set_decorations(false)?;
+            }
+
+            // Converge the OS login item with settings once per launch — OS
+            // state drifts (reinstall, manual cleanup) while settings.toml
+            // stays the source of truth. An unreadable settings file skips
+            // the reconcile: never rewrite OS state from a guessed value.
+            match settings::load(&settings::default_settings_path()) {
+                Ok(s) => autostart::reconcile(app.handle(), s.desktop.launch_at_login),
+                Err(err) => {
+                    eprintln!("[autostart] settings unreadable, skipping reconcile: {err}")
+                }
             }
 
             // Kick off the file watcher in its own thread. It will emit
