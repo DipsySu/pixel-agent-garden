@@ -38,6 +38,9 @@ export async function loadSettings() {
     return defaultSettings();
   }
 
+// TODO(prd-2.0 §6.1 I7): no caller yet — the 年轮 (rings) tab consumes this
+// when the data drawer lands. Wired ahead of time so the command boundary is
+// exercised by the same review that shipped rings; remove this note then.
 export async function loadRings() {
     const api = tauriApi();
     if (!api?.core?.invoke) return null;

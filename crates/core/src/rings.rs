@@ -166,7 +166,7 @@ pub fn record_summary(
         .unwrap_or_else(|| crate::aggregate::derive_tiers_at(&summary, now));
     let mut book = load_for_update(path, now)?;
     let previous = book.snapshot.tiers.clone();
-    let utc_date = now.format("%Y-%m-%d").to_string();
+    let utc_date = crate::aggregate::utc_day_key(now);
 
     let mut events = derive_project_events(&summary, &book.snapshot.projects, &utc_date);
     events.extend(derive_tier_events(&previous, &observed, &utc_date));
@@ -324,7 +324,14 @@ fn derive_tier_events(
         ),
     ]
     .into_iter()
-    .filter(|(_, from, to, order)| rank(to, order) > rank(from, order))
+    .filter(
+        |(_, from, to, order)| match (rank(from, order), rank(to, order)) {
+            (Some(from_rank), Some(to_rank)) => to_rank > from_rank,
+            // Unknown on either side means version skew; never celebrate a
+            // transition this binary cannot actually order.
+            _ => false,
+        },
+    )
     .map(|(entity, from, to, _)| {
         let mut payload = BTreeMap::new();
         payload.insert("from".to_string(), json!(from));
@@ -396,15 +403,24 @@ fn event_id(event_type: &str, entity: &str, to: &str, utc_date: &str) -> String 
 }
 
 fn max_by_rank(previous: &str, observed: &str, order: &[&str]) -> String {
-    if rank(previous, order) > rank(observed, order) {
-        previous.to_string()
-    } else {
-        observed.to_string()
+    // A previous value this binary does not know is preserved, never demoted:
+    // it is almost certainly high-water written by a NEWER binary (version
+    // skew), and mapping it to rank 0 would silently shrink the garden for as
+    // long as the user stays on the older build.
+    let Some(prev_rank) = rank(previous, order) else {
+        return previous.to_string();
+    };
+    match rank(observed, order) {
+        Some(obs_rank) if obs_rank > prev_rank => observed.to_string(),
+        Some(_) => previous.to_string(),
+        // Observed values come from this binary's own derive_tiers, so an
+        // unknown one is unreachable in practice; trust the fresh observation.
+        None => observed.to_string(),
     }
 }
 
-fn rank(value: &str, order: &[&str]) -> usize {
-    order.iter().position(|v| *v == value).unwrap_or(0)
+fn rank(value: &str, order: &[&str]) -> Option<usize> {
+    order.iter().position(|v| *v == value)
 }
 
 fn union_trinkets(previous: &[String], observed: &[String]) -> Vec<String> {
@@ -549,6 +565,38 @@ mod tests {
         );
         let served = record_summary_best_effort(summary, &path, now);
         assert_eq!(served.total_tokens, 42_000);
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn unknown_snapshot_tier_survives_a_downgraded_reader() {
+        let path = tmp_path("version-skew");
+        let _ = std::fs::remove_file(&path);
+        // Simulate a snapshot written by a NEWER binary that knows a pavilion
+        // tier above "full". This reader must neither demote it nor celebrate
+        // a bogus tier_up over it.
+        let mut book = RingBook::default();
+        book.snapshot.tiers.pavilion = "giant".to_string();
+        std::fs::write(&path, serde_json::to_string(&book).unwrap()).unwrap();
+        let now = Utc.with_ymd_and_hms(2026, 7, 7, 12, 0, 0).unwrap();
+        let summary = aggregate::summarize_at(&[event("/repo/big", 120_000_000, "s1")], now);
+
+        let served = record_summary(summary, &path, now).unwrap();
+
+        assert_eq!(
+            served.tiers.as_ref().map(|t| t.pavilion.as_str()),
+            Some("giant"),
+            "unknown high-water must win the merge"
+        );
+        let reloaded = load(&path).unwrap();
+        assert_eq!(reloaded.snapshot.tiers.pavilion, "giant");
+        assert!(
+            !reloaded
+                .events
+                .iter()
+                .any(|event| event.event_type == "tier_up" && event.entity == "pavilion"),
+            "no tier_up event may fire across an unorderable transition"
+        );
         std::fs::remove_file(&path).ok();
     }
 }

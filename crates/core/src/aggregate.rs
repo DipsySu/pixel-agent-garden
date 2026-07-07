@@ -374,7 +374,7 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
         // intensity PROXY — not tokens. For honest token series see below.
         let bump = (event.usage.total_tokens / 1000) + u64::from(event.tool_calls);
         let bump = bump.max(1);
-        let day_key = event.timestamp.format("%Y-%m-%d").to_string();
+        let day_key = utc_day_key(event.timestamp);
         *accum.daily_activity.entry(day_key.clone()).or_insert(0) += bump;
 
         // daily_tokens: honest per-day tokens, per-project and rolled up across
@@ -462,6 +462,19 @@ pub fn derive_tiers(summary: &GardenSummary) -> GardenTiers {
     derive_tiers_at(summary, Utc::now())
 }
 
+/// Canonical UTC day key ("%Y-%m-%d") for daily maps, rings and the tray.
+/// One greppable name so the UTC-vs-local lookup contract cannot silently
+/// fork again — a local-date variant of this key once split the two renderers
+/// around midnight (see garden-tiers.js).
+pub fn utc_day_key(ts: DateTime<Utc>) -> String {
+    day_key(ts.date_naive())
+}
+
+/// Day key for an already-UTC calendar date (window iterations).
+pub fn day_key(day: chrono::NaiveDate) -> String {
+    day.format("%Y-%m-%d").to_string()
+}
+
 /// Same as `derive_tiers`, but with pinned time for tests. "Today" is UTC on
 /// purpose: `daily_activity` keys are produced from `DateTime<Utc>`.
 pub fn derive_tiers_at(summary: &GardenSummary, now: DateTime<Utc>) -> GardenTiers {
@@ -471,7 +484,7 @@ pub fn derive_tiers_at(summary: &GardenSummary, now: DateTime<Utc>) -> GardenTie
     let total_sessions = projects.iter().map(|p| p.sessions).sum();
     let max_stage = projects.iter().map(|p| p.stage).max().unwrap_or(1);
     let recent_activity = projects.iter().map(|p| p.recent_activity).sum();
-    let today_key = now.format("%Y-%m-%d").to_string();
+    let today_key = utc_day_key(now);
     let today_activity = projects
         .iter()
         .map(|p| p.daily_activity.get(&today_key).copied().unwrap_or(0))
@@ -563,7 +576,7 @@ fn build_flowerbed_year(
     let mut pairs: Vec<(String, u64)> = Vec::with_capacity(366);
     for offset in (0..366).rev() {
         let day = today - chrono::Duration::days(offset);
-        let date = day.format("%Y-%m-%d").to_string();
+        let date = day_key(day);
         let activity = daily_activity.get(&date).copied().unwrap_or(0);
         pairs.push((date, activity));
     }
@@ -618,7 +631,7 @@ fn build_heatmap_year(
     let mut pairs: Vec<(String, u64)> = Vec::with_capacity(365);
     for i in (0..365).rev() {
         let day = today - chrono::Duration::days(i);
-        let key = day.format("%Y-%m-%d").to_string();
+        let key = day_key(day);
         let value = daily_tokens.get(&key).copied().unwrap_or(0);
         pairs.push((key, value));
     }
@@ -795,7 +808,7 @@ fn recent_activity_window(daily_activity: &BTreeMap<String, u64>, now: DateTime<
     let mut total: u64 = 0;
     for i in 0..7 {
         let day = today - chrono::Duration::days(i);
-        let key = day.format("%Y-%m-%d").to_string();
+        let key = day_key(day);
         if let Some(v) = daily_activity.get(&key) {
             total += *v;
         }

@@ -24,6 +24,19 @@
   `rings.json.corrupt-*` sibling and rings restart from an empty book, while a
   future `schema_version` (written by a newer binary) still degrades without
   touching the file, so downgrades cannot destroy real history.
+- Swept the remaining review findings: unknown tier strings (version skew —
+  e.g. a snapshot written by a newer binary) are preserved by the high-water
+  merge instead of silently ranking 0, and unorderable transitions never emit
+  a tier_up event; the tray re-reads the cache just after each UTC midnight so
+  the "today" glance line rolls over on quiet days; the UTC day-key format now
+  has one greppable home (`aggregate::utc_day_key` / `day_key`) used by daily
+  maps, rings, tray and CLI; `normalizeCoreTiers` dropped its dead camelCase
+  tolerance so a wire-shape change fails loudly; the browser-demo
+  `garden-summary.json` is regenerated at schema 7 with a `tiers` block; and
+  the half-wired rings plumbing (`loadRings` / `garden_rings`) carries
+  TODO(prd-2.0 §6.1 I7) markers pointing at the data-drawer 年轮 tab.
+  Deliberately not done: a settings cache for the tray's per-event TOML reads —
+  an invalidating cache adds coupling for negligible I/O (YAGNI).
 - Localized the tray / system menu (en/zh via system locale, `sys-locale`,
   no settings field and no frontend push — native menus exist before the
   webview, so tray copy lives Rust-side as `tr(en, zh)` pairs; CLAUDE.md

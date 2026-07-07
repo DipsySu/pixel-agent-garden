@@ -63,26 +63,28 @@ export function unlockTier(summary, projects, now = new Date()) {
   };
 }
 
+// Core locks snake_case serialization for GardenTiers (stated in
+// aggregate.rs) — no alternate casings here on purpose: if the wire shape
+// ever changes, this must fail visibly in tests, not half-work through a
+// tolerant shim.
 function normalizeCoreTiers(tiers) {
   if (!tiers || typeof tiers !== 'object') return null;
   return {
-    totalTokens: numberValue(tiers.total_tokens, tiers.totalTokens),
-    maxProjectTokens: numberValue(tiers.max_project_tokens, tiers.maxProjectTokens),
-    totalSessions: numberValue(tiers.total_sessions, tiers.totalSessions),
-    recentActivity: numberValue(tiers.recent_activity, tiers.recentActivity),
-    todayActivity: numberValue(tiers.today_activity, tiers.todayActivity),
+    totalTokens: numberValue(tiers.total_tokens),
+    maxProjectTokens: numberValue(tiers.max_project_tokens),
+    totalSessions: numberValue(tiers.total_sessions),
+    recentActivity: numberValue(tiers.recent_activity),
+    todayActivity: numberValue(tiers.today_activity),
     pavilion: stringValue(tiers.pavilion, 'small'),
     cherry: stringValue(tiers.cherry, 'bud'),
     willow: stringValue(tiers.willow, 'young'),
-    stone_cat: stringValue(tiers.stone_cat, tiers.stoneCat, 'hidden'),
+    stone_cat: stringValue(tiers.stone_cat, 'hidden'),
     lamp: stringValue(tiers.lamp, 'unlit'),
     stool: stringValue(tiers.stool, 'hidden'),
     cushion: stringValue(tiers.cushion, 'hidden'),
     pavilionTrinkets: Array.isArray(tiers.pavilion_trinkets)
       ? tiers.pavilion_trinkets.slice()
-      : Array.isArray(tiers.pavilionTrinkets)
-        ? tiers.pavilionTrinkets.slice()
-        : []
+      : []
   };
 }
 

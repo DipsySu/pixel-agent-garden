@@ -70,6 +70,9 @@ pub async fn data_freshness() -> Result<Option<String>, String> {
     Ok(summary.last_seen.map(|d| d.to_rfc3339()))
 }
 
+// TODO(prd-2.0 §6.1 I7): frontend caller arrives with the data-drawer 年轮 tab;
+// until then this is read-only plumbing exercised by loadRings() in
+// web/data-source.js.
 #[tauri::command]
 pub async fn garden_rings() -> Result<RingBook, String> {
     tokio::task::spawn_blocking(|| {

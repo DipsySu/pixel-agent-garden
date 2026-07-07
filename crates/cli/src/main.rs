@@ -526,7 +526,7 @@ fn print_bucket(label: &str, bucket: &UsageBucket) {
 
 fn usage_report_json(report: &UsageReport) -> String {
     let value = json!({
-        "date": report.day.format("%Y-%m-%d").to_string(),
+        "date": aggregate::day_key(report.day),
         "total": bucket_json(&report.total),
         "by_source": report.by_source.iter().map(bucket_json).collect::<Vec<_>>(),
         "by_project": report.by_project.iter().map(bucket_json).collect::<Vec<_>>(),

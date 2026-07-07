@@ -4,7 +4,7 @@
 //! single `String` ready for stdout.
 
 use chrono::{Duration, Utc};
-use local_agent_garden_core::aggregate::{GardenSummary, ProjectGrowth};
+use local_agent_garden_core::aggregate::{GardenSummary, ProjectGrowth, day_key};
 
 // ANSI escape codes — wide-character terminals strip these gracefully.
 const RESET: &str = "\x1b[0m";
@@ -332,7 +332,7 @@ fn sparkline(project: &ProjectGrowth) -> String {
     let mut values: Vec<u64> = Vec::with_capacity(30);
     for i in (0..30).rev() {
         let day = today - Duration::days(i);
-        let key = day.format("%Y-%m-%d").to_string();
+        let key = day_key(day);
         values.push(*project.daily_activity.get(&key).unwrap_or(&0));
     }
     let max_value = *values.iter().max().unwrap_or(&0);

@@ -1,5 +1,5 @@
 {
-  "schema_version": 6,
+  "schema_version": 7,
   "projects": [
     {
       "project_key": "/Users/dipsy/Developer/tool-lib/pay-module",
@@ -179,7 +179,7 @@
       "recent_activity": 479733,
       "cache_ratio": 0.97566078554747,
       "size_level": 5,
-      "size_strength": 1.0,
+      "size_strength": 1,
       "path_inferred": false
     },
     {
@@ -1240,7 +1240,7 @@
       "activity_score": 168,
       "stage": 4,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 4,
       "size_strength": 0.6760131020768534,
       "path_inferred": false
@@ -1276,7 +1276,7 @@
       "activity_score": 166,
       "stage": 4,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 4,
       "size_strength": 0.6541607995593218,
       "path_inferred": false
@@ -1382,7 +1382,7 @@
       "activity_score": 150,
       "stage": 4,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 4,
       "size_strength": 0.5979002305039793,
       "path_inferred": false
@@ -1450,7 +1450,7 @@
       "activity_score": 142,
       "stage": 4,
       "recent_activity": 18518,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 4,
       "size_strength": 0.6595789310196092,
       "path_inferred": false
@@ -1484,7 +1484,7 @@
       "activity_score": 140,
       "stage": 4,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 4,
       "size_strength": 0.6188860798192777,
       "path_inferred": false
@@ -1518,7 +1518,7 @@
       "activity_score": 140,
       "stage": 4,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 3,
       "size_strength": 0.4569377022238319,
       "path_inferred": false
@@ -1586,7 +1586,7 @@
       "activity_score": 137,
       "stage": 4,
       "recent_activity": 9359,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 4,
       "size_strength": 0.588074102611161,
       "path_inferred": false
@@ -1620,7 +1620,7 @@
       "activity_score": 136,
       "stage": 4,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 4,
       "size_strength": 0.5757960221703442,
       "path_inferred": false
@@ -1654,7 +1654,7 @@
       "activity_score": 135,
       "stage": 4,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 4,
       "size_strength": 0.5488457645966799,
       "path_inferred": false
@@ -1688,7 +1688,7 @@
       "activity_score": 134,
       "stage": 4,
       "recent_activity": 6098,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 4,
       "size_strength": 0.5259429366493471,
       "path_inferred": false
@@ -1722,7 +1722,7 @@
       "activity_score": 134,
       "stage": 4,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 4,
       "size_strength": 0.5322643406970246,
       "path_inferred": false
@@ -1824,7 +1824,7 @@
       "activity_score": 124,
       "stage": 3,
       "recent_activity": 366,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 3,
       "size_strength": 0.2727000812401929,
       "path_inferred": false
@@ -1858,7 +1858,7 @@
       "activity_score": 121,
       "stage": 3,
       "recent_activity": 1278,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 3,
       "size_strength": 0.39284385257677085,
       "path_inferred": false
@@ -1892,7 +1892,7 @@
       "activity_score": 119,
       "stage": 3,
       "recent_activity": 950,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 3,
       "size_strength": 0.37032140814082204,
       "path_inferred": false
@@ -1926,7 +1926,7 @@
       "activity_score": 116,
       "stage": 3,
       "recent_activity": 604,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 3,
       "size_strength": 0.32276513940940044,
       "path_inferred": false
@@ -1960,7 +1960,7 @@
       "activity_score": 115,
       "stage": 3,
       "recent_activity": 565,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 3,
       "size_strength": 0.30823316122049227,
       "path_inferred": false
@@ -2028,7 +2028,7 @@
       "activity_score": 111,
       "stage": 3,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 3,
       "size_strength": 0.2539443003712671,
       "path_inferred": false
@@ -2096,7 +2096,7 @@
       "activity_score": 109,
       "stage": 3,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 2,
       "size_strength": 0.23412724719366187,
       "path_inferred": false
@@ -2130,7 +2130,7 @@
       "activity_score": 102,
       "stage": 3,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 2,
       "size_strength": 0.17652058952682964,
       "path_inferred": false
@@ -2164,7 +2164,7 @@
       "activity_score": 99,
       "stage": 3,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 2,
       "size_strength": 0.14427846177101777,
       "path_inferred": false
@@ -2198,7 +2198,7 @@
       "activity_score": 92,
       "stage": 3,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 2,
       "size_strength": 0.08456298100116053,
       "path_inferred": false
@@ -2232,7 +2232,7 @@
       "activity_score": 90,
       "stage": 3,
       "recent_activity": 22,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 2,
       "size_strength": 0.063111169938739,
       "path_inferred": false
@@ -2266,7 +2266,7 @@
       "activity_score": 89,
       "stage": 3,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 2,
       "size_strength": 0.05004884407627813,
       "path_inferred": false
@@ -2300,7 +2300,7 @@
       "activity_score": 86,
       "stage": 3,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 1,
       "size_strength": 0.019631999635546113,
       "path_inferred": false
@@ -2334,7 +2334,7 @@
       "activity_score": 86,
       "stage": 3,
       "recent_activity": 0,
-      "cache_ratio": 0.0,
+      "cache_ratio": 0,
       "size_level": 1,
       "size_strength": 0.026318650334365413,
       "path_inferred": false
@@ -6231,5 +6231,26 @@
       "activity": 268268,
       "level": 4
     }
-  ]
+  ],
+  "tiers": {
+    "total_tokens": 5233125587,
+    "max_project_tokens": 1262374321,
+    "total_sessions": 144,
+    "recent_activity": 2404722,
+    "today_activity": 268268,
+    "pavilion": "full",
+    "cherry": "petal",
+    "willow": "mature",
+    "stone_cat": "full",
+    "lamp": "lit",
+    "stool": "visible",
+    "cushion": "visible",
+    "pavilion_trinkets": [
+      "scroll",
+      "tea_set",
+      "wind_chime",
+      "incense",
+      "sleeping_cat"
+    ]
+  }
 }

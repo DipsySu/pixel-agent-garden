@@ -8,7 +8,7 @@ use crate::events::{ErrorPayload, GARDEN_ERROR, GARDEN_SCANNING, GARDEN_UPDATED,
 use crate::watcher;
 use chrono::Utc;
 use local_agent_garden_core::adapter::AdapterContext;
-use local_agent_garden_core::aggregate::{GardenSummary, top_by_tokens};
+use local_agent_garden_core::aggregate::{GardenSummary, top_by_tokens, utc_day_key};
 use local_agent_garden_core::cache;
 use local_agent_garden_core::rings;
 use local_agent_garden_core::settings::{self, Settings};
@@ -97,6 +97,32 @@ pub fn setup(app: &mut App) -> tauri::Result<()> {
         let ctx = AdapterContext::from_env();
         if let Ok(summary) = cache::summary_from_cache_or_scan(&ctx, None) {
             refresh_tray_menu(&init_handle, summary);
+        }
+    });
+
+    // The status row says "today" (lantern + today-tokens are keyed by UTC
+    // day), but the menu otherwise only rebuilds on garden:updated — on a
+    // quiet day it would keep asserting yesterday across UTC midnight. This
+    // timer re-reads the cache just after each midnight so the glance line
+    // rolls over even with zero garden events.
+    let midnight_handle = app.handle().clone();
+    std::thread::spawn(move || {
+        loop {
+            let now = Utc::now();
+            let wait = match (now + chrono::Duration::days(1))
+                .date_naive()
+                .and_hms_opt(0, 0, 5)
+            {
+                Some(next) => (next.and_utc() - now)
+                    .to_std()
+                    .unwrap_or(std::time::Duration::from_secs(3600)),
+                None => std::time::Duration::from_secs(3600),
+            };
+            std::thread::sleep(wait);
+            let ctx = AdapterContext::from_env();
+            if let Ok(summary) = cache::summary_from_cache_or_scan(&ctx, None) {
+                refresh_tray_menu(&midnight_handle, summary);
+            }
         }
     });
 
@@ -358,7 +384,7 @@ fn today_ring_growth() -> usize {
 }
 
 fn utc_today_key() -> String {
-    Utc::now().format("%Y-%m-%d").to_string()
+    utc_day_key(Utc::now())
 }
 
 fn today_tokens(summary: &GardenSummary) -> u64 {
