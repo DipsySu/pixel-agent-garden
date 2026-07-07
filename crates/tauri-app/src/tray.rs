@@ -60,7 +60,8 @@ pub fn setup(app: &mut App) -> tauri::Result<()> {
     let tray_menu = build_tray_menu(app.handle(), None)?;
     TrayIconBuilder::with_id(TRAY_ID)
         .tooltip("Local Agent Garden")
-        .icon(tauri::include_image!("./icons/32x32.png"))
+        .icon(tray_icon_for(false))
+        .icon_as_template(cfg!(target_os = "macos"))
         .menu(&tray_menu)
         .show_menu_on_left_click(true)
         .on_tray_icon_event(|tray, event| {
@@ -143,6 +144,11 @@ fn refresh_tray_menu(app: &AppHandle, summary: GardenSummary) {
                 if let Err(err) = tray.set_tooltip(Some(&tray_status_label(Some(&summary)))) {
                     eprintln!("[tray] set_tooltip failed: {err}");
                 }
+                if let Err(err) = tray.set_icon(Some(tray_icon_for(lamp_is_lit(Some(&summary))))) {
+                    eprintln!("[tray] set_icon failed: {err}");
+                }
+                // set_icon resets the template flag on some platforms; re-assert.
+                let _ = tray.set_icon_as_template(cfg!(target_os = "macos"));
             }
         }
         Err(err) => eprintln!("[tray] rebuild menu failed: {err}"),
@@ -346,15 +352,37 @@ fn build_top_projects_submenu<R: Runtime>(
     Submenu::with_items(app, tr("Top Token Projects", "Token 项目排行"), true, &refs)
 }
 
+fn lamp_is_lit(summary: Option<&GardenSummary>) -> bool {
+    summary
+        .and_then(|summary| summary.tiers.as_ref())
+        .map(|tiers| tiers.lamp == "lit")
+        .unwrap_or(false)
+}
+
+/// Lit/unlit lantern for the tray. macOS gets template variants (black +
+/// alpha) that adapt to the light/dark menu bar; the lit template punches the
+/// lamp window out of the silhouette so the two states stay distinguishable
+/// even in monochrome. Other platforms get the color pixel art.
+fn tray_icon_for(lit: bool) -> tauri::image::Image<'static> {
+    if cfg!(target_os = "macos") {
+        if lit {
+            tauri::include_image!("./icons/tray-lantern-lit-template.png")
+        } else {
+            tauri::include_image!("./icons/tray-lantern-unlit-template.png")
+        }
+    } else if lit {
+        tauri::include_image!("./icons/tray-lantern-lit.png")
+    } else {
+        tauri::include_image!("./icons/tray-lantern-unlit.png")
+    }
+}
+
 /// The PRD P1-1 glance contract: say what happened, never lead with numbers.
 /// Lantern state comes from core tiers (`lamp` stays live, not high-watered);
 /// "new growth" is the count of ring events recorded today — the system-layer
 /// equivalent of the frontend's seen-set diff, and already on disk.
 fn tray_status_label(summary: Option<&GardenSummary>) -> String {
-    let lit = summary
-        .and_then(|summary| summary.tiers.as_ref())
-        .map(|tiers| tiers.lamp == "lit")
-        .unwrap_or(false);
+    let lit = lamp_is_lit(summary);
     if !lit {
         return tr("Garden is quiet today", "庭院今日安静").to_string();
     }

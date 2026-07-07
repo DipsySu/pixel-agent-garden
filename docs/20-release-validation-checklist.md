@@ -116,6 +116,40 @@ Expected result:
 - First-launch behavior matches `docs/unsigned-installs.md`.
 - The bundled app repeats the same CSP and Postcard checks above.
 
+## PRD 2.0 Watch-Mode Additions (v1.4 gate)
+
+New desktop checks introduced by the tray-watch / garden-memory work
+(PRD 2.0 §6.1). Run on a real Tauri window before tagging the v1.4 release:
+
+- Tray locale: on a zh system locale the tray menu (status row, Top Token
+  Projects, Scan Now, Show/Hide, Settings, Data Folder, Quit) renders in
+  Chinese; on en locale in English. Copy lives in `tray.rs` `tr(en, zh)` —
+  not web/i18n.js.
+- Tray glance contract: with today-activity present the status row reads
+  "🏮 Lantern lit · N new growth" (N = today's ring events), and "garden
+  growing quietly" when lit with zero ring events; quiet day reads
+  "Garden is quiet today". No token number appears outside the Top Token
+  Projects submenu.
+- Tray icon two-state: lantern icon switches lit/unlit with `tiers.lamp`
+  on the next summary update; on macOS the template variant adapts to
+  light/dark menu bar.
+- UTC midnight rollover: leave the app idle across 00:00 UTC (or fake the
+  clock) — the status row and Today line roll to the new day within ~5s
+  without any garden event.
+- close_to_tray: with the setting on, closing the window hides it and the
+  tray stays resident; with it off, close quits per platform default.
+- launch_at_login: toggling the checkbox registers/unregisters the OS
+  login item (macOS: System Settings → Login Items); off by default.
+- Unlock banner: trigger a tier flip (fixture cache or threshold tweak) —
+  one banner rises, queues at most 3, honors reduced-motion as fade, and
+  clicking focuses/pulses the object.
+- Empty state + demo: a data-less profile shows the wood-sign invitation;
+  `?demo=1` in browser mode renders the bundled sample and never invokes
+  Tauri commands for data.
+- Rings resilience: corrupt `~/.local-agent-garden/rings.json` by hand →
+  next scan quarantines it to a dated `.corrupt-*` sibling, the garden
+  still renders, and memory restarts accumulating.
+
 ## Tag Gate
 
 Only tag after the checklist above passes:
