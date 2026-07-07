@@ -1,0 +1,453 @@
+// Weekly recap card (PRD 2.0 §P3-1) — "last week in the garden" as a share
+// artifact. Two halves, deliberately separable:
+//
+//   1. Pure week math + stats (previousIsoWeek / weeklyStats / the offer
+//      gate): no DOM, node-testable (web/tests/weekly-card.test.mjs). The
+//      §P3-1 boundary contract lives here: the OFFER trigger uses LOCAL time
+//      (Monday is a human ritual), while the STATISTICS window is the
+//      previous ISO week's seven UTC day keys matched verbatim against
+//      `daily_tokens` — zero timezone conversion, zero double counting.
+//      Accepted cost (spelled out in the PRD): activity near local midnight
+//      can land one UTC day over, so the card prints its date range with a
+//      `UTC` note instead of pretending to be exact.
+//
+//   2. Canvas render + save flow following the §5.4-E card DNA (3:4 portrait
+//      960×1280, paper/ink, Silkscreen title bar, pixel visual block, VT323
+//      number line, fixed product watermark) and reusing the postcard save
+//      path end to end (savePostcard via data-source: native dialog on the
+//      desktop, <a download> fallback in the browser).
+
+import { savePostcard } from './data-source.js';
+import { escapeHtml, fmtLocal } from './render-helpers.js';
+import { t } from './i18n.js';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// §5.4-E: one card DNA for weekly / seasonal / annual — 3:4 portrait.
+const CARD_W = 960;
+const CARD_H = 1280;
+
+// Palette hardcoded from web/index.html `:root` (a raw canvas 2D context
+// cannot resolve CSS custom properties): --paper / --ink / --paper-edge,
+// the action green, the muted paper-text brown and the KPI-card cream.
+const PAPER = '#f4ecd8';
+const INK = '#2c2316';
+const PAPER_EDGE = '#c9b790';
+const GREEN = '#6f9c3f';
+const MUTED = '#8a7656';
+const CREAM = '#fffaf0';
+
+// Same system stack postcard.js uses (kept module-private there on purpose;
+// duplicated rather than exported until a third card needs it).
+const FONT_STACK = 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif';
+// Card DNA fonts: the self-hosted Silkscreen / VT323 faces (@font-face in
+// index.html). Both are latin-only; CJK glyphs fall through to the system
+// stack per glyph — the app-wide font rule, honored by canvas automatically.
+const FONT_PIXEL = '"Silkscreen", ' + FONT_STACK;
+const FONT_NUM = '"VT323", ui-monospace, monospace';
+
+// --- pure week math (node-testable, no DOM) ---------------------------------
+
+/**
+ * The ISO week BEFORE the one containing `now`, computed on the UTC calendar
+ * (ISO 8601: weeks run Monday–Sunday). Pure Monday arithmetic — week NUMBERS
+ * are never materialized, so the year boundary needs no special case. Returns
+ * the seven day keys in `daily_tokens` format ('YYYY-MM-DD', UTC days).
+ */
+export function previousIsoWeek(now = new Date()) {
+  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  // getUTCDay(): Sunday=0 … Saturday=6 → ISO offset Monday=0 … Sunday=6.
+  const isoDow = (new Date(todayUtc).getUTCDay() + 6) % 7;
+  const previousMonday = todayUtc - (isoDow + 7) * DAY_MS;
+  const days = [];
+  for (let i = 0; i < 7; i += 1) days.push(utcDayKey(previousMonday + i * DAY_MS));
+  return { start: days[0], end: days[6], days };
+}
+
+/**
+ * Roll `summary` up over one week window. The total comes from the
+ * summary-level `daily_tokens` rollup; the top-3 ranking uses each project's
+ * OWN per-day `daily_tokens` (ProjectGrowth carries it since summary schema
+ * v2), so the ranking reflects THE WEEK, not lifetime totals. Names are
+ * `display_name` only — never `project_key`, which is typically an absolute
+ * local path and must not leak into a shareable image (same rule as the
+ * postcard's topProject).
+ */
+export function weeklyStats(summary, week) {
+  const days = Array.isArray(week?.days) ? week.days : [];
+  let totalTokens = 0;
+  let activeDays = 0;
+  for (const value of weekDailyTotals(summary, days)) {
+    totalTokens += value;
+    if (value > 0) activeDays += 1;
+  }
+  const projects = Array.isArray(summary?.projects) ? summary.projects : [];
+  const topProjects = projects
+    .map((project) => ({
+      name: project?.display_name || '',
+      tokens: sumWindow(project?.daily_tokens, days)
+    }))
+    .filter((entry) => entry.name && entry.tokens > 0)
+    .sort((a, b) => b.tokens - a.tokens)
+    .slice(0, 3);
+  return { totalTokens, topProjects, activeDays };
+}
+
+// Per-day totals for the window, zero-filled. Prefers the summary-level
+// `daily_tokens`; a summary cached before schema v2 lacks that map, in which
+// case the per-project maps are summed instead (same numbers, more addition).
+function weekDailyTotals(summary, days) {
+  const rollup = summary?.daily_tokens;
+  if (rollup && typeof rollup === 'object') {
+    return days.map((day) => toCount(rollup[day]));
+  }
+  const projects = Array.isArray(summary?.projects) ? summary.projects : [];
+  return days.map((day) =>
+    projects.reduce((sum, project) => sum + toCount(project?.daily_tokens?.[day]), 0)
+  );
+}
+
+function sumWindow(map, days) {
+  if (!map || typeof map !== 'object') return 0;
+  let sum = 0;
+  for (const day of days) sum += toCount(map[day]);
+  return sum;
+}
+
+function toCount(value) {
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+// --- Monday offer gate (local-time trigger half of the contract) ------------
+
+/**
+ * Local-midnight Monday of the week containing `now` — the ritual edge.
+ * LOCAL on purpose (契约: trigger local, statistics UTC): Monday morning is
+ * when a human opens the garden, whatever their timezone.
+ */
+export function mostRecentLocalMonday(now = new Date()) {
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  return monday;
+}
+
+const OFFERED_KEY = 'pg6.weekly.offered';
+
+/**
+ * Decide whether to offer last week's card. Returns the local Monday date
+ * key to record when the answer is yes, null otherwise. One offer per week
+ * (the stored Monday key is the dedupe token) and never for an empty week —
+ * a zero-token card is noise, not a ritual. Callers record the returned key
+ * via recordWeeklyOffer once the banner is actually shown; a zero-week skip
+ * records nothing, so history arriving later the same week can still offer.
+ */
+export function shouldOfferWeeklyRecap({ summary, now = new Date(), storage }) {
+  const mondayKey = localDateKey(mostRecentLocalMonday(now));
+  if (readOffered(storage) === mondayKey) return null;
+  const stats = weeklyStats(summary, previousIsoWeek(now));
+  if (stats.totalTokens <= 0) return null;
+  return mondayKey;
+}
+
+export function recordWeeklyOffer(mondayKey, storage) {
+  try {
+    storage?.setItem(OFFERED_KEY, mondayKey);
+  } catch (_) {
+    // Blocked storage just means the offer may show again next launch.
+  }
+}
+
+function readOffered(storage) {
+  try {
+    return storage?.getItem(OFFERED_KEY) ?? null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function localDateKey(date) {
+  return date.getFullYear() + '-' + pad2(date.getMonth() + 1) + '-' + pad2(date.getDate());
+}
+
+function utcDayKey(ms) {
+  const d = new Date(ms);
+  return d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate());
+}
+
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+// --- card render (§5.4-E DNA) ------------------------------------------------
+
+/** Suggested export filename, anchored on the week's Monday (UTC key). */
+export function suggestedWeeklyName(week) {
+  return 'garden-weekly-' + (week?.start || 'unknown') + '.png';
+}
+
+/**
+ * Render the recap card for the ISO week before `now`. Pure drawing from the
+ * summary — unlike the garden postcard this card is data-born, no scene DOM
+ * involved. Returns the canvas plus the week/stats it rendered so callers
+ * can name the file without recomputing.
+ */
+export async function buildWeeklyCanvas({ summary, now = new Date() }) {
+  const week = previousIsoWeek(now);
+  const stats = weeklyStats(summary, week);
+  const canvas = document.createElement('canvas');
+  canvas.width = CARD_W;
+  canvas.height = CARD_H;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('canvas 2D context unavailable');
+  ctx.imageSmoothingEnabled = false;
+  await ensureCardFonts();
+  drawCard(ctx, week, stats, weekDailyTotals(summary, week.days));
+  return { canvas, week, stats };
+}
+
+// Best-effort: ask for the self-hosted pixel faces before drawing. Canvas
+// silently falls back to the system stack if they never load (blocked fonts,
+// exotic webview) — the card stays legible either way, just less pixel.
+async function ensureCardFonts() {
+  try {
+    if (document.fonts?.load) {
+      await Promise.all([
+        document.fonts.load('700 46px Silkscreen'),
+        document.fonts.load('96px VT323')
+      ]);
+    }
+  } catch (_) {
+    // fall back to the system stack
+  }
+}
+
+function drawCard(ctx, week, stats, totals) {
+  // Paper ground + double ink frame (§5.1: hard edges, zero radius).
+  ctx.fillStyle = PAPER;
+  ctx.fillRect(0, 0, CARD_W, CARD_H);
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 8;
+  ctx.strokeRect(4, 4, CARD_W - 8, CARD_H - 8);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(18, 18, CARD_W - 36, CARD_H - 36);
+
+  // Silkscreen title bar: ink band, paper text (§5.4-E anatomy, row 1).
+  ctx.fillStyle = INK;
+  ctx.fillRect(40, 40, CARD_W - 80, 92);
+  ctx.fillStyle = PAPER;
+  ctx.font = '700 46px ' + FONT_PIXEL;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(fitOneLine(ctx, t('share.weekly.title'), CARD_W - 132), 66, 88);
+
+  // Date-range corner note with the honest UTC marker (§P3-1 边界契约:
+  // the window is UTC day keys; say so on the card).
+  ctx.fillStyle = MUTED;
+  ctx.font = '34px ' + FONT_NUM;
+  ctx.textAlign = 'right';
+  ctx.fillText(week.start + ' – ' + week.end + ' · UTC', CARD_W - 66, 176);
+
+  // Pixel visual block: the week as seven chunky bars.
+  drawWeekBars(ctx, totals, week.days, { x: 66, y: 216, w: CARD_W - 132, h: 470 });
+
+  // VT323 number line (§5.4-E anatomy, row 3) — digits render in VT323,
+  // CJK unit words fall through to the system stack.
+  const numberLine =
+    t('postcard.tokens', { total: fmtLocal(stats.totalTokens) }) +
+    ' · ' +
+    t('share.weekly.activeDays', { count: stats.activeDays });
+  ctx.fillStyle = INK;
+  ctx.font = '92px ' + FONT_NUM;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(fitOneLine(ctx, numberLine, CARD_W - 132), 66, 790);
+
+  // Top-3 project lines (or the quiet empty-week line).
+  drawTopProjects(ctx, stats, { x: 66, y: 900, w: CARD_W - 132 });
+
+  // Closing line — the ritual's soft landing.
+  ctx.fillStyle = MUTED;
+  ctx.font = '34px ' + FONT_STACK;
+  ctx.textAlign = 'left';
+  ctx.fillText(fitOneLine(ctx, t('share.weekly.closing'), CARD_W - 132), 66, 1130);
+
+  // Product watermark (§5.4-E anatomy, row 4) — fixed latin string, never
+  // localized: it is the card's propagation signature.
+  ctx.fillStyle = MUTED;
+  ctx.font = '24px ' + FONT_PIXEL;
+  ctx.textAlign = 'center';
+  ctx.fillText('pixel-agent-garden', CARD_W / 2, 1218);
+}
+
+// Seven bars on a cream panel, heights snapped to an 8px grid so the
+// silhouette reads as pixels, not as an anti-aliased chart. Zero days show a
+// paper-edge stub — an honest gap, still part of the week's shape.
+function drawWeekBars(ctx, totals, days, box) {
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(box.x, box.y, box.w, box.h);
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(box.x + 2, box.y + 2, box.w - 4, box.h - 4);
+
+  const innerPad = 36;
+  const labelBand = 64;
+  const baseline = box.y + box.h - labelBand;
+  const maxBarH = box.h - labelBand - innerPad - 24;
+  const slot = (box.w - innerPad * 2) / 7;
+  const barW = Math.round(slot * 0.56);
+  const max = Math.max(...totals, 1);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  for (let i = 0; i < 7; i += 1) {
+    const cx = box.x + innerPad + slot * i + slot / 2;
+    const active = totals[i] > 0;
+    // Snap to the 8px grid; any nonzero day keeps at least one block.
+    const h = active ? Math.max(8, Math.round((totals[i] / max) * maxBarH / 8) * 8) : 8;
+    ctx.fillStyle = active ? GREEN : PAPER_EDGE;
+    ctx.fillRect(Math.round(cx - barW / 2), baseline - h, barW, h);
+    // Day-of-month labels: digits only, so the canvas needs no locale fork.
+    ctx.fillStyle = MUTED;
+    ctx.font = '30px ' + FONT_NUM;
+    ctx.fillText(days[i].slice(8), cx, baseline + 44);
+  }
+}
+
+function drawTopProjects(ctx, stats, box) {
+  ctx.textBaseline = 'middle';
+  if (!stats.topProjects.length) {
+    ctx.fillStyle = MUTED;
+    ctx.font = '34px ' + FONT_STACK;
+    ctx.textAlign = 'left';
+    ctx.fillText(fitOneLine(ctx, t('share.weekly.empty'), box.w), box.x, box.y + 18);
+    return;
+  }
+  stats.topProjects.forEach((entry, index) => {
+    const y = box.y + index * 72 + 18;
+    // Pixel bullet in the action green — rank is reading order, no numerals.
+    ctx.fillStyle = GREEN;
+    ctx.fillRect(box.x, y - 10, 20, 20);
+    const tokens = fmtLocal(entry.tokens);
+    ctx.font = '46px ' + FONT_NUM;
+    const tokensW = ctx.measureText(tokens).width;
+    ctx.fillStyle = INK;
+    ctx.textAlign = 'right';
+    ctx.fillText(tokens, box.x + box.w, y);
+    ctx.textAlign = 'left';
+    ctx.font = '600 34px ' + FONT_STACK;
+    ctx.fillText(fitOneLine(ctx, entry.name, box.w - 44 - tokensW - 24), box.x + 44, y);
+  });
+}
+
+// --- share-drawer flow provider ----------------------------------------------
+
+/**
+ * Weekly recap flow — the share drawer's second artifact row. Same provider
+ * shape as mountPostcardContent: content INTO the drawer's host, the shell
+ * stays with the drawer. Save reuses the postcard pipeline end to end.
+ *
+ * @param {{
+ *   host: HTMLElement,
+ *   getSummary: () => object | null,
+ *   onError?: (message: string, err: unknown) => void,
+ *   onRequestClose?: () => void,
+ * }} opts
+ * @returns {{ activate: () => void }}
+ */
+export function mountWeeklyCardContent({ host, getSummary, onError, onRequestClose }) {
+  host.innerHTML =
+    '<div class="pg6-postcard-title">' + escapeHtml(t('share.weekly.name')) + '</div>' +
+    '<canvas class="pg6-weekly-preview" width="960" height="1280" aria-hidden="true"></canvas>' +
+    '<div class="pg6-postcard-actions">' +
+    '<button class="pg6-postcard-export" type="button">' + escapeHtml(t('postcard.export')) + '</button>' +
+    '<span class="pg6-postcard-status" aria-live="polite"></span>' +
+    '</div>';
+  const preview = host.querySelector('.pg6-weekly-preview');
+  const exportButton = host.querySelector('.pg6-postcard-export');
+  const status = host.querySelector('.pg6-postcard-status');
+  let lastCanvas = null;  // the live preview canvas, reused on Save (no re-render)
+  let lastWeek = null;
+  let rendering = false;
+
+  exportButton.addEventListener('click', async () => {
+    if (rendering) return;
+    if (!lastCanvas) await renderPreview();
+    if (!lastCanvas) return;
+    exportButton.disabled = true;
+    setStatus(t('postcard.exporting'));
+    try {
+      const blob = await canvasToPngBlob(lastCanvas);
+      const saved = await savePostcard(blob, suggestedWeeklyName(lastWeek));
+      setStatus(saved ? t('postcard.saved') : t('postcard.cancelled'));
+      if (saved) onRequestClose?.();
+    } catch (err) {
+      setStatus(t('postcard.error'));
+      if (typeof onError === 'function') onError('weekly card export failed', err);
+    } finally {
+      exportButton.disabled = false;
+    }
+  });
+
+  async function renderPreview() {
+    if (rendering) return;
+    rendering = true;
+    lastCanvas = null;
+    exportButton.disabled = true;
+    setStatus(t('postcard.rendering'));
+    try {
+      const { canvas, week } = await buildWeeklyCanvas({
+        summary: typeof getSummary === 'function' ? getSummary() : null
+      });
+      lastCanvas = canvas;
+      lastWeek = week;
+      if (preview instanceof HTMLCanvasElement) {
+        preview.width = canvas.width;
+        preview.height = canvas.height;
+        const pctx = preview.getContext('2d');
+        if (pctx) { pctx.imageSmoothingEnabled = false; pctx.drawImage(canvas, 0, 0); }
+      }
+      setStatus('');
+    } catch (err) {
+      setStatus(t('postcard.error'));
+      if (typeof onError === 'function') onError('weekly card preview failed', err);
+    } finally {
+      rendering = false;
+      exportButton.disabled = false;
+    }
+  }
+
+  function setStatus(value) {
+    if (status) status.textContent = value || '';
+  }
+
+  return {
+    activate: () => {
+      renderPreview();
+      exportButton.focus();
+    }
+  };
+}
+
+// --- helpers duplicated from postcard.js -------------------------------------
+// Both are module-private there; extracting a shared canvas-helpers module is
+// deferred until a third card format needs them (YAGNI, CLAUDE.md 设计约束 §5).
+
+function fitOneLine(ctx, text, maxWidth) {
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  let lo = 0;
+  let hi = text.length;
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    if (ctx.measureText(text.slice(0, mid) + '...').width <= maxWidth) lo = mid;
+    else hi = mid - 1;
+  }
+  return text.slice(0, lo).trimEnd() + '...';
+}
+
+function canvasToPngBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('canvas export failed'));
+    }, 'image/png');
+  });
+}

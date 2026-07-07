@@ -41,13 +41,24 @@ pub struct DataSettings {
     /// notify-driven live updates. When false, the frontend won't subscribe
     /// to `garden:updated` events — the user explicitly clicks "Refresh".
     pub auto_rescan: bool,
+    /// Weekly recap offer (PRD 2.0 §P3-1). When true, the frontend offers
+    /// last week's recap card once per week on the first open after a local
+    /// Monday. Off silences the offer only — the share drawer still builds
+    /// the card on demand (仪式感不等于强塞).
+    pub weekly_recap: bool,
 }
 
 // Explicit Default for DataSettings — auto_rescan defaults to TRUE, matching
-// the phase-1 behavior. (`#[derive(Default)]` would give false.)
+// the phase-1 behavior, and weekly_recap defaults to TRUE per the P3-1 spec
+// ("静默可关" — opt-out, not opt-in). (`#[derive(Default)]` would give false
+// for both.) Container-level `#[serde(default)]` routes files written before
+// this field existed through this impl, so old settings.toml keep loading.
 impl Default for DataSettings {
     fn default() -> Self {
-        Self { auto_rescan: true }
+        Self {
+            auto_rescan: true,
+            weekly_recap: true,
+        }
     }
 }
 
@@ -222,8 +233,10 @@ mod tests {
         assert_eq!(got.appearance.season_mode, SeasonMode::System);
         assert_eq!(got.appearance.motion, Motion::System);
         // data.auto_rescan defaults to TRUE — explicit override of derived
-        // Default to match phase-1 behavior.
+        // Default to match phase-1 behavior. weekly_recap likewise (P3-1
+        // is opt-out).
         assert!(got.data.auto_rescan);
+        assert!(got.data.weekly_recap);
     }
 
     #[test]
@@ -236,7 +249,10 @@ mod tests {
                 motion: Motion::Reduced,
                 flowerbed: FlowerbedMode::Enabled,
             },
-            data: DataSettings { auto_rescan: false },
+            data: DataSettings {
+                auto_rescan: false,
+                weekly_recap: false,
+            },
             integrations: Integrations {
                 terminal: TerminalKind::Warp,
                 terminal_command: String::new(),
@@ -282,7 +298,10 @@ mod tests {
                 motion: Motion::Off,
                 flowerbed: FlowerbedMode::Disabled,
             },
-            data: DataSettings { auto_rescan: true },
+            data: DataSettings {
+                auto_rescan: true,
+                weekly_recap: true,
+            },
             integrations: Integrations {
                 terminal: TerminalKind::ITerm,
                 terminal_command: String::new(),
@@ -298,6 +317,7 @@ mod tests {
         assert!(text.contains("season_mode = \"autumn\""), "got: {text}");
         assert!(text.contains("motion = \"off\""), "got: {text}");
         assert!(text.contains("auto_rescan = true"), "got: {text}");
+        assert!(text.contains("weekly_recap = true"), "got: {text}");
         assert!(text.contains("terminal = \"iterm\""), "got: {text}");
         assert!(text.contains("close_to_tray = true"), "got: {text}");
     }
@@ -335,6 +355,19 @@ mod tests {
         };
         save(&path, &s).unwrap();
         assert_eq!(load(&path).unwrap(), s);
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn data_section_without_weekly_recap_defaults_true() {
+        // A settings.toml written before P3-1 has [data] with only
+        // auto_rescan; it must load with weekly_recap = true (opt-out
+        // default) instead of erroring or flipping the user to false.
+        let path = tmp_settings_path("no-weekly-recap");
+        std::fs::write(&path, "[data]\nauto_rescan = false\n").unwrap();
+        let got = load(&path).unwrap();
+        assert!(!got.data.auto_rescan);
+        assert!(got.data.weekly_recap);
         std::fs::remove_file(&path).ok();
     }
 

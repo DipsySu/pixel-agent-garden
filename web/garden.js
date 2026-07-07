@@ -16,7 +16,8 @@ import { mountScanCurtain } from './scan-curtain.js';
 import { runGrowthReveal } from './first-run.js';
 import { mountDataDrawer } from './data-drawer.js';
 import { mountSettingsPanel } from './settings-panel.js';
-import { mountPostcardExport } from './postcard.js';
+import { mountShareDrawer } from './share-drawer.js';
+import { recordWeeklyOffer, shouldOfferWeeklyRecap } from './weekly-card.js';
 import { mountReturnDiff } from './return-diff.js';
 import { mountSceneBanner } from './scene-banner.js';
 import { mountUnlockMoments, pulseMomentTarget } from './unlock-moments.js';
@@ -131,6 +132,7 @@ Promise.all([
   // parent (the frame), so it sits flush with footer content.
   const footer = document.querySelector('.pg6-footer');
   let dataDrawer = null;
+  let shareDrawer = null;
   if (footer) {
     // Data drawer (PRD 2.0 §8.1): the single footer entry for the former
     // Insight + Dashboard panels, now the Projects / Overview tabs.
@@ -177,12 +179,34 @@ Promise.all([
         applyDemoFreshness();
       }
     });
-    mountPostcardExport({
+    // Share drawer (PRD 2.0 §5.3 / §P3-1): the old Postcard button's slot,
+    // now one entry for every share artifact (postcard + weekly recap).
+    shareDrawer = mountShareDrawer({
       scene,
       assetRoot,
       getSummary: () => visibleSummary,
       onError: logGardenError
     });
+  }
+
+  // P3-1 Monday offer — trigger LOCAL, statistics window UTC (the 边界契约
+  // in docs/22 §P3-1; the split lives in weekly-card.js). Ritual rules:
+  // setting-gated, at most once per week (localStorage Monday key), silent
+  // on zero-token weeks. Demo mode never offers — sceneBanner is null there,
+  // which also keeps the canned garden from writing real offer flags.
+  if (sceneBanner && shareDrawer && currentSettings.data.weekly_recap) {
+    const offerKey = shouldOfferWeeklyRecap({
+      summary: visibleSummary,
+      storage: window.localStorage
+    });
+    if (offerKey) {
+      sceneBanner.push({
+        icon: '🖼',
+        text: t('share.weekly.offer'),
+        onActivate: () => shareDrawer?.open('weekly')
+      });
+      recordWeeklyOffer(offerKey, window.localStorage);
+    }
   }
 
   // Mini heatmap strip — ambient ground-floor view of the year's activity.

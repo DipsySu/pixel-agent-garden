@@ -88,6 +88,8 @@ export function mountSettingsPanel({ hostFooter, initial, onChange }) {
     const next = cloneSettings(current);
     if (target.name === 'auto_rescan') {
       next.data.auto_rescan = target.checked;
+    } else if (target.name === 'weekly_recap') {
+      next.data.weekly_recap = target.checked;
     } else if (target.name === 'launch_at_login') {
       next.desktop.launch_at_login = target.checked;
     } else if (target.name === 'close_to_tray') {
@@ -140,6 +142,13 @@ function buildPanelHtml(settings, canPersist) {
         t('settings.autoRescan'),
         t('settings.autoRescanHint'),
         settings.data.auto_rescan,
+        disabledAttr
+      ),
+      checkbox(
+        'weekly_recap',
+        t('settings.weeklyRecap'),
+        t('settings.weeklyRecapHint'),
+        settings.data.weekly_recap,
         disabledAttr
       )
     ]) +
@@ -230,7 +239,8 @@ function cloneSettings(value) {
       flowerbed: value?.appearance?.flowerbed || 'disabled',
     },
     data: {
-      auto_rescan: value?.data?.auto_rescan !== false
+      auto_rescan: value?.data?.auto_rescan !== false,
+      weekly_recap: value?.data?.weekly_recap !== false
     },
     integrations: {
       terminal: value?.integrations?.terminal || 'iterm',

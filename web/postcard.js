@@ -1,6 +1,5 @@
 import { savePostcard } from './data-source.js';
-import { fmtLocal } from './render-helpers.js';
-import { joinPopoverGroup } from './popover-group.js';
+import { escapeHtml, fmtLocal } from './render-helpers.js';
 import { t } from './i18n.js';
 
 const EXPORT_WIDTH = 1360;
@@ -59,26 +58,47 @@ export function suggestedPostcardName(scene, date = new Date()) {
   return 'garden-' + season + '-' + yyyy + mm + dd + '.png';
 }
 
-export function mountPostcardExport({ scene, assetRoot, getSummary, onError }) {
-  const button = document.getElementById('postcard-open-button');
-  const panel = document.getElementById('postcard-export-panel');
-  const include = document.getElementById('postcard-include-busiest');
-  const exportButton = document.getElementById('postcard-export-button');
-  const status = document.getElementById('postcard-status');
-  if (!button || !panel || !include || !exportButton) return null;
-
-  const preview = document.getElementById('postcard-preview');
+/**
+ * Postcard flow — the share drawer's "Garden postcard" artifact (PRD 2.0
+ * §5.3: the old standalone footer Postcard button became a row in the share
+ * drawer). Content-provider shape, exactly like insight/dashboard became
+ * data-drawer providers: this renders the export UI INTO the host the drawer
+ * hands it and returns `{ activate }`; the shell (footer button, paper panel,
+ * Escape, popover-group membership) lives in web/share-drawer.js. The
+ * render + save pipeline above/below this mount is untouched.
+ *
+ * @param {{
+ *   host: HTMLElement,
+ *   scene: HTMLElement,
+ *   assetRoot: string,
+ *   getSummary: () => object | null,
+ *   onError?: (message: string, err: unknown) => void,
+ *   onRequestClose?: () => void,
+ * }} opts
+ * @returns {{ activate: () => void }}
+ */
+export function mountPostcardContent({ host, scene, assetRoot, getSummary, onError, onRequestClose }) {
+  // Same anatomy the static #postcard-export-panel markup used to carry in
+  // index.html (title / preview / anonymize toggle / actions), now owned by
+  // the provider so the drawer stays ignorant of flow internals.
+  host.innerHTML =
+    '<div class="pg6-postcard-title">' + escapeHtml(t('postcard.panelTitle')) + '</div>' +
+    '<canvas id="postcard-preview" class="pg6-postcard-preview" width="1360" height="880" aria-hidden="true"></canvas>' +
+    '<label class="pg6-postcard-toggle">' +
+    '<input id="postcard-include-busiest" type="checkbox">' +
+    '<span>' + escapeHtml(t('postcard.includeBusiest')) + '</span>' +
+    '</label>' +
+    '<div class="pg6-postcard-actions">' +
+    '<button id="postcard-export-button" class="pg6-postcard-export" type="button">' + escapeHtml(t('postcard.export')) + '</button>' +
+    '<span id="postcard-status" class="pg6-postcard-status" aria-live="polite"></span>' +
+    '</div>';
+  const include = host.querySelector('#postcard-include-busiest');
+  const exportButton = host.querySelector('#postcard-export-button');
+  const status = host.querySelector('#postcard-status');
+  const preview = host.querySelector('#postcard-preview');
   let lastCanvas = null;   // the live preview canvas, reused on Save (no re-render)
   let rendering = false;
 
-  button.addEventListener('click', () => togglePanel());
-  panel.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      togglePanel(false);
-      button.focus();
-    }
-  });
   // The "include project name" toggle changes the caption — re-render so the
   // preview always reflects exactly what will be saved (and the user can verify
   // anonymization before committing).
@@ -93,7 +113,7 @@ export function mountPostcardExport({ scene, assetRoot, getSummary, onError }) {
     try {
       const saved = await saveGardenPostcard({ scene, canvas: lastCanvas });
       setStatus(saved ? t('postcard.saved') : t('postcard.cancelled'));
-      if (saved) togglePanel(false);
+      if (saved) onRequestClose?.();
     } catch (err) {
       setStatus(t('postcard.error'));
       if (typeof onError === 'function') onError('postcard export failed', err);
@@ -132,25 +152,18 @@ export function mountPostcardExport({ scene, assetRoot, getSummary, onError }) {
     }
   }
 
-  const closeOthers = joinPopoverGroup(() => togglePanel(false));
-
-  function togglePanel(force) {
-    const open = typeof force === 'boolean' ? force : panel.hidden;
-    if (open) closeOthers();
-    panel.hidden = !open;
-    button.setAttribute('aria-expanded', open ? 'true' : 'false');
-    button.classList.toggle('is-active', open);
-    if (open) {
-      renderPreview();
-      include.focus();
-    }
-  }
-
   function setStatus(value) {
     if (status) status.textContent = value || '';
   }
 
-  return { close: () => togglePanel(false) };
+  return {
+    // Drawer flow activation = what opening the old standalone panel did:
+    // render the preview and land focus on the anonymization toggle.
+    activate: () => {
+      renderPreview();
+      include.focus();
+    }
+  };
 }
 
 async function drawBaseSvg(ctx, scene, assetRoot) {

@@ -200,7 +200,8 @@ function defaultSettings() {
         flowerbed: 'disabled'
       },
       data: {
-        auto_rescan: true
+        auto_rescan: true,
+        weekly_recap: true
       },
       integrations: {
         terminal: 'iterm',
@@ -231,7 +232,8 @@ function normalizeSettings(value) {
         flowerbed: validChoice(appearance.flowerbed, ['enabled', 'disabled'], base.appearance.flowerbed)
       },
       data: {
-        auto_rescan: typeof data.auto_rescan === 'boolean' ? data.auto_rescan : base.data.auto_rescan
+        auto_rescan: typeof data.auto_rescan === 'boolean' ? data.auto_rescan : base.data.auto_rescan,
+        weekly_recap: typeof data.weekly_recap === 'boolean' ? data.weekly_recap : base.data.weekly_recap
       },
       integrations: {
         terminal: validChoice(integrations.terminal, ['system', 'iterm', 'warp', 'custom'], base.integrations.terminal),
