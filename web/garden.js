@@ -10,6 +10,8 @@ import {
 } from './data-source.js';
 import { mountEmptyState } from './empty-state.js';
 import { mountErrorToast } from './error-toast.js';
+import { mountScanCurtain } from './scan-curtain.js';
+import { runGrowthReveal } from './first-run.js';
 import { mountInsightPanel } from './insight-panel.js';
 import { mountSettingsPanel } from './settings-panel.js';
 import { mountPostcardExport } from './postcard.js';
@@ -55,6 +57,11 @@ applyStaticTranslations();
 mountErrorToast();
 subscribeGardenErrors();
 
+// Armed BEFORE the summary promise: a cold multi-GB first scan can take tens
+// of seconds, and the curtain is the only thing standing between the stranger
+// install test and a black screen (I9). Warm paths never see it.
+const scanCurtain = mountScanCurtain({ host: scene });
+
 Promise.all([
   fetch(manifestUrl).then((response) => response.json()),
   loadSummary({ dataUrl }),
@@ -73,6 +80,7 @@ Promise.all([
   let rendererMode = rendererModeFromLocation();
   let renderer = createRenderer(rendererMode);
   renderer.paint(groups, visibleSummary, currentSettings);
+  scanCurtain.hide();
   // P5-2 wood sign — mounted on the scene host (renderer-agnostic) and
   // refreshed alongside every paint below, since base paints wipe the scene.
   const emptyState = mountEmptyState({ host: scene });
@@ -94,9 +102,10 @@ Promise.all([
   // REAL last-seen frame would both fire fake banners and overwrite the real
   // `pg6.seen.tiers` with demo tiers, poisoning the next live session
   // (review finding). No banner, no moments, no seen-frame writes.
+  let sceneBanner = null;
   let onVisibleFrame = null;
   if (!isDemoMode()) {
-    const sceneBanner = mountSceneBanner({ host: scene });
+    sceneBanner = mountSceneBanner({ host: scene });
     mountUnlockMoments({
       banner: sceneBanner,
       getTiers: (summary) => unlockTier(summary, summary?.projects || []),
@@ -107,6 +116,14 @@ Promise.all([
       onFocus: (moment) => pulseMomentTarget(scene, moment)
     });
   }
+
+  // I9 growth reveal — staged AFTER the first paint so every bucket has real
+  // elements. Resolves once (finished or skipped); the welcome banner rides
+  // the same queue as unlock moments, and demo mode (sceneBanner = null)
+  // simply shows the reveal without a banner.
+  runGrowthReveal({ scene, summary: visibleSummary }).then(({ ran }) => {
+    if (ran) sceneBanner?.push({ icon: '', text: t('firstrun.welcome') });
+  });
 
   // Settings panel — drives both live-apply (scene re-paint) and persistence.
   // Footer is the host; the panel inserts itself after the footer in the same

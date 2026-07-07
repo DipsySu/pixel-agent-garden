@@ -768,6 +768,66 @@ body {
   .pg6-banner-pulse { animation: none !important; }
 }
 
+/* === First-run growth reveal (§5.4-F, issue I9) =============================
+   Opacity-only staging — sprite transforms are load-bearing anchors. Delays
+   are set per element as --fr-delay by first-run.js; removing .pg6-firstrun
+   (skip / finish) snaps everything to the painted final state. The stage
+   (base svg) rises first, everything else follows its bucket. */
+.pg6-firstrun > svg {
+  opacity: 0;
+  animation: pg6-fr-in 600ms steps(5) forwards;
+}
+.pg6-firstrun .pg6-sprite,
+.pg6-firstrun .pg6-garden-cat,
+.pg6-firstrun .pg6-wall-edge-cover,
+.pg6-firstrun .pg6-season-particle {
+  opacity: 0;
+  animation: pg6-fr-in 280ms steps(4) forwards;
+  animation-delay: var(--fr-delay, 2400ms);
+}
+@keyframes pg6-fr-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* === First-scan curtain (§P5-1, issue I9) ===================================
+   z-index 200: the reserved first-run slot at the very top of the ladder.
+   Shown only when the first summary is slow (cold multi-GB scan). */
+.pg6-scan-curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #10140f;
+  transition: opacity 280ms linear;
+}
+.pg6-scan-curtain.is-out { opacity: 0; pointer-events: none; }
+.pg6-scan-curtain-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  box-shadow: 2px 2px 0 var(--ink);
+  color: var(--ink);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  padding: 14px 20px;
+  animation: pg6-fr-breathe 1600ms steps(2) infinite;
+}
+.pg6-scan-curtain-adapter { color: #8a7656; font-size: 10px; }
+@keyframes pg6-fr-breathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pg6-scan-curtain-card { animation: none; }
+}
+
 /* === Mini heatmap strip (sits between header and scene) ====================
    ~50 px tall horizontal band — a quick at-a-glance view of the rolling
    year of activity. Visually styled like a wood-eave plaque (the same wood

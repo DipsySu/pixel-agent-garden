@@ -11,6 +11,7 @@
 // `data-motion`, or prefers-reduced-motion) swaps the slide for a fade with
 // identical durations — same decision rule as both renderers.
 import { t } from './i18n.js';
+import { isMotionStill } from './render-helpers.js';
 
 const RISE_MS = 240;
 const DWELL_MS = 4000;
@@ -54,17 +55,6 @@ export function mountSceneBanner({ host }) {
     return id;
   }
 
-  // The renderers own `data-motion` on the scene element (settings-driven);
-  // mirror their exact stillness rule so the banner never animates more than
-  // the garden around it.
-  function isMotionStill() {
-    const mode = host?.dataset?.motion || 'system';
-    const prefersReduced =
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    return mode === 'off' || mode === 'reduced' || prefersReduced;
-  }
-
   function push(entry) {
     if (destroyed || !host || !entry || !entry.text) return;
     if (!current) {
@@ -92,7 +82,9 @@ export function mountSceneBanner({ host }) {
   function show(entry) {
     const el = document.createElement('div');
     el.className = 'pg6-banner';
-    if (isMotionStill()) el.classList.add('is-fade');
+    // Shared stillness rule (render-helpers): the banner never animates more
+    // than the garden around it.
+    if (isMotionStill(host)) el.classList.add('is-fade');
     el.setAttribute('role', 'status');
     el.setAttribute('aria-live', 'polite');
     if (entry.icon) {

@@ -149,6 +149,14 @@ New desktop checks introduced by the tray-watch / garden-memory work
 - Rings resilience: corrupt `~/.local-agent-garden/rings.json` by hand →
   next scan quarantines it to a dated `.corrupt-*` sibling, the garden
   still renders, and memory restarts accumulating.
+- First-run reveal: with `?firstrun=1` (or a cleared `pg6.firstrun.done`)
+  the garden grows in stages (stage → vines → stickers → structures →
+  creatures, ~3.5s), a click skips to the final state, reduced-motion
+  renders instantly, and the welcome banner follows; a second normal
+  launch does NOT replay.
+- Scan curtain: on a cold profile with a large history, the "Waking the
+  garden…" card appears within ~0.5s and fades once the first summary
+  paints; a warm cache launch never flashes it.
 
 ## Tag Gate
 

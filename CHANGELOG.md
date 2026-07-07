@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Finished the v1.4 batch with I9, the first-run experience: the garden now
+  grows in on first launch — stage (base svg) → vines → wall stickers →
+  structures → creatures over ~3.5s of staged opacity (sprite transforms are
+  anchoring, so the spec's landing bounce is deliberately dropped), one click
+  skips to the final state, reduced motion renders instantly, and a
+  "Welcome to your garden" banner closes the sequence. Runs once per install
+  (`pg6.firstrun.done`), `?firstrun=1` forces a replay for doc-20 validation,
+  and demo mode always replays without touching the real flag. A first-scan
+  curtain ("Waking the garden…", z-200) arms before the summary promise and
+  only appears when the first paint is slower than ~450ms — cold multi-GB
+  scans get feedback, warm caches never see a flash; the watcher's
+  `garden:scanning` adapter names enrich it when they arrive. The banner /
+  reveal stillness rule moved to a shared `isMotionStill` helper in
+  render-helpers.js.
+
 - Sealed the state-semantics edges the batch review found: demo mode no
   longer mounts unlock moments (a canned garden diffed against the user's
   real seen-frame fired fake banners AND overwrote `pg6.seen.tiers`);

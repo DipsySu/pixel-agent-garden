@@ -61,6 +61,9 @@ const MESSAGES = {
     'svg.title': 'Pixel Garden · {time}',
     'svg.desc': 'Local agent activity grows into project vines hanging from the wall and climbing from the ground.',
 
+    'firstrun.waking': 'Waking the garden…',
+    'firstrun.welcome': 'Welcome to your garden',
+
     'empty.title': 'No seeds yet.',
     'empty.hint': 'Open Claude Code, Codex, or Claude Cowork and projects will start growing here.',
     'empty.body': 'Run an agent once — then come back and watch this grow.',
@@ -267,6 +270,9 @@ const MESSAGES = {
 
     'svg.title': '像素花园·{time}',
     'svg.desc': '本地 agent 活动化作墙沿垂落和墙根攀爬的项目藤',
+
+    'firstrun.waking': '正在唤醒庭院…',
+    'firstrun.welcome': '欢迎来到你的庭院',
 
     'empty.title': '还没有种子。',
     'empty.hint': '打开 Claude Code、Codex 或 Claude Cowork 后，花园会自动长出项目。',

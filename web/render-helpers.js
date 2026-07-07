@@ -40,3 +40,15 @@ export function jitter(a, b) {
     const x = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
     return x - Math.floor(x);
   }
+
+// The app-wide stillness rule (renderers own `data-motion` on the scene):
+// shared so the banner, first-run reveal, and future overlays can never
+// drift from the garden's own motion decision.
+export function isMotionStill(host) {
+    const mode = host?.dataset?.motion || 'system';
+    const prefersReduced =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return mode === 'off' || mode === 'reduced' || prefersReduced;
+  }
