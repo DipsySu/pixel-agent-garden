@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Landed PRD 2.0 §P3-1: the Postcard footer button grew into a **share
+  drawer** (garden postcard + the new **Monday weekly recap card**); the
+  postcard module became a drawer-hosted flow with its render/save pipeline
+  untouched. The weekly card follows the §5.4-E card DNA (960×1280 paper/ink
+  portrait, Silkscreen title bar, seven pixel day-bars, VT323 number line,
+  product watermark) with an honest zero-week variant, and implements the
+  §P3-1 boundary contract: the offer banner fires on the first open after
+  LOCAL Monday (once per week, never for an empty week, new `weekly_recap`
+  setting), while statistics use the previous ISO week's seven UTC day keys
+  straight from `daily_tokens`. Post-merge corrections: the week anchor now
+  uses the LOCAL calendar day so a UTC+8 Monday morning gets last week (not
+  the week before last), and the drawer's menu classes were renamed off the
+  composition tab's `pg6-share-*` bar classes they collided with. Top-3
+  projects rank by the week's own per-project `daily_tokens`, never lifetime
+  totals, and never show paths.
 - Review pass over the drawer content wave (14 findings + 4 sweep addenda).
   Privacy: the shipped demo sample was rebuilt from the pre-leak public
   project set with a synthetic model split (the schema-8 regeneration had
