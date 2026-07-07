@@ -23,6 +23,7 @@ const MESSAGES = {
     'fresh.daysAgo': '{count} days ago',
     'fresh.monthPlusAgo': 'over a month ago',
     'fresh.staleTitle': 'Use the tray menu to scan again',
+    'fresh.demo': 'Demo data',
 
     'time.day': 'Day',
     'time.dusk': 'Dusk',
@@ -60,8 +61,10 @@ const MESSAGES = {
     'svg.title': 'Pixel Garden · {time}',
     'svg.desc': 'Local agent activity grows into project vines hanging from the wall and climbing from the ground.',
 
-    'empty.title': 'No local agent activity yet',
+    'empty.title': 'No seeds yet.',
     'empty.hint': 'Open Claude Code, Codex, or Claude Cowork and projects will start growing here.',
+    'empty.body': 'Run an agent once — then come back and watch this grow.',
+    'empty.supported': 'Watching for: {agents}',
 
     'card.project.label': 'Project vine · selected',
     'card.project.defaultName': 'Local Agent Garden',
@@ -211,6 +214,7 @@ const MESSAGES = {
     'fresh.daysAgo': '{count} 天前',
     'fresh.monthPlusAgo': '一个月以上之前',
     'fresh.staleTitle': '可从托盘点击扫描刷新',
+    'fresh.demo': '演示数据',
 
     'time.day': '白日',
     'time.dusk': '傍晚',
@@ -248,8 +252,10 @@ const MESSAGES = {
     'svg.title': '像素花园·{time}',
     'svg.desc': '本地 agent 活动化作墙沿垂落和墙根攀爬的项目藤',
 
-    'empty.title': '还没有本地 agent 活动',
+    'empty.title': '还没有种子。',
     'empty.hint': '打开 Claude Code、Codex 或 Claude Cowork 后，花园会自动长出项目。',
+    'empty.body': '跑一次 Claude Code，回来看看这里。',
+    'empty.supported': '守望中：{agents}',
 
     'card.project.label': '项目藤 · 当前选中',
     'card.project.defaultName': '本地智能体花园',
