@@ -11,6 +11,9 @@ import { CONFIG } from './scene-config.js';
 
 // `now` is injectable (house test style: parameterize time, never mock Date).
 export function unlockTier(summary, projects, now = new Date()) {
+  const coreTiers = normalizeCoreTiers(summary?.tiers);
+  if (coreTiers) return coreTiers;
+
   const list = projects || [];
   const totalTokens = summary?.total_tokens || list.reduce((sum, project) => sum + (project.total_tokens || 0), 0);
   const maxProjectTokens = Math.max(...list.map((project) => project.total_tokens || 0), 0);
@@ -58,4 +61,42 @@ export function unlockTier(summary, projects, now = new Date()) {
     cushion: maxStage >= c.cushion.min_stage ? 'visible' : 'hidden',
     pavilionTrinkets: trinkets
   };
+}
+
+function normalizeCoreTiers(tiers) {
+  if (!tiers || typeof tiers !== 'object') return null;
+  return {
+    totalTokens: numberValue(tiers.total_tokens, tiers.totalTokens),
+    maxProjectTokens: numberValue(tiers.max_project_tokens, tiers.maxProjectTokens),
+    totalSessions: numberValue(tiers.total_sessions, tiers.totalSessions),
+    recentActivity: numberValue(tiers.recent_activity, tiers.recentActivity),
+    todayActivity: numberValue(tiers.today_activity, tiers.todayActivity),
+    pavilion: stringValue(tiers.pavilion, 'small'),
+    cherry: stringValue(tiers.cherry, 'bud'),
+    willow: stringValue(tiers.willow, 'young'),
+    stone_cat: stringValue(tiers.stone_cat, tiers.stoneCat, 'hidden'),
+    lamp: stringValue(tiers.lamp, 'unlit'),
+    stool: stringValue(tiers.stool, 'hidden'),
+    cushion: stringValue(tiers.cushion, 'hidden'),
+    pavilionTrinkets: Array.isArray(tiers.pavilion_trinkets)
+      ? tiers.pavilion_trinkets.slice()
+      : Array.isArray(tiers.pavilionTrinkets)
+        ? tiers.pavilionTrinkets.slice()
+        : []
+  };
+}
+
+function numberValue(...values) {
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+  }
+  return 0;
+}
+
+function stringValue(...values) {
+  const fallback = values[values.length - 1];
+  for (const value of values.slice(0, -1)) {
+    if (typeof value === 'string' && value) return value;
+  }
+  return fallback;
 }

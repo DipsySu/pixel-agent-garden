@@ -14,6 +14,7 @@ pub mod cache;
 pub mod error;
 pub mod event;
 pub mod registry;
+pub mod rings;
 pub mod scan;
 pub mod settings;
 pub mod storage;

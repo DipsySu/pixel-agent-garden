@@ -38,6 +38,17 @@ export async function loadSettings() {
     return defaultSettings();
   }
 
+export async function loadRings() {
+    const api = tauriApi();
+    if (!api?.core?.invoke) return null;
+    try {
+      return await api.core.invoke('garden_rings');
+    } catch (err) {
+      logGardenError('garden_rings invoke failed', err);
+      return null;
+    }
+  }
+
 /**
  * Persist settings. Returns the normalized value on success, null in browser
  * mode (no backend) or on failure. Callers use this to drive optimistic UI.

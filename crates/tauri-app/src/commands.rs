@@ -10,6 +10,7 @@ use local_agent_garden_core::adapter::AdapterContext;
 use local_agent_garden_core::aggregate::GardenSummary;
 use local_agent_garden_core::cache;
 use local_agent_garden_core::registry;
+use local_agent_garden_core::rings::{self, RingBook};
 use local_agent_garden_core::settings::{self, Settings};
 use serde::Serialize;
 use tauri_plugin_dialog::DialogExt;
@@ -67,6 +68,16 @@ pub async fn list_adapters() -> Result<Vec<AdapterStatus>, String> {
 pub async fn data_freshness() -> Result<Option<String>, String> {
     let summary = garden_summary().await?;
     Ok(summary.last_seen.map(|d| d.to_rfc3339()))
+}
+
+#[tauri::command]
+pub async fn garden_rings() -> Result<RingBook, String> {
+    tokio::task::spawn_blocking(|| {
+        let path = rings::default_rings_path();
+        rings::load(&path).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("garden_rings task panicked: {e}"))?
 }
 
 // ---- Settings (spec §2.4) ------------------------------------------------

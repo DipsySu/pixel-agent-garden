@@ -71,6 +71,11 @@ pub struct GardenSummary {
     /// matches the user's mental model of a vigorous vine. Additive.
     #[serde(default)]
     pub flowerbed_year: Vec<FlowerbedDay>,
+    /// Data-derived courtyard unlock tiers. This is the authoritative facts
+    /// block the frontend should render from; browser/demo summaries that predate
+    /// it can leave it absent and fall back to the old JS derivation.
+    #[serde(default)]
+    pub tiers: Option<GardenTiers>,
 }
 
 /// One day in the rolling-year heatmap. `level` is the 5-band quantization
@@ -94,6 +99,46 @@ pub struct FlowerbedDay {
     pub level: u8,
 }
 
+/// Whole-garden unlock tiers. Field names intentionally stay snake_case in the
+/// JSON to match the rest of `GardenSummary`; the frontend adapter maps them to
+/// its historical camelCase object until `garden-tiers.js` is fully retired.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct GardenTiers {
+    pub total_tokens: u64,
+    pub max_project_tokens: u64,
+    pub total_sessions: u64,
+    pub recent_activity: u64,
+    pub today_activity: u64,
+    pub pavilion: String,
+    pub cherry: String,
+    pub willow: String,
+    pub stone_cat: String,
+    pub lamp: String,
+    pub stool: String,
+    pub cushion: String,
+    pub pavilion_trinkets: Vec<String>,
+}
+
+impl Default for GardenTiers {
+    fn default() -> Self {
+        Self {
+            total_tokens: 0,
+            max_project_tokens: 0,
+            total_sessions: 0,
+            recent_activity: 0,
+            today_activity: 0,
+            pavilion: "small".to_string(),
+            cherry: "bud".to_string(),
+            willow: "young".to_string(),
+            stone_cat: "hidden".to_string(),
+            lamp: "unlit".to_string(),
+            stool: "hidden".to_string(),
+            cushion: "hidden".to_string(),
+            pavilion_trinkets: Vec::new(),
+        }
+    }
+}
+
 /// How many days of history the hour-of-week grid considers. 90 days is the
 /// sweet spot — enough for a stable Mon/Tue/Wed pattern to emerge, short
 /// enough that "you used to code on Sundays" doesn't drown out "you don't
@@ -106,8 +151,8 @@ const HOUR_OF_WEEK_WINDOW_DAYS: i64 = 90;
 /// backward-incompatible summary change (renamed/removed field, semantic
 /// redefinition). Bumped to 2 for `daily_tokens`, to 3 for `size_level` /
 /// `size_strength`, to 4 for `path_inferred`, to 5 for `heatmap_year` +
-/// `hour_of_week`, to 6 for `flowerbed_year`.
-pub const SUMMARY_SCHEMA_VERSION: u32 = 6;
+/// `hour_of_week`, to 6 for `flowerbed_year`, to 7 for `tiers`.
+pub const SUMMARY_SCHEMA_VERSION: u32 = 7;
 
 fn current_schema_version() -> u32 {
     SUMMARY_SCHEMA_VERSION
@@ -128,6 +173,7 @@ impl Default for GardenSummary {
             heatmap_year: Vec::new(),
             hour_of_week: empty_hour_of_week(),
             flowerbed_year: Vec::new(),
+            tiers: None,
         }
     }
 }
@@ -390,7 +436,7 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
     let hour_of_week = build_hour_of_week(events, now, HOUR_OF_WEEK_WINDOW_DAYS);
     let daily_activity_rollup = rollup_daily_activity(&projects);
     let flowerbed_year = build_flowerbed_year(&daily_activity_rollup, now);
-    GardenSummary {
+    let mut summary = GardenSummary {
         schema_version: SUMMARY_SCHEMA_VERSION,
         projects,
         sources,
@@ -403,6 +449,91 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
         heatmap_year,
         hour_of_week,
         flowerbed_year,
+        tiers: None,
+    };
+    summary.tiers = Some(derive_tiers_at(&summary, now));
+    summary
+}
+
+/// Compute the current unlock tiers from a summary. This is pure and IO-free:
+/// cache/rings code may later merge these with persisted high-water tiers before
+/// returning a display summary.
+pub fn derive_tiers(summary: &GardenSummary) -> GardenTiers {
+    derive_tiers_at(summary, Utc::now())
+}
+
+/// Same as `derive_tiers`, but with pinned time for tests. "Today" is UTC on
+/// purpose: `daily_activity` keys are produced from `DateTime<Utc>`.
+pub fn derive_tiers_at(summary: &GardenSummary, now: DateTime<Utc>) -> GardenTiers {
+    let projects = &summary.projects;
+    let total_tokens = summary.total_tokens;
+    let max_project_tokens = projects.iter().map(|p| p.total_tokens).max().unwrap_or(0);
+    let total_sessions = projects.iter().map(|p| p.sessions).sum();
+    let max_stage = projects.iter().map(|p| p.stage).max().unwrap_or(1);
+    let recent_activity = projects.iter().map(|p| p.recent_activity).sum();
+    let today_key = now.format("%Y-%m-%d").to_string();
+    let today_activity = projects
+        .iter()
+        .map(|p| p.daily_activity.get(&today_key).copied().unwrap_or(0))
+        .sum();
+    let pavilion_trinkets = PAVILION_TRINKETS
+        .iter()
+        .filter(|(_, threshold)| total_tokens >= *threshold)
+        .map(|(id, _)| (*id).to_string())
+        .collect();
+
+    GardenTiers {
+        total_tokens,
+        max_project_tokens,
+        total_sessions,
+        recent_activity,
+        today_activity,
+        pavilion: if max_project_tokens >= PAVILION_FULL_TOKENS {
+            "full"
+        } else if max_project_tokens >= PAVILION_MID_TOKENS {
+            "mid"
+        } else {
+            "small"
+        }
+        .to_string(),
+        cherry: if recent_activity >= CHERRY_PETAL_ACTIVITY {
+            "petal"
+        } else if recent_activity >= CHERRY_BLOOM_ACTIVITY {
+            "bloom"
+        } else {
+            "bud"
+        }
+        .to_string(),
+        willow: if total_tokens >= WILLOW_MATURE_TOKENS
+            || projects.len() as u64 >= WILLOW_MATURE_PROJECTS
+        {
+            "mature"
+        } else {
+            "young"
+        }
+        .to_string(),
+        stone_cat: if total_sessions >= STONE_CAT_FULL_SESSIONS {
+            "full"
+        } else if total_sessions >= STONE_CAT_SMALL_SESSIONS {
+            "small"
+        } else {
+            "hidden"
+        }
+        .to_string(),
+        lamp: if today_activity > 0 { "lit" } else { "unlit" }.to_string(),
+        stool: if max_stage >= STOOL_MIN_STAGE {
+            "visible"
+        } else {
+            "hidden"
+        }
+        .to_string(),
+        cushion: if max_stage >= CUSHION_MIN_STAGE {
+            "visible"
+        } else {
+            "hidden"
+        }
+        .to_string(),
+        pavilion_trinkets,
     }
 }
 
@@ -628,6 +759,27 @@ fn size_strength(tokens: u64, max_tokens: u64, sorted_tokens: &[u64]) -> f64 {
     (log_strength * 0.68 + rank_strength * 0.32).clamp(0.0, 1.0)
 }
 
+// ---- courtyard tier thresholds ---------------------------------------------
+
+pub const PAVILION_MID_TOKENS: u64 = 10_000_000;
+pub const PAVILION_FULL_TOKENS: u64 = 100_000_000;
+pub const CHERRY_BLOOM_ACTIVITY: u64 = 15_000;
+pub const CHERRY_PETAL_ACTIVITY: u64 = 100_000;
+pub const WILLOW_MATURE_TOKENS: u64 = 10_000_000;
+pub const WILLOW_MATURE_PROJECTS: u64 = 5;
+pub const STONE_CAT_SMALL_SESSIONS: u64 = 4;
+pub const STONE_CAT_FULL_SESSIONS: u64 = 20;
+pub const STOOL_MIN_STAGE: u8 = 3;
+pub const CUSHION_MIN_STAGE: u8 = 4;
+
+pub const PAVILION_TRINKETS: &[(&str, u64)] = &[
+    ("scroll", 1_000_000),
+    ("tea_set", 10_000_000),
+    ("wind_chime", 50_000_000),
+    ("incense", 100_000_000),
+    ("sleeping_cat", 500_000_000),
+];
+
 fn cache_ratio(input_tokens: u64, cache_read_tokens: u64, cache_write_tokens: u64) -> f64 {
     let denom = input_tokens + cache_read_tokens + cache_write_tokens;
     if denom == 0 {
@@ -686,7 +838,7 @@ fn max_dt(left: Option<DateTime<Utc>>, right: DateTime<Utc>) -> Option<DateTime<
 
 /// Serialization helper that round-trips `Option<DateTime<Utc>>` through
 /// the same ISO 8601 format `event.rs` uses for required timestamps.
-mod opt_ts_serde {
+pub(crate) mod opt_ts_serde {
     use chrono::{DateTime, Utc};
     use serde::{Deserialize, Deserializer, Serializer};
 
@@ -1052,6 +1204,61 @@ mod tests {
     }
 
     #[test]
+    fn garden_tiers_match_frontend_threshold_contract() {
+        let now = Utc.with_ymd_and_hms(2026, 7, 7, 12, 0, 0).unwrap();
+        let mut events = Vec::new();
+        for idx in 0..20 {
+            let mut event = AgentEvent::new("claude-code", now);
+            event.project_path = Some("/repo/big".to_string());
+            event.session_id = Some(format!("s{idx}"));
+            event.usage.input_tokens = if idx == 0 { 120_000_000 } else { 1 };
+            event.normalize_totals();
+            events.push(event);
+        }
+        let summary = summarize_at(&events, now);
+        let tiers = summary
+            .tiers
+            .as_ref()
+            .expect("summary should include tiers");
+
+        assert_eq!(summary.schema_version, 7);
+        assert_eq!(tiers.pavilion, "full");
+        assert_eq!(tiers.willow, "mature");
+        assert_eq!(tiers.stone_cat, "full");
+        assert_eq!(tiers.lamp, "lit");
+        assert_eq!(tiers.stool, "visible");
+        assert_eq!(tiers.cushion, "visible");
+        assert_eq!(
+            tiers.pavilion_trinkets,
+            vec![
+                "scroll".to_string(),
+                "tea_set".to_string(),
+                "wind_chime".to_string(),
+                "incense".to_string()
+            ]
+        );
+    }
+
+    #[test]
+    fn garden_tiers_use_utc_today_key_for_lamp() {
+        let now = Utc.with_ymd_and_hms(2026, 1, 1, 23, 30, 0).unwrap();
+        let event_today = make_event(EventFixture {
+            source: "claude-code",
+            ts: now,
+            project: Some("/repo/today"),
+            session: Some("s1"),
+            input: 10,
+            output: 0,
+            cache_read: 0,
+            tool_calls: 0,
+            model: None,
+        });
+        let summary = summarize_at(&[event_today], now);
+        assert_eq!(summary.tiers.as_ref().unwrap().today_activity, 1);
+        assert_eq!(summary.tiers.as_ref().unwrap().lamp, "lit");
+    }
+
+    #[test]
     fn path_inferred_true_only_when_all_events_inferred() {
         let ts = Utc.with_ymd_and_hms(2026, 5, 27, 10, 0, 0).unwrap();
         // Project A: both events inferred → path_inferred = true.
@@ -1295,10 +1502,10 @@ mod tests {
     }
 
     #[test]
-    fn schema_version_is_six() {
-        assert_eq!(SUMMARY_SCHEMA_VERSION, 6);
+    fn schema_version_is_seven() {
+        assert_eq!(SUMMARY_SCHEMA_VERSION, 7);
         let s = summarize(&[]);
-        assert_eq!(s.schema_version, 6);
+        assert_eq!(s.schema_version, 7);
     }
 
     #[test]

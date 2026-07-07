@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Started the PRD 2.0 branch with the core garden-memory foundation. Core now
+  owns `GardenSummary.tiers` (`SUMMARY_SCHEMA_VERSION` 7) with the former
+  frontend unlock thresholds ported into Rust, and writes a local
+  `rings.json` memory file from the cache/scan path. `events.json` remains the
+  truthful replace-on-refresh accounting cache, while permanent courtyard
+  unlocks (pavilion, willow, stone cat, low table/cushion, trinkets, cumulative
+  counters) merge upward to their high-water mark so source-log rotation cannot
+  visually demolish the garden. Live states stay live: cherry bloom follows
+  recent activity and the lantern follows today's activity. A thin
+  `garden_rings` Tauri command and `loadRings()` data boundary are in place for
+  the future 年轮 UI; frontend tier rendering now trusts `summary.tiers` when
+  present and falls back to the old JS derivation for browser/demo summaries.
 - Post-review fix pass over the 07-06 commits. The biggest one is a timezone
   correctness bug: `daily_activity` keys are produced by core's `aggregate.rs`
   from `DateTime<Utc>`, but the flat renderer (and the new `garden-tiers.js`)

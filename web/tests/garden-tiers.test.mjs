@@ -40,3 +40,30 @@ test('now defaults to the real clock without throwing', () => {
   const tiers = unlockTier(null, projectWith({}));
   assert.equal(tiers.lamp, 'unlit');
 });
+
+test('summary.tiers from core wins over frontend fallback derivation', () => {
+  const tiers = unlockTier({
+    total_tokens: 1,
+    tiers: {
+      total_tokens: 999,
+      max_project_tokens: 888,
+      total_sessions: 7,
+      recent_activity: 6,
+      today_activity: 5,
+      pavilion: 'full',
+      cherry: 'petal',
+      willow: 'mature',
+      stone_cat: 'full',
+      lamp: 'lit',
+      stool: 'visible',
+      cushion: 'visible',
+      pavilion_trinkets: ['scroll', 'tea_set']
+    }
+  }, projectWith({}), now);
+
+  assert.equal(tiers.totalTokens, 999);
+  assert.equal(tiers.maxProjectTokens, 888);
+  assert.equal(tiers.pavilion, 'full');
+  assert.equal(tiers.cherry, 'petal');
+  assert.deepEqual(tiers.pavilionTrinkets, ['scroll', 'tea_set']);
+});

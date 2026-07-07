@@ -16,6 +16,7 @@ use crate::adapter::AdapterContext;
 use crate::aggregate::{self, GardenSummary};
 use crate::error::Error;
 use crate::registry;
+use crate::rings;
 use crate::storage::SourceFingerprint;
 use crate::{scan, storage};
 use std::collections::HashSet;
@@ -51,7 +52,12 @@ pub fn summary_from_cache_or_scan_at(
         // CLI export) is treated as stale → refresh once.
         if let Some(stored) = cache.fingerprint {
             if stored == source_fingerprint(ctx) {
-                return Ok(aggregate::summarize(&cache.events));
+                let summary = aggregate::summarize(&cache.events);
+                return rings::record_summary(
+                    summary,
+                    &rings_path_for_cache(cache_path),
+                    chrono::Utc::now(),
+                );
             }
         }
     }
@@ -86,7 +92,27 @@ pub fn refresh_summary_at(
     let fingerprint = source_fingerprint(ctx);
     let result = scan::collect_events(ctx, sources_filter)?;
     storage::save_events_with_fingerprint(&result.events, Some(fingerprint), cache_path)?;
-    Ok(aggregate::summarize(&result.events))
+    let summary = aggregate::summarize(&result.events);
+    rings::record_summary(
+        summary,
+        &rings_path_for_cache(cache_path),
+        chrono::Utc::now(),
+    )
+}
+
+fn rings_path_for_cache(cache_path: &Path) -> PathBuf {
+    if cache_path == default_events_path() {
+        return rings::default_rings_path();
+    }
+    let parent = cache_path.parent().map(Path::to_path_buf);
+    let stem = cache_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .filter(|s| !s.is_empty())
+        .unwrap_or("events");
+    parent
+        .map(|p| p.join(format!("{stem}.rings.json")))
+        .unwrap_or_else(rings::default_rings_path)
 }
 
 /// Fingerprint every source file the active adapters watch: total bytes, newest
@@ -212,6 +238,11 @@ mod tests {
         assert_eq!(summary.total_events, 1);
         assert_eq!(summary.total_tokens, 42);
         assert_eq!(summary.projects[0].display_name, "pixel-agent-garden");
+        assert!(
+            rings_path_for_cache(&path).exists(),
+            "fresh cache hits should seed rings.json from cached events"
+        );
+        std::fs::remove_file(rings_path_for_cache(&path)).ok();
         std::fs::remove_file(&path).ok();
     }
 
@@ -228,6 +259,7 @@ mod tests {
 
         // The sentinel (42 tokens) is discarded; the empty-env rescan wins.
         assert_eq!(summary.total_events, 0);
+        std::fs::remove_file(rings_path_for_cache(&path)).ok();
         std::fs::remove_file(&path).ok();
     }
 

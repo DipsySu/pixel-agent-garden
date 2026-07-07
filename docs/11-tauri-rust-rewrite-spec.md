@@ -91,6 +91,38 @@ Bump the matching version constant on any backward-incompatible shape change
 (renamed/removed field, semantic redefinition). Additive summary fields should
 use `#[serde(default)]` so older summaries still deserialize.
 
+## Garden Memory And High-Water Policy
+
+`events.json` is a replace-on-refresh cache of currently discoverable source
+events. It is the truthful accounting surface: totals, per-project token counts,
+Insight, heatmaps, and CLI usage views read from the current scan result. If an
+upstream agent rotates or deletes old logs, the next refresh may legitimately
+lower those current totals.
+
+The visual garden must not be demolished by that source-log rotation. Permanent
+courtyard unlocks therefore use a separate local memory file,
+`~/.local-agent-garden/rings.json`, written only by `core`:
+
+- `aggregate::summarize*` derives current `summary.tiers` from the current
+  events.
+- `core::rings` compares current tiers with the persisted snapshot, appends
+  deduped history events, and returns display tiers with permanent unlocks
+  merged upward to their high-water mark.
+- `cache::refresh_summary*` writes both `events.json` and `rings.json` in the
+  core path. `cache::summary_from_cache_or_scan*` also records/applies rings on
+  cache hits, so upgrades can seed `rings.json` from a fresh existing cache and
+  restarting the app cannot shrink the garden.
+- Frontend code may diff two visible `summary.tiers` frames to celebrate a
+  change, but it never writes `rings.json` and never decides what counts as
+  history.
+
+High-water applies only to permanent growth facts: pavilion, willow, stone cat,
+low table/cushion visibility, pavilion trinkets, and cumulative token/session
+counters. Live states stay live: cherry bloom follows recent activity, and the
+lantern follows today's activity/time of day. This preserves the PRD 2.0 split:
+Insight answers "what is true now"; the garden remembers "what has ever
+bloomed".
+
 ## Settings
 
 User settings live at `~/.local-agent-garden/settings.toml`.
@@ -122,6 +154,8 @@ auto_rescan = true
   appends to an active session log within one coarse mtime tick.
 - `trigger_scan() -> GardenSummary`: force a fresh scan, write
   `~/.local-agent-garden/events.json`, and return the new summary.
+- `garden_rings() -> RingBook`: read `~/.local-agent-garden/rings.json` as a
+  thin command for the future年轮 UI. It never derives or writes history.
 - `list_adapters() -> Vec<AdapterStatus>`
 - `data_freshness() -> Option<String>`
 - `get_settings() -> Settings`

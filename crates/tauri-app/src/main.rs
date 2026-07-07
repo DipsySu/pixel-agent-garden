@@ -29,6 +29,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::garden_summary,
             commands::trigger_scan,
+            commands::garden_rings,
             commands::list_adapters,
             commands::data_freshness,
             commands::get_settings,
