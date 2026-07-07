@@ -13,6 +13,7 @@ pub mod aggregate;
 pub mod cache;
 pub mod error;
 pub mod event;
+pub mod prices;
 pub mod registry;
 pub mod rings;
 pub mod scan;

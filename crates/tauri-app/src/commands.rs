@@ -9,6 +9,7 @@
 use local_agent_garden_core::adapter::AdapterContext;
 use local_agent_garden_core::aggregate::GardenSummary;
 use local_agent_garden_core::cache;
+use local_agent_garden_core::prices::{self, PriceTable};
 use local_agent_garden_core::registry;
 use local_agent_garden_core::rings::{self, RingBook};
 use local_agent_garden_core::settings::{self, Settings};
@@ -81,6 +82,35 @@ pub async fn garden_rings() -> Result<RingBook, String> {
     })
     .await
     .map_err(|e| format!("garden_rings task panicked: {e}"))?
+}
+
+// ---- Prices (PRD 2.0 §P4-1) ------------------------------------------------
+// Read/write the local model price table for cost estimates. Merge semantics
+// (bundled defaults overlaid by ~/.local-agent-garden/prices.json) live in
+// core::prices; these are shims. Not a hot path, no caching.
+
+/// Effective price table: bundled defaults overlaid with the user's edits.
+#[tauri::command]
+pub async fn load_prices() -> Result<PriceTable, String> {
+    tokio::task::spawn_blocking(|| {
+        prices::load_effective(&prices::default_user_prices_path()).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("load_prices task panicked: {e}"))?
+}
+
+/// Persist user price overrides and return the resulting effective table.
+/// Callers should send only the entries the user actually edited — anything
+/// saved here becomes a pinned override that stops tracking shipped defaults.
+#[tauri::command]
+pub async fn save_prices(table: PriceTable) -> Result<PriceTable, String> {
+    tokio::task::spawn_blocking(move || {
+        let path = prices::default_user_prices_path();
+        prices::save_user(&path, &table).map_err(|e| e.to_string())?;
+        prices::load_effective(&path).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("save_prices task panicked: {e}"))?
 }
 
 // ---- Settings (spec §2.4) ------------------------------------------------

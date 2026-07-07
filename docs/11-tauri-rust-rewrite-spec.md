@@ -91,6 +91,38 @@ Bump the matching version constant on any backward-incompatible shape change
 (renamed/removed field, semantic redefinition). Additive summary fields should
 use `#[serde(default)]` so older summaries still deserialize.
 
+### Prices (PRD 2.0 P4-1)
+
+Cost estimates come from a local, user-editable price table — never a network
+fetch. `core::prices` owns the contract:
+
+- Factory defaults ship inside the binary
+  (`crates/core/src/prices-default.json`, `include_str!`-bundled) and refresh
+  with each release. Rates are a best-effort snapshot; the UI must label every
+  derived figure an estimate ("以账单为准").
+- The user override lives at `~/.local-agent-garden/prices.json`
+  (`prices::PRICES_SCHEMA_VERSION`, currently `1`; same document shape as the
+  bundled file). Merge rule: user entries override factory entries **per model
+  id**; models the user never edited keep tracking shipped defaults across
+  upgrades. Read/write goes through the thin `load_prices` / `save_prices`
+  commands.
+- A malformed or future-versioned `prices.json` surfaces as a typed error and
+  the file is **never quarantined or renamed** — unlike `rings.json` (a
+  product-owned memory we may restart), `prices.json` is user-authored data,
+  and destroying it would throw away the user's edits. Callers decide how to
+  degrade. Writes use the shared atomic temp-file+rename helper.
+- Honesty rules in `prices::estimate`: `input_tokens` / `output_tokens` are
+  priced at the table rates (Claude adapters report the full split); token
+  counts that only exist as an unsplit total (Codex reports one `tokens_used`
+  number) are priced at the explicitly named *blended*
+  `(input_per_mtok + output_per_mtok) / 2` rate; cache read/write tokens are
+  counted but **not** priced (schema v1 carries no cache rates and provider
+  cache multipliers are not guessed — cache-heavy projects under-estimate);
+  unknown model ids accumulate into `unpriced_tokens`, never guessed. The
+  per-model inputs come from `GardenSummary.models` / `ProjectGrowth.
+  model_tokens` (summary schema v8), where model-less events bucket under
+  `"unknown"`.
+
 ## Garden Memory And High-Water Policy
 
 `events.json` is a replace-on-refresh cache of currently discoverable source
@@ -190,6 +222,10 @@ close_to_tray = false
 - `data_freshness() -> Option<String>`
 - `get_settings() -> Settings`
 - `set_settings(Settings) -> Settings`
+- `load_prices() -> PriceTable`: effective price table (bundled defaults
+  overlaid by `~/.local-agent-garden/prices.json`) — see §Prices.
+- `save_prices(PriceTable) -> PriceTable`: persist user price overrides
+  atomically and return the new effective table.
 
 Heavy work runs in `spawn_blocking`; `core` remains synchronous and UI-free.
 

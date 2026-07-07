@@ -10,7 +10,7 @@
 //!   heatmaps/sparklines. A dark `daily_activity` cell can mean "many tool
 //!   calls", not "many tokens" — only `daily_tokens` answers the token question.
 
-use crate::event::AgentEvent;
+use crate::event::{AgentEvent, TokenUsage};
 use chrono::{DateTime, Datelike, Timelike, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
@@ -76,7 +76,23 @@ pub struct GardenSummary {
     /// it can leave it absent and fall back to the old JS derivation.
     #[serde(default)]
     pub tiers: Option<GardenTiers>,
+    /// Whole-garden per-model token usage, keyed by the source-reported model
+    /// id (`AgentEvent.model`); events with a missing/empty model land under
+    /// [`UNKNOWN_MODEL_KEY`]. Values keep the full token split because sources
+    /// differ in what they report — Claude adapters emit the 4-way split,
+    /// Codex only `total_tokens` — and `crate::prices::estimate` prices the
+    /// split precisely while blending only the unsplit remainder. Feeds the
+    /// P4-2 构成 share bars (via `total_tokens`) and the P4-1 cost tab from
+    /// one computation. NOTE: `ProjectGrowth.models` is per-model EVENT
+    /// counts, a different question — do not conflate. Additive field.
+    #[serde(default)]
+    pub models: BTreeMap<String, TokenUsage>,
 }
+
+/// Rollup key for events whose source reported no model id. A visible bucket
+/// (rather than dropping the tokens) keeps share bars summing to 100% and
+/// lets the cost view say "these tokens are unpriced" instead of hiding them.
+pub const UNKNOWN_MODEL_KEY: &str = "unknown";
 
 /// One day in the rolling-year heatmap. `level` is the 5-band quantization
 /// (0..=4) the front-end maps directly to a 5-step color scale; raw `value`
@@ -151,8 +167,9 @@ const HOUR_OF_WEEK_WINDOW_DAYS: i64 = 90;
 /// backward-incompatible summary change (renamed/removed field, semantic
 /// redefinition). Bumped to 2 for `daily_tokens`, to 3 for `size_level` /
 /// `size_strength`, to 4 for `path_inferred`, to 5 for `heatmap_year` +
-/// `hour_of_week`, to 6 for `flowerbed_year`, to 7 for `tiers`.
-pub const SUMMARY_SCHEMA_VERSION: u32 = 7;
+/// `hour_of_week`, to 6 for `flowerbed_year`, to 7 for `tiers`, to 8 for the
+/// per-model token rollups (summary `models` / project `model_tokens`).
+pub const SUMMARY_SCHEMA_VERSION: u32 = 8;
 
 fn current_schema_version() -> u32 {
     SUMMARY_SCHEMA_VERSION
@@ -174,6 +191,7 @@ impl Default for GardenSummary {
             hour_of_week: empty_hour_of_week(),
             flowerbed_year: Vec::new(),
             tiers: None,
+            models: BTreeMap::new(),
         }
     }
 }
@@ -214,6 +232,14 @@ pub struct ProjectGrowth {
     #[serde(default)]
     pub daily_tokens: BTreeMap<String, u64>,
     pub models: BTreeMap<String, u64>,
+    /// Per-model token usage for this project — same key semantics as
+    /// `GardenSummary.models` (missing/empty model → [`UNKNOWN_MODEL_KEY`]),
+    /// same full-split values. Coexists with the older `models` map above
+    /// (per-model event counts, kept for the insight chips / CLI wall): the
+    /// two answer different questions — "which model burned the tokens" vs
+    /// "which model appeared how often". Additive — defaults to empty.
+    #[serde(default)]
+    pub model_tokens: BTreeMap<String, TokenUsage>,
     pub activity_score: u64,
     pub stage: u8,
     pub recent_activity: u64,
@@ -267,6 +293,7 @@ struct Accumulator {
     daily_activity: BTreeMap<String, u64>,
     daily_tokens: BTreeMap<String, u64>,
     models: BTreeMap<String, u64>,
+    model_tokens: BTreeMap<String, TokenUsage>,
 }
 
 impl Accumulator {
@@ -302,6 +329,7 @@ impl Accumulator {
             daily_activity: self.daily_activity,
             daily_tokens: self.daily_tokens,
             models: self.models,
+            model_tokens: self.model_tokens,
             activity_score,
             stage,
             recent_activity,
@@ -332,6 +360,7 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
     let mut last_seen: Option<DateTime<Utc>> = None;
     let mut total_tokens: u64 = 0;
     let mut daily_tokens: BTreeMap<String, u64> = BTreeMap::new();
+    let mut models: BTreeMap<String, TokenUsage> = BTreeMap::new();
 
     let mut sorted: Vec<&AgentEvent> = events.iter().collect();
     sorted.sort_by_key(|e| e.timestamp);
@@ -388,6 +417,23 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
                 *accum.models.entry(model.clone()).or_insert(0) += 1;
             }
         }
+
+        // Per-model token usage (P4-1/P4-2). Unlike the event-count map above,
+        // model-less events are NOT dropped — they bucket under "unknown" so
+        // token shares still sum to the project/garden totals.
+        let model_key = event
+            .model
+            .as_deref()
+            .filter(|m| !m.is_empty())
+            .unwrap_or(UNKNOWN_MODEL_KEY);
+        add_usage(
+            accum.model_tokens.entry(model_key.to_string()).or_default(),
+            &event.usage,
+        );
+        add_usage(
+            models.entry(model_key.to_string()).or_default(),
+            &event.usage,
+        );
     }
 
     let mut projects: Vec<ProjectGrowth> = by_project
@@ -450,9 +496,21 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
         hour_of_week,
         flowerbed_year,
         tiers: None,
+        models,
     };
     summary.tiers = Some(derive_tiers_at(&summary, now));
     summary
+}
+
+/// Field-wise `TokenUsage` accumulation for the per-model rollups. Kept as a
+/// free helper (not an `AddAssign` impl on the event type) so the aggregation
+/// convention lives here with the other rollup math.
+fn add_usage(dst: &mut TokenUsage, src: &TokenUsage) {
+    dst.input_tokens += src.input_tokens;
+    dst.output_tokens += src.output_tokens;
+    dst.cache_read_tokens += src.cache_read_tokens;
+    dst.cache_write_tokens += src.cache_write_tokens;
+    dst.total_tokens += src.total_tokens;
 }
 
 /// Compute the current unlock tiers from a summary. This is pure and IO-free:
@@ -978,6 +1036,73 @@ mod tests {
         assert_eq!(s.projects[0].sources["claude-code"], 2);
         assert_eq!(s.projects[0].models["m1"], 2);
         assert_eq!(s.projects[0].display_name, "pay-module");
+        // Per-model token rollup keeps the split, not just totals.
+        let m1 = &s.projects[0].model_tokens["m1"];
+        assert_eq!(m1.input_tokens, 300);
+        assert_eq!(m1.output_tokens, 150);
+        assert_eq!(m1.total_tokens, 450);
+        // Summary-level rollup sums the same buckets across projects.
+        assert_eq!(s.models["m1"].total_tokens, 450);
+        assert_eq!(s.models["m2"].total_tokens, 75);
+        assert_eq!(s.models.len(), 2);
+    }
+
+    #[test]
+    fn model_tokens_bucket_missing_model_as_unknown() {
+        let ts = Utc.with_ymd_and_hms(2026, 5, 27, 4, 5, 25).unwrap();
+        let events = vec![
+            make_event(EventFixture {
+                source: "claude-code",
+                ts,
+                project: Some("/a/p"),
+                session: Some("s1"),
+                input: 100,
+                output: 50,
+                cache_read: 0,
+                tool_calls: 0,
+                model: Some("m1"),
+            }),
+            // No model reported (e.g. thread-level Codex rows) …
+            make_event(EventFixture {
+                source: "codex",
+                ts: ts + chrono::Duration::seconds(1),
+                project: Some("/a/p"),
+                session: Some("s1"),
+                input: 0,
+                output: 0,
+                cache_read: 200,
+                tool_calls: 0,
+                model: None,
+            }),
+            // … and empty-string models normalize to the same bucket.
+            make_event(EventFixture {
+                source: "manual-jsonl",
+                ts: ts + chrono::Duration::seconds(2),
+                project: Some("/a/p"),
+                session: Some("s1"),
+                input: 40,
+                output: 0,
+                cache_read: 0,
+                tool_calls: 0,
+                model: Some(""),
+            }),
+        ];
+        let s = summarize(&events);
+        let p = &s.projects[0];
+        // Tokens are never dropped: model shares sum to the project total.
+        let rollup_total: u64 = p.model_tokens.values().map(|u| u.total_tokens).sum();
+        assert_eq!(rollup_total, p.total_tokens);
+        let unknown = &p.model_tokens[UNKNOWN_MODEL_KEY];
+        assert_eq!(unknown.total_tokens, 240);
+        assert_eq!(unknown.cache_read_tokens, 200);
+        assert_eq!(s.models[UNKNOWN_MODEL_KEY].total_tokens, 240);
+        // The event-count map keeps its historical behavior: model-less
+        // events stay absent there.
+        assert!(!p.models.contains_key(UNKNOWN_MODEL_KEY));
+        // And the new fields serialize under the contract names.
+        let json = serde_json::to_value(&s).unwrap();
+        assert!(json["models"].get(UNKNOWN_MODEL_KEY).is_some());
+        assert!(json["projects"][0]["model_tokens"].get("m1").is_some());
     }
 
     #[test]
@@ -1234,7 +1359,7 @@ mod tests {
             .as_ref()
             .expect("summary should include tiers");
 
-        assert_eq!(summary.schema_version, 7);
+        assert_eq!(summary.schema_version, 8);
         assert_eq!(tiers.pavilion, "full");
         assert_eq!(tiers.willow, "mature");
         assert_eq!(tiers.stone_cat, "full");
@@ -1515,10 +1640,10 @@ mod tests {
     }
 
     #[test]
-    fn schema_version_is_seven() {
-        assert_eq!(SUMMARY_SCHEMA_VERSION, 7);
+    fn schema_version_is_eight() {
+        assert_eq!(SUMMARY_SCHEMA_VERSION, 8);
         let s = summarize(&[]);
-        assert_eq!(s.schema_version, 7);
+        assert_eq!(s.schema_version, 8);
     }
 
     #[test]
