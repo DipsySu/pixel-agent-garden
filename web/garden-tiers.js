@@ -9,7 +9,8 @@
 // the data alone.
 import { CONFIG } from './scene-config.js';
 
-export function unlockTier(summary, projects) {
+// `now` is injectable (house test style: parameterize time, never mock Date).
+export function unlockTier(summary, projects, now = new Date()) {
   const list = projects || [];
   const totalTokens = summary?.total_tokens || list.reduce((sum, project) => sum + (project.total_tokens || 0), 0);
   const maxProjectTokens = Math.max(...list.map((project) => project.total_tokens || 0), 0);
@@ -20,7 +21,7 @@ export function unlockTier(summary, projects) {
   // formats DateTime<Utc> as %Y-%m-%d. A local-date key here returns 0 for
   // "today" between local midnight and UTC midnight (e.g. 00:00-08:00 in
   // UTC+8), wrongly unlighting the lamp.
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = now.toISOString().slice(0, 10);
   const todayActivity = list.reduce((sum, project) => {
     const daily = project.daily_activity || {};
     return sum + (daily[todayKey] || 0);

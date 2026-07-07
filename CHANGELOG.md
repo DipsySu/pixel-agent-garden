@@ -18,6 +18,12 @@
   dark-scrollbar selector lists collapsed into one `.pg6-popover-scroll`
   marker class — which also fixes the paper-theme thumb color the insight
   list was missing.
+- Locked the UTC today-key contract with a regression test: `unlockTier`
+  now takes an injectable `now` (house style: parameterize time, never
+  mock `Date`), and `web/tests/garden-tiers.test.mjs` asserts UTC-key
+  lookups under plain `node --test` — a new `web-tests` CI job runs it.
+  `web/package.json` exists only to mark `web/` as ESM for Node; the
+  frontend still has zero npm dependencies and no bundler.
 - Added the final 2.5D wall-sticker pass for the public-release courtyard:
   28 local PNG programming decals (Go, Rust, MySQL, Git, Terminal, Python,
   Ruby, Docker, Java, JavaScript/TypeScript, HTML/CSS, Linux, React, Vue,

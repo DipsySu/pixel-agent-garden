@@ -24,6 +24,15 @@ jobs:
           components: rustfmt
       - run: cargo fmt --all -- --check
 
+  web-tests:
+    name: web tests (node --test)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+      # Runner-preinstalled Node is enough: the web/ tests are plain ESM with
+      # zero npm dependencies (repo rule: no bundler, no packages).
+      - run: node --test "web/tests/**/*.test.mjs"
+
   supply-chain:
     name: supply-chain (zero-network gate)
     runs-on: ubuntu-22.04
