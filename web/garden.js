@@ -13,6 +13,9 @@ import { mountSettingsPanel } from './settings-panel.js';
 import { mountPostcardExport } from './postcard.js';
 import { mountReturnDiff } from './return-diff.js';
 import { mountDashboardPanel } from './dashboard-panel.js';
+import { mountSceneBanner } from './scene-banner.js';
+import { mountUnlockMoments, pulseMomentTarget } from './unlock-moments.js';
+import { unlockTier } from './garden-tiers.js';
 import { renderHeatmap } from './render-heatmap.js';
 import { groupSprites } from './render-helpers.js';
 import {
@@ -66,6 +69,25 @@ Promise.all([
   const returnDiff = mountReturnDiff({
     hostFrame: document.querySelector('.pg6-frame'),
     initialSummary: lastSummary
+  });
+
+  // Unlock moments (P1-2): celebrate tier changes against the last frame the
+  // user actually SAW. Scene-overlay only — nothing is wired into the
+  // renderers. The subscribe hook hands the module the initial summary (this
+  // is the whole story in browser fallback mode, which never gets watcher
+  // events) and registers for later frames; those are fed below inside the
+  // same auto_rescan gate as the panels, because a paused garden keeps
+  // showing the cached frame and must not celebrate tiers it isn't showing.
+  const sceneBanner = mountSceneBanner({ host: scene });
+  let onVisibleFrame = null;
+  mountUnlockMoments({
+    banner: sceneBanner,
+    getTiers: (summary) => unlockTier(summary, summary?.projects || []),
+    subscribe: (onSummary) => {
+      onVisibleFrame = onSummary;
+      if (lastSummary) onSummary(lastSummary);
+    },
+    onFocus: (moment) => pulseMomentTarget(scene, moment)
   });
 
   // Settings panel — drives both live-apply (scene re-paint) and persistence.
@@ -150,6 +172,9 @@ Promise.all([
       dashboardPanel?.update(lastSummary);
       miniStrip?._redraw?.(lastSummary);
       renderer.repaintData(groups, lastSummary);
+      // After repaint on purpose: the isometric renderer rebuilds the scene's
+      // children on paint, and a banner pushed first would be wiped mid-rise.
+      onVisibleFrame?.(lastSummary);
     } else {
       renderer.showCached(lastSummary);
     }
