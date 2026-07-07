@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- Opened the v1.4.x/v1.5 line with two parallel worktrees. **Data drawer
+  (PRD §8.1 landed):** the Insight and Dashboard footer buttons merged into
+  one 数据/Data entry opening a tabbed drawer — 概览 hosts the dashboard
+  content, 项目 hosts the insight list (sticky head + search intact), with
+  pill tabs (action-green selected, roving tabindex, arrow keys), tab memory
+  (`pg6.drawer.tab`), Escape-to-close, popover-group membership, and the
+  mini heatmap strip now opening the 概览 tab; the two content modules
+  became host-rendered providers with their shells deleted. **Cost core
+  (P4-1 foundation):** per-model token rollups (`ProjectGrowth.model_tokens`
+  + `GardenSummary.models` as full TokenUsage maps, `SUMMARY_SCHEMA_VERSION`
+  7→8) and `core::prices` — bundled defaults overlaid by a user-editable
+  `~/.local-agent-garden/prices.json` (schema 1, never quarantined:
+  user-authored data), with three-tier honest estimates: input/output priced
+  at table rates, unsplit totals (Codex) at an explicitly named blended
+  rate, cache tokens counted but unpriced, unknown models bucketed as
+  `unpriced_tokens` — never guessed. Thin `load_prices`/`save_prices`
+  commands; the 成本/构成 tabs consume this in v1.5.
+
 - Finished the v1.4 batch with I9, the first-run experience: the garden now
   grows in on first launch — stage (base svg) → vines → wall stickers →
   structures → creatures over ~3.5s of staged opacity (sprite transforms are
