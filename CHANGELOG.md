@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.9.0 - 2026-07-08
+
 - Cost estimation is now single-source in `core`. `crate::prices::estimate`
   (+ a new `estimate_summary` producing a whole-garden `SummaryCost` with a
   per-project breakdown keyed by `project_key`) is the ONLY cost math; the
