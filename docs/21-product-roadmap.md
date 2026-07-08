@@ -149,10 +149,10 @@ what their garden did, from the tray + one Monday postcard.
 `v1.5.0` shipped the tabbed data drawer content wave: local cost estimates,
 model/source composition, durable rings, project-level cost lines, CSV/JSON
 daily-token export, weekly recap sharing, and an opt-in Agent Nursery prototype.
-As of the v2.0 branch after `v1.9.0`, the nursery is settings-driven
-(`Appearance → Agent nursery`) rather than query-flag-only; region mapping
-still remains an opt-in visual bet until the screenshot/user-reaction gate says
-it should become default.
+As of the v2.0 branch after `v1.9.0`, the nursery has graduated from query
+flag to default `auto`: multi-source gardens show adapter plots by default,
+single-source gardens stay visually quiet, and users can still force it on/off
+from `Appearance → Agent nursery`.
 
 Only ships where a real question exists. Every item must answer something a
 user actually asked.

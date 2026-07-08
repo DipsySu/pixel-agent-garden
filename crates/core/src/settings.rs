@@ -14,9 +14,10 @@ use crate::storage::default_state_dir;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-/// Top-level settings document. Every field defaults to a sentinel
-/// ("system") meaning "follow the OS / current-time / default behavior" —
-/// so a fresh install with no settings.toml renders identically to phase-1.
+/// Top-level settings document. Most appearance fields default to a sentinel
+/// ("system") meaning "follow the OS / current-time / default behavior".
+/// Feature toggles default to the current product posture (for example the
+/// v2.0 Agent Nursery uses `auto`, not the old disabled prototype state).
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Settings {
@@ -161,15 +162,16 @@ pub enum Motion {
     Off,
 }
 
-/// Flowerbed contribution view (D PoC). When `enabled`, the scene's
-/// ground band swaps the classic grass for a dirt strip and 366 flower
-/// sprites render along the foreground, encoding daily activity. Default
-/// `disabled` so existing users see no change on upgrade.
+/// Flowerbed / Agent nursery view. `auto` is the v2.0 default: the web layer
+/// shows the nursery when the summary has enough agent-source signal, while
+/// still letting cautious users force it off. Old explicit `disabled` files
+/// keep loading as disabled.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum FlowerbedMode {
-    Enabled,
     #[default]
+    Auto,
+    Enabled,
     Disabled,
 }
 
@@ -232,6 +234,7 @@ mod tests {
         assert_eq!(got.appearance.time_mode, TimeMode::System);
         assert_eq!(got.appearance.season_mode, SeasonMode::System);
         assert_eq!(got.appearance.motion, Motion::System);
+        assert_eq!(got.appearance.flowerbed, FlowerbedMode::Auto);
         // data.auto_rescan defaults to TRUE — explicit override of derived
         // Default to match phase-1 behavior. weekly_recap likewise (P3-1
         // is opt-out).
@@ -316,6 +319,7 @@ mod tests {
         assert!(text.contains("time_mode = \"dusk\""), "got: {text}");
         assert!(text.contains("season_mode = \"autumn\""), "got: {text}");
         assert!(text.contains("motion = \"off\""), "got: {text}");
+        assert!(text.contains("flowerbed = \"disabled\""), "got: {text}");
         assert!(text.contains("auto_rescan = true"), "got: {text}");
         assert!(text.contains("weekly_recap = true"), "got: {text}");
         assert!(text.contains("terminal = \"iterm\""), "got: {text}");
@@ -380,6 +384,7 @@ mod tests {
         // season_mode / motion default to System
         assert_eq!(got.appearance.season_mode, SeasonMode::System);
         assert_eq!(got.appearance.motion, Motion::System);
+        assert_eq!(got.appearance.flowerbed, FlowerbedMode::Auto);
         // [data] section absent → DataSettings::default() → auto_rescan = true
         assert!(got.data.auto_rescan);
         std::fs::remove_file(&path).ok();

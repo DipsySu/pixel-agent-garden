@@ -2,17 +2,18 @@
 
 ## Unreleased
 
-- Started the v2.0 Agent Nursery promotion path. The source-share nursery is
-  no longer query-flag-only: the existing Appearance setting now surfaces as
-  "Agent nursery" and enables both the flowerbed base and adapter plots, while
-  `?nursery=1` remains as a review override. The overlay is still opt-in, but
-  it now behaves like a real configurable feature and updates live when the
-  setting changes.
+- Started the v2.0 Agent Nursery promotion path. The source-share nursery first
+  moved beyond query flags into the Appearance settings panel, then graduated to
+  the new `auto` default; `?nursery=1` remains as a review override.
 - Advanced the Agent Nursery toward the PRD 2.0 P2 acceptance shape: each plot
   now carries an explicit `lush` / `growing` / `fallow` state and hover/focus
   fills the existing scene info card with source name, recent share, recent
   tokens, lifetime tokens/events, and status instead of relying on a browser
   title tooltip.
+- Graduated Agent Nursery from opt-in prototype to v2.0 `auto` default:
+  multi-source gardens now show adapter plots and the matching flowerbed base
+  automatically, single-source gardens stay visually quiet, and the Appearance
+  setting still supports explicit enabled/disabled overrides.
 - Started PRD 2.0 P3-2 Seasonal Moments in the Share drawer. A new local-only
   Seasonal Moment card maps the user's calendar to four deterministic moments
   (cherry, koi, autumn moon, first snow), rolls up season-to-date tokens from

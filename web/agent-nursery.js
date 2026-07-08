@@ -15,10 +15,13 @@ const POSITIONS = [
   { x: 84, y: 15 },
 ];
 
-export function isAgentNurseryEnabled(settings, search = currentSearch()) {
+export function isAgentNurseryEnabled(settings, search = currentSearch(), summary = null) {
   const override = nurseryQueryOverride(search);
   if (override !== null) return override;
-  return settings?.appearance?.flowerbed === 'enabled';
+  const mode = settings?.appearance?.flowerbed || 'auto';
+  if (mode === 'enabled') return true;
+  if (mode === 'disabled') return false;
+  return shouldAutoShowNursery(summary);
 }
 
 export function nurseryQueryOverride(search = currentSearch()) {
@@ -106,6 +109,10 @@ export function nurseryRows(summary) {
     a.id.localeCompare(b.id)
   );
   return rows;
+}
+
+export function shouldAutoShowNursery(summary) {
+  return nurseryRows(summary).filter((row) => row.lifetimeTokens > 0 || row.recentTokens > 0 || row.eventCount > 0).length >= 2;
 }
 
 function plotHtml(row, pos) {

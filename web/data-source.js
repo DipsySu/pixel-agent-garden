@@ -235,7 +235,7 @@ function defaultSettings() {
         time_mode: 'system',
         season_mode: 'system',
         motion: 'system',
-        flowerbed: 'disabled'
+        flowerbed: 'auto'
       },
       data: {
         auto_rescan: true,
@@ -267,7 +267,7 @@ function normalizeSettings(value) {
         time_mode: validChoice(appearance.time_mode, ['system', 'day', 'dusk', 'night'], base.appearance.time_mode),
         season_mode: validChoice(appearance.season_mode, ['system', 'spring', 'summer', 'autumn', 'winter'], base.appearance.season_mode),
         motion: validChoice(appearance.motion, ['system', 'reduced', 'off'], base.appearance.motion),
-        flowerbed: validChoice(appearance.flowerbed, ['enabled', 'disabled'], base.appearance.flowerbed)
+        flowerbed: validChoice(appearance.flowerbed, ['auto', 'enabled', 'disabled'], base.appearance.flowerbed)
       },
       data: {
         auto_rescan: typeof data.auto_rescan === 'boolean' ? data.auto_rescan : base.data.auto_rescan,

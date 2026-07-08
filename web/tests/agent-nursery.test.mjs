@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { agentPlotCard, agentPlotStatus, isAgentNurseryEnabled, nurseryRows } from '../agent-nursery.js';
+import { agentPlotCard, agentPlotStatus, isAgentNurseryEnabled, nurseryRows, shouldAutoShowNursery } from '../agent-nursery.js';
 
 test('isAgentNurseryEnabled follows settings with query override', () => {
   const enabled = { appearance: { flowerbed: 'enabled' } };
@@ -10,6 +10,26 @@ test('isAgentNurseryEnabled follows settings with query override', () => {
   assert.equal(isAgentNurseryEnabled(disabled, '?nursery=1'), true);
   assert.equal(isAgentNurseryEnabled(disabled, '?nursery=enabled'), true);
   assert.equal(isAgentNurseryEnabled(enabled, '?nursery=0'), false);
+});
+
+test('auto nursery becomes visible only when multiple local sources have signal', () => {
+  const auto = { appearance: { flowerbed: 'auto' } };
+  const twoSources = {
+    source_recent_tokens: {
+      'claude-code': 100,
+      codex: 50
+    }
+  };
+  const oneSource = {
+    source_recent_tokens: {
+      'claude-code': 100
+    }
+  };
+
+  assert.equal(shouldAutoShowNursery(twoSources), true);
+  assert.equal(isAgentNurseryEnabled(auto, '', twoSources), true);
+  assert.equal(shouldAutoShowNursery(oneSource), false);
+  assert.equal(isAgentNurseryEnabled(auto, '', oneSource), false);
 });
 
 test('nurseryRows prefers recent source token share and marks inactive lifetime sources fallow', () => {

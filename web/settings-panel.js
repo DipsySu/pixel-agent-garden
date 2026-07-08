@@ -32,6 +32,7 @@ const CHOICES = {
     { value: 'off', labelKey: 'choice.off' }
   ],
   flowerbed: [
+    { value: 'auto', labelKey: 'choice.auto' },
     { value: 'disabled', labelKey: 'choice.disabled' },
     { value: 'enabled', labelKey: 'choice.enabled' }
   ]
@@ -236,7 +237,7 @@ function cloneSettings(value) {
       time_mode: value?.appearance?.time_mode || 'system',
       season_mode: value?.appearance?.season_mode || 'system',
       motion: value?.appearance?.motion || 'system',
-      flowerbed: value?.appearance?.flowerbed || 'disabled',
+      flowerbed: value?.appearance?.flowerbed || 'auto',
     },
     data: {
       auto_rescan: value?.data?.auto_rescan !== false,

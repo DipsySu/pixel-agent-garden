@@ -129,6 +129,7 @@ const MESSAGES = {
     'choice.winter': 'Winter',
     'choice.reduced': 'Reduced',
     'choice.off': 'Off',
+    'choice.auto': 'Auto',
     'choice.enabled': 'Enabled',
     'choice.disabled': 'Disabled',
 
@@ -488,6 +489,7 @@ const MESSAGES = {
     'choice.winter': '冬',
     'choice.reduced': '减弱',
     'choice.off': '关闭',
+    'choice.auto': '自动',
     'choice.enabled': '启用',
     'choice.disabled': '禁用',
 

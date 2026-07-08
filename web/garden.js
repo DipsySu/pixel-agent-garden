@@ -309,13 +309,13 @@ Promise.all([
       scene,
       assetRoot,
       spriteRoot,
-      isFlowerbedEnabled: () => shouldRenderFlowerbed(currentSettings),
+      isFlowerbedEnabled: () => shouldRenderFlowerbed(currentSettings, visibleSummary),
     });
   }
 
   function updateAgentNursery() {
     agentNursery.update(visibleSummary, {
-      enabled: isAgentNurseryEnabled(currentSettings),
+      enabled: isAgentNurseryEnabled(currentSettings, undefined, visibleSummary),
     });
   }
 }).catch((err) => {
@@ -353,7 +353,9 @@ function applyDemoFreshness() {
   el.removeAttribute('title');
 }
 
-// Flowerbed / Agent nursery opt-in. Three ways to enable:
+// Flowerbed / Agent nursery display. Four ways to enable:
+//   - persisted settings.appearance.flowerbed === 'auto' and the summary has
+//     at least two local agent/source signals
 //   - persisted settings.appearance.flowerbed === 'enabled'
 //   - URL `?flowerbed=enabled` override (lets reviewers preview without
 //     touching their settings.toml)
@@ -361,11 +363,11 @@ function applyDemoFreshness() {
 //     matching flowerbed base unless `?flowerbed=disabled` explicitly wins
 // Returns boolean. Lives at module scope so the renderer's flowerbed getter
 // `isFlowerbedEnabled` getter always reads the live currentSettings.
-function shouldRenderFlowerbed(settings) {
+function shouldRenderFlowerbed(settings, summary) {
   const override = flowerbedQueryOverride();
   if (override !== null) return override;
   if (nurseryQueryOverride() === true) return true;
-  return settings?.appearance?.flowerbed === 'enabled';
+  return isAgentNurseryEnabled(settings, undefined, summary);
 }
 
 function flowerbedQueryOverride() {

@@ -45,9 +45,9 @@ projects grow between visits.
 
 - **Living pixel garden** — local time, season, tokens, sessions, cache ratio,
   and recent activity all affect the scene.
-- **Agent nursery** — an opt-in garden layer shows which local agent sources
-  tended the garden recently, using the same local source-token rollups as the
-  Composition tab.
+- **Agent nursery** — multi-agent gardens automatically show which local
+  sources tended the garden recently, using the same local source-token rollups
+  as the Composition tab; the layer can still be disabled in settings.
 - **Insight without telemetry** — rank projects, distinguish same-name folders,
   inspect local cost estimates, and export daily project-token data without a
   server.
