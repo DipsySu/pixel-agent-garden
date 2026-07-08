@@ -65,7 +65,6 @@ const MESSAGES = {
     'firstrun.welcome': 'Welcome to your garden',
 
     'empty.title': 'No seeds yet.',
-    'empty.hint': 'Open Claude Code, Codex, or Claude Cowork and projects will start growing here.',
     'empty.body': 'Run an agent once — then come back and watch this grow.',
     'empty.supported': 'Watching for: {agents}',
 
@@ -425,7 +424,6 @@ const MESSAGES = {
     'firstrun.welcome': '欢迎来到你的庭院',
 
     'empty.title': '还没有种子。',
-    'empty.hint': '打开 Claude Code、Codex 或 Claude Cowork 后，花园会自动长出项目。',
     'empty.body': '跑一次 Claude Code，回来看看这里。',
     'empty.supported': '守望中：{agents}',
 

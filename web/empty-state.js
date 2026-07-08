@@ -11,11 +11,9 @@
 
 import { t } from './i18n.js';
 import { isDemoMode } from './data-source.js';
+import { escapeHtml, sourceLabel } from './render-helpers.js';
 
-// Static display string for now — the sign lists what the garden can watch,
-// not what is actually installed on this machine.
-// TODO(prd-2.0 §P5-2): light up installed agents once a detection command exists.
-const SUPPORTED_AGENTS = 'Claude Code · Claude Cowork · Codex';
+const SUPPORTED_ADAPTERS = ['claude-code', 'claude-cowork', 'codex', 'manual-jsonl'];
 
 /**
  * Pure trigger predicate, exported for tests: "empty" means the summary has
@@ -28,6 +26,7 @@ export function isEmptySummary(summary) {
 
 export function mountEmptyState({ host }) {
   if (!host) return { update: () => {} };
+  let adapterStatuses = supportedAdapterRows();
 
   const sign = document.createElement('div');
   sign.className = 'pg6-woodsign';
@@ -38,10 +37,11 @@ export function mountEmptyState({ host }) {
 
   const board = document.createElement('div');
   board.className = 'pg6-woodsign-board';
+  const agentsLine = textLine('pg6-woodsign-agents', '');
   board.append(
     textLine('pg6-woodsign-title', t('empty.title')),
     textLine('pg6-woodsign-body', t('empty.body')),
-    textLine('pg6-woodsign-agents', t('empty.supported', { agents: SUPPORTED_AGENTS }))
+    agentsLine
   );
 
   const post = document.createElement('div');
@@ -51,7 +51,9 @@ export function mountEmptyState({ host }) {
   host.appendChild(sign);
 
   return {
-    update(summary) {
+    update(summary, adapters = adapterStatuses) {
+      adapterStatuses = supportedAdapterRows(adapters);
+      agentsLine.innerHTML = t('empty.supported', { agents: adapterListHtml(adapterStatuses) });
       const show = isEmptySummary(summary) && !isDemoMode();
       // A base repaint (renderer paint / renderer switch) rebuilds the scene
       // via innerHTML and drops the sign; re-attach before showing.
@@ -59,6 +61,30 @@ export function mountEmptyState({ host }) {
       sign.hidden = !show;
     }
   };
+}
+
+export function supportedAdapterRows(adapters = []) {
+  const byName = new Map();
+  for (const adapter of adapters || []) {
+    const name = typeof adapter?.name === 'string' ? adapter.name : '';
+    if (!name) continue;
+    byName.set(name, adapter?.active === true);
+  }
+  return SUPPORTED_ADAPTERS.map((name) => ({
+    name,
+    label: sourceLabel(name, t),
+    active: byName.get(name) === true
+  }));
+}
+
+export function adapterListHtml(rows) {
+  return (rows || supportedAdapterRows())
+    .map((row) => {
+      const active = row?.active === true;
+      const cls = active ? 'pg6-agent-chip is-active' : 'pg6-agent-chip';
+      return '<span class="' + cls + '">' + escapeHtml(row?.label || row?.name || '') + '</span>';
+    })
+    .join('<span class="pg6-agent-sep">·</span>');
 }
 
 function textLine(className, text) {

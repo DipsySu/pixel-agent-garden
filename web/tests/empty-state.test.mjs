@@ -6,7 +6,7 @@
 // Runs under plain `node --test` — no npm, no DOM.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isEmptySummary } from '../empty-state.js';
+import { adapterListHtml, isEmptySummary, supportedAdapterRows } from '../empty-state.js';
 
 test('no summary at all counts as empty (first run / failed load)', () => {
   assert.equal(isEmptySummary(null), true);
@@ -24,4 +24,27 @@ test('zero projects counts as empty', () => {
 
 test('any project hides the sign', () => {
   assert.equal(isEmptySummary({ projects: [{ project_key: '/tmp/x' }] }), false);
+});
+
+test('supported adapter rows light up discovered local agents only', () => {
+  const rows = supportedAdapterRows([
+    { name: 'claude-code', active: true },
+    { name: 'codex', active: false },
+    { name: 'unknown-agent', active: true }
+  ]);
+  assert.equal(rows.length, 4);
+  assert.equal(rows.find((row) => row.name === 'claude-code').active, true);
+  assert.equal(rows.find((row) => row.name === 'codex').active, false);
+  assert.equal(rows.some((row) => row.name === 'unknown-agent'), false);
+});
+
+test('adapter list html marks active adapters without exposing raw ids', () => {
+  const html = adapterListHtml(supportedAdapterRows([
+    { name: 'claude-code', active: true },
+    { name: 'manual-jsonl', active: false }
+  ]));
+  assert.match(html, /Claude Code/);
+  assert.match(html, /Manual/);
+  assert.match(html, /is-active/);
+  assert.doesNotMatch(html, /claude-code/);
 });

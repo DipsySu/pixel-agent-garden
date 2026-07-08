@@ -58,6 +58,19 @@ export async function loadSettings() {
     return defaultSettings();
   }
 
+export async function loadAdapters() {
+    const api = tauriApi();
+    if (api?.core?.invoke) {
+      try {
+        const rows = await api.core.invoke('list_adapters');
+        return normalizeAdapters(rows);
+      } catch (err) {
+        logGardenError('list_adapters invoke failed', err);
+      }
+    }
+    return defaultAdapters();
+  }
+
 export async function loadRings() {
     // Demo gate (review finding): the canned garden must never surface the
     // user's REAL memory — a desktop app opened with ?demo=1 would otherwise
@@ -251,6 +264,28 @@ function defaultSettings() {
         close_to_tray: false
       }
     };
+  }
+
+function defaultAdapters() {
+    return [
+      { name: 'claude-code', active: false },
+      { name: 'claude-cowork', active: false },
+      { name: 'codex', active: false },
+      { name: 'manual-jsonl', active: false }
+    ];
+  }
+
+function normalizeAdapters(value) {
+    const rows = Array.isArray(value) ? value : [];
+    const seen = new Set();
+    const out = [];
+    for (const row of rows) {
+      const name = typeof row?.name === 'string' ? row.name : '';
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      out.push({ name, active: row?.active === true });
+    }
+    return out.length ? out : defaultAdapters();
   }
 
 function normalizeSettings(value) {

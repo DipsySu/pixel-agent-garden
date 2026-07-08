@@ -27,8 +27,7 @@ const dynamicLayerSelector = [
   // top of the old ones (stacking + leak). NOT `.pg6-garden-cat` (below) —
   // the cat is deliberately long-lived.
   '.pg6-flower',
-  '.pg6-flower-tooltip',
-  '.pg6-empty'
+  '.pg6-flower-tooltip'
 ].join(', ');
 // NOTE: `.pg6-garden-cat` is deliberately NOT in the clear list. The cat owns a
 // long-lived rAF wander loop; tearing it down + recreating it at home on every
@@ -127,7 +126,6 @@ function renderEverything(groups, summary) {
   addPavilionTrinkets(tiers.pavilion, tiers.pavilionTrinkets, { skipSleepingCat: liveCatUnlocked });
   addGardenCat(groups, tiers);
   addAmbientMotion(groups, tiers);
-  if (!projects.length) renderEmptyState();
 }
 
 function showScanning() {
@@ -1130,15 +1128,6 @@ function destroy() {
     el.style.setProperty('--particle-duration', options.duration || '10s');
     el.style.animationDelay = options.delay || '0s';
     scene.append(el);
-  }
-
-  function renderEmptyState() {
-    const empty = document.createElement('div');
-    empty.className = 'pg6-empty';
-    empty.innerHTML =
-      '<div class="pg6-empty-title">' + escapeHtml(t('empty.title')) + '</div>' +
-      '<div class="pg6-empty-hint">' + escapeHtml(t('empty.hint')) + '</div>';
-    scene.append(empty);
   }
 
   function updateInfoFromTrinket(trinket) {

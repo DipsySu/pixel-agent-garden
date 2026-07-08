@@ -1745,6 +1745,21 @@ body {
 .pg6-woodsign-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
 .pg6-woodsign-body { font-size: 12px; }
 .pg6-woodsign-agents { color: #8a7656; font-size: 11px; margin-top: 6px; }
+.pg6-agent-chip {
+  color: #9b8665;
+  display: inline-block;
+  padding: 0 2px;
+}
+.pg6-agent-chip.is-active {
+  color: #2f4f2f;
+  font-weight: 700;
+  text-shadow: 0 1px 0 rgba(235, 220, 184, 0.8);
+}
+.pg6-agent-sep {
+  color: #b7a47e;
+  display: inline-block;
+  padding: 0 3px;
+}
 .pg6-woodsign-post {
   background: #8a6b45; /* plain wood brown — a post, not a data surface */
   border: 2px solid var(--ink);
@@ -1753,12 +1768,6 @@ body {
   height: 34px;
   width: 10px;
 }
-/* Legacy renderer-drawn empty toast — superseded by the wood sign above. Both
-   renderers still append it (renderer files are out of scope for I8); keep it
-   invisible so two empty states never show at once.
-   TODO(prd-2.0 §P5-2): delete renderEmptyState from both renderers, then drop
-   this rule and the empty.title/empty.hint fallback copy. */
-.pg6-empty { display: none; }
 .pg6-petal {
   background: #f4b8c8;
   height: 3px;

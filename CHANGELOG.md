@@ -29,6 +29,11 @@
 - Added the P3-3 annual ritual gate: during the first local week of December,
   an active year gets one scene banner that opens the Year Review deck; empty
   years and already-offered years stay silent.
+- Completed the P5-2 empty-state contract: the wood sign now consumes the
+  existing local adapter discovery command and lights up installed sources in
+  the supported-agent list, while browser/demo fallback stays static. The old
+  hidden renderer-drawn `.pg6-empty` fallback was removed so the wood sign is
+  the single empty-state surface.
 
 ## v1.9.0 - 2026-07-08
 

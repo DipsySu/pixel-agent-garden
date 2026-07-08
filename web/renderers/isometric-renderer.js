@@ -7,7 +7,7 @@ import { isoToScreen, renderIsometricBase, wallSlotToScreen } from './isometric-
 
 const W = 680;
 const H = 440;
-const dynamicSelector = '.pg6-iso-dynamic, .pg6-empty';
+const dynamicSelector = '.pg6-iso-dynamic';
 // v2 sprite set (style harmonization pass): detailed painterly pixel art
 // matching the original design mockup + the classic wall view, generated at
 // ≥2× render width so nothing upscales (the v1 64px set rendered blurry at
@@ -69,7 +69,6 @@ export function createIsometricRenderer(options) {
     addCourtyardObjects(options.scene, options.spriteRoot, groups, tiers);
     addIsoGardenCat(options.scene, options.spriteRoot, groups, tiers);
     addIsoSeasonParticles(options.scene, options.spriteRoot, groups, tiers);
-    if (!projects.length) renderEmptyState(options.scene);
   }
 
   function paint(groups, summary, settings) {
@@ -1095,15 +1094,6 @@ function updateDefaultInfo(summary, projects) {
   const project = projects[0];
   if (project) updateInfoFromProject(project, { reveal: false });
   void summary;
-}
-
-function renderEmptyState(scene) {
-  const empty = document.createElement('div');
-  empty.className = 'pg6-empty';
-  empty.innerHTML =
-    '<div class="pg6-empty-title">' + escapeHtml(t('empty.title')) + '</div>' +
-    '<div class="pg6-empty-hint">' + escapeHtml(t('empty.hint')) + '</div>';
-  scene.append(empty);
 }
 
 function clearDynamic(scene) {

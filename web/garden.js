@@ -1,5 +1,6 @@
 import {
   isDemoMode,
+  loadAdapters,
   loadCostEstimate,
   loadRings,
   loadSettings,
@@ -71,8 +72,9 @@ const scanCurtain = mountScanCurtain({ host: scene });
 Promise.all([
   fetch(manifestUrl).then((response) => response.json()),
   loadSummary({ dataUrl }),
-  loadSettings()
-]).then(([manifest, summary, settings]) => {
+  loadSettings(),
+  loadAdapters()
+]).then(([manifest, summary, settings, adapters]) => {
   const groups = groupSprites(manifest.sprites || []);
   // Two summary frames on purpose (review finding): `latestSummary` is
   // whatever the watcher last delivered; `visibleSummary` is the frame the
@@ -83,6 +85,7 @@ Promise.all([
   let currentSettings = settings;
   let visibleSummary = summary;
   let latestSummary = summary;
+  let adapterStatuses = adapters;
   let rendererMode = rendererModeFromLocation();
   let renderer = createRenderer(rendererMode);
   renderer.paint(groups, visibleSummary, currentSettings);
@@ -92,7 +95,7 @@ Promise.all([
   // P5-2 wood sign — mounted on the scene host (renderer-agnostic) and
   // refreshed alongside every paint below, since base paints wipe the scene.
   const emptyState = mountEmptyState({ host: scene });
-  emptyState.update(visibleSummary);
+  emptyState.update(visibleSummary, adapterStatuses);
   applyDemoFreshness();
   const returnDiff = mountReturnDiff({
     hostFrame: document.querySelector('.pg6-frame'),
@@ -163,7 +166,7 @@ Promise.all([
         updateAgentNursery();
         dataDrawer?.update(visibleSummary);
         miniStrip?._redraw?.(visibleSummary);
-        emptyState.update(visibleSummary);
+        emptyState.update(visibleSummary, adapterStatuses);
         applyDemoFreshness();
       }
     });
@@ -181,7 +184,7 @@ Promise.all([
         renderer.paint(groups, visibleSummary, currentSettings);
         updateAgentNursery();
         dataDrawer?.update(visibleSummary);
-        emptyState.update(visibleSummary);
+        emptyState.update(visibleSummary, adapterStatuses);
         if (resumed) {
           miniStrip?._redraw?.(visibleSummary);
           onVisibleFrame?.(visibleSummary);
@@ -293,7 +296,7 @@ Promise.all([
       updateAgentNursery();
       // Sign tracks the rendered frame: when paused (else branch) the scene
       // stays on the cached frame, so the sign must stay in step with it too.
-      emptyState.update(visibleSummary);
+      emptyState.update(visibleSummary, adapterStatuses);
       // After repaint on purpose: the isometric renderer rebuilds the scene's
       // children on paint, and a banner pushed first would be wiped mid-rise.
       onVisibleFrame?.(visibleSummary);
