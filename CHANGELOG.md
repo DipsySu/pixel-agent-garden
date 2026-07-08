@@ -4,6 +4,21 @@
 
 - Nothing yet.
 
+## v1.6.0 - 2026-07-08
+
+- Opened the adapter-wave release line without guessing unstable third-party
+  log formats. The CLI `adapters` command now uses each adapter's cheap
+  `discover()` / `watch_paths()` contract instead of running a full scan just
+  to list availability, and it gained `--json --watch-paths` output for
+  redacted bug reports and adapter PRs. This gives contributors a local-only
+  inventory shape without reading or publishing real session contents.
+- Added the native adapter contribution path: `docs/23-adapter-development-guide.md`
+  defines the source-shape evidence, `AgentEvent` mapping, dedupe expectations,
+  fixture-test gate, manual JSONL bridge, and privacy checklist; GitHub now has
+  an `adapter_request` issue template that asks for redacted paths, sample rows,
+  token-accuracy level, and inventory output. README CLI examples point to the
+  new adapter inventory and guide.
+
 ## v1.5.0 - 2026-07-08
 
 - Completed the v1.5 Insight release line. Projects now show per-project local

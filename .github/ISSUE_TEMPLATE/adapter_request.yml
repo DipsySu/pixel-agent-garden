@@ -1,0 +1,69 @@
+name: Adapter request
+description: Request support for a local AI-agent source.
+title: "adapter: "
+labels: ["adapter", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping expand Pixel Agent Garden's local adapter coverage.
+        Please redact usernames, private project names, secrets, and absolute
+        paths before posting samples.
+
+  - type: input
+    id: agent
+    attributes:
+      label: Agent name
+      description: Example: Gemini CLI, Aider, OpenCode, Goose, Amp.
+    validations:
+      required: true
+
+  - type: textarea
+    id: local_paths
+    attributes:
+      label: Local storage paths
+      description: Where does this agent store sessions, logs, or usage data?
+      placeholder: |
+        ~/.example-agent/sessions/**/*.jsonl
+        ~/.config/example-agent/history.db
+    validations:
+      required: true
+
+  - type: textarea
+    id: redacted_rows
+    attributes:
+      label: Redacted sample rows
+      description: Paste 2-3 redacted log rows or schema snippets. Keep token fields if available.
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: inventory
+    attributes:
+      label: Adapter inventory output
+      description: Run `agent-garden adapters --json --watch-paths` and paste redacted output.
+      render: json
+    validations:
+      required: false
+
+  - type: dropdown
+    id: token_accuracy
+    attributes:
+      label: Token data available?
+      options:
+        - Exact input/output/cache split
+        - Total tokens only
+        - No token usage, activity only
+        - Unknown
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Any docs links, version details, or known format caveats.
+    validations:
+      required: false
+

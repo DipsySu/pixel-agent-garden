@@ -109,6 +109,7 @@ Use the Rust CLI directly:
 
 ```bash
 cargo run --release -p local-agent-garden-cli -- adapters
+cargo run --release -p local-agent-garden-cli -- adapters --json --watch-paths
 cargo run --release -p local-agent-garden-cli -- scan --out ~/.local-agent-garden/events.json
 cargo run --release -p local-agent-garden-cli -- projects
 cargo run --release -p local-agent-garden-cli -- inspect --project demo-pay
@@ -137,6 +138,11 @@ added:
 
 Every field is optional except `source` and `timestamp`; unknown fields are
 ignored.
+
+Native adapter contributions should start with
+[`docs/23-adapter-development-guide.md`](docs/23-adapter-development-guide.md).
+When requesting support for a new agent, attach redacted local path patterns
+and the output of `agent-garden adapters --json --watch-paths`.
 
 ## Architecture
 
@@ -269,6 +275,7 @@ cargo tauri build      # 产物在 target/release/bundle/
 
 ```bash
 cargo run --release -p local-agent-garden-cli -- adapters
+cargo run --release -p local-agent-garden-cli -- adapters --json --watch-paths
 cargo run --release -p local-agent-garden-cli -- scan --out ~/.local-agent-garden/events.json
 cargo run --release -p local-agent-garden-cli -- projects
 cargo run --release -p local-agent-garden-cli -- inspect --project demo-pay
@@ -294,6 +301,11 @@ Cursor、Aider、Gemini CLI 或任何还没有原生 adapter 的来源，都可�
 ```
 
 除了 `source` 和 `timestamp`，其他字段都是可选的；未知字段会被忽略。
+
+原生 adapter 贡献从
+[`docs/23-adapter-development-guide.md`](docs/23-adapter-development-guide.md)
+开始。请求支持新 agent 时，请附上脱敏后的本地路径模式，以及
+`agent-garden adapters --json --watch-paths` 输出。
 
 ### 架构
 

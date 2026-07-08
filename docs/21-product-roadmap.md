@@ -104,23 +104,20 @@ Distribution compounds everything after it, so it goes first.
 **Exit:** `brew install --cask` works on a clean Mac with no Gatekeeper
 override; in-app update from v1.2.0-pre to v1.2.0 succeeds.
 
-### Phase B — Adapter wave, v1.3 (in parallel with A where possible)
+### Phase B — Adapter wave, v1.6 — CONTRIBUTION PATH SHIPPED 2026-07-08
 
 Each adapter is a new audience with zero product changes.
 
-- **Ship 2–3 by demand**, validating log formats at implementation time.
-  Current best guesses: **Gemini CLI** (`~/.gemini/`), **OpenCode**,
-  **Aider** (`.aider.chat.history.md` / analytics jsonl). Runner-ups:
-  Cline, Goose, Amp.
-- **"Adapter in an hour" guide**: a doc + fixture template + checklist
-  (trait impl, registry line, fixture test — mirrors doc 11's contract).
-  The goal is that the *fourth* adapter of this phase arrives as a community
-  PR, not from us.
-- **Adapter request** issue template with a "paste 3 redacted log lines"
-  field, so triage is data-first.
+- **Shipped in v1.6:** the "adapter in an hour" guide, adapter request issue
+  template, and `agent-garden adapters --json --watch-paths` local inventory.
+  This deliberately shipped before native Gemini/OpenCode/Aider parsers: their
+  local log formats need real redacted samples, not guesses.
+- **Still by demand:** ship 2–3 native adapters after validating source formats.
+  Current likely requests remain **Gemini CLI**, **OpenCode**, **Aider**, with
+  Cline, Goose, and Amp as runner-ups.
 
-**Exit:** ≥2 new adapters shipped; ≥1 external adapter PR opened (even if
-imperfect — the funnel existing is the point).
+**Exit:** contribution funnel exists; native adapters graduate only with
+redacted fixtures and token-accuracy notes.
 
 ### Phase C — A living garden, v1.4 (1–2 months after B starts)
 

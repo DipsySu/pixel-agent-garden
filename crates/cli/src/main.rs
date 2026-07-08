@@ -11,7 +11,7 @@ use local_agent_garden_core::registry;
 use local_agent_garden_core::rings;
 use local_agent_garden_core::scan;
 use local_agent_garden_core::storage;
-use serde_json::json;
+use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -39,7 +39,15 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     /// List adapters and whether each is active on the local filesystem.
-    Adapters,
+    Adapters {
+        /// Output machine-readable JSON for issue templates and adapter PRs.
+        #[arg(long, action = clap::ArgAction::SetTrue)]
+        json: bool,
+        /// Include local watch/discovery paths. Paths stay on this machine and
+        /// are useful when redacting adapter bug reports.
+        #[arg(long = "watch-paths", action = clap::ArgAction::SetTrue)]
+        watch_paths: bool,
+    },
 
     /// Scan local agent data and write normalized events JSON.
     Scan {
@@ -111,7 +119,9 @@ fn main() -> ExitCode {
     };
 
     match cli.command {
-        Command::Adapters => cmd_adapters(&ctx, sources_filter.as_deref()),
+        Command::Adapters { json, watch_paths } => {
+            cmd_adapters(&ctx, sources_filter.as_deref(), json, watch_paths)
+        }
         Command::Scan { out } => cmd_scan(&ctx, sources_filter.as_deref(), out),
         Command::Projects { from_cache } => {
             cmd_projects(&ctx, sources_filter.as_deref(), from_cache)
@@ -190,23 +200,30 @@ fn cmd_garden(
     ExitCode::SUCCESS
 }
 
-fn cmd_adapters(ctx: &AdapterContext, sources_filter: Option<&[String]>) -> ExitCode {
-    match scan::collect_events(ctx, sources_filter) {
-        Ok(result) => {
-            let active: std::collections::HashSet<_> =
-                result.active_sources.iter().cloned().collect();
-            for adapter in registry::default_adapters() {
-                let status = if active.contains(adapter.name()) {
-                    "active"
-                } else {
-                    "available"
-                };
-                println!("{:14} {}", adapter.name(), status);
+fn cmd_adapters(
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+    json_output: bool,
+    include_watch_paths: bool,
+) -> ExitCode {
+    let reports = adapter_reports(ctx, sources_filter, include_watch_paths);
+    if json_output {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&adapter_reports_json(&reports))
+                .expect("adapter report JSON is serializable")
+        );
+    } else {
+        for report in reports {
+            println!("{:<14} {}", report.name, report.status);
+            if include_watch_paths {
+                for path in report.watch_paths {
+                    println!("  watch {}", path);
+                }
             }
-            ExitCode::SUCCESS
         }
-        Err(err) => bail("scan failed", err),
     }
+    ExitCode::SUCCESS
 }
 
 fn cmd_scan(
@@ -571,4 +588,114 @@ fn truncate(s: &str, max: usize) -> String {
 fn bail<E: std::fmt::Display>(prefix: &str, err: E) -> ExitCode {
     eprintln!("{}: {}", prefix, err);
     ExitCode::FAILURE
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct AdapterReport {
+    name: String,
+    discovered: bool,
+    status: &'static str,
+    watch_paths: Vec<String>,
+}
+
+fn adapter_reports(
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+    include_watch_paths: bool,
+) -> Vec<AdapterReport> {
+    registry::default_adapters()
+        .into_iter()
+        .filter(|adapter| source_allowed(adapter.name(), sources_filter))
+        .map(|adapter| {
+            let discovered = adapter.discover(ctx);
+            let watch_paths = if include_watch_paths {
+                adapter
+                    .watch_paths(ctx)
+                    .into_iter()
+                    .map(|path| path.display().to_string())
+                    .collect()
+            } else {
+                Vec::new()
+            };
+            AdapterReport {
+                name: adapter.name().to_string(),
+                discovered,
+                status: if discovered { "active" } else { "available" },
+                watch_paths,
+            }
+        })
+        .collect()
+}
+
+fn source_allowed(name: &str, sources_filter: Option<&[String]>) -> bool {
+    sources_filter
+        .map(|sources| sources.iter().any(|source| source == name))
+        .unwrap_or(true)
+}
+
+fn adapter_reports_json(reports: &[AdapterReport]) -> Value {
+    json!({
+        "adapters": reports.iter().map(|report| {
+            json!({
+                "name": report.name,
+                "discovered": report.discovered,
+                "status": report.status,
+                "watch_paths": report.watch_paths,
+            })
+        }).collect::<Vec<_>>(),
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn adapter_reports_filter_without_scanning() {
+        let ctx = AdapterContext::with_home(std::env::temp_dir());
+        let filter = vec!["manual-jsonl".to_string()];
+
+        let reports = adapter_reports(&ctx, Some(&filter), false);
+
+        assert_eq!(reports.len(), 1);
+        assert_eq!(reports[0].name, "manual-jsonl");
+        assert!(!reports[0].discovered);
+        assert_eq!(reports[0].status, "available");
+        assert!(reports[0].watch_paths.is_empty());
+    }
+
+    #[test]
+    fn adapter_reports_can_include_watch_paths() {
+        let manual = PathBuf::from("agent-events.jsonl");
+        let ctx = AdapterContext::with_home(std::env::temp_dir()).with_manual_jsonl([manual]);
+        let filter = vec!["manual-jsonl".to_string()];
+
+        let reports = adapter_reports(&ctx, Some(&filter), true);
+
+        assert_eq!(reports.len(), 1);
+        assert_eq!(reports[0].status, "active");
+        assert_eq!(reports[0].watch_paths, vec!["agent-events.jsonl"]);
+    }
+
+    #[test]
+    fn adapter_report_json_has_stable_shape() {
+        let reports = vec![AdapterReport {
+            name: "manual-jsonl".to_string(),
+            discovered: true,
+            status: "active",
+            watch_paths: vec!["events.jsonl".to_string()],
+        }];
+
+        assert_eq!(
+            adapter_reports_json(&reports),
+            json!({
+                "adapters": [{
+                    "name": "manual-jsonl",
+                    "discovered": true,
+                    "status": "active",
+                    "watch_paths": ["events.jsonl"],
+                }]
+            })
+        );
+    }
 }
