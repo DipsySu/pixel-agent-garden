@@ -4,6 +4,20 @@
 
 - Nothing yet.
 
+## v1.8.0 - 2026-07-08
+
+- Added the local Year Review share artifact. The Share drawer now has a third
+  flow next to Garden Postcard and Weekly Recap: a year-to-date 960×1280 card
+  generated entirely from `GardenSummary.daily_tokens` and per-project
+  `daily_tokens`. It shows month blocks, total tokens, active days, active
+  projects, busiest day, and top projects without exposing project paths.
+- Hoisted the data-card canvas primitives (`card-canvas.js`) so weekly recap
+  and year review share the same card DNA: portrait dimensions, paper/ink
+  frame, pixel fonts, one-line fitting and local PNG export path.
+- Tightened README visual-mode documentation with the Wall-view screenshot and
+  a clearer explanation of the vine-wall map, programming stickers and brick
+  activity surface.
+
 ## v1.7.0 - 2026-07-08
 
 - Added the local trust/support diagnostic command `agent-garden doctor`.

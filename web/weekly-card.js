@@ -18,33 +18,26 @@
 //      desktop, <a download> fallback in the browser).
 
 import { savePostcard } from './data-source.js';
+import {
+  CARD_H,
+  CARD_W,
+  CREAM,
+  DAY_MS,
+  FONT_NUM,
+  FONT_PIXEL,
+  FONT_STACK,
+  GREEN,
+  INK,
+  MUTED,
+  PAPER,
+  PAPER_EDGE,
+  canvasToPngBlob,
+  drawPaperFrame,
+  ensureCardFonts,
+  fitOneLine
+} from './card-canvas.js';
 import { escapeHtml, fmtLocal } from './render-helpers.js';
 import { t } from './i18n.js';
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-// §5.4-E: one card DNA for weekly / seasonal / annual — 3:4 portrait.
-const CARD_W = 960;
-const CARD_H = 1280;
-
-// Palette hardcoded from web/index.html `:root` (a raw canvas 2D context
-// cannot resolve CSS custom properties): --paper / --ink / --paper-edge,
-// the action green, the muted paper-text brown and the KPI-card cream.
-const PAPER = '#f4ecd8';
-const INK = '#2c2316';
-const PAPER_EDGE = '#c9b790';
-const GREEN = '#6f9c3f';
-const MUTED = '#8a7656';
-const CREAM = '#fffaf0';
-
-// Same system stack postcard.js uses (kept module-private there on purpose;
-// duplicated rather than exported until a third card needs it).
-const FONT_STACK = 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif';
-// Card DNA fonts: the self-hosted Silkscreen / VT323 faces (@font-face in
-// index.html). Both are latin-only; CJK glyphs fall through to the system
-// stack per glyph — the app-wide font rule, honored by canvas automatically.
-const FONT_PIXEL = '"Silkscreen", ' + FONT_STACK;
-const FONT_NUM = '"VT323", ui-monospace, monospace';
 
 // --- pure week math (node-testable, no DOM) ---------------------------------
 
@@ -220,31 +213,8 @@ export async function buildWeeklyCanvas({ summary, now = new Date() }) {
   return { canvas, week, stats };
 }
 
-// Best-effort: ask for the self-hosted pixel faces before drawing. Canvas
-// silently falls back to the system stack if they never load (blocked fonts,
-// exotic webview) — the card stays legible either way, just less pixel.
-async function ensureCardFonts() {
-  try {
-    if (document.fonts?.load) {
-      await Promise.all([
-        document.fonts.load('700 46px Silkscreen'),
-        document.fonts.load('96px VT323')
-      ]);
-    }
-  } catch (_) {
-    // fall back to the system stack
-  }
-}
-
 function drawCard(ctx, week, stats, totals) {
-  // Paper ground + double ink frame (§5.1: hard edges, zero radius).
-  ctx.fillStyle = PAPER;
-  ctx.fillRect(0, 0, CARD_W, CARD_H);
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 8;
-  ctx.strokeRect(4, 4, CARD_W - 8, CARD_H - 8);
-  ctx.lineWidth = 2;
-  ctx.strokeRect(18, 18, CARD_W - 36, CARD_H - 36);
+  drawPaperFrame(ctx);
 
   // Silkscreen title bar: ink band, paper text (§5.4-E anatomy, row 1).
   ctx.fillStyle = INK;
@@ -440,29 +410,4 @@ export function mountWeeklyCardContent({ host, getSummary, onError, onRequestClo
       exportButton.focus();
     }
   };
-}
-
-// --- helpers duplicated from postcard.js -------------------------------------
-// Both are module-private there; extracting a shared canvas-helpers module is
-// deferred until a third card format needs them (YAGNI, CLAUDE.md 设计约束 §5).
-
-function fitOneLine(ctx, text, maxWidth) {
-  if (ctx.measureText(text).width <= maxWidth) return text;
-  let lo = 0;
-  let hi = text.length;
-  while (lo < hi) {
-    const mid = Math.ceil((lo + hi) / 2);
-    if (ctx.measureText(text.slice(0, mid) + '...').width <= maxWidth) lo = mid;
-    else hi = mid - 1;
-  }
-  return text.slice(0, lo).trimEnd() + '...';
-}
-
-function canvasToPngBlob(canvas) {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob);
-      else reject(new Error('canvas export failed'));
-    }, 'image/png');
-  });
 }

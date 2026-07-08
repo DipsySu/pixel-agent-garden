@@ -8,6 +8,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  buildWeeklyCanvas,
   mostRecentLocalMonday,
   previousIsoWeek,
   recordWeeklyOffer,
@@ -142,4 +143,46 @@ test('mostRecentLocalMonday lands on a local Monday at or before now', () => {
   assert.ok(monday.getTime() <= now.getTime());
   // Within one week (+1h slack for a DST fall-back inside the week).
   assert.ok(now.getTime() - monday.getTime() < 7 * 24 * 60 * 60 * 1000 + 3_600_000);
+});
+
+test('buildWeeklyCanvas runs through the canvas path with an injected document', async () => {
+  const previousDocument = globalThis.document;
+  const calls = [];
+  const ctx = {
+    set fillStyle(value) { calls.push(['fillStyle', value]); },
+    set strokeStyle(value) { calls.push(['strokeStyle', value]); },
+    set lineWidth(value) { calls.push(['lineWidth', value]); },
+    set font(value) { calls.push(['font', value]); },
+    set textAlign(value) { calls.push(['textAlign', value]); },
+    set textBaseline(value) { calls.push(['textBaseline', value]); },
+    fillRect: (...args) => calls.push(['fillRect', ...args]),
+    strokeRect: (...args) => calls.push(['strokeRect', ...args]),
+    fillText: (...args) => calls.push(['fillText', ...args]),
+    measureText: (text) => ({ width: String(text).length * 10 })
+  };
+  globalThis.document = {
+    createElement: (tag) => {
+      assert.equal(tag, 'canvas');
+      return {
+        width: 0,
+        height: 0,
+        getContext: (kind) => {
+          assert.equal(kind, '2d');
+          return ctx;
+        }
+      };
+    }
+  };
+  try {
+    const result = await buildWeeklyCanvas({
+      summary: craftedSummary(),
+      now: new Date(Date.UTC(2026, 6, 8, 12, 0, 0))
+    });
+    assert.equal(result.week.start, '2026-06-29');
+    assert.equal(result.stats.totalTokens, 10_000);
+    assert.ok(calls.some((call) => call[0] === 'fillText'));
+  } finally {
+    if (previousDocument === undefined) delete globalThis.document;
+    else globalThis.document = previousDocument;
+  }
 });

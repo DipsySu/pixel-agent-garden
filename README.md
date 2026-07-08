@@ -10,10 +10,13 @@ A private desktop garden grown from your local AI agent activity.
 
 ![Pixel Agent Garden showing a night courtyard with project vines, seasonal lights, a pavilion, and local-only controls](docs/images/garden.png)
 
+### Visual modes
+
 The app includes two local-only visual modes. The 2.5D courtyard is the default
-ambient view; the Wall view keeps the original vine-wall language visible, with
-project vines, programming stickers, and the brick surface laid out as a more
-direct garden map.
+ambient view for staying open on the desktop. The Wall view keeps the original
+vine-wall language visible: project growth hangs from the wall edge, programming
+stickers mark the tools and ecosystems around the garden, and the brick surface
+works as a direct map of local agent activity.
 
 ![Pixel Agent Garden Wall view showing project vines and programming stickers on the courtyard wall](docs/images/wall-page.jpg)
 
@@ -25,9 +28,9 @@ telemetry, makes no scan/render network calls, and never writes to source agent
 directories.
 
 The current app is a full-window Tauri garden with a tabbed local data drawer,
-bilingual UI, tray watcher, share drawer, weekly recap card, one-click local
-Postcard export, and a small "While you were away" summary when projects grow
-between visits.
+bilingual UI, tray watcher, share drawer, weekly recap and year-review cards,
+one-click local Postcard export, and a small "While you were away" summary when
+projects grow between visits.
 
 ## Why
 
@@ -45,8 +48,9 @@ between visits.
 - **Insight without telemetry** — rank projects, distinguish same-name folders,
   inspect local cost estimates, and export daily project-token data without a
   server.
-- **Share artifacts** — export the current scene to a local PNG, or open a
-  Monday weekly recap card generated entirely from local summaries.
+- **Share artifacts** — export the current scene to a local PNG, open a Monday
+  weekly recap card, or generate a year-to-date review card entirely from local
+  summaries.
 - **Return diff** — when you come back, the garden shows what grew since the
   last viewed snapshot.
 - **CLI + desktop** — use the terminal wall and usage commands, or keep the
@@ -204,9 +208,11 @@ recent work.
 
 ![Pixel Agent Garden：夜间庭院、项目藤蔓、季节光点、亭子，以及本地优先控制区](docs/images/garden.png)
 
-应用包含两种完全本地的视觉模式。2.5D 庭院是默认的 ambient view；Wall
-视图保留最初的藤蔓墙语言，把项目藤蔓、编程贴纸和砖墙表面更直接地铺展开，
-适合快速查看项目分布。
+### 视觉模式
+
+应用包含两种完全本地的视觉模式。2.5D 庭院是默认的 ambient view，适合常驻桌面；
+Wall 视图保留最初的藤蔓墙语言：项目增长从墙沿垂下，编程贴纸标记花园里的工具和技术生态，
+砖墙表面则像一张更直接的本地 agent 活动地图。
 
 ![Pixel Agent Garden Wall 视图：庭院墙上的项目藤蔓和编程贴纸](docs/images/wall-page.jpg)
 
@@ -216,7 +222,7 @@ cache 活动和近期活跃度会影响墙面、生长状态、庭院物件和�
 scan/render 路径不发网络请求，也不会写入源 agent 目录。
 
 当前 app 已经是全窗口 Tauri 花园：包含 tabbed 本地数据抽屉、双语 UI、托盘 watcher、
-分享抽屉、上周周报卡、一键本地导出 Garden Postcard，以及当项目在两次查看之间增长时出现的
+分享抽屉、上周周报卡、年度回顾卡、一键本地导出 Garden Postcard，以及当项目在两次查看之间增长时出现的
 “你不在的时候”摘要。
 
 ### 为什么做
@@ -231,7 +237,8 @@ scan/render 路径不发网络请求，也不会写入源 agent 目录。
 - **会生长的像素花园** — 本地时间、季节、token、session、cache ratio 和近期活跃度
   都会影响画面。
 - **本地 Insight** — 排名项目、区分同名目录、查看本地成本估算，并导出按项目拆分的每日 token 数据。
-- **分享产物** — 把当前场景导出成本地 PNG，或生成完全来自本机 summary 的周一回顾卡。
+- **分享产物** — 把当前场景导出成本地 PNG，生成完全来自本机 summary 的周一回顾卡，
+  或导出 year-to-date 年度回顾卡。
 - **回来摘要** — 再次打开时，只在项目增长后显示“你不在的时候”变化。
 - **CLI + 桌面端** — 可以用终端 ASCII 墙和 usage 命令，也可以常驻 Tauri app，
   通过托盘和 watcher 自动更新。
