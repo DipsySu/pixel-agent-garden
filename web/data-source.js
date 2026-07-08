@@ -151,6 +151,39 @@ export async function savePostcard(blob, suggestedName) {
     return true;
   }
 
+/**
+ * Save a generated text export (CSV/JSON). Desktop uses a native save dialog;
+ * browser fallback downloads a Blob from the current page. No network path.
+ */
+export async function saveExportText(text, suggestedName, mimeType = 'text/plain') {
+    const api = tauriApi();
+    if (api?.core?.invoke) {
+      try {
+        return await api.core.invoke('save_export_file', {
+          text: String(text || ''),
+          suggestedName: suggestedName || 'agent-garden-export.txt',
+          extension: extensionFromName(suggestedName)
+        });
+      } catch (err) {
+        logGardenError('save_export_file invoke failed', err);
+        throw err;
+      }
+    }
+
+    const blob = new Blob([String(text || '')], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = suggestedName || 'agent-garden-export.txt';
+    link.rel = 'noopener';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    return true;
+  }
+
 export function subscribeGardenUpdates(onSummary) {
     // Demo mode shows a frozen sample; a live watcher push must not replace it.
     if (isDemoMode()) return;
@@ -253,6 +286,11 @@ function validChoice(value, allowed, fallback) {
 
 function validPositiveInteger(value, fallback) {
     return Number.isInteger(value) && value > 0 ? value : fallback;
+  }
+
+function extensionFromName(name) {
+    const match = String(name || '').match(/\.([A-Za-z0-9]+)$/);
+    return match ? match[1].toLowerCase() : 'txt';
   }
 
 export function logGardenError(message, err) {

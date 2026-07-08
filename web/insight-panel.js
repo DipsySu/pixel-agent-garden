@@ -9,13 +9,18 @@
 
 import { fmtLocal } from './render-helpers.js';
 import { insightPanelHTML } from './render-insight.js';
+import { estimateCost, formatUsd, modelTotalTokens } from './cost-estimate.js';
 import { t } from './i18n.js';
 
 const DAYS = 14;
 const LIMIT = 10;
 
-export function mountInsightContent({ host, initialSummary, onProjectSelect, onOpenTerminal, onRequestClose }) {
+export function mountInsightContent({ host, initialSummary, onProjectSelect, onOpenTerminal, onRequestClose, loadPrices }) {
   let currentSummary = initialSummary || null;
+  let priceTable = null;
+  let priceLoading = false;
+  let priceRequested = false;
+  let requestId = 0;
   // Client-side view state, preserved across re-renders (watcher ticks):
   // `query` filters rows by the row's data-search haystack; `showAll` lifts the
   // top-N cap. Both are pure DOM show/hide — no re-render on keystroke, so the
@@ -75,7 +80,12 @@ export function mountInsightContent({ host, initialSummary, onProjectSelect, onO
     const input = host.querySelector('.pg6-insight-search-input');
     const hadFocus = input && document.activeElement === input;
     const caret = input ? input.selectionStart : null;
-    host.innerHTML = insightPanelHTML(currentSummary, { days: DAYS, limit: LIMIT, format: fmtLocal });
+    host.innerHTML = insightPanelHTML(currentSummary, {
+      days: DAYS,
+      limit: LIMIT,
+      format: fmtLocal,
+      projectCostByKey: projectCostMap(currentSummary, priceTable)
+    });
     const fresh = host.querySelector('.pg6-insight-search-input');
     if (fresh && query) fresh.value = query;
     if (fresh && hadFocus) {
@@ -121,6 +131,41 @@ export function mountInsightContent({ host, initialSummary, onProjectSelect, onO
     update: (summary) => {
       currentSummary = summary || null;
       render();
-    }
+    },
+    activate: () => {
+      if (!priceRequested && !priceLoading) refreshPrices();
+    },
   };
+
+  async function refreshPrices() {
+    priceRequested = true;
+    const id = ++requestId;
+    priceLoading = true;
+    try {
+      priceTable = typeof loadPrices === 'function' ? await loadPrices() : null;
+    } catch (_) {
+      priceTable = null;
+    } finally {
+      if (id === requestId) {
+        priceLoading = false;
+        render();
+      }
+    }
+  }
+}
+
+function projectCostMap(summary, priceTable) {
+  if (!priceTable) return null;
+  const out = new Map();
+  for (const project of summary?.projects || []) {
+    const modelTokens = project?.model_tokens || {};
+    const hasTokens = Object.values(modelTokens).some((usage) => modelTotalTokens(usage) > 0);
+    if (!hasTokens) continue;
+    const estimate = estimateCost(modelTokens, priceTable);
+    out.set(project.project_key || '', {
+      label: formatUsd(estimate.total_usd),
+      unpricedTokens: estimate.unpriced_tokens || 0
+    });
+  }
+  return out;
 }

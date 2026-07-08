@@ -32,6 +32,16 @@ pub struct GardenSummary {
     pub schema_version: u32,
     pub projects: Vec<ProjectGrowth>,
     pub sources: BTreeMap<String, u64>,
+    /// Whole-garden token usage by local adapter source. `sources` remains an
+    /// event-count map for legacy/share bars; this answers "which agent burned
+    /// the tokens?" for the v1.5 agent-nursery prototype. Additive.
+    #[serde(default)]
+    pub source_tokens: BTreeMap<String, TokenUsage>,
+    /// Trailing-30-day token totals by adapter source. Same source ids as
+    /// `source_tokens`; used by the nursery's "recent share" density so old
+    /// adapters can fallow without losing their lifetime footprint.
+    #[serde(default)]
+    pub source_recent_tokens: BTreeMap<String, u64>,
     pub total_events: u64,
     pub total_tokens: u64,
     // Always emit (null when absent) to keep the JSON shape stable.
@@ -168,8 +178,9 @@ const HOUR_OF_WEEK_WINDOW_DAYS: i64 = 90;
 /// redefinition). Bumped to 2 for `daily_tokens`, to 3 for `size_level` /
 /// `size_strength`, to 4 for `path_inferred`, to 5 for `heatmap_year` +
 /// `hour_of_week`, to 6 for `flowerbed_year`, to 7 for `tiers`, to 8 for the
-/// per-model token rollups (summary `models` / project `model_tokens`).
-pub const SUMMARY_SCHEMA_VERSION: u32 = 8;
+/// per-model token rollups (summary `models` / project `model_tokens`), to 9
+/// for adapter-source token rollups (`source_tokens` / `source_recent_tokens`).
+pub const SUMMARY_SCHEMA_VERSION: u32 = 9;
 
 fn current_schema_version() -> u32 {
     SUMMARY_SCHEMA_VERSION
@@ -181,6 +192,8 @@ impl Default for GardenSummary {
             schema_version: SUMMARY_SCHEMA_VERSION,
             projects: Vec::new(),
             sources: BTreeMap::new(),
+            source_tokens: BTreeMap::new(),
+            source_recent_tokens: BTreeMap::new(),
             total_events: 0,
             total_tokens: 0,
             first_seen: None,
@@ -361,6 +374,9 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
     let mut total_tokens: u64 = 0;
     let mut daily_tokens: BTreeMap<String, u64> = BTreeMap::new();
     let mut models: BTreeMap<String, TokenUsage> = BTreeMap::new();
+    let mut source_tokens: BTreeMap<String, TokenUsage> = BTreeMap::new();
+    let mut source_recent_tokens: BTreeMap<String, u64> = BTreeMap::new();
+    let recent_source_cutoff = now - chrono::Duration::days(30);
 
     let mut sorted: Vec<&AgentEvent> = events.iter().collect();
     sorted.sort_by_key(|e| e.timestamp);
@@ -378,6 +394,15 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
 
         *accum.sources.entry(event.source.clone()).or_insert(0) += 1;
         *sources.entry(event.source.clone()).or_insert(0) += 1;
+        add_usage(
+            source_tokens.entry(event.source.clone()).or_default(),
+            &event.usage,
+        );
+        if event.timestamp >= recent_source_cutoff && event.timestamp <= now {
+            *source_recent_tokens
+                .entry(event.source.clone())
+                .or_insert(0) += event.usage.total_tokens;
+        }
         if let Some(sid) = event.session_id.as_ref() {
             accum.sessions.insert(sid.clone());
         }
@@ -486,6 +511,8 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
         schema_version: SUMMARY_SCHEMA_VERSION,
         projects,
         sources,
+        source_tokens,
+        source_recent_tokens,
         total_events: events.len() as u64,
         total_tokens,
         first_seen,
@@ -1020,12 +1047,16 @@ mod tests {
                 model: Some("m2"),
             }),
         ];
-        let s = summarize(&events);
+        let s = summarize_at(&events, ts + chrono::Duration::days(1));
         assert_eq!(s.projects.len(), 2);
         assert_eq!(s.total_events, 3);
         assert_eq!(s.total_tokens, 525); // 150 + 300 + 75
         assert_eq!(s.sources["claude-code"], 2);
         assert_eq!(s.sources["codex"], 1);
+        assert_eq!(s.source_tokens["claude-code"].total_tokens, 450);
+        assert_eq!(s.source_tokens["codex"].total_tokens, 75);
+        assert_eq!(s.source_recent_tokens["claude-code"], 450);
+        assert_eq!(s.source_recent_tokens["codex"], 75);
         // demo-pay has more activity → first
         assert_eq!(s.projects[0].project_path.as_deref(), Some("/a/demo-pay"));
         assert_eq!(s.projects[0].event_count, 2);
@@ -1264,6 +1295,41 @@ mod tests {
     }
 
     #[test]
+    fn source_recent_tokens_keep_lifetime_sources_but_drop_old_activity() {
+        let now = Utc.with_ymd_and_hms(2026, 7, 8, 12, 0, 0).unwrap();
+        let events = vec![
+            make_event(EventFixture {
+                source: "claude-code",
+                ts: now - chrono::Duration::days(2),
+                project: Some("/a/recent"),
+                session: Some("s1"),
+                input: 1000,
+                output: 0,
+                cache_read: 0,
+                tool_calls: 0,
+                model: None,
+            }),
+            make_event(EventFixture {
+                source: "codex",
+                ts: now - chrono::Duration::days(45),
+                project: Some("/a/old"),
+                session: Some("s2"),
+                input: 500,
+                output: 0,
+                cache_read: 0,
+                tool_calls: 0,
+                model: None,
+            }),
+        ];
+
+        let s = summarize_at(&events, now);
+        assert_eq!(s.source_tokens["claude-code"].total_tokens, 1000);
+        assert_eq!(s.source_tokens["codex"].total_tokens, 500);
+        assert_eq!(s.source_recent_tokens["claude-code"], 1000);
+        assert!(!s.source_recent_tokens.contains_key("codex"));
+    }
+
+    #[test]
     fn top_by_tokens_ranks_and_truncates() {
         let ts = Utc.with_ymd_and_hms(2026, 5, 27, 10, 0, 0).unwrap();
         let mk = |proj: &'static str, input: u64| EventFixture {
@@ -1356,7 +1422,7 @@ mod tests {
             .as_ref()
             .expect("summary should include tiers");
 
-        assert_eq!(summary.schema_version, 8);
+        assert_eq!(summary.schema_version, 9);
         assert_eq!(tiers.pavilion, "full");
         assert_eq!(tiers.willow, "mature");
         assert_eq!(tiers.stone_cat, "full");
@@ -1637,10 +1703,10 @@ mod tests {
     }
 
     #[test]
-    fn schema_version_is_eight() {
-        assert_eq!(SUMMARY_SCHEMA_VERSION, 8);
+    fn schema_version_is_nine() {
+        assert_eq!(SUMMARY_SCHEMA_VERSION, 9);
         let s = summarize(&[]);
-        assert_eq!(s.schema_version, 8);
+        assert_eq!(s.schema_version, 9);
     }
 
     #[test]

@@ -130,6 +130,7 @@ const MESSAGES = {
     'drawer.tab.composition': 'Composition',
     'drawer.tab.cost': 'Cost',
     'drawer.tab.rings': 'Rings',
+    'drawer.tab.export': 'Export',
 
     'composition.label': 'Composition',
     'composition.title': 'What the garden is made of',
@@ -138,7 +139,7 @@ const MESSAGES = {
     'composition.modelsHint': 'Token rollup by model · cache included',
     'composition.modelsEmpty': 'No per-model token rollup yet',
     'composition.sourcesTitle': 'Agent sources',
-    'composition.sourcesHint': 'Event count by local adapter',
+    'composition.sourcesHint': 'Token share by local adapter',
     'composition.sourcesEmpty': 'No source activity yet',
 
     'cost.label': 'Cost',
@@ -164,6 +165,19 @@ const MESSAGES = {
     'cost.rowRate': '${input}/${output} per MTok',
     'cost.noModels': 'No model token data yet',
     'cost.rowTokens': '{total} tokens',
+
+    'export.label': 'Export',
+    'export.title': 'Take your data',
+    'export.closeAria': 'Close export tab',
+    'export.note': 'Exports are created locally from the visible summary. Project paths are omitted by default.',
+    'export.dailyTitle': 'Daily tokens per project',
+    'export.meta': '{projects} projects · {rows} rows',
+    'export.csv': 'CSV',
+    'export.json': 'JSON',
+    'export.saving': 'Saving…',
+    'export.saved': 'Saved',
+    'export.cancelled': 'Cancelled',
+    'export.error': 'Export failed',
 
     'rings.label': 'Rings',
     'rings.title': 'Garden memory',
@@ -208,6 +222,12 @@ const MESSAGES = {
     'insight.approxTitle': 'Path inferred from Claude directory name; it may be inaccurate.',
     'insight.inferredTooltip': '≈ {path} (inferred path; may be inaccurate)',
     'insight.rowRecent': 'Last {days} days {total}',
+    'insight.rowCost': 'Est. {cost}',
+    'insight.rowCostUnpriced': 'Est. {cost} · {tokens} unpriced',
+
+    'nursery.aria': 'Agent nursery prototype',
+    'nursery.tooltip': '{source} · {share} recent share · {recent} tokens',
+    'nursery.tooltipFallow': '{source} · fallow · {total} lifetime tokens',
 
     'dashboard.closeAria': 'Close dashboard',
     'dashboard.label': 'Dashboard',
@@ -417,6 +437,7 @@ const MESSAGES = {
     'drawer.tab.composition': '构成',
     'drawer.tab.cost': '成本',
     'drawer.tab.rings': '年轮',
+    'drawer.tab.export': '导出',
 
     'composition.label': '构成',
     'composition.title': '花园由什么组成',
@@ -425,7 +446,7 @@ const MESSAGES = {
     'composition.modelsHint': '按模型汇总 token · 包含 cache',
     'composition.modelsEmpty': '还没有按模型拆分的 token 数据',
     'composition.sourcesTitle': 'Agent 来源',
-    'composition.sourcesHint': '按本地 adapter 统计事件数',
+    'composition.sourcesHint': '按本地 adapter 汇总 token 占比',
     'composition.sourcesEmpty': '还没有来源活动',
 
     'cost.label': '成本',
@@ -451,6 +472,19 @@ const MESSAGES = {
     'cost.rowRate': '${input}/${output} 每 MTok',
     'cost.noModels': '还没有模型 token 数据',
     'cost.rowTokens': '{total} tokens',
+
+    'export.label': '导出',
+    'export.title': '带走你的数据',
+    'export.closeAria': '关闭导出页',
+    'export.note': '导出只基于当前可见 summary 在本机生成。默认不包含项目绝对路径。',
+    'export.dailyTitle': '按项目拆分的每日 token',
+    'export.meta': '{projects} 个项目 · {rows} 行',
+    'export.csv': 'CSV',
+    'export.json': 'JSON',
+    'export.saving': '正在保存…',
+    'export.saved': '已保存',
+    'export.cancelled': '已取消',
+    'export.error': '导出失败',
 
     'rings.label': '年轮',
     'rings.title': '庭院记忆',
@@ -495,6 +529,12 @@ const MESSAGES = {
     'insight.approxTitle': '路径由 Claude 目录名反推,可能不准确',
     'insight.inferredTooltip': '≈ {path}(推测路径,可能不准)',
     'insight.rowRecent': '近 {days} 天 {total}',
+    'insight.rowCost': '估算 {cost}',
+    'insight.rowCostUnpriced': '估算 {cost} · {tokens} 未计价',
+
+    'nursery.aria': 'Agent 苗圃原型',
+    'nursery.tooltip': '{source} · 近 30 天占比 {share} · {recent} tokens',
+    'nursery.tooltipFallow': '{source} · 休耕 · 累计 {total} tokens',
 
     'dashboard.closeAria': '关闭看板',
     'dashboard.label': '看板',

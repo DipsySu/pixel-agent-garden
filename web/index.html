@@ -194,6 +194,71 @@ body {
   opacity: 0.95 !important;
   transform: var(--sprite-transform, translate(-50%, 0)) translateY(-3px) scale(1.04);
 }
+.pg6-agent-nursery {
+  bottom: 12%;
+  height: 18%;
+  left: 6%;
+  pointer-events: none;
+  position: absolute;
+  right: 6%;
+  z-index: 148;
+}
+.pg6-agent-nursery[hidden] { display: none; }
+.pg6-agent-plot {
+  bottom: var(--plot-y);
+  left: var(--plot-x);
+  pointer-events: auto;
+  position: absolute;
+  transform: translate(-50%, 0);
+}
+.pg6-agent-soil {
+  background: #3f3324;
+  border: 2px solid #1f1a14;
+  box-shadow: 2px 2px 0 rgba(20, 14, 10, 0.38);
+  height: 13px;
+  image-rendering: pixelated;
+  position: relative;
+  width: var(--soil-w);
+}
+.pg6-agent-soil span {
+  background: #79a84a;
+  bottom: 9px;
+  box-shadow: 2px 0 0 #426c31, 4px -2px 0 #a1c765;
+  height: var(--sprout-h);
+  left: var(--sprout-x);
+  position: absolute;
+  transform: skewX(var(--sprout-tilt));
+  width: 4px;
+}
+.pg6-agent-plot.is-fallow .pg6-agent-soil span {
+  background: #8f8778;
+  box-shadow: 2px 0 0 #665c4d, 4px -2px 0 #a39883;
+}
+.pg6-agent-label {
+  background: rgba(244, 236, 216, 0.92);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  color: var(--ink);
+  display: block;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  left: 50%;
+  line-height: 1.3;
+  opacity: 0.92;
+  padding: 3px 5px;
+  position: absolute;
+  top: -24px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.pg6-agent-plot:hover .pg6-agent-label,
+.pg6-agent-plot:focus-visible .pg6-agent-label {
+  opacity: 1;
+}
+.pg6-agent-plot:focus-visible {
+  outline: 2px solid rgba(244, 216, 120, 0.95);
+  outline-offset: 3px;
+}
 .pg6-sprite.ground {
   filter: saturate(0.72) brightness(0.86) contrast(0.92);
   transform-origin: bottom center;
@@ -1255,6 +1320,7 @@ body {
 .pg6-insight-main { min-width: 0; }
 .pg6-insight-main strong { color: currentColor; display: block; font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pg6-insight-main small { color: var(--color-text-tertiary); display: block; font-size: 10px; margin-top: 1px; }
+.pg6-insight-cost { color: #d6a258 !important; }
 .pg6-insight-path { color: var(--color-text-tertiary); font-size: 9px; opacity: 0.72; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pg6-insight-approx { color: #d6a258; display: inline-block; font-size: 9px; letter-spacing: 0.2px; margin-left: 6px; opacity: 0.9; vertical-align: 1px; }
 .pg6-insight-spark { color: #7ac46e; height: 22px; min-width: 0; padding: 0 8px; }
@@ -1472,6 +1538,27 @@ body {
   border-top: 1px dashed var(--paper-edge);
   margin-top: 10px;
   padding-top: 8px;
+}
+.pg6-export-card {
+  background: #fffaf0;
+  border: 2px solid var(--paper-edge);
+  box-shadow: 1px 1px 0 rgba(58, 47, 37, 0.28);
+  color: var(--ink);
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+}
+.pg6-export-card strong {
+  font-size: 12px;
+}
+.pg6-export-card small {
+  color: #8a7656;
+  font-size: 10px;
+}
+.pg6-export-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
 }
 .pg6-share-list,
 .pg6-cost-list,

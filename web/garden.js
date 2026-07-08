@@ -4,6 +4,7 @@ import {
   loadRings,
   loadSettings,
   loadSummary,
+  saveExportText,
   subscribeGardenScanning,
   subscribeGardenUpdates,
   subscribeGardenErrors,
@@ -11,6 +12,7 @@ import {
   openInTerminal
 } from './data-source.js';
 import { mountEmptyState } from './empty-state.js';
+import { isAgentNurseryEnabled, mountAgentNursery } from './agent-nursery.js';
 import { mountErrorToast } from './error-toast.js';
 import { mountScanCurtain } from './scan-curtain.js';
 import { runGrowthReveal } from './first-run.js';
@@ -82,6 +84,8 @@ Promise.all([
   let rendererMode = rendererModeFromLocation();
   let renderer = createRenderer(rendererMode);
   renderer.paint(groups, visibleSummary, currentSettings);
+  const agentNursery = isAgentNurseryEnabled() ? mountAgentNursery({ host: scene }) : null;
+  agentNursery?.update(visibleSummary);
   scanCurtain.hide();
   // P5-2 wood sign — mounted on the scene host (renderer-agnostic) and
   // refreshed alongside every paint below, since base paints wipe the scene.
@@ -142,7 +146,9 @@ Promise.all([
       onProjectSelect: (projectKey) => renderer.selectProjectByKey(projectKey),
       onOpenTerminal: (path) => openInTerminal(path),
       loadPrices,
-      loadRings
+      loadRings,
+      saveExportText,
+      onError: logGardenError
     });
     mountRendererToggle({
       hostFooter: footer,
@@ -152,6 +158,7 @@ Promise.all([
         renderer.destroy?.();
         renderer = createRenderer(rendererMode);
         renderer.paint(groups, visibleSummary, currentSettings);
+        agentNursery?.update(visibleSummary);
         dataDrawer?.update(visibleSummary);
         miniStrip?._redraw?.(visibleSummary);
         emptyState.update(visibleSummary);
@@ -170,6 +177,7 @@ Promise.all([
         currentSettings = next;
         if (resumed) visibleSummary = latestSummary;
         renderer.paint(groups, visibleSummary, currentSettings);
+        agentNursery?.update(visibleSummary);
         dataDrawer?.update(visibleSummary);
         emptyState.update(visibleSummary);
         if (resumed) {
@@ -243,6 +251,7 @@ Promise.all([
       dataDrawer?.update(visibleSummary);
       miniStrip?._redraw?.(visibleSummary);
       renderer.repaintData(groups, visibleSummary);
+      agentNursery?.update(visibleSummary);
       // Sign tracks the rendered frame: when paused (else branch) the scene
       // stays on the cached frame, so the sign must stay in step with it too.
       emptyState.update(visibleSummary);

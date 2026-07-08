@@ -1,5 +1,5 @@
 {
-  "schema_version": 8,
+  "schema_version": 9,
   "projects": [
     {
       "project_key": "/demo/projects/demo-garden-core",
@@ -6282,5 +6282,33 @@
       "cache_write_tokens": 0,
       "total_tokens": 209325023
     }
+  },
+  "source_tokens": {
+    "claude-code": {
+      "input_tokens": 11459468,
+      "output_tokens": 16711648,
+      "cache_read_tokens": 2860827506,
+      "cache_write_tokens": 144485123,
+      "total_tokens": 4010187524
+    },
+    "claude-cowork": {
+      "input_tokens": 1094377,
+      "output_tokens": 3370286,
+      "cache_read_tokens": 688810893,
+      "cache_write_tokens": 30804828,
+      "total_tokens": 1085018236
+    },
+    "codex": {
+      "input_tokens": 33270,
+      "output_tokens": 30932,
+      "cache_read_tokens": 5209212,
+      "cache_write_tokens": 292971,
+      "total_tokens": 137919827
+    }
+  },
+  "source_recent_tokens": {
+    "claude-code": 3834042039,
+    "claude-cowork": 1062964116,
+    "codex": 127228531
   }
 }

@@ -187,3 +187,47 @@ pub async fn save_postcard(
     .await
     .map_err(|e| format!("save_postcard task panicked: {e}"))?
 }
+
+/// Save a generated CSV/JSON data export to a user-chosen path. Formatting is
+/// frontend-owned (`web/data-export.js`); this command owns only the native
+/// save dialog and file write.
+#[tauri::command]
+pub async fn save_export_file(
+    app: tauri::AppHandle,
+    text: String,
+    suggested_name: String,
+    extension: String,
+) -> Result<bool, String> {
+    tokio::task::spawn_blocking(move || {
+        let ext = export_extension(&extension);
+        let label = ext.to_ascii_uppercase();
+        let Some(file_path) = app
+            .dialog()
+            .file()
+            .set_file_name(suggested_name)
+            .add_filter(&label, &[ext])
+            .blocking_save_file()
+        else {
+            return Ok(false);
+        };
+
+        let mut path = file_path
+            .into_path()
+            .map_err(|e| format!("save dialog returned a non-file path: {e}"))?;
+        if path.extension().is_none() {
+            path.set_extension(ext);
+        }
+        std::fs::write(&path, text).map_err(|e| format!("write {}: {e}", path.display()))?;
+        Ok(true)
+    })
+    .await
+    .map_err(|e| format!("save_export_file task panicked: {e}"))?
+}
+
+fn export_extension(value: &str) -> &'static str {
+    match value {
+        "json" => "json",
+        "csv" => "csv",
+        _ => "txt",
+    }
+}

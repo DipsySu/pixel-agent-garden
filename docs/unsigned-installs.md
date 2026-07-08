@@ -47,6 +47,9 @@ Use either:
 
 ## Signing Roadmap
 
+Code signing policy:
+[docs/code-signing-policy.md](code-signing-policy.md).
+
 The release workflow already has guarded signing hooks:
 
 - macOS: `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `KEYCHAIN_PASSWORD`
@@ -55,6 +58,10 @@ The release workflow already has guarded signing hooks:
 
 When those secrets are present, the release job switches the matching platform
 from unsigned to signed. Missing secrets keep unsigned builds working.
+
+For Windows open-source signing, the project is applying for SignPath
+Foundation signing. Free code signing provided by SignPath.io, certificate by
+SignPath Foundation.
 
 ## 未签名安装说明
 
@@ -96,6 +103,8 @@ Linux 构建没有同样的桌面签名/公证流程：
 
 ### 签名路线
 
+代码签名策略见：[docs/code-signing-policy.md](code-signing-policy.md)。
+
 release workflow 已经预埋 secret-gated 签名钩子：
 
 - macOS: `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `KEYCHAIN_PASSWORD`
@@ -104,3 +113,6 @@ release workflow 已经预埋 secret-gated 签名钩子：
 
 这些 secrets 存在时，对应平台会从 unsigned build 切到 signed build；缺少 secrets
 时，unsigned release 仍会照常发布。
+
+Windows 开源签名方向会先申请 SignPath Foundation。Free code signing
+provided by SignPath.io, certificate by SignPath Foundation.

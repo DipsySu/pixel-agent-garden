@@ -29,7 +29,7 @@ export function mountCompositionContent({ host, initialSummary, onRequestClose }
     if (sourceSlot) {
       sourceSlot.innerHTML = shareList(sourceRows(currentSummary), {
         empty: t('composition.sourcesEmpty'),
-        valueLabel: (row) => String(row.value),
+        valueLabel: (row) => row.kind === 'tokens' ? fmtLocal(row.value) : String(row.value),
       });
     }
   }
@@ -77,8 +77,13 @@ function modelRows(summary) {
 function sourceRows(summary) {
   // Adapter ids become the same friendly names the project info card uses
   // (review finding: raw 'claude-code' / 'manual-jsonl' leaked into the UI).
+  const tokenRows = Object.entries(summary?.source_tokens || {})
+    .map(([name, usage]) => ({ name: sourceLabel(name, t), value: modelTotalTokens(usage), kind: 'tokens' }))
+    .filter((row) => row.value > 0);
+  if (tokenRows.length) return rowsWithShare(tokenRows);
+
   const rows = Object.entries(summary?.sources || {})
-    .map(([name, value]) => ({ name: sourceLabel(name, t), value: Number(value || 0) }))
+    .map(([name, value]) => ({ name: sourceLabel(name, t), value: Number(value || 0), kind: 'events' }))
     .filter((row) => row.value > 0);
   return rowsWithShare(rows);
 }
@@ -114,4 +119,3 @@ function shareRow(row, value) {
       <div class="pg6-share-track" aria-hidden="true"><span style="width:${width.toFixed(2)}%"></span></div>
     </div>`;
 }
-

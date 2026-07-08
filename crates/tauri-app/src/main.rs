@@ -47,6 +47,7 @@ fn main() {
             commands::save_prices,
             commands::open_in_terminal,
             commands::save_postcard,
+            commands::save_export_file,
         ])
         .setup(|app| {
             tray::setup(app)?;

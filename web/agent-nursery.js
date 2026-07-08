@@ -1,0 +1,141 @@
+// Agent nursery prototype (PRD 2.0 §P2), behind ?nursery=1. This is a visual
+// exploration of "adapter -> garden region" without committing the default
+// scene. It consumes source token rollups when schema v9 is present and falls
+// back to older summaries gracefully.
+
+import { escapeHtml, fmtLocal, sourceLabel } from './render-helpers.js';
+import { t } from './i18n.js';
+
+const POSITIONS = [
+  { x: 18, y: 13 },
+  { x: 34, y: 8 },
+  { x: 68, y: 10 },
+  { x: 84, y: 15 },
+];
+
+export function isAgentNurseryEnabled(search = currentSearch()) {
+  try {
+    const value = (new URLSearchParams(search).get('nursery') || '').toLowerCase();
+    return ['1', 'true', 'enabled', 'on'].includes(value);
+  } catch (_) {
+    return false;
+  }
+}
+
+export function mountAgentNursery({ host }) {
+  let root = null;
+
+  function ensureRoot() {
+    if (root && root.isConnected) return root;
+    root = document.createElement('div');
+    root.className = 'pg6-agent-nursery';
+    root.setAttribute('aria-label', t('nursery.aria'));
+    host.appendChild(root);
+    return root;
+  }
+
+  return {
+    update(summary) {
+      const rows = nurseryRows(summary).slice(0, 4);
+      const el = ensureRoot();
+      el.hidden = rows.length === 0;
+      el.innerHTML = rows.map((row, index) => plotHtml(row, POSITIONS[index] || POSITIONS[0])).join('');
+    }
+  };
+}
+
+export function nurseryRows(summary) {
+  const recent = tokenMap(summary?.source_recent_tokens || {});
+  const lifetime = tokenUsageMap(summary?.source_tokens || {});
+  const eventCounts = summary?.sources || {};
+  const ids = new Set([
+    ...Object.keys(recent),
+    ...Object.keys(lifetime),
+    ...Object.keys(eventCounts)
+  ]);
+  const recentTotal = sumValues(recent);
+  const lifetimeTotal = sumValues(lifetime);
+  const eventTotal = sumValues(eventCounts);
+
+  const rows = [];
+  for (const id of ids) {
+    const lifetimeTokens = lifetime[id] || 0;
+    const recentTokens = recent[id] || 0;
+    const fallbackEvents = Number(eventCounts[id] || 0);
+    const basis =
+      recentTotal > 0 ? recentTokens :
+      lifetimeTotal > 0 ? lifetimeTokens :
+      fallbackEvents;
+    const denom =
+      recentTotal > 0 ? recentTotal :
+      lifetimeTotal > 0 ? lifetimeTotal :
+      eventTotal;
+    const share = denom > 0 ? basis / denom : 0;
+    rows.push({
+      id,
+      label: sourceLabel(id, t),
+      recentTokens,
+      lifetimeTokens,
+      eventCount: fallbackEvents,
+      share,
+      fallow: lifetimeTokens > 0 && recentTotal > 0 && recentTokens === 0
+    });
+  }
+  rows.sort((a, b) =>
+    b.recentTokens - a.recentTokens ||
+    b.lifetimeTokens - a.lifetimeTokens ||
+    b.eventCount - a.eventCount ||
+    a.id.localeCompare(b.id)
+  );
+  return rows;
+}
+
+function plotHtml(row, pos) {
+  const density = Math.max(0.18, Math.min(1, row.share || 0));
+  const sprouts = Math.max(2, Math.min(7, Math.round(density * 7)));
+  const soilWidth = Math.round(34 + density * 28);
+  const sproutHeight = Math.round(9 + density * 13);
+  const title = row.fallow
+    ? t('nursery.tooltipFallow', { source: row.label, total: fmtLocal(row.lifetimeTokens) })
+    : t('nursery.tooltip', { source: row.label, share: percent(row.share), recent: fmtLocal(row.recentTokens || row.lifetimeTokens) });
+  const sproutHtml = Array.from({ length: sprouts }, (_, i) =>
+    '<span style="--sprout-x:' + (5 + i * 8) + 'px;--sprout-tilt:' + ((i - 3) * 2) + 'deg"></span>'
+  ).join('');
+  return `
+    <div class="pg6-agent-plot ${row.fallow ? 'is-fallow' : ''}"
+      style="--plot-x:${pos.x}%;--plot-y:${pos.y}%;--soil-w:${soilWidth}px;--sprout-h:${sproutHeight}px"
+      tabindex="0"
+      title="${escapeHtml(title)}"
+      aria-label="${escapeHtml(title)}">
+      <div class="pg6-agent-soil" aria-hidden="true">${sproutHtml}</div>
+      <div class="pg6-agent-label">${escapeHtml(row.label)} · ${escapeHtml(percent(row.share))}</div>
+    </div>`;
+}
+
+function tokenUsageMap(value) {
+  const out = {};
+  for (const [key, usage] of Object.entries(value || {})) {
+    out[key] = Number(usage?.total_tokens || usage || 0);
+  }
+  return out;
+}
+
+function tokenMap(value) {
+  const out = {};
+  for (const [key, tokens] of Object.entries(value || {})) {
+    out[key] = Number(tokens || 0);
+  }
+  return out;
+}
+
+function sumValues(value) {
+  return Object.values(value || {}).reduce((sum, item) => sum + Number(item || 0), 0);
+}
+
+function percent(value) {
+  return (Math.round((Number(value || 0) * 1000)) / 10).toFixed(1) + '%';
+}
+
+function currentSearch() {
+  return typeof window !== 'undefined' && window.location ? window.location.search : '';
+}

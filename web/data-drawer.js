@@ -12,6 +12,7 @@ import { joinPopoverGroup } from './popover-group.js';
 import { mountCompositionContent } from './composition-panel.js';
 import { mountCostContent } from './cost-panel.js';
 import { mountDashboardContent } from './dashboard-panel.js';
+import { mountExportContent } from './export-panel.js';
 import { mountInsightContent } from './insight-panel.js';
 import { mountRingsContent } from './rings-panel.js';
 import { t } from './i18n.js';
@@ -29,6 +30,7 @@ const TABS = [
   { id: 'composition', labelKey: 'drawer.tab.composition', scroll: true },
   { id: 'cost', labelKey: 'drawer.tab.cost', scroll: true },
   { id: 'rings', labelKey: 'drawer.tab.rings', scroll: true },
+  { id: 'export', labelKey: 'drawer.tab.export', scroll: true },
 ];
 
 /**
@@ -39,6 +41,8 @@ const TABS = [
  *   onOpenTerminal?: (path: string) => void,
  *   loadPrices?: () => Promise<object | null>,
  *   loadRings?: () => Promise<object | null>,
+ *   saveExportText?: (text: string, suggestedName: string, mimeType: string) => Promise<boolean>,
+ *   onError?: (message: string, err: unknown) => void,
  * }} opts
  * @returns {{ update: (summary: object | null) => void, open: (tab?: string) => void }}
  */
@@ -49,6 +53,8 @@ export function mountDataDrawer({
   onOpenTerminal,
   loadPrices,
   loadRings,
+  saveExportText,
+  onError,
 }) {
   let activeTab = restoreTab();
   // Latest visible-frame summary; hidden tabs replay it on activation instead
@@ -122,6 +128,7 @@ export function mountDataDrawer({
       initialSummary,
       onProjectSelect,
       onOpenTerminal,
+      loadPrices,
       onRequestClose: closeAndRefocus,
     }),
     composition: mountCompositionContent({
@@ -138,6 +145,13 @@ export function mountDataDrawer({
     rings: mountRingsContent({
       host: tabPanels.get('rings'),
       loadRings,
+      onRequestClose: closeAndRefocus,
+    }),
+    export: mountExportContent({
+      host: tabPanels.get('export'),
+      initialSummary,
+      saveExportText,
+      onError,
       onRequestClose: closeAndRefocus,
     }),
   };
@@ -219,7 +233,7 @@ export function mountDataDrawer({
   return {
     // Visible-frame updates only reach the tab the user can see; hidden tabs
     // (and a closed drawer) stash the frame and catch up in flushToActive()
-    // when they become visible. This keeps five providers from re-rendering
+    // when they become visible. This keeps hidden providers from re-rendering
     // — and rings from touching the disk — on every watcher tick (review
     // finding). The drawer stays ignorant of the summary shape.
     update: (summary) => {

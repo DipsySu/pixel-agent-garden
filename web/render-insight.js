@@ -124,6 +124,7 @@ export function insightPanelHTML(summary, opts = {}) {
         format,
         days,
         now,
+        projectCostByKey: opts.projectCostByKey,
         isExtra: index >= topN,
         ambiguous: (nameCounts.get(project.display_name || 'unknown') || 0) > 1
       })).join('')
@@ -174,6 +175,7 @@ function insightRowHTML(project, index, opts) {
   const recent = windowTotal(project.daily_tokens, opts.days, opts.now);
   const name = project.display_name || 'unknown';
   const path = project.project_path || '';
+  const cost = projectCostLabel(project, opts);
   // path_inferred means the path was reverse-decoded from a directory name
   // (lossy/ambiguous), so it may not be a real location. We must NOT offer to
   // open it in a terminal, and we flag the row as approximate.
@@ -209,6 +211,7 @@ function insightRowHTML(project, index, opts) {
         '<span class="pg6-insight-main">' +
           '<strong>' + escapeHtml(name) + '</strong>' + approxBadge +
           '<small>' + escapeHtml(t('insight.rowRecent', { days: opts.days, total: opts.format(recent) })) + '</small>' +
+          (cost ? '<small class="pg6-insight-cost">' + escapeHtml(cost) + '</small>' : '') +
           pathLine +
         '</span>' +
         '<span class="pg6-insight-spark" aria-hidden="true">' + sparklineSVG(project.daily_tokens, { days: opts.days, now: opts.now, format: opts.format }) + '</span>' +
@@ -217,6 +220,20 @@ function insightRowHTML(project, index, opts) {
       term +
     '</div>'
   );
+}
+
+function projectCostLabel(project, opts) {
+  const byKey = opts.projectCostByKey;
+  if (!byKey || !project) return '';
+  const cost = byKey.get ? byKey.get(project.project_key || '') : byKey[project.project_key || ''];
+  if (!cost) return '';
+  if (cost.unpricedTokens > 0) {
+    return t('insight.rowCostUnpriced', {
+      cost: cost.label,
+      tokens: opts.format(cost.unpricedTokens)
+    });
+  }
+  return t('insight.rowCost', { cost: cost.label });
 }
 
 function terminalSvg() {

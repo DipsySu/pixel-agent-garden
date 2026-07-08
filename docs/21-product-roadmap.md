@@ -142,7 +142,13 @@ The retention phase. Everything here serves the 2-second glance.
 **Exit:** a tester who didn't open the main window all week can still say
 what their garden did, from the tray + one Monday postcard.
 
-### Phase D — Insight that earns its seat, v1.5 (parallel, on demand)
+### Phase D — Insight that earns its seat, v1.5 — ✅ SHIPPED 2026-07-08
+
+`v1.5.0` shipped the tabbed data drawer content wave: local cost estimates,
+model/source composition, durable rings, project-level cost lines, CSV/JSON
+daily-token export, weekly recap sharing, and an opt-in Agent Nursery prototype
+behind `?nursery=1`. Region mapping remains a prototype decision, not a
+default scene commitment.
 
 Only ships where a real question exists. Every item must answer something a
 user actually asked.

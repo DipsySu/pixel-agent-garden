@@ -10,6 +10,13 @@ A private desktop garden grown from your local AI agent activity.
 
 ![Pixel Agent Garden showing a night courtyard with project vines, seasonal lights, a pavilion, and local-only controls](docs/images/garden.png)
 
+The app includes two local-only visual modes. The 2.5D courtyard is the default
+ambient view; the Wall view keeps the original vine-wall language visible, with
+project vines, programming stickers, and the brick surface laid out as a more
+direct garden map.
+
+![Pixel Agent Garden Wall view showing project vines and programming stickers on the courtyard wall](docs/images/wall-page.jpg)
+
 Pixel Agent Garden reads local agent traces from disk, normalizes them into one
 Rust event model, and renders project growth as an ambient pixel courtyard. Each
 project becomes a vine; tokens, sessions, cache activity, and recent work shape
@@ -17,9 +24,10 @@ the wall, unlock courtyard objects, and add seasonal details. It sends no
 telemetry, makes no scan/render network calls, and never writes to source agent
 directories.
 
-The current app is a full-window Tauri garden with an Insight panel, bilingual
-UI, tray watcher, one-click local Postcard export, and a small "While you were
-away" summary when projects grow between visits.
+The current app is a full-window Tauri garden with a tabbed local data drawer,
+bilingual UI, tray watcher, share drawer, weekly recap card, one-click local
+Postcard export, and a small "While you were away" summary when projects grow
+between visits.
 
 ## Why
 
@@ -35,9 +43,10 @@ away" summary when projects grow between visits.
 - **Living pixel garden** — local time, season, tokens, sessions, cache ratio,
   and recent activity all affect the scene.
 - **Insight without telemetry** — rank projects, distinguish same-name folders,
-  and inspect growth from local summaries only.
-- **Garden Postcard** — export the current scene to a local PNG, with an
-  optional anonymized caption for sharing.
+  inspect local cost estimates, and export daily project-token data without a
+  server.
+- **Share artifacts** — export the current scene to a local PNG, or open a
+  Monday weekly recap card generated entirely from local summaries.
 - **Return diff** — when you come back, the garden shows what grew since the
   last viewed snapshot.
 - **CLI + desktop** — use the terminal wall and usage commands, or keep the
@@ -47,6 +56,8 @@ away" summary when projects grow between visits.
 
 Grab the latest build for your platform from the
 [Releases page](https://github.com/DipsySu/pixel-agent-garden/releases):
+Code signing status and release signing rules are documented in the
+[Code Signing Policy](docs/code-signing-policy.md).
 
 - **macOS** — the `.dmg` build attached to the release. Builds are currently
   **unsigned**, so on first launch right-click the app and choose _Open_ (or
@@ -173,13 +184,19 @@ recent work.
 
 ![Pixel Agent Garden：夜间庭院、项目藤蔓、季节光点、亭子，以及本地优先控制区](docs/images/garden.png)
 
+应用包含两种完全本地的视觉模式。2.5D 庭院是默认的 ambient view；Wall
+视图保留最初的藤蔓墙语言，把项目藤蔓、编程贴纸和砖墙表面更直接地铺展开，
+适合快速查看项目分布。
+
+![Pixel Agent Garden Wall 视图：庭院墙上的项目藤蔓和编程贴纸](docs/images/wall-page.jpg)
+
 Pixel Agent Garden 从磁盘读取本机 agent 记录，把它们规范化成同一个 Rust
 事件模型，然后渲染成一个安静的像素庭院。每个项目是一根藤蔓；token、session、
 cache 活动和近期活跃度会影响墙面、生长状态、庭院物件和季节细节。它不做遥测，
 scan/render 路径不发网络请求，也不会写入源 agent 目录。
 
-当前 app 已经是全窗口 Tauri 花园：包含 Insight 面板、双语 UI、托盘 watcher、
-一键本地导出 Garden Postcard，以及当项目在两次查看之间增长时出现的
+当前 app 已经是全窗口 Tauri 花园：包含 tabbed 本地数据抽屉、双语 UI、托盘 watcher、
+分享抽屉、上周周报卡、一键本地导出 Garden Postcard，以及当项目在两次查看之间增长时出现的
 “你不在的时候”摘要。
 
 ### 为什么做
@@ -193,8 +210,8 @@ scan/render 路径不发网络请求，也不会写入源 agent 目录。
 
 - **会生长的像素花园** — 本地时间、季节、token、session、cache ratio 和近期活跃度
   都会影响画面。
-- **本地 Insight** — 排名项目、区分同名目录，并只基于本地 summary 查看增长情况。
-- **Garden Postcard** — 把当前场景导出成本地 PNG，可选择匿名 caption，方便分享。
+- **本地 Insight** — 排名项目、区分同名目录、查看本地成本估算，并导出按项目拆分的每日 token 数据。
+- **分享产物** — 把当前场景导出成本地 PNG，或生成完全来自本机 summary 的周一回顾卡。
 - **回来摘要** — 再次打开时，只在项目增长后显示“你不在的时候”变化。
 - **CLI + 桌面端** — 可以用终端 ASCII 墙和 usage 命令，也可以常驻 Tauri app，
   通过托盘和 watcher 自动更新。
@@ -203,6 +220,8 @@ scan/render 路径不发网络请求，也不会写入源 agent 目录。
 
 从 [Releases 页面](https://github.com/DipsySu/pixel-agent-garden/releases)
 下载对应平台的最新构建：
+代码签名状态和 release 签名规则见
+[Code Signing Policy](docs/code-signing-policy.md)。
 
 - **macOS** — 下载 release 附带的 `.dmg`。当前构建还没有签名；首次启动时右键 app
   选择 _Open_，或在 System Settings → Privacy & Security 里允许打开。详见

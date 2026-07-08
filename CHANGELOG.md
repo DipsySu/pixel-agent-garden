@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Nothing yet.
+
+## v1.5.0 - 2026-07-08
+
+- Completed the v1.5 Insight release line. Projects now show per-project local
+  cost estimates from the same `prices.json` table as the Cost tab; the Data
+  drawer gained a local Export tab for CSV/JSON daily tokens per project; and
+  `GardenSummary` schema 9 adds adapter-source token rollups
+  (`source_tokens`, `source_recent_tokens`) so the Composition tab and the
+  new `?nursery=1` Agent Nursery prototype can answer "which local agent grew
+  this garden?" by token share instead of event count. The bundled browser
+  sample was upgraded to schema 9 with synthetic source-token data only.
+- Bumped crate and Tauri package metadata to `1.5.0`, added the Wall-view
+  screenshot and two-mode explanation to the README, and kept the new
+  SignPath-ready code-signing policy linked from install notes for the release
+  trust story.
 - Landed PRD 2.0 §P3-1: the Postcard footer button grew into a **share
   drawer** (garden postcard + the new **Monday weekly recap card**); the
   postcard module became a drawer-hosted flow with its render/save pipeline
