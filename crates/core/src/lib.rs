@@ -11,6 +11,7 @@ pub mod adapter;
 pub mod adapters;
 pub mod aggregate;
 pub mod cache;
+pub mod doctor;
 pub mod error;
 pub mod event;
 pub mod prices;

@@ -110,6 +110,8 @@ Use the Rust CLI directly:
 ```bash
 cargo run --release -p local-agent-garden-cli -- adapters
 cargo run --release -p local-agent-garden-cli -- adapters --json --watch-paths
+cargo run --release -p local-agent-garden-cli -- doctor
+cargo run --release -p local-agent-garden-cli -- doctor --json
 cargo run --release -p local-agent-garden-cli -- scan --out ~/.local-agent-garden/events.json
 cargo run --release -p local-agent-garden-cli -- projects
 cargo run --release -p local-agent-garden-cli -- inspect --project demo-pay
@@ -126,6 +128,18 @@ Preview the web garden fallback in a browser (reads
 python3 -m http.server 8765
 # then open http://127.0.0.1:8765/web/index.html
 ```
+
+If a local install behaves unexpectedly, run:
+
+```bash
+agent-garden doctor
+agent-garden doctor --json
+```
+
+The doctor report checks only local state: state-dir writability,
+`settings.toml`, `prices.json`, `events.json`, `rings.json`, and adapter
+discovery. It does not scan source logs or call the network. Home-directory
+paths are shortened to `~`, but review the report before sharing it.
 
 ## Manual JSONL Format
 
@@ -276,6 +290,8 @@ cargo tauri build      # 产物在 target/release/bundle/
 ```bash
 cargo run --release -p local-agent-garden-cli -- adapters
 cargo run --release -p local-agent-garden-cli -- adapters --json --watch-paths
+cargo run --release -p local-agent-garden-cli -- doctor
+cargo run --release -p local-agent-garden-cli -- doctor --json
 cargo run --release -p local-agent-garden-cli -- scan --out ~/.local-agent-garden/events.json
 cargo run --release -p local-agent-garden-cli -- projects
 cargo run --release -p local-agent-garden-cli -- inspect --project demo-pay
@@ -291,6 +307,17 @@ cargo run --release -p local-agent-garden-cli -- export-web --out web/data/garde
 python3 -m http.server 8765
 # 然后打开 http://127.0.0.1:8765/web/index.html
 ```
+
+如果本地安装状态异常，先运行：
+
+```bash
+agent-garden doctor
+agent-garden doctor --json
+```
+
+doctor 报告只检查本地状态：state 目录是否可写、`settings.toml`、
+`prices.json`、`events.json`、`rings.json` 和 adapter discovery。它不会扫描源日志，
+也不会访问网络。home 目录路径会缩短成 `~`，但分享前仍应自行复核。
 
 ### Manual JSONL 格式
 

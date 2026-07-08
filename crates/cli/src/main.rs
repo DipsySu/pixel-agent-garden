@@ -6,6 +6,7 @@ use chrono::{Local, NaiveDate};
 use clap::{Parser, Subcommand};
 use local_agent_garden_core::adapter::AdapterContext;
 use local_agent_garden_core::aggregate::{self, GardenSummary};
+use local_agent_garden_core::doctor::{self, DoctorReport, DoctorStatus};
 use local_agent_garden_core::event::AgentEvent;
 use local_agent_garden_core::registry;
 use local_agent_garden_core::rings;
@@ -47,6 +48,13 @@ enum Command {
         /// are useful when redacting adapter bug reports.
         #[arg(long = "watch-paths", action = clap::ArgAction::SetTrue)]
         watch_paths: bool,
+    },
+
+    /// Check local state, settings, prices, rings, cache, and adapter discovery.
+    Doctor {
+        /// Output machine-readable JSON.
+        #[arg(long, action = clap::ArgAction::SetTrue)]
+        json: bool,
     },
 
     /// Scan local agent data and write normalized events JSON.
@@ -122,6 +130,7 @@ fn main() -> ExitCode {
         Command::Adapters { json, watch_paths } => {
             cmd_adapters(&ctx, sources_filter.as_deref(), json, watch_paths)
         }
+        Command::Doctor { json } => cmd_doctor(&ctx, json),
         Command::Scan { out } => cmd_scan(&ctx, sources_filter.as_deref(), out),
         Command::Projects { from_cache } => {
             cmd_projects(&ctx, sources_filter.as_deref(), from_cache)
@@ -151,6 +160,38 @@ fn main() -> ExitCode {
             !no_color,
             from_cache,
         ),
+    }
+}
+
+fn cmd_doctor(ctx: &AdapterContext, json_output: bool) -> ExitCode {
+    let report = doctor::run(ctx);
+    if json_output {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&report).expect("doctor report JSON is serializable")
+        );
+    } else {
+        print_doctor_report(&report);
+    }
+    if report.ok {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
+    }
+}
+
+fn print_doctor_report(report: &DoctorReport) {
+    println!("doctor {}", if report.ok { "ok" } else { "failed" });
+    for check in &report.checks {
+        let label = match check.status {
+            DoctorStatus::Ok => "ok",
+            DoctorStatus::Warn => "warn",
+            DoctorStatus::Error => "error",
+        };
+        println!("  [{:<5}] {:<14} {}", label, check.id, check.message);
+        if let Some(detail) = check.detail.as_deref() {
+            println!("         {}", detail);
+        }
     }
 }
 

@@ -91,6 +91,11 @@ tolerated there; hold Product Hunt until signing lands.
 
 Distribution compounds everything after it, so it goes first.
 
+- **Shipped in v1.7:** `agent-garden doctor` as a local trust/support gate.
+  It validates state writability, settings/prices/events/rings readability,
+  and adapter discovery without scanning source logs or calling the network.
+  This does not replace signing; it gives users and maintainers a deterministic
+  first diagnostic before asking for private files.
 - **Code signing + notarization** (macOS Developer ID; Windows via an OSS
   signing service or a cert). This is the single highest-leverage task in
   the whole roadmap.

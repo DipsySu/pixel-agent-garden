@@ -1,6 +1,6 @@
 [package]
 name = "local-agent-garden-tauri"
-version = "1.6.0"
+version = "1.7.0"
 description = "Local Agent Garden — Tauri desktop shell"
 edition.workspace = true
 rust-version.workspace = true

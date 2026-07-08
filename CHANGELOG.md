@@ -4,6 +4,21 @@
 
 - Nothing yet.
 
+## v1.7.0 - 2026-07-08
+
+- Added the local trust/support diagnostic command `agent-garden doctor`.
+  The report checks only product-owned local state and cheap adapter discovery:
+  state-dir writability, `settings.toml`, `prices.json`, `events.json`,
+  `rings.json`, and adapter presence. It does not scan source logs and does
+  not call the network. Human output is intended for terminal troubleshooting;
+  `--json` gives a stable support shape for issue reports and future desktop
+  health UI.
+- Kept the distribution boundary explicit: `doctor` is implemented in
+  `crates/core/src/doctor.rs` so CLI/Tauri can share it later without pulling
+  shell or browser types into core. Fresh installs report missing cache/rings
+  as warnings, malformed user state as errors, and return a failing exit code
+  only when an error is present.
+
 ## v1.6.0 - 2026-07-08
 
 - Opened the adapter-wave release line without guessing unstable third-party
