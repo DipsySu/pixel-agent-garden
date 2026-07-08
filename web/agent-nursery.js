@@ -1,7 +1,8 @@
-// Agent nursery prototype (PRD 2.0 §P2), behind ?nursery=1. This is a visual
-// exploration of "adapter -> garden region" without committing the default
-// scene. It consumes source token rollups when schema v9 is present and falls
-// back to older summaries gracefully.
+// Agent nursery (PRD 2.0 §P2). This turns adapter/source token share into a
+// small set of wall-root plots: one local agent "tends" one bed. It consumes
+// source token rollups when schema v9 is present and falls back to older
+// summaries gracefully. The persisted setting still uses the historical
+// `appearance.flowerbed` field to avoid a settings migration.
 
 import { escapeHtml, fmtLocal, sourceLabel } from './render-helpers.js';
 import { t } from './i18n.js';
@@ -13,13 +14,22 @@ const POSITIONS = [
   { x: 84, y: 15 },
 ];
 
-export function isAgentNurseryEnabled(search = currentSearch()) {
+export function isAgentNurseryEnabled(settings, search = currentSearch()) {
+  const override = nurseryQueryOverride(search);
+  if (override !== null) return override;
+  return settings?.appearance?.flowerbed === 'enabled';
+}
+
+export function nurseryQueryOverride(search = currentSearch()) {
   try {
     const value = (new URLSearchParams(search).get('nursery') || '').toLowerCase();
-    return ['1', 'true', 'enabled', 'on'].includes(value);
+    if (!value) return null;
+    if (['1', 'true', 'enabled', 'on'].includes(value)) return true;
+    if (['0', 'false', 'disabled', 'off'].includes(value)) return false;
   } catch (_) {
-    return false;
+    return null;
   }
+  return null;
 }
 
 export function mountAgentNursery({ host }) {
@@ -35,10 +45,15 @@ export function mountAgentNursery({ host }) {
   }
 
   return {
-    update(summary) {
+    update(summary, options = {}) {
+      const enabled = options.enabled === true;
       const rows = nurseryRows(summary).slice(0, 4);
       const el = ensureRoot();
-      el.hidden = rows.length === 0;
+      el.hidden = !enabled || rows.length === 0;
+      if (!enabled || rows.length === 0) {
+        el.innerHTML = '';
+        return;
+      }
       el.innerHTML = rows.map((row, index) => plotHtml(row, POSITIONS[index] || POSITIONS[0])).join('');
     }
   };

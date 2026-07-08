@@ -2,11 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { isAgentNurseryEnabled, nurseryRows } from '../agent-nursery.js';
 
-test('isAgentNurseryEnabled is opt-in by query flag only', () => {
-  assert.equal(isAgentNurseryEnabled('?nursery=1'), true);
-  assert.equal(isAgentNurseryEnabled('?nursery=enabled'), true);
-  assert.equal(isAgentNurseryEnabled('?nursery=0'), false);
-  assert.equal(isAgentNurseryEnabled(''), false);
+test('isAgentNurseryEnabled follows settings with query override', () => {
+  const enabled = { appearance: { flowerbed: 'enabled' } };
+  const disabled = { appearance: { flowerbed: 'disabled' } };
+  assert.equal(isAgentNurseryEnabled(enabled, ''), true);
+  assert.equal(isAgentNurseryEnabled(disabled, ''), false);
+  assert.equal(isAgentNurseryEnabled(disabled, '?nursery=1'), true);
+  assert.equal(isAgentNurseryEnabled(disabled, '?nursery=enabled'), true);
+  assert.equal(isAgentNurseryEnabled(enabled, '?nursery=0'), false);
 });
 
 test('nurseryRows prefers recent source token share and marks inactive lifetime sources fallow', () => {

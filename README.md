@@ -45,6 +45,9 @@ projects grow between visits.
 
 - **Living pixel garden** — local time, season, tokens, sessions, cache ratio,
   and recent activity all affect the scene.
+- **Agent nursery** — an opt-in garden layer shows which local agent sources
+  tended the garden recently, using the same local source-token rollups as the
+  Composition tab.
 - **Insight without telemetry** — rank projects, distinguish same-name folders,
   inspect local cost estimates, and export daily project-token data without a
   server.
@@ -236,6 +239,8 @@ scan/render 路径不发网络请求，也不会写入源 agent 目录。
 
 - **会生长的像素花园** — 本地时间、季节、token、session、cache ratio 和近期活跃度
   都会影响画面。
+- **Agent 苗圃** — 可选开启的庭院层,用和“构成”页相同的本机 source-token
+  数据展示最近是哪类 agent 在照料庭院。
 - **本地 Insight** — 排名项目、区分同名目录、查看本地成本估算，并导出按项目拆分的每日 token 数据。
 - **分享产物** — 把当前场景导出成本地 PNG，生成完全来自本机 summary 的周一回顾卡，
   或导出 year-to-date 年度回顾卡。

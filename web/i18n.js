@@ -97,7 +97,7 @@ const MESSAGES = {
     'settings.time': 'Time',
     'settings.season': 'Season',
     'settings.motion': 'Motion',
-    'settings.flowerbed': 'Flowerbed',
+    'settings.flowerbed': 'Agent nursery',
     'settings.data': 'Data',
     'settings.autoRescan': 'Live watcher updates',
     'settings.autoRescanHint': 'When off, new activity appears after a manual scan or view refresh.',
@@ -228,7 +228,7 @@ const MESSAGES = {
     'insight.rowCost': 'Est. {cost}',
     'insight.rowCostUnpriced': 'Est. {cost} · {tokens} unpriced',
 
-    'nursery.aria': 'Agent nursery prototype',
+    'nursery.aria': 'Agent nursery',
     'nursery.tooltip': '{source} · {share} recent share · {recent} tokens',
     'nursery.tooltipFallow': '{source} · fallow · {total} lifetime tokens',
 
@@ -415,7 +415,7 @@ const MESSAGES = {
     'settings.time': '时间',
     'settings.season': '季节',
     'settings.motion': '动画',
-    'settings.flowerbed': '花床',
+    'settings.flowerbed': 'Agent 苗圃',
     'settings.data': '数据',
     'settings.autoRescan': 'watcher 实时更新',
     'settings.autoRescanHint': '关闭后,需要点 footer 刷新才会看到新的活动',
@@ -546,7 +546,7 @@ const MESSAGES = {
     'insight.rowCost': '估算 {cost}',
     'insight.rowCostUnpriced': '估算 {cost} · {tokens} 未计价',
 
-    'nursery.aria': 'Agent 苗圃原型',
+    'nursery.aria': 'Agent 苗圃',
     'nursery.tooltip': '{source} · 近 30 天占比 {share} · {recent} tokens',
     'nursery.tooltipFallow': '{source} · 休耕 · 累计 {total} tokens',
 

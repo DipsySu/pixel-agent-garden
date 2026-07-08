@@ -148,9 +148,11 @@ what their garden did, from the tray + one Monday postcard.
 
 `v1.5.0` shipped the tabbed data drawer content wave: local cost estimates,
 model/source composition, durable rings, project-level cost lines, CSV/JSON
-daily-token export, weekly recap sharing, and an opt-in Agent Nursery prototype
-behind `?nursery=1`. Region mapping remains a prototype decision, not a
-default scene commitment.
+daily-token export, weekly recap sharing, and an opt-in Agent Nursery prototype.
+As of the v2.0 branch after `v1.9.0`, the nursery is settings-driven
+(`Appearance → Agent nursery`) rather than query-flag-only; region mapping
+still remains an opt-in visual bet until the screenshot/user-reaction gate says
+it should become default.
 
 Only ships where a real question exists. Every item must answer something a
 user actually asked.

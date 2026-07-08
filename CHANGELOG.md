@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Started the v2.0 Agent Nursery promotion path. The source-share nursery is
+  no longer query-flag-only: the existing Appearance setting now surfaces as
+  "Agent nursery" and enables both the flowerbed base and adapter plots, while
+  `?nursery=1` remains as a review override. The overlay is still opt-in, but
+  it now behaves like a real configurable feature and updates live when the
+  setting changes.
+
 ## v1.9.0 - 2026-07-08
 
 - Cost estimation is now single-source in `core`. `crate::prices::estimate`
