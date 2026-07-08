@@ -67,3 +67,51 @@ export function canvasToPngBlob(canvas) {
     }, 'image/png');
   });
 }
+
+// --- shared card data helpers ----------------------------------------------
+// Weekly and year cards window the same core `daily_tokens` rollup over a set
+// of UTC day keys. These live here (not duplicated per card) so a fix to the
+// windowing/zero-fill math or the schema-v2 fallback lands in one place.
+
+// The user's LOCAL calendar day as a plain tuple (month 1-based) — the trigger
+// anchor. LOCAL on purpose: "this week"/"this year" is the human's calendar.
+export function localCalendarDay(now = new Date()) {
+  return { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
+}
+
+export function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+// UTC day key ('YYYY-MM-DD') matching core aggregate.rs's daily_tokens keys.
+export function utcDayKey(ms) {
+  const d = new Date(ms);
+  return d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate());
+}
+
+// A finite, non-negative token count; anything else reads as 0.
+export function toCount(value) {
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+// Sum a project's own daily_tokens map over the window (zero-filled).
+export function sumWindow(map, days) {
+  if (!map || typeof map !== 'object') return 0;
+  let sum = 0;
+  for (const day of days) sum += toCount(map[day]);
+  return sum;
+}
+
+// Per-day totals across the window, zero-filled. Prefers the summary-level
+// `daily_tokens` rollup; a summary cached before schema v2 lacks it, so the
+// per-project maps are summed instead (same numbers, more addition).
+export function dailyTotals(summary, days) {
+  const rollup = summary?.daily_tokens;
+  if (rollup && typeof rollup === 'object') {
+    return days.map((day) => toCount(rollup[day]));
+  }
+  const projects = Array.isArray(summary?.projects) ? summary.projects : [];
+  return days.map((day) =>
+    projects.reduce((sum, project) => sum + toCount(project?.daily_tokens?.[day]), 0)
+  );
+}

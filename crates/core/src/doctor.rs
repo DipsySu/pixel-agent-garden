@@ -6,10 +6,27 @@
 //! the network.
 
 use crate::adapter::AdapterContext;
+use crate::error::Error;
 use crate::{prices, registry, rings, settings, storage};
 use serde::{Deserialize, Serialize};
 use std::io::{ErrorKind, Write};
 use std::path::{Path, PathBuf};
+
+/// Classify a state-file load failure. An I/O error (permission denied,
+/// EISDIR, a disconnected network share) means the file may be perfectly
+/// valid but unreadable right now — that is a Warn, not the corruption-flavored
+/// Error that both fails the whole `doctor` run (non-zero exit) and, via the
+/// "is invalid" wording, tempts a user to delete a healthy file. Only a parse
+/// failure is genuine invalidity.
+fn load_failure(subject: &str, err: &Error) -> (DoctorStatus, String) {
+    match err {
+        Error::Io { .. } => (
+            DoctorStatus::Warn,
+            format!("{subject} is unreadable (permissions or I/O)"),
+        ),
+        _ => (DoctorStatus::Error, format!("{subject} is invalid")),
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -43,21 +60,37 @@ pub struct DoctorPaths {
     pub prices_path: PathBuf,
 }
 
-impl Default for DoctorPaths {
-    fn default() -> Self {
-        let state_dir = storage::default_state_dir();
+impl DoctorPaths {
+    /// Every product state file lives under one state dir (see storage.rs /
+    /// settings.rs / rings.rs / prices.rs — all `default_state_dir().join(..)`).
+    /// Deriving them from an explicit state dir lets `run` honor the caller's
+    /// home instead of re-reading the process env, so the adapter half and the
+    /// file half of a report can never point at two different homes.
+    pub fn for_state_dir(state_dir: PathBuf) -> Self {
         Self {
-            settings_path: settings::default_settings_path(),
+            settings_path: state_dir.join("settings.toml"),
             events_path: state_dir.join("events.json"),
-            rings_path: rings::default_rings_path(),
-            prices_path: prices::default_user_prices_path(),
+            rings_path: state_dir.join("rings.json"),
+            prices_path: state_dir.join("prices.json"),
             state_dir,
         }
     }
 }
 
+impl Default for DoctorPaths {
+    fn default() -> Self {
+        Self::for_state_dir(storage::default_state_dir())
+    }
+}
+
 pub fn run(ctx: &AdapterContext) -> DoctorReport {
-    run_with_paths(ctx, &DoctorPaths::default())
+    // Resolve state files under the SAME home the adapter checks use (ctx),
+    // not the process env, so a caller built via AdapterContext::with_home(X)
+    // gets a coherent report instead of adapters-under-X + files-under-$HOME.
+    run_with_paths(
+        ctx,
+        &DoctorPaths::for_state_dir(ctx.home.join(".local-agent-garden")),
+    )
 }
 
 pub fn run_with_paths(ctx: &AdapterContext, paths: &DoctorPaths) -> DoctorReport {
@@ -76,24 +109,40 @@ pub fn run_with_paths(ctx: &AdapterContext, paths: &DoctorPaths) -> DoctorReport
 }
 
 fn check_state_dir(path: &Path) -> DoctorCheck {
-    match ensure_writable_dir(path) {
+    // A diagnostic must not materialize product state: an absent dir is a
+    // benign "not created yet" (first run), not a failure, and we never
+    // create_dir_all here (that would drop ~/.local-agent-garden/ onto a
+    // machine that never launched the app).
+    if !path.exists() {
+        return check(
+            "state_dir",
+            DoctorStatus::Warn,
+            "state directory is absent; it will be created on first run",
+            Some(report_path(path)),
+        );
+    }
+    match probe_writable(path) {
         Ok(()) => check(
             "state_dir",
             DoctorStatus::Ok,
             "state directory is writable",
             Some(report_path(path)),
         ),
+        // Redact the probe message like every other check — it embeds the
+        // home-rooted path and doctor output is meant to be paste-safe.
         Err(message) => check(
             "state_dir",
             DoctorStatus::Error,
             "state directory is not writable",
-            Some(message),
+            Some(report_text(&message)),
         ),
     }
 }
 
-fn ensure_writable_dir(path: &Path) -> Result<(), String> {
-    std::fs::create_dir_all(path).map_err(|err| format!("{}: {}", path.display(), err))?;
+/// Confirm the (already-existing) state dir accepts a write, cleaning up the
+/// probe on every exit path — a failed write/remove or a killed process must
+/// not leave a `.doctor-write-*` orphan behind.
+fn probe_writable(path: &Path) -> Result<(), String> {
     for n in 0..100u32 {
         let probe = path.join(format!(".doctor-write-{}-{n}", std::process::id()));
         match std::fs::OpenOptions::new()
@@ -102,11 +151,12 @@ fn ensure_writable_dir(path: &Path) -> Result<(), String> {
             .open(&probe)
         {
             Ok(mut file) => {
-                file.write_all(b"ok")
-                    .map_err(|err| format!("{}: {}", probe.display(), err))?;
+                let wrote = file.write_all(b"ok");
                 drop(file);
-                std::fs::remove_file(&probe)
-                    .map_err(|err| format!("{}: {}", probe.display(), err))?;
+                // Always attempt cleanup, then surface the write error if any.
+                let removed = std::fs::remove_file(&probe);
+                wrote.map_err(|err| format!("{}: {}", probe.display(), err))?;
+                removed.map_err(|err| format!("{}: {}", probe.display(), err))?;
                 return Ok(());
             }
             Err(err) if err.kind() == ErrorKind::AlreadyExists => continue,
@@ -133,12 +183,15 @@ fn check_settings(path: &Path) -> DoctorCheck {
             "settings.toml is absent; defaults will be used",
             Some(report_path(path)),
         ),
-        Err(err) => check(
-            "settings",
-            DoctorStatus::Error,
-            "settings.toml is invalid",
-            Some(report_text(&err.to_string())),
-        ),
+        Err(err) => {
+            let (status, message) = load_failure("settings.toml", &err);
+            check(
+                "settings",
+                status,
+                &message,
+                Some(report_text(&err.to_string())),
+            )
+        }
     }
 }
 
@@ -154,12 +207,15 @@ fn check_prices(path: &Path) -> DoctorCheck {
                 if path.exists() { "present" } else { "absent" }
             )),
         ),
-        Err(err) => check(
-            "prices",
-            DoctorStatus::Error,
-            "price table is invalid",
-            Some(report_text(&err.to_string())),
-        ),
+        Err(err) => {
+            let (status, message) = load_failure("price table", &err);
+            check(
+                "prices",
+                status,
+                &message,
+                Some(report_text(&err.to_string())),
+            )
+        }
     }
 }
 
@@ -187,12 +243,15 @@ fn check_events_cache(path: &Path) -> DoctorCheck {
                 }
             )),
         ),
-        Err(err) => check(
-            "events_cache",
-            DoctorStatus::Error,
-            "events.json is invalid",
-            Some(report_text(&err.to_string())),
-        ),
+        Err(err) => {
+            let (status, message) = load_failure("events.json", &err);
+            check(
+                "events_cache",
+                status,
+                &message,
+                Some(report_text(&err.to_string())),
+            )
+        }
     }
 }
 
@@ -212,12 +271,15 @@ fn check_rings(path: &Path) -> DoctorCheck {
             "rings.json parses",
             Some(format!("{} memory events", book.events.len())),
         ),
-        Err(err) => check(
-            "rings",
-            DoctorStatus::Error,
-            "rings.json is invalid",
-            Some(report_text(&err.to_string())),
-        ),
+        Err(err) => {
+            let (status, message) = load_failure("rings.json", &err);
+            check(
+                "rings",
+                status,
+                &message,
+                Some(report_text(&err.to_string())),
+            )
+        }
     }
 }
 
@@ -267,14 +329,41 @@ fn report_path(path: &Path) -> String {
 }
 
 fn report_text(text: &str) -> String {
-    let Some(home) = std::env::var_os("HOME")
+    let home = std::env::var_os("HOME")
         .or_else(|| std::env::var_os("USERPROFILE"))
         .and_then(|value| value.into_string().ok())
-        .filter(|value| !value.is_empty())
-    else {
+        .filter(|value| !value.is_empty());
+    redact_home(text, home.as_deref())
+}
+
+/// Replace the home prefix with `~`, boundary-aware and env-free (so it is unit
+/// testable without touching the process environment). Only a home occurrence
+/// that ends a path component — followed by `/`, `\`, or end-of-string — is
+/// redacted, so `HOME=/Users/su` no longer mangles `/Users/superproj` into
+/// `~perproj`. A missing home returns the text unchanged.
+fn redact_home(text: &str, home: Option<&str>) -> String {
+    let Some(home) = home.filter(|value| !value.is_empty()) else {
         return text.to_string();
     };
-    text.replace(&home, "~")
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(idx) = rest.find(home) {
+        let after = &rest[idx + home.len()..];
+        let boundary = after
+            .chars()
+            .next()
+            .map(|c| c == '/' || c == '\\')
+            .unwrap_or(true);
+        out.push_str(&rest[..idx]);
+        if boundary {
+            out.push('~');
+        } else {
+            out.push_str(home);
+        }
+        rest = after;
+    }
+    out.push_str(rest);
+    out
 }
 
 #[cfg(test)]
@@ -306,13 +395,34 @@ mod tests {
         let report = run_with_paths(&ctx, &paths(&root));
 
         assert!(report.ok);
-        assert_eq!(status(&report, "state_dir"), DoctorStatus::Ok);
+        // A never-launched install has no state dir yet — doctor must report
+        // that as a Warn without creating the directory (it is a read-mostly
+        // diagnostic), and confirm it left nothing behind.
+        assert_eq!(status(&report, "state_dir"), DoctorStatus::Warn);
+        assert!(!root.exists(), "doctor must not create the state dir");
         assert_eq!(status(&report, "settings"), DoctorStatus::Ok);
         assert_eq!(status(&report, "prices"), DoctorStatus::Ok);
         assert_eq!(status(&report, "events_cache"), DoctorStatus::Warn);
         assert_eq!(status(&report, "rings"), DoctorStatus::Warn);
         assert_eq!(status(&report, "adapters"), DoctorStatus::Warn);
 
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn writable_state_dir_is_ok_and_leaves_no_probe() {
+        let root = temp_root("writable");
+        std::fs::create_dir_all(&root).unwrap();
+
+        let report = run_with_paths(&AdapterContext::with_home(root.join("home")), &paths(&root));
+
+        assert_eq!(status(&report, "state_dir"), DoctorStatus::Ok);
+        let leftover: Vec<_> = std::fs::read_dir(&root)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_name().to_string_lossy().starts_with(".doctor-write"))
+            .collect();
+        assert!(leftover.is_empty(), "probe files must be cleaned up");
         let _ = std::fs::remove_dir_all(root);
     }
 
@@ -337,23 +447,50 @@ mod tests {
         let existing = root.join(format!(".doctor-write-{}-0", std::process::id()));
         std::fs::write(&existing, "keep").unwrap();
 
-        ensure_writable_dir(&root).unwrap();
+        probe_writable(&root).unwrap();
 
         assert_eq!(std::fs::read_to_string(&existing).unwrap(), "keep");
         let _ = std::fs::remove_dir_all(root);
     }
 
     #[test]
-    fn report_paths_redact_home_prefix() {
-        let Some(home) = std::env::var_os("HOME")
-            .or_else(|| std::env::var_os("USERPROFILE"))
-            .map(PathBuf::from)
-        else {
-            return;
-        };
-        let path = home.join(".local-agent-garden").join("events.json");
+    fn redact_home_is_boundary_aware_and_env_free() {
+        // Injected home — no dependency on the process $HOME (a HOME-less CI
+        // must still exercise redaction, not silently pass).
+        assert_eq!(
+            redact_home(
+                "/Users/alice/.local-agent-garden/events.json",
+                Some("/Users/alice")
+            ),
+            "~/.local-agent-garden/events.json"
+        );
+        // Bare home, and home inside an error message, both redact.
+        assert_eq!(redact_home("/Users/alice", Some("/Users/alice")), "~");
+        assert_eq!(
+            redact_home("/Users/alice/x: Permission denied", Some("/Users/alice")),
+            "~/x: Permission denied"
+        );
+        // Boundary-aware: a longer sibling dir is NOT mangled into ~perproj.
+        assert_eq!(
+            redact_home("/Users/superproj/x", Some("/Users/su")),
+            "/Users/superproj/x"
+        );
+        // Missing/empty home leaves the text untouched.
+        assert_eq!(redact_home("/Users/alice/x", None), "/Users/alice/x");
+        assert_eq!(redact_home("/Users/alice/x", Some("")), "/Users/alice/x");
+    }
 
-        assert_eq!(report_path(&path), "~/.local-agent-garden/events.json");
+    #[test]
+    fn unreadable_file_warns_rather_than_errors() {
+        // An I/O failure (here: the path is a directory, so load hits EISDIR)
+        // is a Warn, not a corruption Error that would fail the whole run.
+        let io_err = Error::io(
+            PathBuf::from("/x"),
+            std::io::Error::from(ErrorKind::PermissionDenied),
+        );
+        let (status, message) = load_failure("settings.toml", &io_err);
+        assert_eq!(status, DoctorStatus::Warn);
+        assert!(message.contains("unreadable"));
     }
 
     #[test]

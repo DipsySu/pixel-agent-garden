@@ -15,18 +15,19 @@ import {
   GREEN,
   INK,
   MUTED,
+  PAPER,
   PAPER_EDGE,
   canvasToPngBlob,
+  dailyTotals,
   drawPaperFrame,
   ensureCardFonts,
-  fitOneLine
+  fitOneLine,
+  localCalendarDay,
+  sumWindow,
+  utcDayKey
 } from './card-canvas.js';
 import { escapeHtml, fmtLocal } from './render-helpers.js';
 import { t } from './i18n.js';
-
-export function localCalendarDay(now = new Date()) {
-  return { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
-}
 
 export function yearToDateWindow(anchor = localCalendarDay()) {
   const year = Number(anchor?.year) || new Date().getFullYear();
@@ -41,7 +42,7 @@ export function yearToDateWindow(anchor = localCalendarDay()) {
 
 export function yearStats(summary, range) {
   const days = Array.isArray(range?.days) ? range.days : [];
-  const totals = yearDailyTotals(summary, days);
+  const totals = dailyTotals(summary, days);
   const totalTokens = totals.reduce((sum, value) => sum + value, 0);
   const activeDays = totals.filter((value) => value > 0).length;
   let busiestDay = null;
@@ -53,7 +54,7 @@ export function yearStats(summary, range) {
 
   const monthTotals = new Array(12).fill(0);
   days.forEach((day, index) => {
-    monthTotals[monthIndex(day)] += totals[index] || 0;
+    monthTotals[monthIndex(day)] += totals[index];
   });
 
   const projects = Array.isArray(summary?.projects) ? summary.projects : [];
@@ -76,34 +77,12 @@ export function yearStats(summary, range) {
   };
 }
 
-function yearDailyTotals(summary, days) {
-  const rollup = summary?.daily_tokens;
-  if (rollup && typeof rollup === 'object') {
-    return days.map((day) => toCount(rollup[day]));
-  }
-  const projects = Array.isArray(summary?.projects) ? summary.projects : [];
-  return days.map((day) =>
-    projects.reduce((sum, project) => sum + toCount(project?.daily_tokens?.[day]), 0)
-  );
-}
-
-function sumWindow(map, days) {
-  if (!map || typeof map !== 'object') return 0;
-  let sum = 0;
-  for (const day of days) sum += toCount(map[day]);
-  return sum;
-}
-
-function toCount(value) {
-  return Number.isFinite(value) && value > 0 ? value : 0;
-}
-
 export function suggestedYearName(range) {
   return 'garden-year-' + (range?.year || 'unknown') + '.png';
 }
 
-export async function buildYearCanvas({ summary, now = new Date() }) {
-  const range = yearToDateWindow(localCalendarDay(now));
+export async function buildYearCanvas({ summary, now = new Date(), anchor = localCalendarDay(now) }) {
+  const range = yearToDateWindow(anchor);
   const stats = yearStats(summary, range);
   const canvas = document.createElement('canvas');
   canvas.width = CARD_W;
@@ -123,7 +102,7 @@ function drawCard(ctx, range, stats) {
   ctx.fillRect(40, 40, CARD_W - 80, 92);
   ctx.fillStyle = PAPER_EDGE;
   ctx.fillRect(48, 48, 18, 76);
-  ctx.fillStyle = '#f4ecd8';
+  ctx.fillStyle = PAPER;
   ctx.font = '700 43px ' + FONT_PIXEL;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
@@ -155,12 +134,16 @@ function drawCard(ctx, range, stats) {
   ctx.fillText(fitOneLine(ctx, detailLine, CARD_W - 132), 66, 758);
 
   drawBusiestDay(ctx, stats, { x: 66, y: 800, w: CARD_W - 132 });
-  drawTopProjects(ctx, stats, { x: 66, y: 902, w: CARD_W - 132 });
+  // Closing line sits below whatever the top-projects block actually drew
+  // (0..5 rows), so a 5-project card no longer overprints it — the y-rhythm
+  // is derived, not a fixed weekly-3-row assumption.
+  const projectsBottom = drawTopProjects(ctx, stats, { x: 66, y: 902, w: CARD_W - 132 });
 
   ctx.fillStyle = MUTED;
   ctx.font = '34px ' + FONT_STACK;
   ctx.textAlign = 'left';
-  ctx.fillText(fitOneLine(ctx, t('share.year.closing'), CARD_W - 132), 66, 1130);
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(fitOneLine(ctx, t('share.year.closing'), CARD_W - 132), 66, projectsBottom + 44);
 
   ctx.fillStyle = MUTED;
   ctx.font = '24px ' + FONT_PIXEL;
@@ -223,17 +206,18 @@ function drawBusiestDay(ctx, stats, box) {
   ctx.fillText(fitOneLine(ctx, line, box.w - 28), box.x + 14, box.y + 32);
 }
 
+// Draws the top-project rows and returns the y just past the last one, so the
+// caller can flow the closing line below. Empty is NOT handled here — the
+// busiest-day line already carries the quiet-year message, so drawing it again
+// here would double-print it (both fired on a zero-token year).
+const PROJECT_ROW_PITCH = 44;
+
 function drawTopProjects(ctx, stats, box) {
+  const rows = stats.topProjects.slice(0, 5);
+  if (!rows.length) return box.y;
   ctx.textBaseline = 'middle';
-  if (!stats.topProjects.length) {
-    ctx.fillStyle = MUTED;
-    ctx.font = '34px ' + FONT_STACK;
-    ctx.textAlign = 'left';
-    ctx.fillText(fitOneLine(ctx, t('share.year.noActivity'), box.w), box.x, box.y + 18);
-    return;
-  }
-  stats.topProjects.slice(0, 5).forEach((entry, index) => {
-    const y = box.y + index * 54 + 18;
+  rows.forEach((entry, index) => {
+    const y = box.y + index * PROJECT_ROW_PITCH + 18;
     ctx.fillStyle = index === 0 ? GREEN : PAPER_EDGE;
     ctx.fillRect(box.x, y - 10, 20, 20);
     const tokens = fmtLocal(entry.tokens);
@@ -246,6 +230,7 @@ function drawTopProjects(ctx, stats, box) {
     ctx.font = '600 30px ' + FONT_STACK;
     ctx.fillText(fitOneLine(ctx, entry.name, box.w - 44 - tokensW - 24), box.x + 44, y);
   });
+  return box.y + rows.length * PROJECT_ROW_PITCH;
 }
 
 export function mountYearCardContent({ host, getSummary, onError, onRequestClose }) {
@@ -315,9 +300,11 @@ export function mountYearCardContent({ host, getSummary, onError, onRequestClose
   }
 
   return {
+    // Focus AFTER the render resolves: renderPreview() disables the export
+    // button synchronously before its first await, so focusing it inline
+    // would no-op and drop focus to <body>.
     activate: () => {
-      renderPreview();
-      exportButton.focus();
+      renderPreview().then(() => exportButton.focus());
     }
   };
 }
@@ -336,11 +323,3 @@ function monthIndex(day) {
   return Math.max(0, Math.min(11, Number(String(day).slice(5, 7)) - 1));
 }
 
-function utcDayKey(ms) {
-  const d = new Date(ms);
-  return d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate());
-}
-
-function pad2(n) {
-  return String(n).padStart(2, '0');
-}

@@ -107,7 +107,10 @@ test('buildYearCanvas runs through the canvas path with an injected document', a
   try {
     const result = await buildYearCanvas({
       summary: craftedSummary(),
-      now: new Date(Date.UTC(2026, 6, 8, 12, 0, 0))
+      // Inject the calendar-day anchor so the window is timezone-independent:
+      // relying on now's LOCAL date failed in UTC+12..+14 (the '2026-07-09'
+      // sentinel would enter the window).
+      anchor: { year: 2026, month: 7, day: 8 }
     });
     assert.equal(result.range.year, 2026);
     assert.equal(result.stats.totalTokens, 10_000);

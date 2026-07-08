@@ -32,23 +32,19 @@ import {
   PAPER,
   PAPER_EDGE,
   canvasToPngBlob,
+  dailyTotals,
   drawPaperFrame,
   ensureCardFonts,
-  fitOneLine
+  fitOneLine,
+  localCalendarDay,
+  pad2,
+  sumWindow,
+  utcDayKey
 } from './card-canvas.js';
 import { escapeHtml, fmtLocal } from './render-helpers.js';
 import { t } from './i18n.js';
 
 // --- pure week math (node-testable, no DOM) ---------------------------------
-
-/**
- * The user's LOCAL calendar day as a plain {year, month, day} tuple (month
- * 1-based). Exported so tests can pass explicit tuples and stay
- * timezone-independent (house style: parameterize, don't mock the clock).
- */
-export function localCalendarDay(now = new Date()) {
-  return { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
-}
 
 /**
  * The ISO week BEFORE the one containing the given calendar day (ISO 8601:
@@ -85,7 +81,7 @@ export function weeklyStats(summary, week) {
   const days = Array.isArray(week?.days) ? week.days : [];
   let totalTokens = 0;
   let activeDays = 0;
-  for (const value of weekDailyTotals(summary, days)) {
+  for (const value of dailyTotals(summary, days)) {
     totalTokens += value;
     if (value > 0) activeDays += 1;
   }
@@ -101,30 +97,6 @@ export function weeklyStats(summary, week) {
   return { totalTokens, topProjects, activeDays };
 }
 
-// Per-day totals for the window, zero-filled. Prefers the summary-level
-// `daily_tokens`; a summary cached before schema v2 lacks that map, in which
-// case the per-project maps are summed instead (same numbers, more addition).
-function weekDailyTotals(summary, days) {
-  const rollup = summary?.daily_tokens;
-  if (rollup && typeof rollup === 'object') {
-    return days.map((day) => toCount(rollup[day]));
-  }
-  const projects = Array.isArray(summary?.projects) ? summary.projects : [];
-  return days.map((day) =>
-    projects.reduce((sum, project) => sum + toCount(project?.daily_tokens?.[day]), 0)
-  );
-}
-
-function sumWindow(map, days) {
-  if (!map || typeof map !== 'object') return 0;
-  let sum = 0;
-  for (const day of days) sum += toCount(map[day]);
-  return sum;
-}
-
-function toCount(value) {
-  return Number.isFinite(value) && value > 0 ? value : 0;
-}
 
 // --- Monday offer gate (local-time trigger half of the contract) ------------
 
@@ -177,15 +149,6 @@ function localDateKey(date) {
   return date.getFullYear() + '-' + pad2(date.getMonth() + 1) + '-' + pad2(date.getDate());
 }
 
-function utcDayKey(ms) {
-  const d = new Date(ms);
-  return d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate());
-}
-
-function pad2(n) {
-  return String(n).padStart(2, '0');
-}
-
 // --- card render (§5.4-E DNA) ------------------------------------------------
 
 /** Suggested export filename, anchored on the week's Monday (UTC key). */
@@ -209,7 +172,7 @@ export async function buildWeeklyCanvas({ summary, now = new Date() }) {
   if (!ctx) throw new Error('canvas 2D context unavailable');
   ctx.imageSmoothingEnabled = false;
   await ensureCardFonts();
-  drawCard(ctx, week, stats, weekDailyTotals(summary, week.days));
+  drawCard(ctx, week, stats, dailyTotals(summary, week.days));
   return { canvas, week, stats };
 }
 
@@ -405,9 +368,11 @@ export function mountWeeklyCardContent({ host, getSummary, onError, onRequestClo
   }
 
   return {
+    // Focus AFTER the render resolves: renderPreview() disables the export
+    // button synchronously before its first await, so focusing it inline
+    // would no-op and drop focus to <body>.
     activate: () => {
-      renderPreview();
-      exportButton.focus();
+      renderPreview().then(() => exportButton.focus());
     }
   };
 }

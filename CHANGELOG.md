@@ -2,7 +2,36 @@
 
 ## Unreleased
 
-- Nothing yet.
+- Post-v1.8 review fixes (privacy + share-card polish):
+  - **doctor no longer leaks the home path.** The state-dir "not writable"
+    branch now runs its message through the same home→`~` redactor every
+    other check uses, so `doctor --json` stays paste-safe (README's promise)
+    even on a permission-denied state dir.
+  - **doctor stopped mutating the filesystem.** An absent state dir reports a
+    Warn instead of `create_dir_all`-ing `~/.local-agent-garden/`, so running
+    the diagnostic before ever launching the app leaves nothing behind; the
+    writability probe also cleans up on every failure path.
+  - **doctor classifies failures honestly.** A readable-but-unparseable file
+    is still an Error ("invalid"), but a permission/IO failure is now a Warn
+    ("unreadable"), so a valid-but-locked settings/prices/events/rings file no
+    longer fails the whole run with corruption wording.
+  - **doctor::run honors the context home**, deriving all state paths from the
+    caller's `AdapterContext` instead of the process env, so a future
+    `with_home(X)` caller gets a coherent report (no adapters-under-X +
+    files-under-$HOME split); the home redactor is now a pure, env-free,
+    boundary-aware helper (no more `/Users/su` mangling `/Users/superproj`).
+  - **Year card layout no longer overprints.** With ≥5 projects the closing
+    line now flows below the actual rows (derived, not a fixed 3-row rhythm),
+    and the zero-token card shows the quiet-year line once, not twice.
+  - **Shared card DNA unified.** The weekly/year date+stat helpers
+    (`localCalendarDay`/`utcDayKey`/`sumWindow`/`toCount`/daily-totals) moved
+    into `card-canvas.js`, the year title uses the shared `PAPER` constant,
+    and both cards focus the export button only after the preview renders (it
+    is disabled synchronously first, so focusing inline dropped to `<body>`).
+  - **`fmtLocal` boundary fixed** — 999,950,000 reads as `1.0B`, not
+    `1000.0M`; the year-card test is now timezone-independent (injected
+    calendar-day anchor), and doctor's redaction test injects a home fixture
+    instead of reading the real `$HOME`.
 
 ## v1.8.0 - 2026-07-08
 

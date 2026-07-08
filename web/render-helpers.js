@@ -8,9 +8,21 @@ export function groupSprites(sprites) {
   }
 
 export function fmtLocal(value) {
+    // Scale then round, and let a value that rounds up to 1000.0 of its unit
+    // roll into the next unit (999,950,000 reads as '1.0B', not '1000.0M').
+    const scaled = (value, unit) => {
+      const n = value / unit;
+      return n >= 999.95 ? null : n.toFixed(1);
+    };
     if (value >= 1000000000) return (value / 1000000000).toFixed(1) + 'B';
-    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-    if (value >= 1000) return (value / 1000).toFixed(1) + 'k';
+    if (value >= 1000000) {
+      const m = scaled(value, 1000000);
+      return m === null ? '1.0B' : m + 'M';
+    }
+    if (value >= 1000) {
+      const k = scaled(value, 1000);
+      return k === null ? '1.0M' : k + 'k';
+    }
     return String(value || 0);
   }
 
