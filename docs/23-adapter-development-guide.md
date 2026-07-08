@@ -101,4 +101,3 @@ Each adapter PR must include:
 - A short note on token accuracy: exact split, total-only, or no tokens.
 - A short note on privacy: source paths read, files written, and confirmation
   that the adapter is read-only.
-

@@ -66,4 +66,3 @@ body:
       description: Any docs links, version details, or known format caveats.
     validations:
       required: false
-
