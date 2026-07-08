@@ -1103,6 +1103,21 @@ body {
 .pg6-postcard-export:focus-visible { background: rgba(244, 216, 120, 0.18); outline: none; }
 .pg6-postcard-export:disabled { cursor: wait; opacity: 0.62; }
 .pg6-postcard-status { color: var(--color-text-tertiary); font-size: 10px; min-width: 0; overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.pg6-year-deck-nav { align-items: center; display: flex; gap: 8px; justify-content: space-between; margin-top: 8px; }
+.pg6-year-prev,
+.pg6-year-next {
+  background: rgba(244, 216, 120, 0.12);
+  border: 1px solid rgba(244, 216, 120, 0.28);
+  border-radius: 5px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font: inherit;
+  height: 26px;
+  width: 30px;
+}
+.pg6-year-prev:disabled,
+.pg6-year-next:disabled { cursor: default; opacity: 0.42; }
+.pg6-year-counter { color: var(--color-text-secondary); font-size: 11px; min-width: 0; overflow: hidden; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
 .pg6-return-diff {
   background: rgba(20, 24, 18, 0.88);
   border: 1px solid rgba(244, 216, 120, 0.18);
@@ -1473,6 +1488,13 @@ body {
 }
 .pg6-postcard-export:hover,
 .pg6-postcard-export:focus-visible { background: #7daf48; }
+.pg6-year-prev,
+.pg6-year-next { background: #fffaf0; border: 2px solid var(--ink); border-radius: 0; box-shadow: 1px 1px 0 var(--ink); color: var(--ink); }
+.pg6-year-prev:hover:not(:disabled),
+.pg6-year-next:hover:not(:disabled),
+.pg6-year-prev:focus-visible,
+.pg6-year-next:focus-visible { background: #fff6e2; outline: none; }
+.pg6-year-counter { color: #5f5240; font-family: var(--font-pixel); font-size: 10px; }
 .pg6-dashboard-kpi { background: #fffaf0; border: 2px solid var(--paper-edge); border-radius: 0; }
 .pg6-dashboard-kpi-label,
 .pg6-dashboard-kpi-sub,

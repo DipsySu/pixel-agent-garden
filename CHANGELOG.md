@@ -22,6 +22,9 @@
   season has activity, the garden shows one quiet banner per season and opens
   the Seasonal Moment card directly; quiet seasons stay silent and demo mode
   never writes real offer flags.
+- Started PRD 2.0 P3-3 Year in Review proper. The old single year-to-date
+  card is now a five-card local deck (cover, growth, peak, companions, seed)
+  with in-drawer preview navigation and one long PNG export.
 
 ## v1.9.0 - 2026-07-08
 

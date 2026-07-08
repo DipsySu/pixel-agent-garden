@@ -4,8 +4,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  buildYearDeckCanvas,
+  buildYearDeckCanvases,
   buildYearCanvas,
+  suggestedYearDeckName,
   suggestedYearName,
+  YEAR_CARD_TYPES,
   yearStats,
   yearToDateWindow
 } from '../year-card.js';
@@ -35,7 +39,11 @@ function craftedSummary() {
       { display_name: 'demo-gamma', daily_tokens: { '2026-07-08': 1_200 } },
       { display_name: 'demo-old', daily_tokens: { '2025-12-31': 50_000 } },
       { display_name: 'demo-future', daily_tokens: { '2026-07-09': 50_000 } }
-    ]
+    ],
+    source_tokens: {
+      'claude-code': { total_tokens: 8_000 },
+      codex: { input_tokens: 500, output_tokens: 500 }
+    }
   };
 }
 
@@ -48,6 +56,7 @@ test('yearStats sums only the current year-to-date window', () => {
   assert.equal(stats.monthTotals[0], 1_000);
   assert.equal(stats.monthTotals[2], 7_000);
   assert.equal(stats.monthTotals[6], 2_000);
+  assert.deepEqual(stats.sourceRows.map((row) => row.value), [8_000, 1_000]);
 });
 
 test('yearStats ranks projects by year-to-date tokens and never by lifetime', () => {
@@ -74,6 +83,7 @@ test('yearStats falls back to per-project maps when the summary rollup is absent
 test('suggestedYearName is stable and does not include project names', () => {
   assert.equal(suggestedYearName({ year: 2026 }), 'garden-year-2026.png');
   assert.equal(suggestedYearName(null), 'garden-year-unknown.png');
+  assert.equal(suggestedYearDeckName({ year: 2026 }), 'garden-year-2026-set.png');
 });
 
 test('buildYearCanvas runs through the canvas path with an injected document', async () => {
@@ -115,6 +125,57 @@ test('buildYearCanvas runs through the canvas path with an injected document', a
     assert.equal(result.range.year, 2026);
     assert.equal(result.stats.totalTokens, 10_000);
     assert.ok(calls.some((call) => call[0] === 'fillText'));
+  } finally {
+    if (previousDocument === undefined) delete globalThis.document;
+    else globalThis.document = previousDocument;
+  }
+});
+
+test('buildYearDeckCanvases renders the five-card year review set', async () => {
+  const previousDocument = globalThis.document;
+  const calls = [];
+  const ctx = {
+    set fillStyle(value) { calls.push(['fillStyle', value]); },
+    set strokeStyle(value) { calls.push(['strokeStyle', value]); },
+    set lineWidth(value) { calls.push(['lineWidth', value]); },
+    set font(value) { calls.push(['font', value]); },
+    set textAlign(value) { calls.push(['textAlign', value]); },
+    set textBaseline(value) { calls.push(['textBaseline', value]); },
+    fillRect: (...args) => calls.push(['fillRect', ...args]),
+    strokeRect: (...args) => calls.push(['strokeRect', ...args]),
+    fillText: (...args) => calls.push(['fillText', ...args]),
+    drawImage: (...args) => calls.push(['drawImage', ...args]),
+    measureText: (text) => ({ width: String(text).length * 10 })
+  };
+  globalThis.document = {
+    createElement: (tag) => {
+      assert.equal(tag, 'canvas');
+      return {
+        width: 0,
+        height: 0,
+        getContext: (kind) => {
+          assert.equal(kind, '2d');
+          return ctx;
+        }
+      };
+    }
+  };
+  try {
+    const deck = await buildYearDeckCanvases({
+      summary: craftedSummary(),
+      anchor: { year: 2026, month: 7, day: 8 }
+    });
+    assert.deepEqual(deck.cards.map((card) => card.type), YEAR_CARD_TYPES);
+    assert.equal(deck.cards.length, 5);
+    assert.ok(deck.cards.every((card) => card.canvas.width === 960 && card.canvas.height === 1280));
+
+    const strip = await buildYearDeckCanvas({
+      summary: craftedSummary(),
+      anchor: { year: 2026, month: 7, day: 8 }
+    });
+    assert.equal(strip.canvas.width, 960);
+    assert.equal(strip.canvas.height, 1280 * 5);
+    assert.equal(calls.filter((call) => call[0] === 'drawImage').length, 5);
   } finally {
     if (previousDocument === undefined) delete globalThis.document;
     else globalThis.document = previousDocument;
