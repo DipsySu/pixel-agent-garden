@@ -25,6 +25,9 @@
 - Started PRD 2.0 P3-3 Year in Review proper. The old single year-to-date
   card is now a five-card local deck (cover, growth, peak, companions, seed)
   with in-drawer preview navigation and one long PNG export.
+- Added the P3-3 annual ritual gate: during the first local week of December,
+  an active year gets one scene banner that opens the Year Review deck; empty
+  years and already-offered years stay silent.
 
 ## v1.9.0 - 2026-07-08
 

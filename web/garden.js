@@ -21,6 +21,7 @@ import { mountSettingsPanel } from './settings-panel.js';
 import { mountShareDrawer } from './share-drawer.js';
 import { recordSeasonalOffer, shouldOfferSeasonalMoment } from './seasonal-card.js';
 import { recordWeeklyOffer, shouldOfferWeeklyRecap } from './weekly-card.js';
+import { recordYearOffer, shouldOfferYearReview } from './year-card.js';
 import { mountReturnDiff } from './return-diff.js';
 import { mountSceneBanner } from './scene-banner.js';
 import { mountUnlockMoments, pulseMomentTarget } from './unlock-moments.js';
@@ -235,6 +236,23 @@ Promise.all([
         onActivate: () => shareDrawer?.open('seasonal')
       });
       recordSeasonalOffer(seasonalOffer.key, window.localStorage);
+    }
+  }
+
+  // P3-3 annual ritual — manual Year Review stays available all year, but the
+  // first local week of December gets one banner if the year has any activity.
+  if (sceneBanner && shareDrawer) {
+    const yearOffer = shouldOfferYearReview({
+      summary: visibleSummary,
+      storage: window.localStorage
+    });
+    if (yearOffer) {
+      sceneBanner.push({
+        icon: '▦',
+        text: t('share.year.offer', { year: yearOffer.range.year }),
+        onActivate: () => shareDrawer?.open('year')
+      });
+      recordYearOffer(yearOffer.key, window.localStorage);
     }
   }
 

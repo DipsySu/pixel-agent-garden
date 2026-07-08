@@ -30,6 +30,7 @@ import { escapeHtml, fmtLocal, sourceLabel } from './render-helpers.js';
 import { t } from './i18n.js';
 
 export const YEAR_CARD_TYPES = ['cover', 'growth', 'peak', 'partners', 'seed'];
+const OFFERED_KEY = 'pg6.year.offered';
 
 export function yearToDateWindow(anchor = localCalendarDay()) {
   const year = Number(anchor?.year) || new Date().getFullYear();
@@ -86,6 +87,32 @@ export function suggestedYearName(range) {
 
 export function suggestedYearDeckName(range) {
   return 'garden-year-' + (range?.year || 'unknown') + '-set.png';
+}
+
+export function yearOfferKey(range) {
+  return range?.year ? String(range.year) : null;
+}
+
+export function shouldOfferYearReview({ summary, now = new Date(), storage } = {}) {
+  const anchor = localCalendarDay(now);
+  // The annual ritual unlocks in the first local week of December. The card
+  // itself is year-to-date and remains manually available all year.
+  if (anchor.month !== 12 || anchor.day > 7) return null;
+  const range = yearToDateWindow(anchor);
+  const stats = yearStats(summary, range);
+  if (stats.totalTokens <= 0) return null;
+  const key = yearOfferKey(range);
+  if (!key || readOffered(storage) === key) return null;
+  return { key, range, stats };
+}
+
+export function recordYearOffer(key, storage) {
+  if (!key) return;
+  try {
+    storage?.setItem(OFFERED_KEY, key);
+  } catch (_) {
+    // Blocked storage only means the annual banner can show again next launch.
+  }
 }
 
 export async function buildYearCanvas({ summary, now = new Date(), anchor = localCalendarDay(now) }) {
@@ -492,6 +519,14 @@ function usageTotal(usage) {
   if (explicit > 0) return explicit;
   return ['input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens']
     .reduce((sum, key) => sum + Number(usage[key] || 0), 0);
+}
+
+function readOffered(storage) {
+  try {
+    return storage?.getItem(OFFERED_KEY) ?? null;
+  } catch (_) {
+    return null;
+  }
 }
 
 export function mountYearCardContent({ host, getSummary, onError, onRequestClose }) {

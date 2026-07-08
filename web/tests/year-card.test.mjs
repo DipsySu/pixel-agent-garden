@@ -7,9 +7,12 @@ import {
   buildYearDeckCanvas,
   buildYearDeckCanvases,
   buildYearCanvas,
+  recordYearOffer,
   suggestedYearDeckName,
   suggestedYearName,
+  shouldOfferYearReview,
   YEAR_CARD_TYPES,
+  yearOfferKey,
   yearStats,
   yearToDateWindow
 } from '../year-card.js';
@@ -43,6 +46,16 @@ function craftedSummary() {
     source_tokens: {
       'claude-code': { total_tokens: 8_000 },
       codex: { input_tokens: 500, output_tokens: 500 }
+    }
+  };
+}
+
+function memoryStorage() {
+  const map = new Map();
+  return {
+    getItem: (key) => (map.has(key) ? map.get(key) : null),
+    setItem: (key, value) => {
+      map.set(key, String(value));
     }
   };
 }
@@ -84,6 +97,42 @@ test('suggestedYearName is stable and does not include project names', () => {
   assert.equal(suggestedYearName({ year: 2026 }), 'garden-year-2026.png');
   assert.equal(suggestedYearName(null), 'garden-year-unknown.png');
   assert.equal(suggestedYearDeckName({ year: 2026 }), 'garden-year-2026-set.png');
+});
+
+test('year review offer unlocks once during the first local week of December', () => {
+  const storage = memoryStorage();
+  assert.equal(shouldOfferYearReview({
+    summary: craftedSummary(),
+    now: new Date(Date.UTC(2026, 10, 30, 12, 0, 0)),
+    storage
+  }), null);
+
+  const offer = shouldOfferYearReview({
+    summary: craftedSummary(),
+    now: new Date(Date.UTC(2026, 11, 3, 12, 0, 0)),
+    storage
+  });
+  assert.equal(offer.key, '2026');
+  assert.equal(yearOfferKey(offer.range), '2026');
+  recordYearOffer(offer.key, storage);
+  assert.equal(shouldOfferYearReview({
+    summary: craftedSummary(),
+    now: new Date(Date.UTC(2026, 11, 4, 12, 0, 0)),
+    storage
+  }), null);
+});
+
+test('year review offer stays silent after the first week and for quiet years', () => {
+  assert.equal(shouldOfferYearReview({
+    summary: craftedSummary(),
+    now: new Date(Date.UTC(2026, 11, 8, 12, 0, 0)),
+    storage: memoryStorage()
+  }), null);
+  assert.equal(shouldOfferYearReview({
+    summary: { daily_tokens: { '2025-12-31': 1_000 }, projects: [] },
+    now: new Date(Date.UTC(2026, 11, 3, 12, 0, 0)),
+    storage: memoryStorage()
+  }), null);
 });
 
 test('buildYearCanvas runs through the canvas path with an injected document', async () => {

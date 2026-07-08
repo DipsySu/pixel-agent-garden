@@ -175,7 +175,8 @@ mapping has a go/no-go decision with a prototype screenshot.
 - **Shipped early in v1.8, expanded on the v2.0 branch:** Year Review lives in
   the Share drawer. It started as a single year-to-date proof card; the v2.0
   branch now renders the five-card cover/growth/peak/companions/seed deck and
-  exports it as one long local PNG.
+  exports it as one long local PNG, with a one-shot scene banner during the
+  first local week of December.
 - **Year in Review postcard set** ("你的 2026 数字庭院年报"): total tokens,
   garden final state, first/busiest days, agents used. Timed for December —
   the single biggest organic share moment of the year. Design starts
