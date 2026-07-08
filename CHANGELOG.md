@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v2.0.0 - 2026-07-08
+
 - Started the v2.0 Agent Nursery promotion path. The source-share nursery first
   moved beyond query flags into the Appearance settings panel, then graduated to
   the new `auto` default; `?nursery=1` remains as a review override.
