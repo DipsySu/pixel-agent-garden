@@ -8,6 +8,11 @@
   `?nursery=1` remains as a review override. The overlay is still opt-in, but
   it now behaves like a real configurable feature and updates live when the
   setting changes.
+- Advanced the Agent Nursery toward the PRD 2.0 P2 acceptance shape: each plot
+  now carries an explicit `lush` / `growing` / `fallow` state and hover/focus
+  fills the existing scene info card with source name, recent share, recent
+  tokens, lifetime tokens/events, and status instead of relying on a browser
+  title tooltip.
 
 ## v1.9.0 - 2026-07-08
 

@@ -5,6 +5,7 @@
 // `appearance.flowerbed` field to avoid a settings migration.
 
 import { escapeHtml, fmtLocal, sourceLabel } from './render-helpers.js';
+import { hideInfoCard, infoMetaRow, setInfoCard, showInfoCard } from './info-card.js';
 import { t } from './i18n.js';
 
 const POSITIONS = [
@@ -55,6 +56,7 @@ export function mountAgentNursery({ host }) {
         return;
       }
       el.innerHTML = rows.map((row, index) => plotHtml(row, POSITIONS[index] || POSITIONS[0])).join('');
+      wirePlotCards(el, rows);
     }
   };
 }
@@ -93,7 +95,8 @@ export function nurseryRows(summary) {
       lifetimeTokens,
       eventCount: fallbackEvents,
       share,
-      fallow: lifetimeTokens > 0 && recentTotal > 0 && recentTokens === 0
+      fallow: lifetimeTokens > 0 && recentTotal > 0 && recentTokens === 0,
+      status: agentPlotStatus({ share, lifetimeTokens, recentTokens, recentTotal })
     });
   }
   rows.sort((a, b) =>
@@ -117,14 +120,74 @@ function plotHtml(row, pos) {
     '<span style="--sprout-x:' + (5 + i * 8) + 'px;--sprout-tilt:' + ((i - 3) * 2) + 'deg"></span>'
   ).join('');
   return `
-    <div class="pg6-agent-plot ${row.fallow ? 'is-fallow' : ''}"
+    <div class="pg6-agent-plot is-${escapeHtml(row.status)}"
       style="--plot-x:${pos.x}%;--plot-y:${pos.y}%;--soil-w:${soilWidth}px;--sprout-h:${sproutHeight}px"
+      data-agent-id="${escapeHtml(row.id)}"
+      data-status="${escapeHtml(row.status)}"
       tabindex="0"
       title="${escapeHtml(title)}"
       aria-label="${escapeHtml(title)}">
       <div class="pg6-agent-soil" aria-hidden="true">${sproutHtml}</div>
       <div class="pg6-agent-label">${escapeHtml(row.label)} · ${escapeHtml(percent(row.share))}</div>
     </div>`;
+}
+
+function wirePlotCards(root, rows) {
+  root.querySelectorAll('.pg6-agent-plot').forEach((plot, index) => {
+    const row = rows[index];
+    if (!row) return;
+    plot.addEventListener('mouseenter', (event) => showAgentPlotCard(row, { event, anchor: plot }));
+    plot.addEventListener('mousemove', (event) => showAgentPlotCard(row, { event, anchor: plot }));
+    plot.addEventListener('focus', () => showAgentPlotCard(row, { anchor: plot }));
+    plot.addEventListener('mouseleave', hideInfoCard);
+    plot.addEventListener('blur', hideInfoCard);
+  });
+}
+
+export function showAgentPlotCard(row, options = {}) {
+  const card = agentPlotCard(row);
+  setInfoCard(card);
+  showInfoCard({ scene: options.anchor?.closest?.('.pg6-scene'), event: options.event, anchor: options.anchor });
+}
+
+export function agentPlotCard(row) {
+  const status = row?.status || (row?.fallow ? 'fallow' : 'growing');
+  const recentTokens = Number(row?.recentTokens || 0);
+  const lifetimeTokens = Number(row?.lifetimeTokens || 0);
+  const eventCount = Number(row?.eventCount || 0);
+  const share = Number(row?.share || 0);
+  const primaryTokens = row?.fallow ? lifetimeTokens : (recentTokens || lifetimeTokens);
+  const detailRows = [
+    infoMetaRow(t('card.agent.recentShare'), percent(share)),
+    lifetimeTokens > 0
+      ? infoMetaRow(t('card.agent.lifetime'), fmtLocal(lifetimeTokens))
+      : infoMetaRow(t('card.agent.events'), fmtLocal(eventCount)),
+    infoMetaRow(t('card.agent.status'), agentPlotStatusLabel(status))
+  ];
+  return {
+    label: t('card.agent.label'),
+    name: row?.label || row?.id || '',
+    total: row?.fallow
+      ? t('card.agent.fallowTotal', { total: fmtLocal(lifetimeTokens) })
+      : t('card.agent.recentTokens', { tokens: fmtLocal(primaryTokens) }),
+    stage: agentPlotStatusLabel(status),
+    fillPercent: Math.max(8, Math.min(100, share * 100)),
+    detailHtml: detailRows.join(''),
+    sparkHtml: ''
+  };
+}
+
+export function agentPlotStatus({ share, lifetimeTokens, recentTokens, recentTotal }) {
+  if (Number(lifetimeTokens || 0) > 0 && Number(recentTotal || 0) > 0 && Number(recentTokens || 0) === 0) {
+    return 'fallow';
+  }
+  return Number(share || 0) >= 0.45 ? 'lush' : 'growing';
+}
+
+function agentPlotStatusLabel(status) {
+  if (status === 'fallow') return t('card.agent.statusFallow');
+  if (status === 'lush') return t('card.agent.statusLush');
+  return t('card.agent.statusGrowing');
 }
 
 function tokenUsageMap(value) {
