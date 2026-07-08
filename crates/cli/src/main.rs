@@ -8,6 +8,7 @@ use local_agent_garden_core::adapter::AdapterContext;
 use local_agent_garden_core::aggregate::{self, GardenSummary};
 use local_agent_garden_core::doctor::{self, DoctorReport, DoctorStatus};
 use local_agent_garden_core::event::AgentEvent;
+use local_agent_garden_core::prices::{self, SummaryCost};
 use local_agent_garden_core::registry;
 use local_agent_garden_core::rings;
 use local_agent_garden_core::scan;
@@ -115,6 +116,17 @@ enum Command {
         #[arg(long = "from-cache")]
         from_cache: Option<PathBuf>,
     },
+
+    /// Estimate local USD cost from the price table. Estimates only — provider
+    /// billing is the source of truth.
+    Cost {
+        /// Output machine-readable JSON.
+        #[arg(long, action = clap::ArgAction::SetTrue)]
+        json: bool,
+        /// Read a cached events.json instead of scanning live.
+        #[arg(long = "from-cache")]
+        from_cache: Option<PathBuf>,
+    },
 }
 
 fn main() -> ExitCode {
@@ -147,6 +159,9 @@ fn main() -> ExitCode {
             json,
             from_cache,
         } => cmd_usage(&ctx, sources_filter.as_deref(), &date, json, from_cache),
+        Command::Cost { json, from_cache } => {
+            cmd_cost(&ctx, sources_filter.as_deref(), json, from_cache)
+        }
         Command::Garden {
             width,
             height,
@@ -220,6 +235,59 @@ fn cmd_usage(
         print_usage_report(&report);
     }
     ExitCode::SUCCESS
+}
+
+fn cmd_cost(
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+    json_output: bool,
+    from_cache: Option<PathBuf>,
+) -> ExitCode {
+    let summary = match build_summary(ctx, sources_filter, from_cache.as_deref()) {
+        Ok(s) => s,
+        Err(code) => return code,
+    };
+    let table = match prices::load_effective(&prices::default_user_prices_path()) {
+        Ok(table) => table,
+        Err(err) => return bail("load prices failed", err),
+    };
+    // Math lives in core (spec §10 rule #3); the CLI only formats the result.
+    let cost = prices::estimate_summary(&summary, &table);
+    if json_output {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&cost).expect("cost estimate JSON is serializable")
+        );
+    } else {
+        print_cost_report(&cost);
+    }
+    ExitCode::SUCCESS
+}
+
+fn print_cost_report(cost: &SummaryCost) {
+    let total = &cost.total;
+    println!(
+        "estimated cost ${:.2}  (local prices.json — provider billing is the source of truth)",
+        total.total_usd
+    );
+    println!("unpriced tokens {}", total.unpriced_tokens);
+    println!();
+    println!("top models");
+    // Descending by USD, then model id for a stable tie order.
+    let mut models: Vec<_> = total.by_model.iter().collect();
+    models.sort_by(|a, b| {
+        b.1.usd
+            .partial_cmp(&a.1.usd)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| a.0.cmp(b.0))
+    });
+    if models.is_empty() {
+        println!("  -");
+    } else {
+        for (id, mc) in models.into_iter().take(10) {
+            println!("  {:<28} ${:.2}", truncate(id, 28), mc.usd);
+        }
+    }
 }
 
 fn cmd_garden(

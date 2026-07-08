@@ -45,6 +45,7 @@ fn main() {
             commands::set_settings,
             commands::load_prices,
             commands::save_prices,
+            commands::cost_estimate,
             commands::open_in_terminal,
             commands::save_postcard,
             commands::save_export_file,

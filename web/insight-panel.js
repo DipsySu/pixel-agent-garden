@@ -9,17 +9,20 @@
 
 import { fmtLocal } from './render-helpers.js';
 import { insightPanelHTML } from './render-insight.js';
-import { estimateCost, formatUsd, modelTotalTokens } from './cost-estimate.js';
+import { formatUsd } from './cost-estimate.js';
 import { t } from './i18n.js';
 
 const DAYS = 14;
 const LIMIT = 10;
 
-export function mountInsightContent({ host, initialSummary, onProjectSelect, onOpenTerminal, onRequestClose, loadPrices }) {
+export function mountInsightContent({ host, initialSummary, onProjectSelect, onOpenTerminal, onRequestClose, loadCostEstimate }) {
   let currentSummary = initialSummary || null;
-  let priceTable = null;
-  let priceLoading = false;
-  let priceRequested = false;
+  // Whole-garden SummaryCost from core, fetched once on activation and reused
+  // across watcher ticks (the project rows re-render, but the cost figures do
+  // not need re-fetching per tick).
+  let cost = null;
+  let costLoading = false;
+  let costRequested = false;
   let requestId = 0;
   // Client-side view state, preserved across re-renders (watcher ticks):
   // `query` filters rows by the row's data-search haystack; `showAll` lifts the
@@ -84,7 +87,7 @@ export function mountInsightContent({ host, initialSummary, onProjectSelect, onO
       days: DAYS,
       limit: LIMIT,
       format: fmtLocal,
-      projectCostByKey: projectCostMap(currentSummary, priceTable)
+      projectCostByKey: projectCostMap(cost)
     });
     const fresh = host.querySelector('.pg6-insight-search-input');
     if (fresh && query) fresh.value = query;
@@ -133,36 +136,35 @@ export function mountInsightContent({ host, initialSummary, onProjectSelect, onO
       render();
     },
     activate: () => {
-      if (!priceRequested && !priceLoading) refreshPrices();
+      if (!costRequested && !costLoading) refreshCost();
     },
   };
 
-  async function refreshPrices() {
-    priceRequested = true;
+  async function refreshCost() {
+    costRequested = true;
     const id = ++requestId;
-    priceLoading = true;
+    costLoading = true;
     try {
-      priceTable = typeof loadPrices === 'function' ? await loadPrices() : null;
+      cost = typeof loadCostEstimate === 'function' ? await loadCostEstimate() : null;
     } catch (_) {
-      priceTable = null;
+      cost = null;
     } finally {
       if (id === requestId) {
-        priceLoading = false;
+        costLoading = false;
         render();
       }
     }
   }
 }
 
-function projectCostMap(summary, priceTable) {
-  if (!priceTable) return null;
+// Build the render-insight per-key cost lookup from core's SummaryCost. The
+// backend already skipped tokenless projects and keyed by project_key, so we
+// just format: no math, no filtering. Returns null before the estimate loads.
+function projectCostMap(cost) {
+  if (!cost || !cost.by_project) return null;
   const out = new Map();
-  for (const project of summary?.projects || []) {
-    const modelTokens = project?.model_tokens || {};
-    const hasTokens = Object.values(modelTokens).some((usage) => modelTotalTokens(usage) > 0);
-    if (!hasTokens) continue;
-    const estimate = estimateCost(modelTokens, priceTable);
-    out.set(project.project_key || '', {
+  for (const [key, estimate] of Object.entries(cost.by_project)) {
+    out.set(key, {
       label: formatUsd(estimate.total_usd),
       unpricedTokens: estimate.unpriced_tokens || 0
     });

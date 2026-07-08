@@ -39,7 +39,7 @@ const TABS = [
  *   initialSummary: object | null,
  *   onProjectSelect?: (projectKey: string) => void,
  *   onOpenTerminal?: (path: string) => void,
- *   loadPrices?: () => Promise<object | null>,
+ *   loadCostEstimate?: () => Promise<object | null>,
  *   loadRings?: () => Promise<object | null>,
  *   saveExportText?: (text: string, suggestedName: string, mimeType: string) => Promise<boolean>,
  *   onError?: (message: string, err: unknown) => void,
@@ -51,7 +51,7 @@ export function mountDataDrawer({
   initialSummary,
   onProjectSelect,
   onOpenTerminal,
-  loadPrices,
+  loadCostEstimate,
   loadRings,
   saveExportText,
   onError,
@@ -128,7 +128,7 @@ export function mountDataDrawer({
       initialSummary,
       onProjectSelect,
       onOpenTerminal,
-      loadPrices,
+      loadCostEstimate,
       onRequestClose: closeAndRefocus,
     }),
     composition: mountCompositionContent({
@@ -138,8 +138,7 @@ export function mountDataDrawer({
     }),
     cost: mountCostContent({
       host: tabPanels.get('cost'),
-      initialSummary,
-      loadPrices,
+      loadCostEstimate,
       onRequestClose: closeAndRefocus,
     }),
     rings: mountRingsContent({

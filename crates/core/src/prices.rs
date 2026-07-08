@@ -25,6 +25,7 @@
 //! totals are priced at an explicitly *blended* rate, and cache traffic is
 //! counted but not priced (schema v1 carries no cache rates).
 
+use crate::aggregate::GardenSummary;
 use crate::error::Error;
 use crate::event::TokenUsage;
 use crate::storage;
@@ -146,13 +147,19 @@ pub fn save_user(path: &Path, table: &PriceTable) -> Result<(), Error> {
 ///   has no cache rates and provider cache multipliers differ; we do not
 ///   guess. Cache-heavy projects therefore under-estimate — the UI labels
 ///   every figure an estimate and bills remain the source of truth.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// - `input_per_mtok` / `output_per_mtok` echo the exact table rates this row
+///   was priced at. The UI shows a "$X/$Y per MTok" line; sourcing it from the
+///   same result that produced `usd` means the displayed rate can never drift
+///   from the computed cost, and the frontend needs no second price load.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct ModelCost {
     pub input_tokens: u64,
     pub output_tokens: u64,
     pub blended_tokens: u64,
     pub cache_tokens: u64,
     pub usd: f64,
+    pub input_per_mtok: f64,
+    pub output_per_mtok: f64,
 }
 
 /// Result of [`estimate`]. `unpriced_tokens` collects the *total* tokens of
@@ -200,6 +207,8 @@ pub fn estimate(
                 blended_tokens,
                 cache_tokens,
                 usd,
+                input_per_mtok: price.input_per_mtok,
+                output_per_mtok: price.output_per_mtok,
             },
         );
     }
@@ -213,6 +222,55 @@ pub fn estimate(
 
 fn per_mtok(tokens: u64, rate: f64) -> f64 {
     tokens as f64 / 1_000_000.0 * rate
+}
+
+/// A whole-`GardenSummary` cost estimate: the garden `total` plus a
+/// per-project `by_project` breakdown keyed by `ProjectGrowth.project_key`.
+///
+/// The point of this type is to make `core` the *single source* of the cost
+/// math. Both the summary total and every per-project figure come from the
+/// same [`estimate`] call over the same price table, so the "total spent"
+/// number and the sum of the project rows can never disagree — the drift a
+/// hand-written frontend mirror used to risk. The web layer only displays,
+/// formats, and falls back; it does no arithmetic.
+///
+/// This is a *compute result* returned by a command, never written to disk, so
+/// it carries no `schema_version` (unlike `GardenSummary` / the events cache).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SummaryCost {
+    pub total: CostEstimate,
+    pub by_project: BTreeMap<String, CostEstimate>,
+}
+
+/// Estimate cost for a whole summary in one pass: `total` over
+/// `summary.models`, and one `by_project` entry per project over its
+/// `model_tokens`. Reuses [`estimate`] for every layer — no second copy of the
+/// pricing loop.
+///
+/// Projects whose `model_tokens` carry no tokens at all are skipped so the map
+/// stays lean (a project that only ever logged tool calls contributes no cost
+/// row). "No tokens" mirrors what [`estimate`] would see: every usage empty in
+/// all count fields. Pure math, no I/O.
+pub fn estimate_summary(summary: &GardenSummary, table: &PriceTable) -> SummaryCost {
+    let total = estimate(&summary.models, table);
+    let mut by_project = BTreeMap::new();
+    for project in &summary.projects {
+        let has_tokens = project.model_tokens.values().any(|u| {
+            u.total_tokens > 0
+                || u.input_tokens > 0
+                || u.output_tokens > 0
+                || u.cache_read_tokens > 0
+                || u.cache_write_tokens > 0
+        });
+        if !has_tokens {
+            continue;
+        }
+        by_project.insert(
+            project.project_key.clone(),
+            estimate(&project.model_tokens, table),
+        );
+    }
+    SummaryCost { total, by_project }
 }
 
 #[cfg(test)]
@@ -434,5 +492,224 @@ mod tests {
         let est = estimate(&by_model, &table);
         assert_eq!(est.total_usd, 0.0);
         assert_eq!(est.by_model["gpt-5"].usd, 0.0);
+    }
+
+    // ---- estimate_summary: single source across summary + projects --------
+
+    fn one(model: &str, u: TokenUsage) -> BTreeMap<String, TokenUsage> {
+        let mut m = BTreeMap::new();
+        m.insert(model.to_string(), u);
+        m
+    }
+
+    fn project_with(
+        key: &str,
+        model_tokens: BTreeMap<String, TokenUsage>,
+    ) -> crate::aggregate::ProjectGrowth {
+        crate::aggregate::ProjectGrowth {
+            project_key: key.to_string(),
+            model_tokens,
+            ..Default::default()
+        }
+    }
+
+    /// Fixture GardenSummary — only the two fields `estimate_summary` reads
+    /// (`models`, `projects`) carry data; the rest are inert defaults.
+    /// `GardenSummary` has no `Default` impl (its shape is the frontend
+    /// contract), so the fields are spelled out here rather than mocked.
+    fn summary_with(
+        models: BTreeMap<String, TokenUsage>,
+        projects: Vec<crate::aggregate::ProjectGrowth>,
+    ) -> GardenSummary {
+        GardenSummary {
+            schema_version: crate::aggregate::SUMMARY_SCHEMA_VERSION,
+            projects,
+            sources: BTreeMap::new(),
+            source_tokens: BTreeMap::new(),
+            source_recent_tokens: BTreeMap::new(),
+            total_events: 0,
+            total_tokens: 0,
+            first_seen: None,
+            last_seen: None,
+            active_projects: 0,
+            daily_tokens: BTreeMap::new(),
+            heatmap_year: Vec::new(),
+            hour_of_week: Vec::new(),
+            flowerbed_year: Vec::new(),
+            tiers: None,
+            models,
+        }
+    }
+
+    #[test]
+    fn estimate_summary_total_is_bit_identical_to_estimate_over_models() {
+        // The whole point: `total` is the SAME computation as `estimate`, so
+        // "total spent" can never drift from the per-model rows.
+        let mut prices = BTreeMap::new();
+        prices.insert(
+            "m-split".to_string(),
+            ModelPrice {
+                input_per_mtok: 3.0,
+                output_per_mtok: 15.0,
+            },
+        );
+        let table = PriceTable {
+            schema_version: PRICES_SCHEMA_VERSION,
+            prices,
+        };
+        let models = one("m-split", usage(2_000_000, 1_000_000, 0, 0));
+        let summary = summary_with(models.clone(), vec![]);
+
+        let cost = estimate_summary(&summary, &table);
+        assert_eq!(cost.total, estimate(&models, &table));
+        assert!((cost.total.total_usd - 21.0).abs() < 1e-9);
+        assert!(cost.by_project.is_empty());
+    }
+
+    #[test]
+    fn estimate_summary_splits_projects_by_key_with_distinct_models() {
+        let mut prices = BTreeMap::new();
+        prices.insert(
+            "m-a".to_string(),
+            ModelPrice {
+                input_per_mtok: 3.0,
+                output_per_mtok: 15.0,
+            },
+        );
+        prices.insert(
+            "m-b".to_string(),
+            ModelPrice {
+                input_per_mtok: 1.0,
+                output_per_mtok: 3.0,
+            },
+        );
+        let table = PriceTable {
+            schema_version: PRICES_SCHEMA_VERSION,
+            prices,
+        };
+        // demo-a: 2M×$3 + 1M×$15 = $21.  demo-b: 1M×$1 + 1M×$3 = $4.
+        let proj_a = project_with("demo-a", one("m-a", usage(2_000_000, 1_000_000, 0, 0)));
+        let proj_b = project_with("demo-b", one("m-b", usage(1_000_000, 1_000_000, 0, 0)));
+        let mut models = BTreeMap::new();
+        models.insert("m-a".to_string(), usage(2_000_000, 1_000_000, 0, 0));
+        models.insert("m-b".to_string(), usage(1_000_000, 1_000_000, 0, 0));
+        let summary = summary_with(models, vec![proj_a, proj_b]);
+
+        let cost = estimate_summary(&summary, &table);
+        assert_eq!(cost.by_project.len(), 2);
+        assert!((cost.by_project["demo-a"].total_usd - 21.0).abs() < 1e-9);
+        assert!((cost.by_project["demo-b"].total_usd - 4.0).abs() < 1e-9);
+        assert!((cost.total.total_usd - 25.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn estimate_summary_buckets_unknown_project_model_as_unpriced() {
+        let table = bundled_defaults();
+        let proj = project_with(
+            "demo-unknown",
+            one("some-future-model", usage(500, 500, 0, 0)),
+        );
+        let summary = summary_with(BTreeMap::new(), vec![proj]);
+
+        let cost = estimate_summary(&summary, &table);
+        let est = &cost.by_project["demo-unknown"];
+        assert_eq!(est.unpriced_tokens, 1_000);
+        assert!(est.by_model.is_empty());
+        assert_eq!(est.total_usd, 0.0);
+    }
+
+    #[test]
+    fn estimate_summary_keeps_cache_only_and_total_only_projects() {
+        let mut prices = BTreeMap::new();
+        prices.insert(
+            "m-blend".to_string(),
+            ModelPrice {
+                input_per_mtok: 1.0,
+                output_per_mtok: 3.0,
+            },
+        );
+        let table = PriceTable {
+            schema_version: PRICES_SCHEMA_VERSION,
+            prices,
+        };
+        // Cache-only: carries tokens, so it is kept; cache is counted-not-priced
+        // so the estimate is $0 with the cache surfaced.
+        let cache_only = project_with("demo-cache", one("m-blend", usage(0, 0, 4_000_000, 0)));
+        // Total-only (Codex-style): one unsplit total, priced at blended $2/MTok.
+        let total_only = project_with(
+            "demo-total",
+            one(
+                "m-blend",
+                TokenUsage {
+                    total_tokens: 4_000_000,
+                    ..TokenUsage::default()
+                },
+            ),
+        );
+        let summary = summary_with(BTreeMap::new(), vec![cache_only, total_only]);
+
+        let cost = estimate_summary(&summary, &table);
+        assert_eq!(cost.by_project["demo-cache"].total_usd, 0.0);
+        assert_eq!(
+            cost.by_project["demo-cache"].by_model["m-blend"].cache_tokens,
+            4_000_000
+        );
+        assert!((cost.by_project["demo-total"].total_usd - 8.0).abs() < 1e-9);
+        assert_eq!(
+            cost.by_project["demo-total"].by_model["m-blend"].blended_tokens,
+            4_000_000
+        );
+    }
+
+    #[test]
+    fn estimate_summary_skips_projects_without_tokens() {
+        let table = bundled_defaults();
+        // Empty model_tokens map, and a map whose only usage is all-zero: both
+        // contribute nothing, so neither appears in by_project (lean map).
+        let empty_map = project_with("demo-empty", BTreeMap::new());
+        let all_zero = project_with("demo-zero", one("gpt-5", TokenUsage::default()));
+        let summary = summary_with(BTreeMap::new(), vec![empty_map, all_zero]);
+
+        let cost = estimate_summary(&summary, &table);
+        assert!(cost.by_project.is_empty());
+    }
+
+    #[test]
+    fn estimate_summary_empty_summary_is_empty() {
+        let table = bundled_defaults();
+        let cost = estimate_summary(&summary_with(BTreeMap::new(), vec![]), &table);
+        assert_eq!(cost.total.total_usd, 0.0);
+        assert!(cost.total.by_model.is_empty());
+        assert_eq!(cost.total.unpriced_tokens, 0);
+        assert!(cost.by_project.is_empty());
+    }
+
+    #[test]
+    fn estimate_echoes_the_rate_it_priced_at() {
+        // The UI's "$X/$Y per MTok" line reads these back, so they must equal
+        // the table rate that produced `usd` — in the total and per project.
+        let mut prices = BTreeMap::new();
+        prices.insert(
+            "m-a".to_string(),
+            ModelPrice {
+                input_per_mtok: 3.0,
+                output_per_mtok: 15.0,
+            },
+        );
+        let table = PriceTable {
+            schema_version: PRICES_SCHEMA_VERSION,
+            prices,
+        };
+        let models = one("m-a", usage(1_000_000, 1_000_000, 0, 0));
+        let summary = summary_with(models.clone(), vec![project_with("demo-a", models)]);
+
+        let cost = estimate_summary(&summary, &table);
+        let row = &cost.total.by_model["m-a"];
+        assert_eq!(row.input_per_mtok, 3.0);
+        assert_eq!(row.output_per_mtok, 15.0);
+        assert_eq!(
+            cost.by_project["demo-a"].by_model["m-a"].input_per_mtok,
+            3.0
+        );
     }
 }

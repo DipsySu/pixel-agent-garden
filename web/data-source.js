@@ -89,6 +89,25 @@ export async function loadPrices() {
   }
 
 /**
+ * Whole-garden cost estimate (SummaryCost: { total, by_project }) computed by
+ * core::prices::estimate_summary. This is the single source for both the Cost
+ * tab and the per-project Insight labels — the frontend does NO cost math,
+ * only display/format. Demo/browser mode has no backend, so it returns null
+ * and the panels show their unavailable state (same gate as loadPrices).
+ */
+export async function loadCostEstimate() {
+    if (isDemoMode()) return null;
+    const api = tauriApi();
+    if (!api?.core?.invoke) return null;
+    try {
+      return await api.core.invoke('cost_estimate');
+    } catch (err) {
+      logGardenError('cost_estimate invoke failed', err);
+      return null;
+    }
+  }
+
+/**
  * Persist settings. Returns the normalized value on success, null in browser
  * mode (no backend) or on failure. Callers use this to drive optimistic UI.
  */

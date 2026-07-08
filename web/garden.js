@@ -1,6 +1,6 @@
 import {
   isDemoMode,
-  loadPrices,
+  loadCostEstimate,
   loadRings,
   loadSettings,
   loadSummary,
@@ -145,7 +145,7 @@ Promise.all([
       initialSummary: visibleSummary,
       onProjectSelect: (projectKey) => renderer.selectProjectByKey(projectKey),
       onOpenTerminal: (path) => openInTerminal(path),
-      loadPrices,
+      loadCostEstimate,
       loadRings,
       saveExportText,
       onError: logGardenError

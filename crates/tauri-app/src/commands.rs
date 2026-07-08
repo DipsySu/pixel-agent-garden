@@ -9,7 +9,7 @@
 use local_agent_garden_core::adapter::AdapterContext;
 use local_agent_garden_core::aggregate::GardenSummary;
 use local_agent_garden_core::cache;
-use local_agent_garden_core::prices::{self, PriceTable};
+use local_agent_garden_core::prices::{self, PriceTable, SummaryCost};
 use local_agent_garden_core::registry;
 use local_agent_garden_core::rings::{self, RingBook};
 use local_agent_garden_core::settings::{self, Settings};
@@ -110,6 +110,27 @@ pub async fn save_prices(table: PriceTable) -> Result<PriceTable, String> {
     })
     .await
     .map_err(|e| format!("save_prices task panicked: {e}"))?
+}
+
+/// Whole-garden cost estimate: the total plus a per-project split, both from
+/// `core::prices::estimate_summary` so the web layer only displays them (no JS
+/// cost math, no second price load). The frontend's Cost tab and per-project
+/// Insight labels both read this one result.
+///
+/// Cost reflects the LATEST cache summary (`summary_from_cache_or_scan`), not
+/// any paused/frozen view the UI may be showing: the honest "total spent"
+/// answer is over all data, and the cost tab is not gated on the paused view.
+#[tauri::command]
+pub async fn cost_estimate() -> Result<SummaryCost, String> {
+    tokio::task::spawn_blocking(|| {
+        let ctx = AdapterContext::from_env();
+        let summary = cache::summary_from_cache_or_scan(&ctx, None).map_err(|e| e.to_string())?;
+        let table = prices::load_effective(&prices::default_user_prices_path())
+            .map_err(|e| e.to_string())?;
+        Ok(prices::estimate_summary(&summary, &table))
+    })
+    .await
+    .map_err(|e| format!("cost_estimate task panicked: {e}"))?
 }
 
 // ---- Settings (spec §2.4) ------------------------------------------------
