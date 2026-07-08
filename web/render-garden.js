@@ -113,10 +113,10 @@ function renderEverything(groups, summary) {
   addWallMarks(groups.plaster_patch || []);
   addProgrammingStickers();
   addGroundOverlay(groups);
-  // Flowerbed view (D PoC, opt-in). When enabled, the base scene swaps the
-  // grass strips for a dirt bed (see render-svg.js) and we lay 366 flower
-  // sprites encoding daily activity. Drawn BEFORE courtyard objects so the
-  // willow/lantern/pavilion sit in front of the flowers, not on top of them.
+  // Flowerbed view. The base scene swaps the grass strips for a dirt bed (see
+  // render-svg.js) and we lay 366 flower sprites encoding daily activity.
+  // Drawn BEFORE courtyard objects so the willow/lantern/pavilion sit in front
+  // of the flowers, not on top of them.
   if (isFlowerbedEnabled()) {
     renderFlowerbed(scene, groups.flowerbed || [], summary, { spriteRoot });
   }

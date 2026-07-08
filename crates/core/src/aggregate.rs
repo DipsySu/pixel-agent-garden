@@ -34,7 +34,7 @@ pub struct GardenSummary {
     pub sources: BTreeMap<String, u64>,
     /// Whole-garden token usage by local adapter source. `sources` remains an
     /// event-count map for legacy/share bars; this answers "which agent burned
-    /// the tokens?" for the v1.5 agent-nursery prototype. Additive.
+    /// the tokens?" for the Agent Nursery contribution layer. Additive.
     #[serde(default)]
     pub source_tokens: BTreeMap<String, TokenUsage>,
     /// Trailing-30-day token totals by adapter source. Same source ids as

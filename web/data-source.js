@@ -59,6 +59,11 @@ export async function loadSettings() {
   }
 
 export async function loadAdapters() {
+    // Demo mode must be entirely canned: do not read local agent discovery just
+    // to light up the empty-state support list. The sign is hidden for the
+    // bundled sample anyway, but keeping this gate here preserves the single
+    // demo-data boundary.
+    if (isDemoMode()) return defaultAdapters();
     const api = tauriApi();
     if (api?.core?.invoke) {
       try {

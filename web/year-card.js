@@ -1,7 +1,7 @@
-// Year Review card (PRD 2.0 §P3-3 prototype) — a share artifact for the
-// current local calendar year, computed only from GardenSummary. It deliberately
-// does not auto-offer itself: annual rituals are calendar-locked later, while
-// this v1.8 flow gives the share drawer a manually requested year-to-date card.
+// Year Review cards (PRD 2.0 §P3-3) — a five-card share artifact for the
+// current local calendar year, computed only from GardenSummary. The share
+// drawer can open it manually, while the scene banner offers it during the
+// first local week of December when the year has enough activity.
 
 import { savePostcard } from './data-source.js';
 import {
