@@ -183,8 +183,9 @@ mapping has a go/no-go decision with a prototype screenshot.
   festival, first snow) — the season system already exists; this adds a few
   date-triggered variants, not a content treadmill. The v2.0 branch now has
   the first share artifact for this: a Share-drawer Seasonal Moment card
-  derived from local calendar season and season-to-date `daily_tokens`;
-  scene-side auto moments still need the final review pass.
+  derived from local calendar season and season-to-date `daily_tokens`, plus
+  a scene-side one-shot banner that opens that card when the active season has
+  local activity.
 - **Sticker packs / scene variants** only if community asks; config already
   supports swapping sets.
 

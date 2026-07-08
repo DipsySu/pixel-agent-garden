@@ -4,9 +4,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildSeasonalCanvas,
+  recordSeasonalOffer,
   seasonalMoment,
+  seasonalMomentLabel,
+  seasonalOfferKey,
   seasonalStats,
   seasonalWindow,
+  shouldOfferSeasonalMoment,
   suggestedSeasonalName
 } from '../seasonal-card.js';
 
@@ -47,6 +51,16 @@ function craftedSummary() {
   };
 }
 
+function memoryStorage() {
+  const map = new Map();
+  return {
+    getItem: (key) => (map.has(key) ? map.get(key) : null),
+    setItem: (key, value) => {
+      map.set(key, String(value));
+    }
+  };
+}
+
 test('seasonalStats sums only the current seasonal window and ranks current projects', () => {
   const range = seasonalWindow({ year: 2026, month: 7, day: 8 });
   const stats = seasonalStats(craftedSummary(), range);
@@ -64,6 +78,44 @@ test('suggestedSeasonalName is stable and pathless', () => {
     'garden-seasonal-koi-2026-07-08.png'
   );
   assert.equal(suggestedSeasonalName(null), 'garden-seasonal-season-unknown.png');
+});
+
+test('seasonal offer is one active-season banner keyed by season start', () => {
+  const storage = memoryStorage();
+  const now = new Date(Date.UTC(2026, 6, 8, 12, 0, 0));
+  const offer = shouldOfferSeasonalMoment({
+    summary: craftedSummary(),
+    now,
+    storage
+  });
+  assert.equal(offer.key, 'koi:2026-06-01');
+  assert.equal(offer.label, seasonalMomentLabel({ id: 'koi' }));
+  assert.equal(seasonalOfferKey(offer.range), 'koi:2026-06-01');
+
+  recordSeasonalOffer(offer.key, storage);
+  assert.equal(shouldOfferSeasonalMoment({ summary: craftedSummary(), now, storage }), null);
+});
+
+test('seasonal offer skips quiet seasons and keeps winter year boundaries stable', () => {
+  const quiet = { daily_tokens: { '2026-03-01': 1_000 }, projects: [] };
+  const winterNow = new Date(Date.UTC(2026, 0, 8, 12, 0, 0));
+  assert.equal(shouldOfferSeasonalMoment({
+    summary: quiet,
+    now: winterNow,
+    storage: memoryStorage()
+  }), null);
+
+  const activeWinter = {
+    daily_tokens: { '2025-12-01': 300, '2026-01-08': 700 },
+    projects: []
+  };
+  const offer = shouldOfferSeasonalMoment({
+    summary: activeWinter,
+    now: winterNow,
+    storage: memoryStorage()
+  });
+  assert.equal(offer.key, 'snow:2025-12-01');
+  assert.equal(offer.stats.totalTokens, 1_000);
 });
 
 test('buildSeasonalCanvas runs through the canvas path with an injected document', async () => {

@@ -19,6 +19,7 @@ import { runGrowthReveal } from './first-run.js';
 import { mountDataDrawer } from './data-drawer.js';
 import { mountSettingsPanel } from './settings-panel.js';
 import { mountShareDrawer } from './share-drawer.js';
+import { recordSeasonalOffer, shouldOfferSeasonalMoment } from './seasonal-card.js';
 import { recordWeeklyOffer, shouldOfferWeeklyRecap } from './weekly-card.js';
 import { mountReturnDiff } from './return-diff.js';
 import { mountSceneBanner } from './scene-banner.js';
@@ -214,6 +215,26 @@ Promise.all([
         onActivate: () => shareDrawer?.open('weekly')
       });
       recordWeeklyOffer(offerKey, window.localStorage);
+    }
+  }
+
+  // P3-2 seasonal moment — same interaction shape as the weekly ritual, but
+  // season-scoped instead of week-scoped. Trigger is local calendar; stats are
+  // still UTC day keys through seasonal-card.js. No setting yet: it is a quiet
+  // one-shot banner per active season, and demo mode never reaches this block
+  // because sceneBanner is null.
+  if (sceneBanner && shareDrawer) {
+    const seasonalOffer = shouldOfferSeasonalMoment({
+      summary: visibleSummary,
+      storage: window.localStorage
+    });
+    if (seasonalOffer) {
+      sceneBanner.push({
+        icon: '◈',
+        text: t('share.seasonal.offer', { season: seasonalOffer.label }),
+        onActivate: () => shareDrawer?.open('seasonal')
+      });
+      recordSeasonalOffer(seasonalOffer.key, window.localStorage);
     }
   }
 

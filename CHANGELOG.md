@@ -18,6 +18,10 @@
   (cherry, koi, autumn moon, first snow), rolls up season-to-date tokens from
   local `daily_tokens`, and exports through the same postcard save pipeline as
   the weekly and year cards.
+- Wired the P3-2 scene-side seasonal offer. When the current local-calendar
+  season has activity, the garden shows one quiet banner per season and opens
+  the Seasonal Moment card directly; quiet seasons stay silent and demo mode
+  never writes real offer flags.
 
 ## v1.9.0 - 2026-07-08
 

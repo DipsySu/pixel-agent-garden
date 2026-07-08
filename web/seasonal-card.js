@@ -35,6 +35,7 @@ const MOMENTS = {
   moon: { id: 'moon', season: 'autumn', color: '#d8b460' },
   snow: { id: 'snow', season: 'winter', color: '#b9d2dc' },
 };
+const OFFERED_KEY = 'pg6.seasonal.offered';
 
 export function seasonalMoment(anchor = localCalendarDay()) {
   const month = clampInt(anchor?.month, 1, 12);
@@ -85,6 +86,40 @@ export function seasonalStats(summary, range) {
 export function suggestedSeasonalName(range) {
   const id = range?.moment?.id || 'season';
   return 'garden-seasonal-' + id + '-' + (range?.end || 'unknown') + '.png';
+}
+
+export function seasonalMomentLabel(moment) {
+  const id = moment?.id || 'cherry';
+  return t('share.seasonal.' + id + '.name');
+}
+
+export function seasonalOfferKey(range) {
+  if (!range?.moment?.id || !range?.start) return null;
+  return range.moment.id + ':' + range.start;
+}
+
+export function shouldOfferSeasonalMoment({ summary, now = new Date(), storage } = {}) {
+  const range = seasonalWindow(localCalendarDay(now));
+  const stats = seasonalStats(summary, range);
+  if (stats.totalTokens <= 0) return null;
+  const key = seasonalOfferKey(range);
+  if (!key || readOffered(storage) === key) return null;
+  return {
+    key,
+    range,
+    stats,
+    moment: range.moment,
+    label: seasonalMomentLabel(range.moment),
+  };
+}
+
+export function recordSeasonalOffer(key, storage) {
+  if (!key) return;
+  try {
+    storage?.setItem(OFFERED_KEY, key);
+  } catch (_) {
+    // Blocked storage only means the quiet banner can show again next launch.
+  }
 }
 
 export async function buildSeasonalCanvas({ summary, now = new Date(), anchor = localCalendarDay(now) }) {
@@ -362,6 +397,14 @@ function clampInt(value, min, max) {
   const n = Number(value);
   if (!Number.isFinite(n)) return min;
   return Math.max(min, Math.min(max, Math.trunc(n)));
+}
+
+function readOffered(storage) {
+  try {
+    return storage?.getItem(OFFERED_KEY) ?? null;
+  } catch (_) {
+    return null;
+  }
 }
 
 function daysInMonth(year, month) {
