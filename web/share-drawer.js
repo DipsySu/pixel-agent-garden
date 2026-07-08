@@ -1,16 +1,16 @@
 // Share drawer (PRD 2.0 §5.3 抽屉层, landed together with §P3-1) — ONE footer
 // "Share" button in the old Postcard slot opening ONE compact paper panel
-// that lists the share artifacts: the garden postcard, weekly recap and year
-// review
-// card. Same division of labor as web/data-drawer.js: this module owns the
+// that lists the share artifacts: the garden postcard, weekly recap, seasonal
+// moment and year review cards. Same division of labor as web/data-drawer.js: this module owns the
 // SHELL only (footer button wiring, panel, artifact menu, flow navigation,
 // Escape-to-close, popover-group membership); what each flow shows is owned
-// by its content provider (web/postcard.js, web/weekly-card.js, web/year-card.js). Dropping a
-// flow later means deleting its module, its FLOWS entry and its mount call —
-// nothing else.
+// by its content provider (web/postcard.js, web/weekly-card.js,
+// web/seasonal-card.js, web/year-card.js). Dropping a flow later means
+// deleting its module, its FLOWS entry and its mount call — nothing else.
 
 import { joinPopoverGroup } from './popover-group.js';
 import { mountPostcardContent } from './postcard.js';
+import { mountSeasonalCardContent } from './seasonal-card.js';
 import { mountWeeklyCardContent } from './weekly-card.js';
 import { mountYearCardContent } from './year-card.js';
 import { escapeHtml } from './render-helpers.js';
@@ -19,6 +19,7 @@ import { t } from './i18n.js';
 const FLOWS = [
   { id: 'postcard', icon: '🖼', nameKey: 'share.postcard.name', hintKey: 'share.postcard.hint' },
   { id: 'weekly', icon: '🗓', nameKey: 'share.weekly.name', hintKey: 'share.weekly.hint' },
+  { id: 'seasonal', icon: '◈', nameKey: 'share.seasonal.name', hintKey: 'share.seasonal.hint' },
   { id: 'year', icon: '▦', nameKey: 'share.year.name', hintKey: 'share.year.hint' },
 ];
 
@@ -54,6 +55,12 @@ export function mountShareDrawer({ scene, assetRoot, getSummary, onError }) {
     }),
     weekly: mountWeeklyCardContent({
       host: hosts.get('weekly'),
+      getSummary,
+      onError,
+      onRequestClose: closeAndRefocus,
+    }),
+    seasonal: mountSeasonalCardContent({
+      host: hosts.get('seasonal'),
       getSummary,
       onError,
       onRequestClose: closeAndRefocus,

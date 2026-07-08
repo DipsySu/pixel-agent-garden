@@ -181,7 +181,10 @@ mapping has a go/no-go decision with a prototype screenshot.
   November.
 - **Seasonal live moments** on the real calendar (cherry season, koi
   festival, first snow) — the season system already exists; this adds a few
-  date-triggered variants, not a content treadmill.
+  date-triggered variants, not a content treadmill. The v2.0 branch now has
+  the first share artifact for this: a Share-drawer Seasonal Moment card
+  derived from local calendar season and season-to-date `daily_tokens`;
+  scene-side auto moments still need the final review pass.
 - **Sticker packs / scene variants** only if community asks; config already
   supports swapping sets.
 

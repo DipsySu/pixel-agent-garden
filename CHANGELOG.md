@@ -13,6 +13,11 @@
   fills the existing scene info card with source name, recent share, recent
   tokens, lifetime tokens/events, and status instead of relying on a browser
   title tooltip.
+- Started PRD 2.0 P3-2 Seasonal Moments in the Share drawer. A new local-only
+  Seasonal Moment card maps the user's calendar to four deterministic moments
+  (cherry, koi, autumn moon, first snow), rolls up season-to-date tokens from
+  local `daily_tokens`, and exports through the same postcard save pipeline as
+  the weekly and year cards.
 
 ## v1.9.0 - 2026-07-08
 
