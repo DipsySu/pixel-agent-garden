@@ -17,6 +17,11 @@
   tab is first opened; demo/browser mode has no backend and shows the
   unavailable state, as before. (The `load_prices`/`save_prices` commands stay
   for a future price editor; the now-unused JS `loadPrices` wrapper was removed.)
+- The Export tab now exports the core-produced cost estimate as CSV or JSON in
+  addition to daily project tokens. Cost export lazy-loads `cost_estimate` only
+  when clicked, uses the same local `SummaryCost` shown in the Cost/Projects
+  tabs, includes garden + per-project model rows with named unpriced models,
+  and keeps browser/demo mode explicit instead of writing an empty file.
 - Post-v1.8 review fixes (privacy + share-card polish):
   - **doctor no longer leaks the home path.** The state-dir "not writable"
     branch now runs its message through the same home→`~` redactor every

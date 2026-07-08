@@ -2,12 +2,27 @@
 // The formatters live in data-export.js; this provider owns only the UI state
 // and the user-initiated save action.
 
-import { buildDailyTokensCsv, buildDailyTokensJson, suggestedExportName } from './data-export.js';
+import {
+  buildCostEstimateCsv,
+  buildCostEstimateJson,
+  buildDailyTokensCsv,
+  buildDailyTokensJson,
+  suggestedExportName
+} from './data-export.js';
 import { closeButton, escapeHtml, fmtLocal } from './render-helpers.js';
 import { t } from './i18n.js';
 
-export function mountExportContent({ host, initialSummary, onRequestClose, saveExportText, onError }) {
+export function mountExportContent({
+  host,
+  initialSummary,
+  onRequestClose,
+  saveExportText,
+  loadCostEstimate,
+  onError
+}) {
   let currentSummary = initialSummary || null;
+  let cost = null;
+  let costRequested = false;
   host.innerHTML = contentHtml();
   const status = host.querySelector('[data-slot="export-status"]');
 
@@ -20,7 +35,8 @@ export function mountExportContent({ host, initialSummary, onRequestClose, saveE
     const button = target?.closest('[data-export-kind]');
     if (!button) return;
     const kind = button.dataset.exportKind === 'json' ? 'json' : 'csv';
-    await exportKind(kind, button);
+    const dataset = button.dataset.exportDataset === 'cost' ? 'cost' : 'daily';
+    await exportKind(dataset, kind, button);
   });
 
   renderMeta();
@@ -28,20 +44,25 @@ export function mountExportContent({ host, initialSummary, onRequestClose, saveE
   return {
     update: (summary) => {
       currentSummary = summary || null;
+      cost = null;
+      costRequested = false;
       renderMeta();
     }
   };
 
-  async function exportKind(kind, button) {
-    const text = kind === 'json'
-      ? buildDailyTokensJson(currentSummary)
-      : buildDailyTokensCsv(currentSummary);
-    const filename = suggestedExportName(kind);
+  async function exportKind(dataset, kind, button) {
     button.disabled = true;
     setStatus(t('export.saving'));
     try {
+      const payload = dataset === 'cost'
+        ? await costPayload(kind)
+        : dailyPayload(kind);
+      if (!payload) {
+        setStatus(t('export.costUnavailable'));
+        return;
+      }
       const saved = typeof saveExportText === 'function'
-        ? await saveExportText(text, filename, kind === 'json' ? 'application/json' : 'text/csv')
+        ? await saveExportText(payload.text, payload.filename, payload.mimeType)
         : false;
       setStatus(saved ? t('export.saved') : t('export.cancelled'));
     } catch (err) {
@@ -50,6 +71,33 @@ export function mountExportContent({ host, initialSummary, onRequestClose, saveE
     } finally {
       button.disabled = false;
     }
+  }
+
+  function dailyPayload(kind) {
+    return {
+      text: kind === 'json' ? buildDailyTokensJson(currentSummary) : buildDailyTokensCsv(currentSummary),
+      filename: suggestedExportName(kind),
+      mimeType: kind === 'json' ? 'application/json' : 'text/csv'
+    };
+  }
+
+  async function costPayload(kind) {
+    const estimate = await loadCost();
+    if (!estimate) return null;
+    return {
+      text: kind === 'json'
+        ? buildCostEstimateJson(estimate, currentSummary)
+        : buildCostEstimateCsv(estimate, currentSummary),
+      filename: suggestedExportName(kind, new Date(), 'cost-estimate'),
+      mimeType: kind === 'json' ? 'application/json' : 'text/csv'
+    };
+  }
+
+  async function loadCost() {
+    if (costRequested) return cost;
+    cost = typeof loadCostEstimate === 'function' ? await loadCostEstimate() : null;
+    costRequested = true;
+    return cost;
   }
 
   function renderMeta() {
@@ -61,6 +109,8 @@ export function mountExportContent({ host, initialSummary, onRequestClose, saveE
         rows: fmtLocal(rows)
       });
     }
+    const costMeta = host.querySelector('[data-slot="export-cost-meta"]');
+    if (costMeta) costMeta.textContent = t('export.costMeta');
   }
 
   function setStatus(value) {
@@ -82,11 +132,19 @@ function contentHtml() {
       <strong>${escapeHtml(t('export.dailyTitle'))}</strong>
       <small data-slot="export-meta"></small>
       <div class="pg6-export-actions">
-        <button class="pg6-postcard-export" type="button" data-export-kind="csv">${escapeHtml(t('export.csv'))}</button>
-        <button class="pg6-postcard-export" type="button" data-export-kind="json">${escapeHtml(t('export.json'))}</button>
+        <button class="pg6-postcard-export" type="button" data-export-dataset="daily" data-export-kind="csv">${escapeHtml(t('export.csv'))}</button>
+        <button class="pg6-postcard-export" type="button" data-export-dataset="daily" data-export-kind="json">${escapeHtml(t('export.json'))}</button>
       </div>
-      <span class="pg6-postcard-status" data-slot="export-status" aria-live="polite"></span>
-    </div>`;
+    </div>
+    <div class="pg6-export-card">
+      <strong>${escapeHtml(t('export.costTitle'))}</strong>
+      <small data-slot="export-cost-meta"></small>
+      <div class="pg6-export-actions">
+        <button class="pg6-postcard-export" type="button" data-export-dataset="cost" data-export-kind="csv">${escapeHtml(t('export.csv'))}</button>
+        <button class="pg6-postcard-export" type="button" data-export-dataset="cost" data-export-kind="json">${escapeHtml(t('export.json'))}</button>
+      </div>
+    </div>
+    <span class="pg6-postcard-status" data-slot="export-status" aria-live="polite"></span>`;
 }
 
 function projectDayRowCount(summary) {

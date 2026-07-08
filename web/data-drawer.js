@@ -149,6 +149,7 @@ export function mountDataDrawer({
     export: mountExportContent({
       host: tabPanels.get('export'),
       initialSummary,
+      loadCostEstimate,
       saveExportText,
       onError,
       onRequestClose: closeAndRefocus,
