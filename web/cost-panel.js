@@ -20,6 +20,11 @@ export function mountCostContent({ host, loadCostEstimate, onRequestClose }) {
   let loading = false;
   let error = null;
   let requestId = 0;
+  // `stale` flips when a watcher tick delivers a new summary frame: the events
+  // changed, so the estimate must be recomputed on next open. `lastFrame` lets
+  // us ignore a repeated same-frame update() (reopen without new data).
+  let stale = false;
+  let lastFrame;
 
   host.innerHTML = contentHtml();
   host.addEventListener('click', (event) => {
@@ -55,13 +60,25 @@ export function mountCostContent({ host, loadCostEstimate, onRequestClose }) {
   }
 
   return {
-    // Cost is computed backend-side over all data, so a summary tick doesn't
-    // change it — kept as a no-op for the drawer's provider contract.
-    update: () => {},
-    // Fetch on first open (and retry if a previous fetch failed), so the
-    // O(events) backend compute only runs when the tab is actually viewed.
+    // A watcher tick delivers a new summary frame, meaning the underlying events
+    // changed and the estimate is now stale. Mark it so activate() recomputes on
+    // next open; keep the old figure on screen until then (no blanking). Compare
+    // frame identity so reopening WITHOUT new data still serves the cached cost.
+    update: (summary) => {
+      if (summary !== lastFrame) {
+        lastFrame = summary;
+        stale = true;
+      }
+    },
+    // Fetch on first open, retry a failed fetch, and recompute when a new frame
+    // arrived since the last open (stale) — so the O(events) backend compute
+    // only runs when the tab is actually viewed, but never shows a figure from
+    // before the newest work landed.
     activate: () => {
-      if (!cost && !loading) refreshCost();
+      if (!loading && (stale || !cost)) {
+        stale = false;
+        refreshCost();
+      }
     },
   };
 }

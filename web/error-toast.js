@@ -91,6 +91,17 @@ function pruneStack() {
   while (host.children.length > MAX_STACK) {
     const oldest = host.firstChild;
     if (!oldest) break;
+    // Drop the matching `recent` entry (and its timer) too. Otherwise it lingers
+    // pointing at a detached node, and the next same-source error collapses onto
+    // (updates) an element no longer in the DOM — invisible, with a
+    // perpetually-reset timer that never dismisses. Mirrors dismiss()'s cleanup.
+    for (const [source, entry] of recent) {
+      if (entry.el === oldest) {
+        clearTimeout(entry.timer);
+        recent.delete(source);
+        break;
+      }
+    }
     oldest.remove();
   }
 }
