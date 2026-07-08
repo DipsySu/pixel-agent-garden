@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Cost estimation is now single-source in `core`. `crate::prices::estimate`
+  (+ a new `estimate_summary` producing a whole-garden `SummaryCost` with a
+  per-project breakdown keyed by `project_key`) is the ONLY cost math; the
+  hand-written JS mirror (`web/cost-estimate.js` `estimateCost`/`normalizeUsage`)
+  is deleted. A thin `cost_estimate` Tauri command and a `cost` CLI subcommand
+  (`--json`) expose it; the Cost tab and the per-project Insight cost labels
+  consume the command output and only display/format. `ModelCost` echoes the
+  `input_per_mtok`/`output_per_mtok` used, so the tab's rate line can't
+  diverge from the number it priced; `CostEstimate.unpriced_by_model` keeps a
+  named per-model breakdown so an unpriced (unknown) model still gets its own
+  row rather than vanishing into the aggregate count. Cost is computed over
+  the latest cache summary (the honest "total spent"), fetched once when the
+  tab is first opened; demo/browser mode has no backend and shows the
+  unavailable state, as before. (The `load_prices`/`save_prices` commands stay
+  for a future price editor; the now-unused JS `loadPrices` wrapper was removed.)
 - Post-v1.8 review fixes (privacy + share-card polish):
   - **doctor no longer leaks the home path.** The state-dir "not writable"
     branch now runs its message through the same home→`~` redactor every

@@ -74,26 +74,12 @@ export async function loadRings() {
     }
   }
 
-export async function loadPrices() {
-    // Demo gate: real prices.json is user data; demo mode shows the
-    // unavailable state instead.
-    if (isDemoMode()) return null;
-    const api = tauriApi();
-    if (!api?.core?.invoke) return null;
-    try {
-      return await api.core.invoke('load_prices');
-    } catch (err) {
-      logGardenError('load_prices invoke failed', err);
-      return null;
-    }
-  }
-
 /**
  * Whole-garden cost estimate (SummaryCost: { total, by_project }) computed by
  * core::prices::estimate_summary. This is the single source for both the Cost
  * tab and the per-project Insight labels — the frontend does NO cost math,
  * only display/format. Demo/browser mode has no backend, so it returns null
- * and the panels show their unavailable state (same gate as loadPrices).
+ * and the panels show their unavailable state (same demo gate as loadRings).
  */
 export async function loadCostEstimate() {
     if (isDemoMode()) return null;

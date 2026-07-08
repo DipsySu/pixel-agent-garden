@@ -14,7 +14,10 @@ export function mountCostContent({ host, loadCostEstimate, onRequestClose }) {
   // the visible summary — fetch it once and cache it (a watcher tick does not
   // re-fetch). `cost` is a SummaryCost; only `.total` is rendered here.
   let cost = null;
-  let loading = true;
+  // Not loading until the tab is first activated — mount no longer fetches, so
+  // the backend cost_estimate (an O(events) compute) only runs if the user
+  // actually opens the Cost tab, not on every app launch.
+  let loading = false;
   let error = null;
   let requestId = 0;
 
@@ -25,7 +28,7 @@ export function mountCostContent({ host, loadCostEstimate, onRequestClose }) {
       onRequestClose();
     }
   });
-  refreshCost();
+  render();
 
   async function refreshCost() {
     const id = ++requestId;
@@ -55,8 +58,8 @@ export function mountCostContent({ host, loadCostEstimate, onRequestClose }) {
     // Cost is computed backend-side over all data, so a summary tick doesn't
     // change it — kept as a no-op for the drawer's provider contract.
     update: () => {},
-    // A transient cost_estimate failure at mount must not brick the tab for the
-    // session (review finding): retry when the user actually opens the tab.
+    // Fetch on first open (and retry if a previous fetch failed), so the
+    // O(events) backend compute only runs when the tab is actually viewed.
     activate: () => {
       if (!cost && !loading) refreshCost();
     },
@@ -112,12 +115,16 @@ function renderSummary(host, cost, state) {
     `;
   }
   if (models) {
-    models.innerHTML = modelRows(byModel);
+    models.innerHTML = modelRows(byModel, total.unpriced_by_model || {});
   }
 }
 
-function modelRows(byModel) {
-  const rows = Object.entries(byModel || {})
+function modelRows(byModel, unpricedByModel) {
+  // Priced models: full breakdown, ranked by usd. Unpriced models
+  // (unknown to prices.json) still get a NAMED row so the user can see which
+  // model is unpriced — core carries the per-model unpriced tokens for exactly
+  // this — sorted after the priced ones by token volume.
+  const priced = Object.entries(byModel || {})
     .map(([model, mc]) => ({
       model,
       // total = input + output + blended + cache reconstructs the row's tokens
@@ -128,17 +135,23 @@ function modelRows(byModel) {
     .filter((row) => row.total > 0)
     .sort((a, b) => (b.cost.usd || 0) - (a.cost.usd || 0) || b.total - a.total);
 
-  if (!rows.length) {
+  const unpriced = Object.entries(unpricedByModel || {})
+    .map(([model, tokens]) => ({ model, total: uintish(tokens) }))
+    .filter((row) => row.total > 0)
+    .sort((a, b) => b.total - a.total);
+
+  if (!priced.length && !unpriced.length) {
     return '<div class="pg6-data-empty">' + escapeHtml(t('cost.noModels')) + '</div>';
   }
 
+  const rows = priced.map(pricedRow).concat(unpriced.map(unpricedRow));
   return `
     <div class="pg6-cost-list">
-      ${rows.slice(0, 14).map(costRow).join('')}
+      ${rows.slice(0, 14).join('')}
     </div>`;
 }
 
-function costRow(row) {
+function pricedRow(row) {
   const c = row.cost;
   const usd = formatUsd(c.usd);
   const split = t('cost.rowSplit', {
@@ -152,15 +165,23 @@ function costRow(row) {
     input: c.input_per_mtok,
     output: c.output_per_mtok,
   });
+  return costRowHtml(row.model, escapeHtml(split) + ' · ' + escapeHtml(rate), escapeHtml(usd), row.total);
+}
+
+function unpricedRow(row) {
+  return costRowHtml(row.model, escapeHtml(t('cost.rowUnknown')), escapeHtml(t('cost.unpriced')), row.total);
+}
+
+function costRowHtml(model, detailHtml, amountHtml, total) {
   return `
     <div class="pg6-cost-row">
       <div class="pg6-cost-main">
-        <strong title="${escapeHtml(row.model)}">${escapeHtml(row.model)}</strong>
-        <small>${escapeHtml(split)} · ${escapeHtml(rate)}</small>
+        <strong title="${escapeHtml(model)}">${escapeHtml(model)}</strong>
+        <small>${detailHtml}</small>
       </div>
       <div class="pg6-cost-amount">
-        <b>${escapeHtml(usd)}</b>
-        <small>${escapeHtml(t('cost.rowTokens', { total: fmtLocal(row.total) }))}</small>
+        <b>${amountHtml}</b>
+        <small>${escapeHtml(t('cost.rowTokens', { total: fmtLocal(total) }))}</small>
       </div>
     </div>`;
 }

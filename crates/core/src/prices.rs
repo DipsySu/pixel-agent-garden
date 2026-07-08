@@ -162,33 +162,41 @@ pub struct ModelCost {
     pub output_per_mtok: f64,
 }
 
-/// Result of [`estimate`]. `unpriced_tokens` collects the *total* tokens of
-/// every model absent from the table (including the aggregator's `"unknown"`
-/// bucket) — surfaced as a count, never converted to dollars.
+/// Result of [`estimate`]. `unpriced_tokens` is the total tokens of every model
+/// absent from the table (never converted to dollars); `unpriced_by_model`
+/// keeps the per-model breakdown of that same figure so a UI can name which
+/// models are unpriced (e.g. a brand-new model id) rather than showing only an
+/// opaque aggregate. Invariant: `unpriced_tokens == sum(unpriced_by_model.values())`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CostEstimate {
     pub total_usd: f64,
     pub by_model: BTreeMap<String, ModelCost>,
     pub unpriced_tokens: u64,
+    #[serde(default)]
+    pub unpriced_by_model: BTreeMap<String, u64>,
 }
 
 /// Estimate USD cost for per-model token usage (the `model_tokens` / `models`
 /// rollups from `aggregate`) against a price table. Pure math, no I/O.
 ///
-/// Models not present in the table go to `unpriced_tokens` and are absent
-/// from `by_model` — callers who want a "未定价" row per model can diff their
-/// rollup keys against `by_model`.
+/// Models not present in the table are absent from `by_model`; their tokens go
+/// to `unpriced_tokens` and, per model, to `unpriced_by_model` so a UI can name
+/// them without re-deriving from a separate rollup.
 pub fn estimate(
     tokens_by_model: &BTreeMap<String, TokenUsage>,
     table: &PriceTable,
 ) -> CostEstimate {
     let mut by_model = BTreeMap::new();
+    let mut unpriced_by_model = BTreeMap::new();
     let mut total_usd = 0.0;
     let mut unpriced_tokens: u64 = 0;
 
     for (model, usage) in tokens_by_model {
         let Some(price) = table.prices.get(model) else {
-            unpriced_tokens += usage.total_tokens;
+            if usage.total_tokens > 0 {
+                unpriced_tokens += usage.total_tokens;
+                unpriced_by_model.insert(model.clone(), usage.total_tokens);
+            }
             continue;
         };
         let cache_tokens = usage.cache_read_tokens + usage.cache_write_tokens;
@@ -217,6 +225,7 @@ pub fn estimate(
         total_usd,
         by_model,
         unpriced_tokens,
+        unpriced_by_model,
     }
 }
 
@@ -475,6 +484,14 @@ mod tests {
         assert_eq!(est.unpriced_tokens, 2_000);
         assert!(est.by_model.is_empty());
         assert_eq!(est.total_usd, 0.0);
+        // The aggregate is also broken out per model so the UI can name them,
+        // and the parts sum back to the scalar.
+        assert_eq!(est.unpriced_by_model.get("some-future-model"), Some(&1_000));
+        assert_eq!(est.unpriced_by_model.get("unknown"), Some(&1_000));
+        assert_eq!(
+            est.unpriced_by_model.values().sum::<u64>(),
+            est.unpriced_tokens
+        );
     }
 
     #[test]
