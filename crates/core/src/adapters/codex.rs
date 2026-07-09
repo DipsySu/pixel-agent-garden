@@ -13,7 +13,7 @@
 use crate::adapter::{Adapter, AdapterContext};
 use crate::adapters::util::{JsonlRow, as_int_opt, parse_rfc3339_utc, read_jsonl};
 use crate::error::Error;
-use crate::event::AgentEvent;
+use crate::event::{AgentEvent, TokenUsage};
 use chrono::{DateTime, Utc};
 use rusqlite::OpenFlags;
 use rusqlite::types::{FromSql, FromSqlResult, ValueRef};
@@ -151,7 +151,25 @@ impl CodexAdapter {
             };
             event.project_path = row.cwd.clone().filter(|s| !s.is_empty());
             event.event_type = "thread".to_string();
-            event.usage.total_tokens = row.tokens_used.unwrap_or(0).max(0) as u64;
+            let db_total = row.tokens_used.unwrap_or(0).max(0) as u64;
+            event.usage = row
+                .rollout_path
+                .as_deref()
+                .and_then(|p| rollout_usage_from_ref(p, db_path))
+                .unwrap_or_default();
+            if db_total > 0 {
+                // The SQLite thread row is Codex's canonical total and wins over
+                // the rollout's own tally — but never DROPS BELOW the split
+                // buckets it must contain. The total and the split come from two
+                // stores that can disagree; clamping keeps `total >= input +
+                // output + cache` so the cost math's `blended = total - split`
+                // can't underflow and no bucket is ever priced beyond the total.
+                let split = event.usage.input_tokens
+                    + event.usage.output_tokens
+                    + event.usage.cache_read_tokens
+                    + event.usage.cache_write_tokens;
+                event.usage.total_tokens = db_total.max(split);
+            }
             event.model = row.model.clone();
             event.raw_ref = Some(
                 row.rollout_path
@@ -374,6 +392,19 @@ fn walk_jsonl(dir: &Path, depth: usize, max_depth: usize, out: &mut Vec<PathBuf>
     }
 }
 
+fn rollout_usage_from_ref(raw_path: &str, anchor: &Path) -> Option<TokenUsage> {
+    if raw_path.trim().is_empty() {
+        return None;
+    }
+    let path = PathBuf::from(raw_path);
+    let path = if path.is_absolute() {
+        path
+    } else {
+        anchor.parent().map(|p| p.join(&path)).unwrap_or(path)
+    };
+    extract_rollout_usage(&path)
+}
+
 /// Extract a stable session_id from a rollout filename. Codex names them
 /// `rollout-YYYY-MM-DD-<uuid_5_segments>.jsonl`; we take the last 5
 /// dash-separated segments (uuid) and rejoin them. Files that don't match
@@ -393,6 +424,26 @@ fn session_id_from_rollout(path: &Path) -> String {
     tail.join("-")
 }
 
+fn extract_rollout_usage(path: &Path) -> Option<TokenUsage> {
+    let mut usage = TokenUsage::default();
+    for JsonlRow { value, .. } in read_jsonl(path) {
+        let Some(payload) = value.get("payload") else {
+            continue;
+        };
+        if payload.get("type").and_then(|s| s.as_str()) != Some("token_count") {
+            continue;
+        }
+        if let Some(cumulative) = extract_cumulative_token_usage(payload) {
+            if cumulative.total_tokens >= usage.total_tokens {
+                usage = cumulative;
+            }
+        } else {
+            add_token_usage(&mut usage, &extract_incremental_token_usage(payload));
+        }
+    }
+    (usage.total_tokens > 0).then_some(usage)
+}
+
 /// Walk a rollout JSONL file and aggregate it into ONE event.
 fn parse_rollout(path: &Path, session_id: &str) -> Option<AgentEvent> {
     let mut last_ts: Option<String> = None;
@@ -400,7 +451,7 @@ fn parse_rollout(path: &Path, session_id: &str) -> Option<AgentEvent> {
     let mut meta_cli_version: Option<String> = None;
     let mut meta_timestamp: Option<String> = None;
     let mut model: Option<String> = None;
-    let mut token_total: u64 = 0;
+    let mut token_usage = TokenUsage::default();
     let mut tool_calls: u32 = 0;
 
     for JsonlRow { value, .. } in read_jsonl(path) {
@@ -441,11 +492,12 @@ fn parse_rollout(path: &Path, session_id: &str) -> Option<AgentEvent> {
         }
         if let Some(p) = payload {
             if p.get("type").and_then(|s| s.as_str()) == Some("token_count") {
-                token_total = token_total.saturating_add(extract_token_total(p));
-            }
-            if let Some(info) = p.get("info") {
-                if info.is_object() {
-                    token_total = token_total.saturating_add(extract_token_total(info));
+                if let Some(cumulative) = extract_cumulative_token_usage(p) {
+                    if cumulative.total_tokens >= token_usage.total_tokens {
+                        token_usage = cumulative;
+                    }
+                } else {
+                    add_token_usage(&mut token_usage, &extract_incremental_token_usage(p));
                 }
             }
         }
@@ -457,7 +509,7 @@ fn parse_rollout(path: &Path, session_id: &str) -> Option<AgentEvent> {
     event.project_path = meta_cwd.filter(|s| !s.is_empty());
     event.session_id = Some(session_id.to_string());
     event.event_type = "rollout".to_string();
-    event.usage.total_tokens = token_total;
+    event.usage = token_usage;
     event.tool_calls = tool_calls;
     event.model = model;
     event.raw_ref = Some(path.display().to_string());
@@ -471,41 +523,110 @@ fn parse_rollout(path: &Path, session_id: &str) -> Option<AgentEvent> {
     Some(event)
 }
 
-/// Best-effort token total for one usage-ish object.
+/// Best-effort token usage for one usage-ish object.
 ///
 /// A `total_tokens` (or `tokens_used`) value already accounts for its own
 /// input/output/cache components, so summing a total TOGETHER with the parts it
 /// summarizes double-counts — the previous version did exactly that (a standard
 /// `{input_tokens, output_tokens, total_tokens}` usage object inflated every
 /// Codex row by ~2x). Prefer an explicit total; fall back to the component sum
-/// only when no total is present; consult a nested `usage` object under the
+/// only when no total is present; consult nested usage-ish objects under the
 /// same rule, and only when this level carried nothing of its own.
 ///
-/// NOTE: the exact Codex `token_count` payload shape (whether counts are
-/// cumulative across rows, and whether they sit at the top level or under
-/// `info`) is not yet covered by a fixture — see the module test gap. This
-/// fixes the unambiguous within-object double-count; the per-row accumulation
-/// in `parse_rollout` should be validated against a real rollout sample.
-fn extract_token_total(data: &serde_json::Value) -> u64 {
+/// Codex/OpenAI `input_tokens` includes cached input as a subset. Internally we
+/// price by billable buckets, so `cached_input_tokens` is moved to
+/// `cache_read_tokens` and subtracted from `input_tokens`.
+///
+/// Codex's current `token_count` payload carries both cumulative
+/// `total_token_usage` and per-turn `last_token_usage`. Rollout aggregation
+/// prefers the cumulative shape so repeated progress rows do not inflate the
+/// session total.
+fn extract_token_usage(data: &serde_json::Value) -> TokenUsage {
     let Some(obj) = data.as_object() else {
-        return 0;
+        return TokenUsage::default();
     };
     let total = as_int_opt(obj.get("total_tokens")).max(as_int_opt(obj.get("tokens_used")));
-    let this_level = if total > 0 {
-        total
-    } else {
-        as_int_opt(obj.get("input_tokens"))
-            .saturating_add(as_int_opt(obj.get("output_tokens")))
-            .saturating_add(as_int_opt(obj.get("cached_tokens")))
+    let raw_input = as_int_opt(obj.get("input_tokens"));
+    let cache_read = as_int_opt(obj.get("cache_read_tokens"))
+        .max(as_int_opt(obj.get("cached_input_tokens")))
+        .max(as_int_opt(obj.get("cached_tokens")))
+        .max(
+            obj.get("input_token_details")
+                .and_then(|v| v.get("cached_tokens"))
+                .map_or(0, |v| as_int_opt(Some(v))),
+        );
+    let mut usage = TokenUsage {
+        input_tokens: raw_input.saturating_sub(cache_read),
+        output_tokens: as_int_opt(obj.get("output_tokens")),
+        cache_read_tokens: cache_read,
+        cache_write_tokens: as_int_opt(obj.get("cache_write_tokens")),
+        total_tokens: total,
     };
-    if this_level == 0 {
-        if let Some(usage) = obj.get("usage") {
-            if usage.is_object() {
-                return extract_token_total(usage);
+    if usage.total_tokens == 0 {
+        usage.total_tokens = usage
+            .input_tokens
+            .saturating_add(usage.output_tokens)
+            .saturating_add(usage.cache_read_tokens)
+            .saturating_add(usage.cache_write_tokens);
+    }
+    if usage.total_tokens == 0 {
+        for key in ["usage", "total_token_usage", "last_token_usage"] {
+            if let Some(nested) = obj.get(key).filter(|v| v.is_object()) {
+                let nested_usage = extract_token_usage(nested);
+                if nested_usage.total_tokens > 0 {
+                    return nested_usage;
+                }
             }
         }
     }
-    this_level
+    usage
+}
+
+fn extract_cumulative_token_usage(payload: &serde_json::Value) -> Option<TokenUsage> {
+    let info = payload.get("info").filter(|v| v.is_object());
+    for value in [
+        info.and_then(|v| v.get("total_token_usage")),
+        payload.get("total_token_usage"),
+    ]
+    .into_iter()
+    .flatten()
+    {
+        let usage = extract_token_usage(value);
+        if usage.total_tokens > 0 {
+            return Some(usage);
+        }
+    }
+    None
+}
+
+fn extract_incremental_token_usage(payload: &serde_json::Value) -> TokenUsage {
+    let info = payload.get("info").filter(|v| v.is_object());
+    for value in [
+        info.and_then(|v| v.get("last_token_usage")),
+        payload.get("last_token_usage"),
+        payload.get("usage"),
+        info,
+        Some(payload),
+    ]
+    .into_iter()
+    .flatten()
+    {
+        let usage = extract_token_usage(value);
+        if usage.total_tokens > 0 {
+            return usage;
+        }
+    }
+    TokenUsage::default()
+}
+
+fn add_token_usage(dst: &mut TokenUsage, src: &TokenUsage) {
+    dst.input_tokens = dst.input_tokens.saturating_add(src.input_tokens);
+    dst.output_tokens = dst.output_tokens.saturating_add(src.output_tokens);
+    dst.cache_read_tokens = dst.cache_read_tokens.saturating_add(src.cache_read_tokens);
+    dst.cache_write_tokens = dst
+        .cache_write_tokens
+        .saturating_add(src.cache_write_tokens);
+    dst.total_tokens = dst.total_tokens.saturating_add(src.total_tokens);
 }
 
 /// Whitespace-collapse + truncate.
@@ -543,7 +664,7 @@ mod tests {
     }
 
     #[test]
-    fn extract_token_total_prefers_total_over_components() {
+    fn extract_token_usage_prefers_total_over_nested_components() {
         // A total already includes its parts — take it, never add the parts on
         // top (the old behavior summed 10+5+7+3 = 25 and inflated every row).
         let v = json!({
@@ -551,15 +672,262 @@ mod tests {
             "input_tokens": 5,
             "usage": { "output_tokens": 7, "cached_tokens": 3 }
         });
-        assert_eq!(extract_token_total(&v), 10);
+        let usage = extract_token_usage(&v);
+        assert_eq!(usage.total_tokens, 10);
+        assert_eq!(usage.input_tokens, 5);
+        assert_eq!(usage.output_tokens, 0);
+        assert_eq!(usage.cache_read_tokens, 0);
 
         // No total anywhere → sum the components at this level.
         let split = json!({ "input_tokens": 6, "output_tokens": 4 });
-        assert_eq!(extract_token_total(&split), 10);
+        let usage = extract_token_usage(&split);
+        assert_eq!(usage.total_tokens, 10);
+        assert_eq!(usage.input_tokens, 6);
+        assert_eq!(usage.output_tokens, 4);
 
         // Nothing at this level → fall through to a nested `usage` object.
         let nested = json!({ "usage": { "total_tokens": 8 } });
-        assert_eq!(extract_token_total(&nested), 8);
+        assert_eq!(extract_token_usage(&nested).total_tokens, 8);
+    }
+
+    #[test]
+    fn extract_token_usage_moves_cached_input_to_cache_read_bucket() {
+        let v = json!({
+            "input_tokens": 100,
+            "cached_input_tokens": 70,
+            "output_tokens": 10,
+            "total_tokens": 110
+        });
+        let usage = extract_token_usage(&v);
+        assert_eq!(usage.input_tokens, 30);
+        assert_eq!(usage.cache_read_tokens, 70);
+        assert_eq!(usage.output_tokens, 10);
+        assert_eq!(usage.total_tokens, 110);
+    }
+
+    #[test]
+    fn parse_rollout_uses_cumulative_usage_without_double_counting() {
+        let tmp = std::env::temp_dir().join(format!("lag-codex-roll-{}", std::process::id()));
+        std::fs::create_dir_all(&tmp).unwrap();
+        let path = tmp.join("rollout-2026-06-13T09-58-42-aaaa-bbbb-cccc-dddd-eeee.jsonl");
+        let rows = [
+            json!({
+                "timestamp": "2026-06-13T01:58:55Z",
+                "type": "session_meta",
+                "payload": {
+                    "cwd": "/tmp/demo-project",
+                    "cli_version": "1.2.3",
+                    "timestamp": "2026-06-13T01:58:55Z"
+                }
+            }),
+            json!({
+                "timestamp": "2026-06-13T01:58:56Z",
+                "type": "turn_context",
+                "payload": { "model": "gpt-5.5", "cwd": "/tmp/demo-project" }
+            }),
+            json!({
+                "timestamp": "2026-06-13T01:58:57Z",
+                "type": "event_msg",
+                "payload": {
+                    "type": "token_count",
+                    "info": {
+                        "total_token_usage": {
+                            "input_tokens": 100,
+                            "cached_input_tokens": 40,
+                            "output_tokens": 10,
+                            "total_tokens": 110
+                        },
+                        "last_token_usage": {
+                            "input_tokens": 100,
+                            "cached_input_tokens": 40,
+                            "output_tokens": 10,
+                            "total_tokens": 110
+                        }
+                    }
+                }
+            }),
+            // Duplicate cumulative rows happen when rate-limit metadata changes;
+            // keeping the max cumulative total avoids charging the same turn
+            // twice.
+            json!({
+                "timestamp": "2026-06-13T01:58:58Z",
+                "type": "event_msg",
+                "payload": {
+                    "type": "token_count",
+                    "info": {
+                        "total_token_usage": {
+                            "input_tokens": 100,
+                            "cached_input_tokens": 40,
+                            "output_tokens": 10,
+                            "total_tokens": 110
+                        },
+                        "last_token_usage": {
+                            "input_tokens": 100,
+                            "cached_input_tokens": 40,
+                            "output_tokens": 10,
+                            "total_tokens": 110
+                        }
+                    }
+                }
+            }),
+            json!({
+                "timestamp": "2026-06-13T01:58:59Z",
+                "type": "event_msg",
+                "payload": {
+                    "type": "token_count",
+                    "info": {
+                        "total_token_usage": {
+                            "input_tokens": 160,
+                            "cached_input_tokens": 70,
+                            "output_tokens": 20,
+                            "total_tokens": 180
+                        },
+                        "last_token_usage": {
+                            "input_tokens": 60,
+                            "cached_input_tokens": 30,
+                            "output_tokens": 10,
+                            "total_tokens": 70
+                        }
+                    }
+                }
+            }),
+        ]
+        .into_iter()
+        .map(|v| v.to_string())
+        .collect::<Vec<_>>()
+        .join("\n");
+        std::fs::write(&path, format!("{rows}\n")).unwrap();
+
+        let event = parse_rollout(&path, "aaaa-bbbb-cccc-dddd-eeee").unwrap();
+        assert_eq!(event.project_path.as_deref(), Some("/tmp/demo-project"));
+        assert_eq!(event.model.as_deref(), Some("gpt-5.5"));
+        assert_eq!(event.usage.input_tokens, 90);
+        assert_eq!(event.usage.cache_read_tokens, 70);
+        assert_eq!(event.usage.output_tokens, 20);
+        assert_eq!(event.usage.total_tokens, 180);
+
+        std::fs::remove_dir_all(&tmp).ok();
+    }
+
+    #[test]
+    fn threads_db_enriches_canonical_total_with_rollout_split_usage() {
+        let tmp = std::env::temp_dir().join(format!("lag-codex-db-{}", std::process::id()));
+        std::fs::create_dir_all(&tmp).unwrap();
+        let rollout_path = tmp.join("rollout-2026-06-13T09-58-42-aaaa-bbbb-cccc-dddd-eeee.jsonl");
+        let rollout = json!({
+            "timestamp": "2026-06-13T01:58:57Z",
+            "type": "event_msg",
+            "payload": {
+                "type": "token_count",
+                "info": {
+                    "total_token_usage": {
+                        "input_tokens": 160,
+                        "cached_input_tokens": 70,
+                        "output_tokens": 20,
+                        "total_tokens": 180
+                    }
+                }
+            }
+        });
+        std::fs::write(&rollout_path, format!("{rollout}\n")).unwrap();
+
+        let db_path = tmp.join("state_5.sqlite");
+        let conn = rusqlite::Connection::open(&db_path).unwrap();
+        conn.execute(
+            r#"
+            CREATE TABLE threads (
+                id TEXT,
+                rollout_path TEXT,
+                created_at TEXT,
+                updated_at TEXT,
+                source TEXT,
+                model_provider TEXT,
+                cwd TEXT,
+                title TEXT,
+                tokens_used INTEGER,
+                cli_version TEXT,
+                model TEXT,
+                reasoning_effort TEXT,
+                git_branch TEXT,
+                first_user_message TEXT,
+                archived INTEGER
+            )
+            "#,
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            r#"
+            INSERT INTO threads VALUES (
+                'session-a', ?1, '2026-06-13T01:58:00Z',
+                '2026-06-13T01:59:00Z', 'codex-cli', 'openai',
+                '/tmp/demo-project', 'demo title', 181, '1.2.3',
+                'gpt-5.5', 'medium', 'main', 'hello', 0
+            )
+            "#,
+            [rollout_path.to_string_lossy().as_ref()],
+        )
+        .unwrap();
+
+        let events = CodexAdapter.read_threads_db(&db_path);
+        assert_eq!(events.len(), 1);
+        let usage = &events[0].usage;
+        assert_eq!(usage.total_tokens, 181);
+        assert_eq!(usage.input_tokens, 90);
+        assert_eq!(usage.cache_read_tokens, 70);
+        assert_eq!(usage.output_tokens, 20);
+        assert_eq!(usage.cache_write_tokens, 0);
+
+        std::fs::remove_dir_all(&tmp).ok();
+    }
+
+    #[test]
+    fn threads_db_total_never_drops_below_rollout_split() {
+        // Canonical DB total and rollout split come from two stores. When the DB
+        // undercounts (150 < the 180 the rollout's own buckets sum to), the total
+        // clamps UP to the split so `blended = total - split` stays >= 0 and no
+        // bucket is ever priced beyond the reported total.
+        let tmp = std::env::temp_dir().join(format!("lag-codex-clamp-{}", std::process::id()));
+        std::fs::create_dir_all(&tmp).unwrap();
+        let rollout_path = tmp.join("rollout-2026-06-13T09-58-42-aaaa-bbbb-cccc-dddd-eeee.jsonl");
+        let rollout = json!({
+            "timestamp": "2026-06-13T01:58:57Z",
+            "type": "event_msg",
+            "payload": { "type": "token_count", "info": { "total_token_usage": {
+                "input_tokens": 160, "cached_input_tokens": 70,
+                "output_tokens": 20, "total_tokens": 180
+            } } }
+        });
+        std::fs::write(&rollout_path, format!("{rollout}\n")).unwrap();
+
+        let db_path = tmp.join("state_5.sqlite");
+        let conn = rusqlite::Connection::open(&db_path).unwrap();
+        conn.execute(
+            "CREATE TABLE threads (id TEXT, rollout_path TEXT, created_at TEXT, \
+             updated_at TEXT, source TEXT, model_provider TEXT, cwd TEXT, title TEXT, \
+             tokens_used INTEGER, cli_version TEXT, model TEXT, reasoning_effort TEXT, \
+             git_branch TEXT, first_user_message TEXT, archived INTEGER)",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO threads VALUES ('session-a', ?1, '2026-06-13T01:58:00Z', \
+             '2026-06-13T01:59:00Z', 'codex-cli', 'openai', '/tmp/demo', 't', 150, \
+             '1.2.3', 'gpt-5.5', 'medium', 'main', 'hi', 0)",
+            [rollout_path.to_string_lossy().as_ref()],
+        )
+        .unwrap();
+
+        let events = CodexAdapter.read_threads_db(&db_path);
+        assert_eq!(events.len(), 1);
+        let usage = &events[0].usage;
+        // db_total (150) < split (90 + 70 + 20 = 180) → clamped up to 180.
+        assert_eq!(usage.total_tokens, 180);
+        assert_eq!(usage.input_tokens, 90);
+        assert_eq!(usage.cache_read_tokens, 70);
+        assert_eq!(usage.output_tokens, 20);
+
+        std::fs::remove_dir_all(&tmp).ok();
     }
 
     #[test]

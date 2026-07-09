@@ -38,10 +38,14 @@ const cost = {
         input_tokens: 100,
         output_tokens: 200,
         blended_tokens: 300,
+        cache_read_tokens: 250,
+        cache_write_tokens: 150,
         cache_tokens: 400,
         usd: 1.25789,
         input_per_mtok: 3,
-        output_per_mtok: 15
+        output_per_mtok: 15,
+        cache_read_per_mtok: 0.3,
+        cache_write_per_mtok: 3.75
       }
     },
     unpriced_tokens: 50,
@@ -55,10 +59,14 @@ const cost = {
           input_tokens: 10,
           output_tokens: 20,
           blended_tokens: 30,
+          cache_read_tokens: 25,
+          cache_write_tokens: 15,
           cache_tokens: 40,
           usd: 0.5,
           input_per_mtok: 3,
-          output_per_mtok: 15
+          output_per_mtok: 15,
+          cache_read_per_mtok: 0.3,
+          cache_write_per_mtok: 3.75
         }
       },
       unpriced_tokens: 0,
@@ -118,11 +126,15 @@ test('costEstimateRows includes garden and project rows with priced/unpriced sta
       input_tokens: 100,
       output_tokens: 200,
       blended_tokens: 300,
+      cache_read_tokens: 250,
+      cache_write_tokens: 150,
       cache_tokens: 400,
       total_tokens: 1000,
       usd: '1.25789',
       input_per_mtok: '3',
-      output_per_mtok: '15'
+      output_per_mtok: '15',
+      cache_read_per_mtok: '0.3',
+      cache_write_per_mtok: '3.75'
     },
     {
       scope: 'garden',
@@ -133,11 +145,15 @@ test('costEstimateRows includes garden and project rows with priced/unpriced sta
       input_tokens: 0,
       output_tokens: 0,
       blended_tokens: 0,
+      cache_read_tokens: 0,
+      cache_write_tokens: 0,
       cache_tokens: 0,
       total_tokens: 50,
       usd: '',
       input_per_mtok: '',
-      output_per_mtok: ''
+      output_per_mtok: '',
+      cache_read_per_mtok: '',
+      cache_write_per_mtok: ''
     },
     {
       scope: 'project',
@@ -148,11 +164,15 @@ test('costEstimateRows includes garden and project rows with priced/unpriced sta
       input_tokens: 10,
       output_tokens: 20,
       blended_tokens: 30,
+      cache_read_tokens: 25,
+      cache_write_tokens: 15,
       cache_tokens: 40,
       total_tokens: 100,
       usd: '0.5',
       input_per_mtok: '3',
-      output_per_mtok: '15'
+      output_per_mtok: '15',
+      cache_read_per_mtok: '0.3',
+      cache_write_per_mtok: '3.75'
     },
     {
       scope: 'project',
@@ -163,11 +183,15 @@ test('costEstimateRows includes garden and project rows with priced/unpriced sta
       input_tokens: 0,
       output_tokens: 0,
       blended_tokens: 0,
+      cache_read_tokens: 0,
+      cache_write_tokens: 0,
       cache_tokens: 0,
       total_tokens: 25,
       usd: '',
       input_per_mtok: '',
-      output_per_mtok: ''
+      output_per_mtok: '',
+      cache_read_per_mtok: '',
+      cache_write_per_mtok: ''
     }
   ]);
 });
@@ -175,8 +199,8 @@ test('costEstimateRows includes garden and project rows with priced/unpriced sta
 test('cost CSV escapes model/project fields and includes no project_path field', () => {
   const csv = buildCostEstimateCsv(cost, summary);
   assert.match(csv, /^scope,project_id,project_name,model,pricing_status,/);
-  assert.match(csv, /garden,,,"claude,model",priced,100,200,300,400,1000,1.25789,3,15/);
-  assert.match(csv, new RegExp(`project,${projectId('demo,one')},"demo ""one""","claude,model",priced,10,20,30,40,100,0.5,3,15`));
+  assert.match(csv, /garden,,,"claude,model",priced,100,200,300,250,150,400,1000,1.25789,3,15,0.3,3.75/);
+  assert.match(csv, new RegExp(`project,${projectId('demo,one')},"demo ""one""","claude,model",priced,10,20,30,25,15,40,100,0.5,3,15,0.3,3.75`));
   assert.equal(csv.includes('project_path'), false);
 });
 
@@ -185,7 +209,11 @@ test('cost JSON export is schemaed (v2) and pathless', () => {
   assert.equal(json.schema_version, 2);
   assert.equal(json.generated_at, '2026-07-08T00:00:00.000Z');
   assert.equal(json.kind, 'cost_estimate');
+  assert.equal(json.total.by_model['claude,model'].cache_read_tokens, 250);
+  assert.equal(json.total.by_model['claude,model'].cache_write_tokens, 150);
   assert.equal(json.total.by_model['claude,model'].cache_tokens, 400);
+  assert.equal(json.total.by_model['claude,model'].cache_read_per_mtok, 0.3);
+  assert.equal(json.total.by_model['claude,model'].cache_write_per_mtok, 3.75);
   assert.equal(json.total.unpriced_by_model['future-model'], 50);
   assert.equal(json.projects[0].display_name, 'demo "one"');
   assert.equal('project_path' in json.projects[0], false);
