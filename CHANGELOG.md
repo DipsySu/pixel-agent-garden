@@ -6,6 +6,19 @@ Post-2.0 work from two independent review passes (merged + cross-verified):
 two PRD gaps closed, plus a batch of correctness / privacy / release-governance
 hardening.
 
+### Pricing + Desktop Shell
+
+- Refreshed the bundled default model price table from current OpenAI and
+  Anthropic public API pricing. The table now includes current Claude ids
+  (`claude-fable-5`, `claude-opus-4-8`, `claude-sonnet-5`,
+  `claude-sonnet-4-6`) plus current OpenAI ids (`gpt-5.5`, `gpt-5.4`, and
+  `gpt-5.3-codex`). The price-source note is recorded in
+  `docs/25-model-pricing-refresh.md`; Codex credit rates are intentionally not
+  converted into USD.
+- Made the frameless desktop window draggable from the header. The app now uses
+  an explicit `startDragging()` bridge for the non-interactive header area and
+  grants only the needed `core:window:allow-start-dragging` capability.
+
 ### Year Review + Weekly Recap (PRD §P3)
 
 - Made the Year Review "growth" card real (PRD §P3-3 item 2). It was listed in

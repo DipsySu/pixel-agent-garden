@@ -40,10 +40,12 @@ pub const PRICES_SCHEMA_VERSION: u32 = 1;
 
 /// Factory defaults, bundled at compile time. JSON cannot carry comments, so
 /// the caveats live here instead: the seeded ids/rates are a small
-/// best-effort snapshot of public Anthropic/OpenAI per-MTok pricing at
+/// best-effort snapshot of public Anthropic/OpenAI per-MTok USD API pricing at
 /// release time. They exist to make the cost tab useful out of the box, not
 /// to be authoritative — the whole table is user-editable and every derived
-/// figure must be labeled an estimate ("以账单为准").
+/// figure must be labeled an estimate ("以账单为准"). Refresh source notes live in
+/// `docs/25-model-pricing-refresh.md`; Codex credit rates are intentionally not
+/// converted to USD here.
 const DEFAULT_PRICES_JSON: &str = include_str!("prices-default.json");
 
 /// USD rates for one model, per million tokens. Both fields are required on
@@ -320,9 +322,11 @@ mod tests {
         assert!(!table.prices.is_empty());
         // One anchor per provider so a botched regeneration can't silently
         // ship an empty or single-provider table.
-        let sonnet = table.prices["claude-sonnet-4-5"];
+        let sonnet = table.prices["claude-sonnet-5"];
         assert!(sonnet.input_per_mtok > 0.0 && sonnet.output_per_mtok > sonnet.input_per_mtok);
-        assert!(table.prices.contains_key("gpt-5"));
+        assert_eq!(table.prices["claude-opus-4-8"].input_per_mtok, 5.0);
+        assert_eq!(table.prices["gpt-5.5"].output_per_mtok, 30.0);
+        assert_eq!(table.prices["gpt-5.3-codex"].input_per_mtok, 1.75);
     }
 
     #[test]
@@ -375,7 +379,10 @@ mod tests {
         // …a brand-new user model is added…
         assert!(table.prices.contains_key("my-local-model"));
         // …and unedited factory entries keep tracking shipped defaults.
-        assert_eq!(table.prices["gpt-5"], bundled_defaults().prices["gpt-5"]);
+        assert_eq!(
+            table.prices["gpt-5.5"],
+            bundled_defaults().prices["gpt-5.5"]
+        );
         std::fs::remove_file(&path).ok();
     }
 
@@ -385,11 +392,11 @@ mod tests {
         let path = tmp("bare");
         std::fs::write(
             &path,
-            r#"{ "prices": { "gpt-5": { "input_per_mtok": 2.0, "output_per_mtok": 4.0 } } }"#,
+            r#"{ "prices": { "gpt-5.5": { "input_per_mtok": 2.0, "output_per_mtok": 4.0 } } }"#,
         )
         .unwrap();
         let table = load_effective(&path).unwrap();
-        assert_eq!(table.prices["gpt-5"].input_per_mtok, 2.0);
+        assert_eq!(table.prices["gpt-5.5"].input_per_mtok, 2.0);
         std::fs::remove_file(&path).ok();
     }
 
@@ -448,7 +455,10 @@ mod tests {
         // …and the effective view shows the override on top of defaults.
         let table = load_effective(&path).unwrap();
         assert_eq!(table.prices["claude-sonnet-4-5"].input_per_mtok, 1.5);
-        assert_eq!(table.prices["gpt-5"], bundled_defaults().prices["gpt-5"]);
+        assert_eq!(
+            table.prices["gpt-5.5"],
+            bundled_defaults().prices["gpt-5.5"]
+        );
         std::fs::remove_file(&path).ok();
     }
 
@@ -538,10 +548,10 @@ mod tests {
         // A priced model with all-zero usage stays a zero-dollar row, not an
         // error and not an unpriced bucket.
         let mut by_model = BTreeMap::new();
-        by_model.insert("gpt-5".to_string(), TokenUsage::default());
+        by_model.insert("gpt-5.5".to_string(), TokenUsage::default());
         let est = estimate(&by_model, &table);
         assert_eq!(est.total_usd, 0.0);
-        assert_eq!(est.by_model["gpt-5"].usd, 0.0);
+        assert_eq!(est.by_model["gpt-5.5"].usd, 0.0);
     }
 
     // ---- estimate_summary: single source across summary + projects --------
@@ -717,7 +727,7 @@ mod tests {
         // Empty model_tokens map, and a map whose only usage is all-zero: both
         // contribute nothing, so neither appears in by_project (lean map).
         let empty_map = project_with("demo-empty", BTreeMap::new());
-        let all_zero = project_with("demo-zero", one("gpt-5", TokenUsage::default()));
+        let all_zero = project_with("demo-zero", one("gpt-5.5", TokenUsage::default()));
         let summary = summary_with(BTreeMap::new(), vec![empty_map, all_zero]);
 
         let cost = estimate_summary(&summary, &table);
