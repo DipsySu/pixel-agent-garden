@@ -45,6 +45,10 @@ privacy / release-governance hardening.
   `cache_read_per_mtok` and `cache_write_per_mtok`, so cache-heavy Claude /
   OpenAI usage now contributes to the local estimate instead of being only
   counted in the total-token rollup.
+- Taught the Codex adapter to read split token buckets from rollout
+  `token_count` rows. Codex/OpenAI `cached_input_tokens` now feeds
+  `cache_read_tokens`, while non-cached input is priced separately; the SQLite
+  thread total remains the canonical total when present.
 
 ### Year Review + Weekly Recap (PRD §P3)
 
