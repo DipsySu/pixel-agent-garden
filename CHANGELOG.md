@@ -2,8 +2,30 @@
 
 ## Unreleased
 
-Post-2.0 hardening from two independent review passes (merged + cross-verified).
-No user-facing feature changes — correctness, privacy, and release governance.
+Post-2.0 work from two independent review passes (merged + cross-verified):
+two PRD gaps closed, plus a batch of correctness / privacy / release-governance
+hardening.
+
+### Year Review + Weekly Recap (PRD §P3)
+
+- Made the Year Review "growth" card real (PRD §P3-3 item 2). It was listed in
+  the deck but fell through to the generic year overview; it now renders a
+  vertical timeline of up to five curated ring moments (milestones and the
+  earliest first-seen preferred, then filled by date, shown chronologically).
+  It reads the core-owned rings book through `loadRings()` and shows a calm
+  single-line fallback when the book is absent (demo/browser) or the year has
+  no moments.
+- Gave the Weekly Recap its "new growth" narrative (PRD §P3-1). The card now
+  lists up to three ring moments that landed inside the week (reusing the
+  return-diff memory) and swaps its closing line to "上周,庭院多了一盏灯。"
+  when a tier or trinket was gained that week, keeping the quiet closing
+  otherwise. Bookless/quiet weeks fall back to a calm growth line.
+- Both share cards render ring moments through `ringEventTitle`/`ringDate`
+  (localized, name/label-based) only — never a raw project path or internal
+  key — so a shareable card cannot leak what the private Rings tab shows, and
+  they re-read the book on each open so a moment recorded mid-session appears.
+
+### Hardening
 
 - Fixed a `size_strength` NaN: when the busiest project sat exactly on the
   10k-token floor (`max_tokens == 9999`) the ratio computed `0/0 = NaN`, which
@@ -27,8 +49,9 @@ No user-facing feature changes — correctness, privacy, and release governance.
   mount onto first open, and fixed an error-toast leak where a pruned toast's
   entry lingered on a detached node and swallowed later same-source errors.
 - Gated releases behind a preflight job: a `v*` tag must now pass the
-  zero-network / fmt / clippy / test / cargo-deny checks before any bundle is
-  built or published (the release workflow previously bypassed CI entirely).
+  zero-network / fmt / clippy / test / cargo-deny checks — and match the crate /
+  bundle version — before any bundle is built or published (the release workflow
+  previously bypassed CI entirely).
 
 ## v2.0.0 - 2026-07-08
 

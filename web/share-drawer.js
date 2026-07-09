@@ -29,10 +29,11 @@ const FLOWS = [
  *   assetRoot: string,
  *   getSummary: () => object | null,
  *   onError?: (message: string, err: unknown) => void,
+ *   loadRings?: () => Promise<object | null>,
  * }} opts
  * @returns {{ open: (flowId?: string) => void, close: () => void } | null}
  */
-export function mountShareDrawer({ scene, assetRoot, getSummary, onError }) {
+export function mountShareDrawer({ scene, assetRoot, getSummary, onError, loadRings }) {
   const button = document.getElementById('share-open-button');
   const panel = document.getElementById('share-drawer-panel');
   if (!button || !panel) return null;
@@ -58,6 +59,7 @@ export function mountShareDrawer({ scene, assetRoot, getSummary, onError }) {
       getSummary,
       onError,
       onRequestClose: closeAndRefocus,
+      loadRings,
     }),
     seasonal: mountSeasonalCardContent({
       host: hosts.get('seasonal'),
@@ -70,6 +72,7 @@ export function mountShareDrawer({ scene, assetRoot, getSummary, onError }) {
       getSummary,
       onError,
       onRequestClose: closeAndRefocus,
+      loadRings,
     }),
   };
 

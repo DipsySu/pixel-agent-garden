@@ -198,7 +198,8 @@ Promise.all([
       scene,
       assetRoot,
       getSummary: () => visibleSummary,
-      onError: logGardenError
+      onError: logGardenError,
+      loadRings
     });
   }
 

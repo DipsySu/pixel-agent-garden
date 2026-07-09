@@ -27,6 +27,7 @@ import {
   utcDayKey
 } from './card-canvas.js';
 import { escapeHtml, fmtLocal, sourceLabel } from './render-helpers.js';
+import { ringDate, ringEventTitle } from './rings-panel.js';
 import { t } from './i18n.js';
 
 export const YEAR_CARD_TYPES = ['cover', 'growth', 'peak', 'partners', 'seed'];
@@ -129,7 +130,10 @@ export async function buildYearCanvas({ summary, now = new Date(), anchor = loca
   return { canvas, range, stats };
 }
 
-export async function buildYearDeckCanvases({ summary, now = new Date(), anchor = localCalendarDay(now) } = {}) {
+// `rings` is the (possibly null) RingBook from loadRings(); only the growth
+// card reads it, and it degrades to a quiet empty state when null — demo and
+// browser fallback pass null here (loadRings is demo/Tauri-gated).
+export async function buildYearDeckCanvases({ summary, rings = null, now = new Date(), anchor = localCalendarDay(now) } = {}) {
   const range = yearToDateWindow(anchor);
   const stats = yearStats(summary, range);
   await ensureCardFonts();
@@ -140,7 +144,7 @@ export async function buildYearDeckCanvases({ summary, now = new Date(), anchor 
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('canvas 2D context unavailable');
     ctx.imageSmoothingEnabled = false;
-    drawYearDeckCard(ctx, type, range, stats);
+    drawYearDeckCard(ctx, type, range, stats, rings);
     return { type, title: t('share.year.card.' + type), canvas };
   });
   return { cards, range, stats };
@@ -216,12 +220,126 @@ function drawCard(ctx, range, stats) {
   ctx.fillText('pixel-agent-garden', CARD_W / 2, 1218);
 }
 
-function drawYearDeckCard(ctx, type, range, stats) {
+function drawYearDeckCard(ctx, type, range, stats, rings) {
   if (type === 'cover') return drawCoverCard(ctx, range, stats);
+  if (type === 'growth') return drawGrowthCard(ctx, range, rings);
   if (type === 'peak') return drawPeakCard(ctx, range, stats);
   if (type === 'partners') return drawPartnersCard(ctx, range, stats);
   if (type === 'seed') return drawSeedCard(ctx, range, stats);
   return drawCard(ctx, range, stats);
+}
+
+// Milestone types float to the top when curating: a year with dozens of
+// first-seen rows should still surface the tier-ups and unlocks that matter.
+const GROWTH_MILESTONE_TYPES = new Set(['tier_up', 'trinket_unlocked', 'busiest_day_record']);
+const GROWTH_MAX_MOMENTS = 5;
+
+// Ring events whose UTC day falls in the card's calendar year. Matching on the
+// year (not the year-to-date day list) keeps this cheap and independent of the
+// anchor; the book is append-only so this is already chronological-ish but we
+// sort defensively below.
+function yearRingEvents(book, range) {
+  const events = Array.isArray(book?.events) ? book.events : [];
+  const year = String(range?.year ?? '');
+  if (!year) return [];
+  return events.filter((event) => String(event?.utc_date || '').slice(0, 4) === year);
+}
+
+function compareRingDate(a, b) {
+  const da = String(a?.utc_date || '');
+  const db = String(b?.utc_date || '');
+  return da < db ? -1 : da > db ? 1 : 0;
+}
+
+// The growth card's "年轮精选 5 时刻" (PRD §P3-3 item 2): up to five curated
+// ring moments for the year, chronological top→bottom. ≤5 shows them all in
+// date order; >5 prefers milestone types and the earliest first-seen, then
+// fills by date. Exported so the curation rule is unit-testable without a
+// canvas. A null/empty book yields [] and the card draws its quiet fallback.
+export function curateGrowthMoments(book, range) {
+  const chronological = yearRingEvents(book, range).slice().sort(compareRingDate);
+  if (chronological.length <= GROWTH_MAX_MOMENTS) return chronological;
+
+  const picked = [];
+  const seen = new Set();
+  const take = (event) => {
+    if (picked.length >= GROWTH_MAX_MOMENTS || !event || seen.has(event)) return;
+    seen.add(event);
+    picked.push(event);
+  };
+  for (const event of chronological) {
+    if (GROWTH_MILESTONE_TYPES.has(event?.type)) take(event);
+  }
+  take(chronological.find((event) => event?.type === 'first_seen_project'));
+  for (const event of chronological) take(event);
+  return picked.sort(compareRingDate);
+}
+
+function drawGrowthCard(ctx, range, rings) {
+  drawDeckHeader(ctx, range, 'growth', GREEN);
+  const moments = curateGrowthMoments(rings, range);
+  if (!moments.length) {
+    // No book (demo/browser), or a year with no recorded moments: one calm
+    // centered line rather than a blank card or a crash.
+    ctx.fillStyle = MUTED;
+    ctx.font = '38px ' + FONT_STACK;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(fitOneLine(ctx, t('share.year.growth.empty'), CARD_W - 180), CARD_W / 2, CARD_H / 2);
+    drawWatermark(ctx);
+    return;
+  }
+  drawGrowthTimeline(ctx, moments, { x: 66, y: 196, w: CARD_W - 132, h: 954 });
+  drawWatermark(ctx);
+}
+
+// A vertical timeline on a cream panel: a paper-edge spine bar (drawn as a
+// filled rect, never a stroked path — keeps the pixel look and needs no
+// beginPath from the injected test ctx), a node per moment, and a two-line
+// entry (UTC date + localized title) to its right. Rows are distributed evenly
+// so 1..5 moments always read as a balanced column. Titles come from
+// ringEventTitle — name/label-based and localized, so no raw project path or
+// internal key can leak onto a shareable card (privacy契约).
+function drawGrowthTimeline(ctx, moments, box) {
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(box.x, box.y, box.w, box.h);
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(box.x + 2, box.y + 2, box.w - 4, box.h - 4);
+
+  const spineX = box.x + 78;
+  const count = moments.length;
+  const pad = 108;
+  const pitch = count > 1 ? (box.h - pad * 2) / (count - 1) : 0;
+  const firstY = count > 1 ? box.y + pad : box.y + box.h / 2;
+  const lastY = firstY + pitch * (count - 1);
+
+  ctx.fillStyle = PAPER_EDGE;
+  ctx.fillRect(spineX - 3, firstY, 6, Math.max(0, lastY - firstY));
+
+  const textX = spineX + 52;
+  const textW = box.x + box.w - textX - 28;
+  moments.forEach((event, index) => {
+    const y = firstY + pitch * index;
+    // First moment gets the action green; the rest the muted tile used across
+    // the deck's month blocks, so the column reads as one material.
+    ctx.fillStyle = index === 0 ? GREEN : '#e8d7ad';
+    ctx.fillRect(spineX - 15, y - 15, 30, 30);
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(spineX - 15, y - 15, 30, 30);
+
+    ctx.fillStyle = MUTED;
+    ctx.font = '30px ' + FONT_NUM;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(fitOneLine(ctx, ringDate(event.utc_date), textW), textX, y - 8);
+
+    ctx.fillStyle = INK;
+    ctx.font = '600 38px ' + FONT_STACK;
+    ctx.textBaseline = 'top';
+    ctx.fillText(fitOneLine(ctx, ringEventTitle(event), textW), textX, y + 4);
+  });
 }
 
 function drawDeckHeader(ctx, range, type, accent = PAPER_EDGE) {
@@ -529,7 +647,7 @@ function readOffered(storage) {
   }
 }
 
-export function mountYearCardContent({ host, getSummary, onError, onRequestClose }) {
+export function mountYearCardContent({ host, getSummary, onError, onRequestClose, loadRings }) {
   host.innerHTML =
     '<div class="pg6-postcard-title">' + escapeHtml(t('share.year.name')) + '</div>' +
     '<canvas class="pg6-year-preview" width="960" height="1280" aria-hidden="true"></canvas>' +
@@ -552,6 +670,21 @@ export function mountYearCardContent({ host, getSummary, onError, onRequestClose
   let lastRange = null;
   let currentIndex = 0;
   let rendering = false;
+  // The rings book is fetched once per activation and cached: loadRings hits
+  // the Tauri backend (and is null in demo/browser), so re-reading it on every
+  // render/export would be wasteful. A throw degrades to a bookless deck.
+  let ringsBook = null;
+  let ringsLoaded = false;
+  async function ensureRings() {
+    if (ringsLoaded) return ringsBook;
+    ringsLoaded = true;
+    try {
+      ringsBook = typeof loadRings === 'function' ? await loadRings() : null;
+    } catch (_) {
+      ringsBook = null;
+    }
+    return ringsBook;
+  }
 
   exportButton.addEventListener('click', async () => {
     if (rendering) return;
@@ -561,7 +694,8 @@ export function mountYearCardContent({ host, getSummary, onError, onRequestClose
     setStatus(t('postcard.exporting'));
     try {
       const { canvas } = await buildYearDeckCanvas({
-        summary: typeof getSummary === 'function' ? getSummary() : null
+        summary: typeof getSummary === 'function' ? getSummary() : null,
+        rings: await ensureRings()
       });
       const blob = await canvasToPngBlob(canvas);
       const saved = await savePostcard(blob, suggestedYearDeckName(lastRange));
@@ -595,7 +729,8 @@ export function mountYearCardContent({ host, getSummary, onError, onRequestClose
     setStatus(t('postcard.rendering'));
     try {
       lastDeck = await buildYearDeckCanvases({
-        summary: typeof getSummary === 'function' ? getSummary() : null
+        summary: typeof getSummary === 'function' ? getSummary() : null,
+        rings: await ensureRings()
       });
       lastRange = lastDeck.range;
       currentIndex = 0;
@@ -646,6 +781,11 @@ export function mountYearCardContent({ host, getSummary, onError, onRequestClose
     // button synchronously before its first await, so focusing it inline
     // would no-op and drop focus to <body>.
     activate: () => {
+      // Invalidate the cached book on each open so a moment recorded since the
+      // last open reaches the card. It stays cached WITHIN one activation
+      // (preview + export share a single fetch); this reset is what makes the
+      // "once per activation" contract true. Mirrors the Cost/Projects tabs.
+      ringsLoaded = false;
       renderPreview().then(() => exportButton.focus());
     }
   };
