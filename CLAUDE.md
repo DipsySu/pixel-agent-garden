@@ -220,13 +220,10 @@ change would be misread instead of refused.
 
 - ...
 - ...
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 ```
 
 - 标题用英文 conventional commit (`feat:` / `fix:` / `chore:` / `docs:`)
 - body 解释 **why** 多于 **what**
-- AI 协作的 commit 加 `Co-Authored-By:` 行(参考工具的输出)
 - 不要 `--no-verify` 跳过 hook
 
 ## 代码风格 hint
