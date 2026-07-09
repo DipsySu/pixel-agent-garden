@@ -1398,6 +1398,28 @@ body {
 .pg6-settings-toggle { align-items: center; cursor: pointer; display: inline-flex; gap: 8px; }
 .pg6-settings-toggle input { accent-color: #d6a258; }
 .pg6-settings-toggle input:disabled { cursor: not-allowed; }
+.pg6-shortcut-controls { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.pg6-shortcut-capture, .pg6-shortcut-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: inherit;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 3px 10px;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.pg6-shortcut-capture {
+  border-color: rgba(255, 255, 255, 0.18);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  min-width: 72px;
+}
+.pg6-shortcut-capture:hover, .pg6-shortcut-btn:hover { background: rgba(255, 255, 255, 0.08); }
+.pg6-shortcut-capture.is-recording {
+  background: rgba(244, 216, 120, 0.16);
+  border-color: rgba(244, 216, 120, 0.55);
+}
+.pg6-shortcut-capture:disabled, .pg6-shortcut-btn:disabled { cursor: not-allowed; opacity: 0.55; }
 .pg6-settings-toggle:has(input:disabled) { cursor: not-allowed; opacity: 0.55; }
 .pg6-settings-hint { color: var(--color-text-tertiary); font-size: 10px; }
 .pg6-settings-note {

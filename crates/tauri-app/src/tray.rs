@@ -51,7 +51,7 @@ fn locale_is_zh() -> bool {
     })
 }
 
-fn tr(en: &'static str, zh: &'static str) -> &'static str {
+pub(crate) fn tr(en: &'static str, zh: &'static str) -> &'static str {
     if locale_is_zh() { zh } else { en }
 }
 
@@ -498,7 +498,7 @@ fn build_control_submenu<R: Runtime>(app: &AppHandle<R>, title: &str) -> tauri::
     )
 }
 
-fn show_main_window<R: Runtime>(app: &AppHandle<R>) {
+pub(crate) fn show_main_window<R: Runtime>(app: &AppHandle<R>) {
     if let Some(window) = app.get_webview_window(WINDOW_LABEL) {
         if let Err(err) = window.show().and_then(|_| window.set_focus()) {
             emit_error(app, "tray", format!("show window: {err}"));
@@ -506,12 +506,33 @@ fn show_main_window<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
-fn hide_main_window<R: Runtime>(app: &AppHandle<R>) {
+pub(crate) fn hide_main_window<R: Runtime>(app: &AppHandle<R>) {
     let Some(window) = app.get_webview_window(WINDOW_LABEL) else {
         return;
     };
     if let Err(err) = window.hide() {
         emit_error(app, "tray", format!("hide window: {err}"));
+    }
+}
+
+/// Flip the main window between shown-and-focused and hidden. The global
+/// shortcut handler (`shortcuts.rs`) and the tray share this so the show /
+/// hide / focus policy lives in exactly one place. Visible AND focused → hide;
+/// otherwise show + focus — so pressing the toggle while the window is merely
+/// behind another app raises it instead of dead-ending on a hide. A missing
+/// window (never created / already destroyed) is a no-op.
+pub(crate) fn toggle_main_window<R: Runtime>(app: &AppHandle<R>) {
+    let Some(window) = app.get_webview_window(WINDOW_LABEL) else {
+        return;
+    };
+    // `is_visible` / `is_focused` can error on some platforms; treat an error
+    // as "not showing" so the toggle still summons rather than dead-ends.
+    let visible = window.is_visible().unwrap_or(false);
+    let focused = window.is_focused().unwrap_or(false);
+    if visible && focused {
+        hide_main_window(app);
+    } else {
+        show_main_window(app);
     }
 }
 

@@ -3,8 +3,23 @@
 ## Unreleased
 
 Post-2.0 work from two independent review passes (merged + cross-verified):
-two PRD gaps closed, plus a batch of correctness / privacy / release-governance
-hardening.
+two PRD gaps closed, a new optional global hotkey, plus a batch of correctness /
+privacy / release-governance hardening.
+
+### Desktop global hotkey (show / hide)
+
+- Added an optional global hotkey that shows the window when hidden and hides
+  it when visible (raising it if it was merely behind another app). It must be a
+  global hotkey — an in-app key can't reach a hidden window to summon it back.
+- Off by default, honoring the "quiet, respects the machine" posture: a global
+  hotkey shares the OS-wide namespace and can clash with other apps, so nothing
+  is registered until the user opts in. The settings panel offers a recommended
+  combo (`⌘⇧G` / `Ctrl+Shift+G`) to one-tap enable, a recorder to bind your own
+  (press the keys), and a clear button to disable.
+- A taken or invalid combination surfaces as a `garden:error` toast ("pick a
+  different combination") instead of failing silently. Registration lives in a
+  narrow `shortcuts.rs` shell reconciled from `settings.toml` at startup and
+  after each save (mirrors `autostart`); core never touches the OS.
 
 ### Year Review + Weekly Recap (PRD §P3)
 

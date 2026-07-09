@@ -14,6 +14,7 @@
 mod autostart;
 mod commands;
 mod events;
+mod shortcuts;
 mod terminal;
 mod tray;
 mod watcher;
@@ -32,6 +33,14 @@ fn main() {
             MacosLauncher::LaunchAgent,
             None,
         ))
+        // Global hotkey manager. Nothing is registered at init; shortcuts::reconcile
+        // (at startup and after each settings save) registers settings.shortcuts,
+        // and this single handler toggles the window on any registered key-down.
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(shortcuts::on_shortcut)
+                .build(),
+        )
         .menu(tray::build_app_menu)
         .on_menu_event(tray::handle_menu_event)
         .on_window_event(tray::handle_window_event)
@@ -61,7 +70,12 @@ fn main() {
             // stays the source of truth. An unreadable settings file skips
             // the reconcile: never rewrite OS state from a guessed value.
             match settings::load(&settings::default_settings_path()) {
-                Ok(s) => autostart::reconcile(app.handle(), s.desktop.launch_at_login),
+                Ok(s) => {
+                    autostart::reconcile(app.handle(), s.desktop.launch_at_login);
+                    // Register the optional global hotkey (nothing unless the user
+                    // set one). Same source-of-truth reconcile as autostart above.
+                    shortcuts::reconcile(app.handle(), &s.shortcuts);
+                }
                 Err(err) => {
                     eprintln!("[autostart] settings unreadable, skipping reconcile: {err}")
                 }

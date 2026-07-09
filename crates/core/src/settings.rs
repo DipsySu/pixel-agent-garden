@@ -25,6 +25,7 @@ pub struct Settings {
     pub data: DataSettings,
     pub integrations: Integrations,
     pub desktop: DesktopSettings,
+    pub shortcuts: Shortcuts,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -75,6 +76,25 @@ pub struct DesktopSettings {
     /// When true, closing the main window hides it and keeps the tray resident.
     /// When false, the platform default close behavior is allowed.
     pub close_to_tray: bool,
+}
+
+/// Global keyboard shortcuts (desktop only). Narrow by design: exactly one
+/// action today — toggle the garden window's visibility. The value is a
+/// Tauri-format accelerator string (`CmdOrCtrl+Shift+G`); an EMPTY string means
+/// the shortcut is disabled, which is the DEFAULT. A global hotkey occupies the
+/// OS-wide namespace and can clash with other apps, so the product posture is
+/// opt-in-and-quiet: ship nothing registered, and let the settings UI offer a
+/// recommended combo the user can enable or rebind. The Tauri `shortcuts`
+/// module reconciles OS registration to this value; core never touches the OS
+/// (spec §10 rule 1). Validation is deferred to registration time (a bad or
+/// taken combo surfaces as a `garden:error` toast), keeping reads lenient.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Shortcuts {
+    /// Accelerator that shows the window when hidden and hides it when visible.
+    /// Empty = disabled (default). Must be a GLOBAL hotkey: an in-app key can't
+    /// reach a hidden window to summon it back.
+    pub toggle_window: String,
 }
 
 /// Launcher integration settings (spec §Deferred — launcher integration).
@@ -265,6 +285,11 @@ mod tests {
                 launch_at_login: true,
                 close_to_tray: true,
             },
+            // A non-empty accelerator here proves the shortcut survives a
+            // save/load round-trip (the field the settings UI persists).
+            shortcuts: Shortcuts {
+                toggle_window: "CmdOrCtrl+Shift+G".into(),
+            },
         };
         save(&path, &s).unwrap();
         let back = load(&path).unwrap();
@@ -314,6 +339,7 @@ mod tests {
                 launch_at_login: false,
                 close_to_tray: true,
             },
+            shortcuts: Shortcuts::default(),
         };
         let text = toml::to_string(&s).unwrap();
         assert!(text.contains("time_mode = \"dusk\""), "got: {text}");
@@ -324,6 +350,19 @@ mod tests {
         assert!(text.contains("weekly_recap = true"), "got: {text}");
         assert!(text.contains("terminal = \"iterm\""), "got: {text}");
         assert!(text.contains("close_to_tray = true"), "got: {text}");
+    }
+
+    #[test]
+    fn shortcuts_default_is_disabled() {
+        // Product posture: ship nothing registered. A fresh install and any
+        // settings.toml written before [shortcuts] existed both load as "off".
+        assert!(Shortcuts::default().toggle_window.is_empty());
+        let path = tmp_settings_path("no-shortcuts");
+        std::fs::write(&path, "[appearance]\ntime_mode = \"day\"\n").unwrap();
+        let got = load(&path).unwrap();
+        assert_eq!(got.shortcuts, Shortcuts::default());
+        assert!(got.shortcuts.toggle_window.is_empty());
+        std::fs::remove_file(&path).ok();
     }
 
     #[test]

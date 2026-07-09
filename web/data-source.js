@@ -267,6 +267,9 @@ function defaultSettings() {
       desktop: {
         launch_at_login: false,
         close_to_tray: false
+      },
+      shortcuts: {
+        toggle_window: ''
       }
     };
   }
@@ -302,6 +305,10 @@ function normalizeSettings(value) {
     // dropping the section would reset the user's terminal choice on every save.
     const integrations = value && typeof value.integrations === 'object' ? value.integrations : {};
     const desktop = value && typeof value.desktop === 'object' ? value.desktop : {};
+    // Round-trip shortcuts untouched for the same reason as integrations:
+    // dropping the section would wipe the user's global hotkey on every save.
+    // The accelerator string is validated at registration (Rust), not here.
+    const shortcuts = value && typeof value.shortcuts === 'object' ? value.shortcuts : {};
     return {
       appearance: {
         time_mode: validChoice(appearance.time_mode, ['system', 'day', 'dusk', 'night'], base.appearance.time_mode),
@@ -321,6 +328,9 @@ function normalizeSettings(value) {
       desktop: {
         launch_at_login: typeof desktop.launch_at_login === 'boolean' ? desktop.launch_at_login : base.desktop.launch_at_login,
         close_to_tray: typeof desktop.close_to_tray === 'boolean' ? desktop.close_to_tray : base.desktop.close_to_tray
+      },
+      shortcuts: {
+        toggle_window: typeof shortcuts.toggle_window === 'string' ? shortcuts.toggle_window : base.shortcuts.toggle_window
       }
     };
   }

@@ -155,6 +155,10 @@ pub async fn set_settings(app: tauri::AppHandle, settings: Settings) -> Result<S
         // Only a persisted value is the truth — project launch_at_login onto
         // the OS login item after the save lands (no-op when already in sync).
         crate::autostart::reconcile(&app, settings.desktop.launch_at_login);
+        // Same source-of-truth reconcile for the optional global hotkey: drop
+        // the old binding and register the new accelerator (or nothing when the
+        // user cleared it). A taken/invalid combo surfaces as a toast, not here.
+        crate::shortcuts::reconcile(&app, &settings.shortcuts);
         Ok(settings)
     })
     .await
