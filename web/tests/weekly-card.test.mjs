@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import {
   buildWeeklyCanvas,
   mostRecentLocalMonday,
+  mountWeeklyCardContent,
   previousIsoWeek,
   recordWeeklyOffer,
   shouldOfferWeeklyRecap,
@@ -255,4 +256,50 @@ test('a bookless week draws the quiet growth fallback and quiet closing', async 
     assert.ok(texts.includes(t('share.weekly.closing')), 'the quiet closing is drawn');
     assert.ok(!texts.includes(t('share.weekly.closing.lamp')), 'the lamp closing is not drawn');
   });
+});
+
+// ---- provider re-fetches the rings book on each activation ------------------
+
+test('the weekly provider re-loads the rings book on every activation', async () => {
+  // Regression (post-2.0 review): the share drawer mounts each provider once
+  // at startup, so a book cached for the provider's whole lifetime goes stale —
+  // a moment recorded after the first open would never reach a later card.
+  // activate() must invalidate the cache so each open re-reads (within one
+  // activation the fetch is still shared by preview + export).
+  const previousDocument = globalThis.document;
+  const previousCanvasCtor = globalThis.HTMLCanvasElement;
+  const ctx = {
+    set fillStyle(_) {}, set strokeStyle(_) {}, set lineWidth(_) {},
+    set font(_) {}, set textAlign(_) {}, set textBaseline(_) {},
+    fillRect() {}, strokeRect() {}, fillText() {}, drawImage() {},
+    measureText: (text) => ({ width: String(text).length * 10 })
+  };
+  const fakeCanvas = () => ({ width: 0, height: 0, getContext: () => ctx });
+  globalThis.document = { createElement: () => fakeCanvas() };
+  // Defined so renderPreview's `preview instanceof HTMLCanvasElement` guard is a
+  // safe `false` under Node (no DOM) instead of a ReferenceError.
+  globalThis.HTMLCanvasElement = class {};
+  const host = {
+    innerHTML: '',
+    querySelector: (sel) => ({
+      '.pg6-weekly-preview': fakeCanvas(),
+      '.pg6-postcard-export': { addEventListener() {}, focus() {}, disabled: false },
+      '.pg6-postcard-status': { textContent: '' }
+    })[sel] || null
+  };
+  let loads = 0;
+  const loadRings = async () => { loads += 1; return { events: [] }; };
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+  try {
+    const provider = mountWeeklyCardContent({ host, getSummary: () => craftedSummary(), loadRings });
+    provider.activate();
+    await settle();
+    assert.equal(loads, 1, 'first open loads the book once');
+    provider.activate();
+    await settle();
+    assert.equal(loads, 2, 'a second open re-reads the book (cache invalidated per activation)');
+  } finally {
+    if (previousDocument === undefined) delete globalThis.document; else globalThis.document = previousDocument;
+    if (previousCanvasCtor === undefined) delete globalThis.HTMLCanvasElement; else globalThis.HTMLCanvasElement = previousCanvasCtor;
+  }
 });

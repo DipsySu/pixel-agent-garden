@@ -781,6 +781,11 @@ export function mountYearCardContent({ host, getSummary, onError, onRequestClose
     // button synchronously before its first await, so focusing it inline
     // would no-op and drop focus to <body>.
     activate: () => {
+      // Invalidate the cached book on each open so a moment recorded since the
+      // last open reaches the card. It stays cached WITHIN one activation
+      // (preview + export share a single fetch); this reset is what makes the
+      // "once per activation" contract true. Mirrors the Cost/Projects tabs.
+      ringsLoaded = false;
       renderPreview().then(() => exportButton.focus());
     }
   };
