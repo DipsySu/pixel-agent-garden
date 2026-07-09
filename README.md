@@ -1,6 +1,6 @@
 # Pixel Agent Garden
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) · [🔒 100% local — verify it yourself](PRIVACY.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) · [Product page](https://dipsysu.github.io/pixel-agent-garden/) · [🔒 100% local — verify it yourself](PRIVACY.md)
 
 Languages: [English](#english) | [中文](#中文)
 
