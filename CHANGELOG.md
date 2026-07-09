@@ -18,6 +18,11 @@ hardening.
 - Made the frameless desktop window draggable from the header. The app now uses
   an explicit `startDragging()` bridge for the non-interactive header area and
   grants only the needed `core:window:allow-start-dragging` capability.
+- Redesigned the tray status icon from a full stone-lantern silhouette into a
+  compact pixel garden-gate mark with a centered lantern. The macOS template
+  variants now keep an open doorway / lamp cutout so the icon stays readable
+  after the system tints it in the menu bar, while Windows/Linux keep colored
+  lit and unlit variants.
 
 ### Year Review + Weekly Recap (PRD §P3)
 

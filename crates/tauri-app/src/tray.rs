@@ -359,10 +359,10 @@ fn lamp_is_lit(summary: Option<&GardenSummary>) -> bool {
         .unwrap_or(false)
 }
 
-/// Lit/unlit lantern for the tray. macOS gets template variants (black +
-/// alpha) that adapt to the light/dark menu bar; the lit template punches the
-/// lamp window out of the silhouette so the two states stay distinguishable
-/// even in monochrome. Other platforms get the color pixel art.
+/// Lit/unlit garden-gate mark for the tray. macOS gets template variants
+/// (black + alpha) that adapt to the light/dark menu bar; the open doorway and
+/// lamp window keep the mark legible after the system tints it. Other
+/// platforms get the color pixel art.
 fn tray_icon_for(lit: bool) -> tauri::image::Image<'static> {
     if cfg!(target_os = "macos") {
         if lit {
