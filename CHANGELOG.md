@@ -40,6 +40,9 @@ privacy / release-governance hardening.
   variants now keep an open doorway / lamp cutout so the icon stays readable
   after the system tints it in the menu bar, while Windows/Linux keep colored
   lit and unlit variants.
+- Clarified cost rows for cache-heavy models: each priced model now shows cache
+  tokens inline as counted-but-not-priced, and the row footer distinguishes the
+  number of tokens actually priced from the larger total-token rollup.
 
 ### Year Review + Weekly Recap (PRD §P3)
 

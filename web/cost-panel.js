@@ -171,10 +171,13 @@ function modelRows(byModel, unpricedByModel) {
 function pricedRow(row) {
   const c = row.cost;
   const usd = formatUsd(c.usd);
+  const cache = uintish(c.cache_tokens);
+  const pricedTokens = uintish(c.input_tokens) + uintish(c.output_tokens) + uintish(c.blended_tokens);
   const split = t('cost.rowSplit', {
     input: fmtLocal(c.input_tokens),
     output: fmtLocal(c.output_tokens),
     blended: fmtLocal(c.blended_tokens),
+    cache: fmtLocal(cache),
   });
   // Rate echoed by core alongside the usd it produced — no second price lookup,
   // so the shown rate can never disagree with the computed cost.
@@ -182,14 +185,23 @@ function pricedRow(row) {
     input: c.input_per_mtok,
     output: c.output_per_mtok,
   });
-  return costRowHtml(row.model, escapeHtml(split) + ' · ' + escapeHtml(rate), escapeHtml(usd), row.total);
+  return costRowHtml(
+    row.model,
+    escapeHtml(split) + ' · ' + escapeHtml(rate),
+    escapeHtml(usd),
+    pricedTokens,
+    row.total
+  );
 }
 
 function unpricedRow(row) {
-  return costRowHtml(row.model, escapeHtml(t('cost.rowUnknown')), escapeHtml(t('cost.unpriced')), row.total);
+  return costRowHtml(row.model, escapeHtml(t('cost.rowUnknown')), escapeHtml(t('cost.unpriced')), 0, row.total);
 }
 
-function costRowHtml(model, detailHtml, amountHtml, total) {
+function costRowHtml(model, detailHtml, amountHtml, pricedTokens, total) {
+  const tokenLabel = pricedTokens > 0 && pricedTokens < total
+    ? t('cost.rowPricedAndTotal', { priced: fmtLocal(pricedTokens), total: fmtLocal(total) })
+    : t('cost.rowTokens', { total: fmtLocal(total) });
   return `
     <div class="pg6-cost-row">
       <div class="pg6-cost-main">
@@ -198,7 +210,7 @@ function costRowHtml(model, detailHtml, amountHtml, total) {
       </div>
       <div class="pg6-cost-amount">
         <b>${amountHtml}</b>
-        <small>${escapeHtml(t('cost.rowTokens', { total: fmtLocal(total) }))}</small>
+        <small>${escapeHtml(tokenLabel)}</small>
       </div>
     </div>`;
 }
