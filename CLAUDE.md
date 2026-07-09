@@ -178,7 +178,7 @@ python3 -m http.server 8765
 ## 数据 schema
 
 `GardenSummary` 和 `EventsCache` 各带独立的 `schema_version: u32`:
-summary 用 [`aggregate::SUMMARY_SCHEMA_VERSION`](crates/core/src/aggregate.rs)(当前 `6`),
+summary 用 [`aggregate::SUMMARY_SCHEMA_VERSION`](crates/core/src/aggregate.rs)(当前 `9`),
 events 缓存用 [`storage::EVENTS_SCHEMA_VERSION`](crates/core/src/storage.rs)(当前 `1`)。
 两者分开,好处是 summary 形状演进不会作废已缓存的原始 events。
 **任何改对应 on-disk JSON shape 的改动都要 bump 对应常量**。reader 看到比自己高的版本会拒绝缓存。
@@ -220,13 +220,10 @@ change would be misread instead of refused.
 
 - ...
 - ...
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 ```
 
 - 标题用英文 conventional commit (`feat:` / `fix:` / `chore:` / `docs:`)
 - body 解释 **why** 多于 **what**
-- AI 协作的 commit 加 `Co-Authored-By:` 行(参考工具的输出)
 - 不要 `--no-verify` 跳过 hook
 
 ## 代码风格 hint

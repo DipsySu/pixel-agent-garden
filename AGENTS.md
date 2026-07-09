@@ -212,8 +212,6 @@ desktop-first tool.
 - Do not use `--no-verify`.
 - Preserve unrelated user changes. Never reset or checkout files you did not
   intentionally modify.
-- If an AI assistant contributed materially, add an appropriate
-  `Co-Authored-By:` line.
 
 ## Current Phase
 
@@ -430,7 +428,6 @@ cd crates/tauri-app && cargo tauri build
 - commit body 解释为什么要改。
 - 不使用 `--no-verify`。
 - 保留无关用户改动；不要 reset 或 checkout 不是你明确修改的文件。
-- 如果 AI assistant 做了实质贡献，加入合适的 `Co-Authored-By:`。
 
 ### 当前阶段
 

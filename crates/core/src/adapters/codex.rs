@@ -89,10 +89,13 @@ impl CodexAdapter {
         // SQLite errors here are intentionally swallowed: Codex's schema can
         // vary between versions and we'd rather return partial data than
         // refuse to render the garden.
-        let uri = format!("file:{}?mode=ro", db_path.display());
+        // Open the path directly (not a `file:` URI): SQLITE_OPEN_READ_ONLY
+        // already rejects writes, and a URI silently breaks when the home path
+        // contains a `#`, `?`, or `%` — malforming the URI and dropping the
+        // whole Codex source. A plain path has no such escaping hazard.
         let conn = match rusqlite::Connection::open_with_flags(
-            &uri,
-            OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_URI,
+            db_path,
+            OpenFlags::SQLITE_OPEN_READ_ONLY,
         ) {
             Ok(c) => c,
             Err(_) => return Vec::new(),
@@ -261,8 +264,16 @@ impl Adapter for CodexAdapter {
     }
 
     fn discover(&self, ctx: &AdapterContext) -> bool {
+        // Match everything `collect()` and `watch_paths()` actually read: a
+        // Codex install that only writes rollout logs (sessions/) — no SQLite
+        // db, no session index — is still a real, collectable source. Omitting
+        // the rollout dirs here made `scan` skip the whole adapter (it gates
+        // collect on discover), so those installs rendered as an empty garden.
         let root = Self::root(ctx);
-        root.join("state_5.sqlite").is_file() || root.join("session_index.jsonl").is_file()
+        root.join("state_5.sqlite").is_file()
+            || root.join("session_index.jsonl").is_file()
+            || root.join("sessions").is_dir()
+            || root.join("archived_sessions").is_dir()
     }
 
     fn collect(&self, ctx: &AdapterContext) -> Result<Vec<AgentEvent>, Error> {
@@ -460,28 +471,41 @@ fn parse_rollout(path: &Path, session_id: &str) -> Option<AgentEvent> {
     Some(event)
 }
 
-/// Recursively sum common token-count keys, including a nested `usage` object.
+/// Best-effort token total for one usage-ish object.
+///
+/// A `total_tokens` (or `tokens_used`) value already accounts for its own
+/// input/output/cache components, so summing a total TOGETHER with the parts it
+/// summarizes double-counts — the previous version did exactly that (a standard
+/// `{input_tokens, output_tokens, total_tokens}` usage object inflated every
+/// Codex row by ~2x). Prefer an explicit total; fall back to the component sum
+/// only when no total is present; consult a nested `usage` object under the
+/// same rule, and only when this level carried nothing of its own.
+///
+/// NOTE: the exact Codex `token_count` payload shape (whether counts are
+/// cumulative across rows, and whether they sit at the top level or under
+/// `info`) is not yet covered by a fixture — see the module test gap. This
+/// fixes the unambiguous within-object double-count; the per-row accumulation
+/// in `parse_rollout` should be validated against a real rollout sample.
 fn extract_token_total(data: &serde_json::Value) -> u64 {
     let Some(obj) = data.as_object() else {
         return 0;
     };
-    const KEYS: &[&str] = &[
-        "total_tokens",
-        "tokens_used",
-        "input_tokens",
-        "output_tokens",
-        "cached_tokens",
-    ];
-    let mut total: u64 = 0;
-    for k in KEYS {
-        total = total.saturating_add(as_int_opt(obj.get(*k)));
-    }
-    if let Some(usage) = obj.get("usage") {
-        if usage.is_object() {
-            total = total.saturating_add(extract_token_total(usage));
+    let total = as_int_opt(obj.get("total_tokens")).max(as_int_opt(obj.get("tokens_used")));
+    let this_level = if total > 0 {
+        total
+    } else {
+        as_int_opt(obj.get("input_tokens"))
+            .saturating_add(as_int_opt(obj.get("output_tokens")))
+            .saturating_add(as_int_opt(obj.get("cached_tokens")))
+    };
+    if this_level == 0 {
+        if let Some(usage) = obj.get("usage") {
+            if usage.is_object() {
+                return extract_token_total(usage);
+            }
         }
     }
-    total
+    this_level
 }
 
 /// Whitespace-collapse + truncate.
@@ -519,17 +543,23 @@ mod tests {
     }
 
     #[test]
-    fn extract_token_total_sums_nested_usage() {
+    fn extract_token_total_prefers_total_over_components() {
+        // A total already includes its parts — take it, never add the parts on
+        // top (the old behavior summed 10+5+7+3 = 25 and inflated every row).
         let v = json!({
             "total_tokens": 10,
             "input_tokens": 5,
-            "usage": {
-                "output_tokens": 7,
-                "cached_tokens": 3
-            }
+            "usage": { "output_tokens": 7, "cached_tokens": 3 }
         });
-        // 10 + 5 (top level) + 7 + 3 (nested) = 25
-        assert_eq!(extract_token_total(&v), 25);
+        assert_eq!(extract_token_total(&v), 10);
+
+        // No total anywhere → sum the components at this level.
+        let split = json!({ "input_tokens": 6, "output_tokens": 4 });
+        assert_eq!(extract_token_total(&split), 10);
+
+        // Nothing at this level → fall through to a nested `usage` object.
+        let nested = json!({ "usage": { "total_tokens": 8 } });
+        assert_eq!(extract_token_total(&nested), 8);
     }
 
     #[test]
@@ -581,6 +611,18 @@ mod tests {
         let ctx = AdapterContext::with_home(&tmp);
         let adapter = CodexAdapter;
         assert!(!adapter.discover(&ctx));
+        std::fs::remove_dir_all(&tmp).ok();
+    }
+
+    #[test]
+    fn discover_true_with_only_sessions_dir() {
+        // A Codex install with only rollout logs (sessions/) — no SQLite db, no
+        // session index — is still collectable; discover must not skip it, or
+        // scan (which gates collect on discover) renders those installs empty.
+        let tmp = std::env::temp_dir().join(format!("lag-codex-sess-{}", std::process::id()));
+        std::fs::create_dir_all(tmp.join(".codex").join("sessions")).unwrap();
+        let ctx = AdapterContext::with_home(&tmp);
+        assert!(CodexAdapter.discover(&ctx));
         std::fs::remove_dir_all(&tmp).ok();
     }
 

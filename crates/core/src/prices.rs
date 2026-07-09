@@ -113,6 +113,17 @@ pub fn load_effective(path: &Path) -> Result<PriceTable, Error> {
         });
     }
     for (model, price) in user.prices {
+        // A negative or non-finite user-supplied rate would yield nonsensical
+        // cost (negative dollars, or NaN → serialized as `null`). Reject the bad
+        // entry and keep whatever bundled default exists for that model rather
+        // than letting one typo mis-price the whole tab.
+        if !price.input_per_mtok.is_finite()
+            || !price.output_per_mtok.is_finite()
+            || price.input_per_mtok < 0.0
+            || price.output_per_mtok < 0.0
+        {
+            continue;
+        }
         table.prices.insert(model, price);
     }
     table.schema_version = PRICES_SCHEMA_VERSION;
@@ -320,6 +331,28 @@ mod tests {
         let _ = std::fs::remove_file(&path);
         let table = load_effective(&path).unwrap();
         assert_eq!(table, bundled_defaults());
+    }
+
+    #[test]
+    fn negative_or_nonfinite_user_rate_is_rejected() {
+        // A negative or non-finite rate would produce negative / NaN cost. The
+        // bad entry is dropped (kept out of the effective table); a valid entry
+        // in the same file still lands.
+        let path = tmp("badrate");
+        std::fs::write(
+            &path,
+            r#"{
+              "prices": {
+                "neg-model": { "input_per_mtok": -1.0, "output_per_mtok": 5.0 },
+                "ok-model": { "input_per_mtok": 2.0, "output_per_mtok": 4.0 }
+              }
+            }"#,
+        )
+        .unwrap();
+        let table = load_effective(&path).unwrap();
+        assert!(!table.prices.contains_key("neg-model"));
+        assert_eq!(table.prices["ok-model"].input_per_mtok, 2.0);
+        std::fs::remove_file(&path).ok();
     }
 
     #[test]

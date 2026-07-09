@@ -849,8 +849,21 @@ fn size_strength(tokens: u64, max_tokens: u64, sorted_tokens: &[u64]) -> f64 {
     let rank = sorted_tokens.iter().position(|&v| v == tokens).unwrap_or(0);
     let rank_strength = 1.0 - (rank as f64) / (count.saturating_sub(1).max(1) as f64);
     let log_strength = if tokens > 0 && max_tokens > 0 {
-        ((((tokens + 1) as f64).log10() - 4.0) / (((max_tokens + 1) as f64).log10() - 4.0))
-            .clamp(0.0, 1.0)
+        // `- 4.0` is log10 of the 10k-token floor. The denominator vanishes when
+        // the busiest project sits exactly on that floor (max_tokens == 9999 →
+        // log10(10000) - 4.0 == 0.0), so the top project's own row computes
+        // 0.0/0.0 = NaN. serde_json renders NaN as `null`, and the tray's
+        // `GardenSummary` re-parse then rejects the whole payload. Fill the
+        // removable singularity with the value the ratio converges to on both
+        // sides (the busiest project is full strength): 1.0 for the top
+        // project, 0.0 for the rest.
+        let denom = ((max_tokens + 1) as f64).log10() - 4.0;
+        if denom == 0.0 {
+            if tokens >= max_tokens { 1.0 } else { 0.0 }
+        } else {
+            (((tokens + 1) as f64).log10() - 4.0) / denom
+        }
+        .clamp(0.0, 1.0)
     } else {
         0.0
     };
@@ -1588,6 +1601,18 @@ mod tests {
         let strength = size_strength(42, 42, &only);
         assert!(strength.is_finite());
         assert!((0.0..=1.0).contains(&strength));
+
+        // Regression: the busiest project sitting exactly on the 10k-token floor
+        // (max == 9999 → log10(10000) - 4.0 == 0.0) made the denominator vanish,
+        // so the top project computed 0.0/0.0 = NaN. NaN serializes as `null`,
+        // which breaks the tray's GardenSummary re-parse. It must stay finite and
+        // resolve to full strength for the busiest project.
+        let top = size_strength(9999, 9999, &[9999]);
+        assert!(top.is_finite(), "size_strength must never be NaN");
+        assert!((top - 1.0).abs() < 1e-12);
+        let smaller = size_strength(500, 9999, &[9999, 500]);
+        assert!(smaller.is_finite());
+        assert!((0.0..=1.0).contains(&smaller));
     }
 
     // ===== heatmap_year + hour_of_week (schema_version 5) ===================

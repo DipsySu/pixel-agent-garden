@@ -23,6 +23,11 @@ export function mountInsightContent({ host, initialSummary, onProjectSelect, onO
   let cost = null;
   let costLoading = false;
   let costRequested = false;
+  // The summary frame `cost` was computed against. A new frame (watcher tick)
+  // means events changed, so the per-project cost labels are stale and
+  // activate() should recompute — but reopening the tab WITHOUT new data must
+  // not refetch, so we compare frame identity rather than always invalidating.
+  let lastCostFrame = initialSummary || null;
   let requestId = 0;
   // Client-side view state, preserved across re-renders (watcher ticks):
   // `query` filters rows by the row's data-search haystack; `showAll` lifts the
@@ -133,6 +138,11 @@ export function mountInsightContent({ host, initialSummary, onProjectSelect, onO
   return {
     update: (summary) => {
       currentSummary = summary || null;
+      // New frame ⇒ cost labels are stale; let activate() recompute on next open.
+      if (summary !== lastCostFrame) {
+        lastCostFrame = summary;
+        costRequested = false;
+      }
       render();
     },
     activate: () => {

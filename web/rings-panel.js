@@ -33,7 +33,11 @@ export function mountRingsContent({ host, loadRings, onRequestClose }) {
       onRequestClose();
     }
   });
-  refresh();
+  // No fetch on mount: the drawer mounts all six tab providers eagerly at
+  // startup, so reading rings.json here hit disk on every launch even when the
+  // user never opened the Data drawer. activate() fetches on first open (drawer
+  // contract), matching cost-panel / insight-panel.
+  render();
 
   async function refresh() {
     const id = ++requestId;

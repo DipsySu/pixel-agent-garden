@@ -52,7 +52,10 @@ pub fn summary_from_cache_or_scan_at(
         // CLI export) is treated as stale → refresh once.
         if let Some(stored) = cache.fingerprint {
             if stored == source_fingerprint(ctx) {
-                let summary = aggregate::summarize(&cache.events);
+                // Apply the caller's source filter to the cached view. The cache
+                // always holds the FULL event set (see refresh_summary_at), so a
+                // filtered request narrows it here instead of being ignored.
+                let summary = summarize_filtered(&cache.events, sources_filter);
                 return Ok(rings::record_summary_best_effort(
                     summary,
                     &rings::path_for_events_cache(cache_path),
@@ -90,14 +93,39 @@ pub fn refresh_summary_at(
     // magnitude cheaper than the parse. Do NOT "optimize" it by fingerprinting
     // after the scan: that reopens the staleness window.
     let fingerprint = source_fingerprint(ctx);
-    let result = scan::collect_events(ctx, sources_filter)?;
+    // Scan the FULL set and persist that: there is one shared events.json and
+    // the fingerprint is filter-independent, so writing a filtered subset would
+    // be served whole to later unfiltered reads (cache pollution). A filtered
+    // request stays a transient view computed from the full scan.
+    let result = scan::collect_events(ctx, None)?;
     storage::save_events_with_fingerprint(&result.events, Some(fingerprint), cache_path)?;
-    let summary = aggregate::summarize(&result.events);
+    let summary = summarize_filtered(&result.events, sources_filter);
     Ok(rings::record_summary_best_effort(
         summary,
         &rings::path_for_events_cache(cache_path),
         chrono::Utc::now(),
     ))
+}
+
+/// Summarize `events`, optionally narrowed to a set of source (adapter) names.
+/// The names match `AgentEvent.source` against the same adapter names
+/// `scan::collect_events` filters on, so a cached (full) event set and a fresh
+/// filtered scan agree.
+fn summarize_filtered(
+    events: &[crate::event::AgentEvent],
+    sources_filter: Option<&[String]>,
+) -> GardenSummary {
+    match sources_filter {
+        None => aggregate::summarize(events),
+        Some(sources) => {
+            let filtered: Vec<crate::event::AgentEvent> = events
+                .iter()
+                .filter(|e| sources.iter().any(|s| s == &e.source))
+                .cloned()
+                .collect();
+            aggregate::summarize(&filtered)
+        }
+    }
 }
 
 /// Fingerprint every source file the active adapters watch: total bytes, newest
@@ -192,6 +220,41 @@ mod tests {
         event.project_path = Some("D:/repo/pixel-agent-garden".to_string());
         event.usage.total_tokens = 42;
         event
+    }
+
+    #[test]
+    fn cached_hit_applies_sources_filter() {
+        // A cache hit must narrow to the requested sources, not return the whole
+        // cached set. Two sources cached; filtering to one yields only its
+        // tokens, while an unfiltered read still sees both.
+        let path = tmp_path("filter");
+        let _ = std::fs::remove_file(&path);
+        let ctx = AdapterContext::with_home(std::env::temp_dir().join("lag-cache-filter-home"));
+        let fp = source_fingerprint(&ctx); // empty env → default {0,0}
+
+        let mut a = AgentEvent::new(
+            "manual-test",
+            chrono::Utc.with_ymd_and_hms(2026, 5, 29, 12, 0, 0).unwrap(),
+        );
+        a.usage.total_tokens = 42;
+        let mut b = AgentEvent::new(
+            "codex",
+            chrono::Utc.with_ymd_and_hms(2026, 5, 29, 13, 0, 0).unwrap(),
+        );
+        b.usage.total_tokens = 100;
+        storage::save_events_with_fingerprint(&[a, b], Some(fp), &path).unwrap();
+
+        let filter = ["manual-test".to_string()];
+        let only = summary_from_cache_or_scan_at(&ctx, Some(&filter), &path).unwrap();
+        assert_eq!(only.total_events, 1);
+        assert_eq!(only.total_tokens, 42);
+
+        let all = summary_from_cache_or_scan_at(&ctx, None, &path).unwrap();
+        assert_eq!(all.total_events, 2);
+        assert_eq!(all.total_tokens, 142);
+
+        std::fs::remove_file(rings::path_for_events_cache(&path)).ok();
+        std::fs::remove_file(&path).ok();
     }
 
     /// Write a Claude Code session fixture under `home/.claude/projects/<proj>/`

@@ -2,6 +2,57 @@
 
 ## Unreleased
 
+Post-2.0 work from two independent review passes (merged + cross-verified):
+two PRD gaps closed, plus a batch of correctness / privacy / release-governance
+hardening.
+
+### Year Review + Weekly Recap (PRD §P3)
+
+- Made the Year Review "growth" card real (PRD §P3-3 item 2). It was listed in
+  the deck but fell through to the generic year overview; it now renders a
+  vertical timeline of up to five curated ring moments (milestones and the
+  earliest first-seen preferred, then filled by date, shown chronologically).
+  It reads the core-owned rings book through `loadRings()` and shows a calm
+  single-line fallback when the book is absent (demo/browser) or the year has
+  no moments.
+- Gave the Weekly Recap its "new growth" narrative (PRD §P3-1). The card now
+  lists up to three ring moments that landed inside the week (reusing the
+  return-diff memory) and swaps its closing line to "上周,庭院多了一盏灯。"
+  when a tier or trinket was gained that week, keeping the quiet closing
+  otherwise. Bookless/quiet weeks fall back to a calm growth line.
+- Both share cards render ring moments through `ringEventTitle`/`ringDate`
+  (localized, name/label-based) only — never a raw project path or internal
+  key — so a shareable card cannot leak what the private Rings tab shows, and
+  they re-read the book on each open so a moment recorded mid-session appears.
+
+### Hardening
+
+- Fixed a `size_strength` NaN: when the busiest project sat exactly on the
+  10k-token floor (`max_tokens == 9999`) the ratio computed `0/0 = NaN`, which
+  serde renders as `null` and the tray's `GardenSummary` re-parse then rejected.
+- Stopped the CSV/JSON export from leaking on-disk project paths. `project_key`
+  is the local path when known, so exports now emit an opaque per-project id plus
+  the display name instead of the raw key, and neutralize spreadsheet formula
+  injection (cells starting `= + - @`).
+- Fixed Codex data loss: `extract_token_total` no longer sums a `total_tokens`
+  together with the components it already includes (~2x inflation of every Codex
+  row); `discover()` now recognizes rollout-only installs (`sessions/`), matching
+  what `collect()` reads; and the threads DB opens by path instead of a `file:`
+  URI that broke on `#` / `?` / `%` in the home path.
+- Applied the source filter on cache hits, and stopped a filtered scan from
+  persisting a subset into the shared `events.json` (previously served whole to
+  later unfiltered reads).
+- Rejected negative / non-finite user price rates instead of producing negative
+  or `null` cost.
+- Made the Cost and Projects tabs recompute their estimate when new data arrives
+  (they had cached it for the whole session), moved the Rings tab's disk read off
+  mount onto first open, and fixed an error-toast leak where a pruned toast's
+  entry lingered on a detached node and swallowed later same-source errors.
+- Gated releases behind a preflight job: a `v*` tag must now pass the
+  zero-network / fmt / clippy / test / cargo-deny checks — and match the crate /
+  bundle version — before any bundle is built or published (the release workflow
+  previously bypassed CI entirely).
+
 ## v2.0.0 - 2026-07-08
 
 - Started the v2.0 Agent Nursery promotion path. The source-share nursery first
