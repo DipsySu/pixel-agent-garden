@@ -82,7 +82,7 @@ export function buildCostEstimateJson(cost, summary, generatedAt = new Date()) {
       Number(b.estimate.total_usd || 0) - Number(a.estimate.total_usd || 0) ||
       Number(b.estimate.unpriced_tokens || 0) - Number(a.estimate.unpriced_tokens || 0) ||
       a.display_name.localeCompare(b.display_name) ||
-      a.project_key.localeCompare(b.project_key)
+      a.project_id.localeCompare(b.project_id)
     );
   return JSON.stringify({
     schema_version: 2,

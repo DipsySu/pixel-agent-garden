@@ -193,6 +193,34 @@ test('cost JSON export is schemaed (v2) and pathless', () => {
   assert.match(json.projects[0].project_id, /^p_[0-9a-f]{8}$/);
 });
 
+test('cost JSON export survives projects that tie on every sort key', () => {
+  // Two distinct projects with identical total_usd / unpriced_tokens AND the
+  // same display_name force the sort down to its final tiebreaker. That step
+  // used to read the now-removed `project_key` field → TypeError; it must key
+  // off `project_id` instead. Regression guard for the export-privacy rename.
+  const tiedSummary = {
+    projects: [
+      { project_key: '/Users/a/proj', display_name: 'proj' },
+      { project_key: '/Users/b/proj', display_name: 'proj' }
+    ]
+  };
+  const tiedCost = {
+    total: { total_usd: 0, by_model: {}, unpriced_tokens: 0, unpriced_by_model: {} },
+    by_project: {
+      '/Users/a/proj': { total_usd: 1, by_model: {}, unpriced_tokens: 0, unpriced_by_model: {} },
+      '/Users/b/proj': { total_usd: 1, by_model: {}, unpriced_tokens: 0, unpriced_by_model: {} }
+    }
+  };
+  const json = JSON.parse(buildCostEstimateJson(tiedCost, tiedSummary, new Date('2026-07-08T00:00:00Z')));
+  assert.equal(json.projects.length, 2);
+  for (const project of json.projects) {
+    assert.equal(project.display_name, 'proj');
+    assert.match(project.project_id, /^p_[0-9a-f]{8}$/);
+  }
+  // Still path-free even in the tie path.
+  assert.equal(JSON.stringify(json).includes('/Users/'), false);
+});
+
 test('export never leaks a project_key that is an on-disk path', () => {
   // Core sets project_key = the local path when project_path is known
   // (event.project_key() → normalize_path(path)). The export must hash it, not
