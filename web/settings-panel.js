@@ -12,6 +12,10 @@ import { t } from './i18n.js';
 
 const SAVE_DEBOUNCE_MS = 300;
 
+// The combo the settings UI offers behind "enable recommended". Stored/registered
+// in Tauri's cross-platform form; nothing is registered unless the user opts in.
+export const RECOMMENDED_TOGGLE = 'CmdOrCtrl+Shift+G';
+
 const CHOICES = {
   time_mode: [
     { value: 'system', labelKey: 'choice.system' },
@@ -50,6 +54,8 @@ export function mountSettingsPanel({ hostFooter, initial, onChange }) {
   let current = cloneSettings(initial);
   const canPersist = isTauriRuntime();
   let saveTimer = null;
+  // True while the capture button is armed and waiting for the next keydown.
+  let recording = false;
 
   // Gear button — sits inside the footer to the right of the freshness pill.
   const button = document.createElement('button');
@@ -69,6 +75,8 @@ export function mountSettingsPanel({ hostFooter, initial, onChange }) {
 
   button.addEventListener('click', () => togglePanel());
   panel.addEventListener('change', (event) => handleControlChange(event));
+  panel.addEventListener('click', (event) => handleShortcutClick(event));
+  panel.addEventListener('keydown', (event) => handleShortcutKeydown(event));
 
   hostFooter.appendChild(button);
   hostFooter.parentElement.appendChild(panel);
@@ -103,6 +111,55 @@ export function mountSettingsPanel({ hostFooter, initial, onChange }) {
     current = next;
     onChange(cloneSettings(current));
     schedulePersist();
+  }
+
+  // Apply a new toggle accelerator ('' = disabled), re-render the row, and
+  // persist. The Tauri backend (un)registers on the resulting set_settings; a
+  // taken/invalid combo comes back as a toast, so nothing here can wedge.
+  function setToggleShortcut(accel) {
+    recording = false;
+    const next = cloneSettings(current);
+    next.shortcuts.toggle_window = accel;
+    current = next;
+    panel.innerHTML = buildPanelHtml(current, canPersist);
+    onChange(cloneSettings(current));
+    schedulePersist();
+  }
+
+  function handleShortcutClick(event) {
+    if (!canPersist) return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target) return;
+    if (target.closest('[data-shortcut-recommend]')) {
+      setToggleShortcut(RECOMMENDED_TOGGLE);
+    } else if (target.closest('[data-shortcut-clear]')) {
+      setToggleShortcut('');
+    } else if (target.closest('[data-shortcut-capture]')) {
+      // Arm: swap the label to a prompt and wait for the next keydown.
+      recording = true;
+      const btn = target.closest('[data-shortcut-capture]');
+      btn.textContent = t('settings.shortcutPress');
+      btn.classList.add('is-recording');
+      btn.focus();
+    }
+  }
+
+  function handleShortcutKeydown(event) {
+    if (!recording) return;
+    const btn = event.target instanceof Element
+      ? event.target.closest('[data-shortcut-capture]')
+      : null;
+    if (!btn) return;
+    // Escape cancels; a modifier-only press keeps waiting; a full combo commits.
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      recording = false;
+      panel.innerHTML = buildPanelHtml(current, canPersist);
+      return;
+    }
+    event.preventDefault();
+    const accel = accelFromEvent(event);
+    if (accel) setToggleShortcut(accel);
   }
 
   function schedulePersist() {
@@ -168,7 +225,35 @@ function buildPanelHtml(settings, canPersist) {
         settings.desktop.close_to_tray,
         disabledAttr
       )
+    ]) +
+    section(t('settings.shortcuts'), [
+      shortcutRow(settings.shortcuts.toggle_window, canPersist)
     ])
+  );
+}
+
+// Global-hotkey recorder row: a capture button showing the current combo (or
+// "not set"), plus one-tap "enable recommended" and "clear". The capture button
+// is armed on click and reads the next keydown (see the panel's keydown handler);
+// nothing here touches the OS — it only edits the settings value the Tauri
+// `shortcuts` module reconciles.
+function shortcutRow(accel, canPersist) {
+  const disabledAttr = canPersist ? '' : ' disabled';
+  const display = accel ? formatAccel(accel) : t('settings.shortcutNone');
+  const hint = t('settings.toggleWindowHint', { combo: formatAccel(RECOMMENDED_TOGGLE) });
+  return (
+    '<div class="pg6-settings-row pg6-shortcut-row">' +
+    '<span class="pg6-settings-label">' + escape(t('settings.toggleWindow')) + '</span>' +
+    '<div class="pg6-shortcut-controls">' +
+    '<button type="button" class="pg6-shortcut-capture" data-shortcut-capture aria-label="' +
+    escape(t('settings.shortcutRecordAria')) + '"' + disabledAttr + '>' + escape(display) + '</button>' +
+    '<button type="button" class="pg6-shortcut-btn" data-shortcut-recommend' + disabledAttr + '>' +
+    escape(t('settings.shortcutRecommend')) + '</button>' +
+    '<button type="button" class="pg6-shortcut-btn" data-shortcut-clear' + disabledAttr + '>' +
+    escape(t('settings.shortcutClear')) + '</button>' +
+    '</div>' +
+    '<span class="pg6-settings-hint">' + escape(hint) + '</span>' +
+    '</div>'
   );
 }
 
@@ -253,6 +338,66 @@ function cloneSettings(value) {
     desktop: {
       launch_at_login: value?.desktop?.launch_at_login === true,
       close_to_tray: value?.desktop?.close_to_tray === true
+    },
+    // Round-trip the global hotkey through the panel's own state — without this
+    // the recorder's value would be dropped on the next save (same drop-trap as
+    // the data-source layer). Empty string = disabled.
+    shortcuts: {
+      toggle_window: typeof value?.shortcuts?.toggle_window === 'string' ? value.shortcuts.toggle_window : ''
     }
   };
+}
+
+function isMac() {
+  if (typeof navigator === 'undefined') return false;
+  return /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || '');
+}
+
+// Map a keydown to a Tauri key token. event.code is layout-independent, so a
+// French AZERTY 'A' and a US 'A' both record as "A"; a few named keys fall back
+// through a table. Returns null for keys we don't accelerate.
+function accelKeyName(event) {
+  const code = event.code || '';
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3);      // KeyG  -> G
+  if (/^Digit[0-9]$/.test(code)) return code.slice(5);    // Digit1 -> 1
+  if (/^F([1-9]|1[0-9]|2[0-4])$/.test(code)) return code; // F1..F24
+  const named = {
+    Space: 'Space', Enter: 'Enter', Backspace: 'Backspace',
+    ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right',
+    Comma: ',', Period: '.', Slash: '/', Backslash: '\\', Minus: '-', Equal: '='
+  };
+  return named[code] || null;
+}
+
+// Build a Tauri accelerator ("CmdOrCtrl+Shift+G") from a keydown, or null while
+// only modifiers (or a weak Shift-only combo) are held so the recorder keeps
+// waiting. The platform's primary modifier (⌘ on macOS, Ctrl elsewhere) maps to
+// CmdOrCtrl so a combo recorded on one OS still works on the others. Exported
+// for unit testing the mapping without a real keyboard.
+export function accelFromEvent(event, mac = isMac()) {
+  const key = accelKeyName(event);
+  if (!key) return null;
+  const primary = mac ? event.metaKey : event.ctrlKey;
+  const secondary = mac ? event.ctrlKey : event.metaKey;
+  // A global hotkey needs a "strong" modifier; Shift-only or bare keys would
+  // fight normal typing, so reject them and keep recording.
+  if (!primary && !secondary && !event.altKey) return null;
+  const parts = [];
+  if (primary) parts.push('CmdOrCtrl');
+  if (secondary) parts.push(mac ? 'Control' : 'Super');
+  if (event.altKey) parts.push('Alt');
+  if (event.shiftKey) parts.push('Shift');
+  parts.push(key);
+  return parts.join('+');
+}
+
+// Present an accelerator for humans: ⌘⇧G on macOS, Ctrl+Shift+G elsewhere.
+// Exported for tests. Unknown tokens pass through unchanged.
+export function formatAccel(accel, mac = isMac()) {
+  if (!accel) return '';
+  const glyph = mac
+    ? { CmdOrCtrl: '⌘', Cmd: '⌘', Command: '⌘', Super: '⌘', Control: '⌃', Ctrl: '⌃', Alt: '⌥', Option: '⌥', Shift: '⇧' }
+    : { CmdOrCtrl: 'Ctrl', Cmd: 'Win', Command: 'Win', Super: 'Win', Control: 'Ctrl', Ctrl: 'Ctrl', Alt: 'Alt', Option: 'Alt', Shift: 'Shift' };
+  const parts = accel.split('+').map((token) => glyph[token] || token);
+  return mac ? parts.join('') : parts.join('+');
 }
