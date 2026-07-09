@@ -22,8 +22,9 @@
 //! Honesty rules for the math (see [`estimate`]): rates only ever come from
 //! the table, unknown models are bucketed as unpriced rather than guessed,
 //! and precision is never invented — token counts that only exist as unsplit
-//! totals are priced at an explicitly *blended* rate, and cache traffic is
-//! counted but not priced (schema v1 carries no cache rates).
+//! totals are priced at an explicitly *blended* rate. Cache read/write tokens
+//! are priced only when the table carries cache rates for that model; missing
+//! cache rates stay zero rather than being guessed.
 
 use crate::aggregate::GardenSummary;
 use crate::error::Error;
@@ -34,9 +35,12 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 /// Schema version of the `prices.json` shape (both the bundled defaults and
-/// the user override use it). Bump on any backward-incompatible change, e.g.
-/// adding *required* per-model rate fields such as cache pricing.
-pub const PRICES_SCHEMA_VERSION: u32 = 1;
+/// the user override use it). Bump on any backward-incompatible change.
+///
+/// v2 adds optional cache read/write rates. Older user files that only carry
+/// input/output rates still load: known bundled models inherit shipped cache
+/// rates, while custom models keep cache rates at zero.
+pub const PRICES_SCHEMA_VERSION: u32 = 2;
 
 /// Factory defaults, bundled at compile time. JSON cannot carry comments, so
 /// the caveats live here instead: the seeded ids/rates are a small
@@ -48,12 +52,38 @@ pub const PRICES_SCHEMA_VERSION: u32 = 1;
 /// converted to USD here.
 const DEFAULT_PRICES_JSON: &str = include_str!("prices-default.json");
 
-/// USD rates for one model, per million tokens. Both fields are required on
-/// parse: a price entry missing either rate is malformed, not half-usable.
+/// USD rates for one model, per million tokens.
+///
+/// `input_per_mtok` and `output_per_mtok` are the base rates.
+/// `cache_read_per_mtok` and `cache_write_per_mtok` are separate because Claude
+/// prompt caching has distinct read/write prices, while OpenAI exposes cached
+/// input. A zero cache rate means "known but not priced", not "free forever".
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct ModelPrice {
     pub input_per_mtok: f64,
     pub output_per_mtok: f64,
+    #[serde(default)]
+    pub cache_read_per_mtok: f64,
+    #[serde(default)]
+    pub cache_write_per_mtok: f64,
+}
+
+/// User-authored overlay shape. Cache fields are optional so a hand-written or
+/// legacy v1 file can still override only input/output without breaking.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+struct PriceTablePatch {
+    #[serde(default = "current_prices_schema_version")]
+    schema_version: u32,
+    #[serde(default)]
+    prices: BTreeMap<String, ModelPricePatch>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+struct ModelPricePatch {
+    input_per_mtok: Option<f64>,
+    output_per_mtok: Option<f64>,
+    cache_read_per_mtok: Option<f64>,
+    cache_write_per_mtok: Option<f64>,
 }
 
 /// The `prices.json` document: `{ schema_version, prices: { <model-id>: … } }`.
@@ -103,7 +133,7 @@ pub fn load_effective(path: &Path) -> Result<PriceTable, Error> {
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(table),
         Err(err) => return Err(Error::io(path, err)),
     };
-    let user: PriceTable = serde_json::from_str(&text).map_err(|e| Error::json(path, e))?;
+    let user: PriceTablePatch = serde_json::from_str(&text).map_err(|e| Error::json(path, e))?;
     if user.schema_version > PRICES_SCHEMA_VERSION {
         return Err(Error::InvalidRecord {
             context: path.display().to_string(),
@@ -114,22 +144,53 @@ pub fn load_effective(path: &Path) -> Result<PriceTable, Error> {
             ),
         });
     }
-    for (model, price) in user.prices {
+    for (model, patch) in user.prices {
+        let Some(price) = merge_price_patch(table.prices.get(&model).copied(), patch) else {
+            continue;
+        };
         // A negative or non-finite user-supplied rate would yield nonsensical
         // cost (negative dollars, or NaN → serialized as `null`). Reject the bad
         // entry and keep whatever bundled default exists for that model rather
         // than letting one typo mis-price the whole tab.
-        if !price.input_per_mtok.is_finite()
-            || !price.output_per_mtok.is_finite()
-            || price.input_per_mtok < 0.0
-            || price.output_per_mtok < 0.0
-        {
+        if !valid_price(&price) {
             continue;
         }
         table.prices.insert(model, price);
     }
     table.schema_version = PRICES_SCHEMA_VERSION;
     Ok(table)
+}
+
+fn merge_price_patch(base: Option<ModelPrice>, patch: ModelPricePatch) -> Option<ModelPrice> {
+    let input = patch
+        .input_per_mtok
+        .or_else(|| base.map(|price| price.input_per_mtok))?;
+    let output = patch
+        .output_per_mtok
+        .or_else(|| base.map(|price| price.output_per_mtok))?;
+    Some(ModelPrice {
+        input_per_mtok: input,
+        output_per_mtok: output,
+        cache_read_per_mtok: patch
+            .cache_read_per_mtok
+            .or_else(|| base.map(|price| price.cache_read_per_mtok))
+            .unwrap_or(0.0),
+        cache_write_per_mtok: patch
+            .cache_write_per_mtok
+            .or_else(|| base.map(|price| price.cache_write_per_mtok))
+            .unwrap_or(0.0),
+    })
+}
+
+fn valid_price(price: &ModelPrice) -> bool {
+    [
+        price.input_per_mtok,
+        price.output_per_mtok,
+        price.cache_read_per_mtok,
+        price.cache_write_per_mtok,
+    ]
+    .into_iter()
+    .all(|rate| rate.is_finite() && rate >= 0.0)
 }
 
 /// Persist `table` as the user override file, atomically (shared
@@ -156,23 +217,31 @@ pub fn save_user(path: &Path, table: &PriceTable) -> Result<(), Error> {
 /// - `blended_tokens` is the unsplit remainder (`total − input − output −
 ///   cache`), priced at `(input_per_mtok + output_per_mtok) / 2` — sources
 ///   like Codex report a single total, and inventing a split would be a lie.
-/// - `cache_tokens` (read + write) are counted but **not** priced: schema v1
-///   has no cache rates and provider cache multipliers differ; we do not
-///   guess. Cache-heavy projects therefore under-estimate — the UI labels
-///   every figure an estimate and bills remain the source of truth.
-/// - `input_per_mtok` / `output_per_mtok` echo the exact table rates this row
-///   was priced at. The UI shows a "$X/$Y per MTok" line; sourcing it from the
-///   same result that produced `usd` means the displayed rate can never drift
-///   from the computed cost, and the frontend needs no second price load.
+/// - `cache_read_tokens` / `cache_write_tokens` are priced at their own table
+///   rates when present; a zero rate is an explicit counted-but-not-priced
+///   value for unsupported or user-defined models.
+/// - `*_per_mtok` fields echo the exact table rates this row was priced at.
+///   The UI shows those rates from the result that produced `usd`, so displayed
+///   prices cannot drift from the computed cost.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct ModelCost {
     pub input_tokens: u64,
     pub output_tokens: u64,
     pub blended_tokens: u64,
+    #[serde(default)]
+    pub cache_read_tokens: u64,
+    #[serde(default)]
+    pub cache_write_tokens: u64,
+    /// Backward-friendly aggregate for older UI/export readers.
+    #[serde(default)]
     pub cache_tokens: u64,
     pub usd: f64,
     pub input_per_mtok: f64,
     pub output_per_mtok: f64,
+    #[serde(default)]
+    pub cache_read_per_mtok: f64,
+    #[serde(default)]
+    pub cache_write_per_mtok: f64,
 }
 
 /// Result of [`estimate`]. `unpriced_tokens` is the total tokens of every model
@@ -218,7 +287,9 @@ pub fn estimate(
         let blended_rate = (price.input_per_mtok + price.output_per_mtok) / 2.0;
         let usd = per_mtok(usage.input_tokens, price.input_per_mtok)
             + per_mtok(usage.output_tokens, price.output_per_mtok)
-            + per_mtok(blended_tokens, blended_rate);
+            + per_mtok(blended_tokens, blended_rate)
+            + per_mtok(usage.cache_read_tokens, price.cache_read_per_mtok)
+            + per_mtok(usage.cache_write_tokens, price.cache_write_per_mtok);
         total_usd += usd;
         by_model.insert(
             model.clone(),
@@ -226,10 +297,14 @@ pub fn estimate(
                 input_tokens: usage.input_tokens,
                 output_tokens: usage.output_tokens,
                 blended_tokens,
+                cache_read_tokens: usage.cache_read_tokens,
+                cache_write_tokens: usage.cache_write_tokens,
                 cache_tokens,
                 usd,
                 input_per_mtok: price.input_per_mtok,
                 output_per_mtok: price.output_per_mtok,
+                cache_read_per_mtok: price.cache_read_per_mtok,
+                cache_write_per_mtok: price.cache_write_per_mtok,
             },
         );
     }
@@ -315,6 +390,24 @@ mod tests {
         u
     }
 
+    fn price(input: f64, output: f64) -> ModelPrice {
+        ModelPrice {
+            input_per_mtok: input,
+            output_per_mtok: output,
+            cache_read_per_mtok: 0.0,
+            cache_write_per_mtok: 0.0,
+        }
+    }
+
+    fn price_with_cache(input: f64, output: f64, cache_read: f64, cache_write: f64) -> ModelPrice {
+        ModelPrice {
+            input_per_mtok: input,
+            output_per_mtok: output,
+            cache_read_per_mtok: cache_read,
+            cache_write_per_mtok: cache_write,
+        }
+    }
+
     #[test]
     fn bundled_defaults_parse() {
         let table = bundled_defaults();
@@ -324,9 +417,14 @@ mod tests {
         // ship an empty or single-provider table.
         let sonnet = table.prices["claude-sonnet-5"];
         assert!(sonnet.input_per_mtok > 0.0 && sonnet.output_per_mtok > sonnet.input_per_mtok);
+        assert_eq!(sonnet.cache_read_per_mtok, 0.2);
+        assert_eq!(sonnet.cache_write_per_mtok, 2.5);
         assert_eq!(table.prices["claude-opus-4-8"].input_per_mtok, 5.0);
+        assert_eq!(table.prices["claude-opus-4-8"].cache_read_per_mtok, 0.5);
         assert_eq!(table.prices["gpt-5.5"].output_per_mtok, 30.0);
+        assert_eq!(table.prices["gpt-5.5"].cache_read_per_mtok, 0.5);
         assert_eq!(table.prices["gpt-5.3-codex"].input_per_mtok, 1.75);
+        assert_eq!(table.prices["gpt-5.3-codex"].cache_read_per_mtok, 0.175);
     }
 
     #[test]
@@ -376,8 +474,17 @@ mod tests {
         let table = load_effective(&path).unwrap();
         // Edited entry wins…
         assert_eq!(table.prices["claude-sonnet-4-5"].input_per_mtok, 9.9);
+        // …while missing v1 cache fields inherit the bundled cache rates for a
+        // known model instead of silently dropping cache pricing.
+        assert_eq!(
+            table.prices["claude-sonnet-4-5"].cache_read_per_mtok,
+            bundled_defaults().prices["claude-sonnet-4-5"].cache_read_per_mtok
+        );
         // …a brand-new user model is added…
         assert!(table.prices.contains_key("my-local-model"));
+        // …but unknown user models do not get guessed cache pricing.
+        assert_eq!(table.prices["my-local-model"].cache_read_per_mtok, 0.0);
+        assert_eq!(table.prices["my-local-model"].cache_write_per_mtok, 0.0);
         // …and unedited factory entries keep tracking shipped defaults.
         assert_eq!(
             table.prices["gpt-5.5"],
@@ -397,6 +504,10 @@ mod tests {
         .unwrap();
         let table = load_effective(&path).unwrap();
         assert_eq!(table.prices["gpt-5.5"].input_per_mtok, 2.0);
+        assert_eq!(
+            table.prices["gpt-5.5"].cache_read_per_mtok,
+            bundled_defaults().prices["gpt-5.5"].cache_read_per_mtok
+        );
         std::fs::remove_file(&path).ok();
     }
 
@@ -436,13 +547,7 @@ mod tests {
         let path = tmp("save");
         let _ = std::fs::remove_file(&path);
         let mut prices = BTreeMap::new();
-        prices.insert(
-            "claude-sonnet-4-5".to_string(),
-            ModelPrice {
-                input_per_mtok: 1.5,
-                output_per_mtok: 7.5,
-            },
-        );
+        prices.insert("claude-sonnet-4-5".to_string(), price(1.5, 7.5));
         let user = PriceTable {
             schema_version: PRICES_SCHEMA_VERSION,
             prices,
@@ -451,7 +556,7 @@ mod tests {
         // The written file is the normalized document shape…
         let raw: serde_json::Value =
             serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
-        assert_eq!(raw["schema_version"], 1);
+        assert_eq!(raw["schema_version"], 2);
         // …and the effective view shows the override on top of defaults.
         let table = load_effective(&path).unwrap();
         assert_eq!(table.prices["claude-sonnet-4-5"].input_per_mtok, 1.5);
@@ -463,22 +568,13 @@ mod tests {
     }
 
     #[test]
-    fn estimate_prices_split_and_blends_only_the_remainder() {
+    fn estimate_prices_split_cache_and_blends_only_the_remainder() {
         let mut prices = BTreeMap::new();
         prices.insert(
             "m-split".to_string(),
-            ModelPrice {
-                input_per_mtok: 3.0,
-                output_per_mtok: 15.0,
-            },
+            price_with_cache(3.0, 15.0, 0.3, 3.75),
         );
-        prices.insert(
-            "m-total-only".to_string(),
-            ModelPrice {
-                input_per_mtok: 1.0,
-                output_per_mtok: 3.0,
-            },
-        );
+        prices.insert("m-total-only".to_string(), price(1.0, 3.0));
         let table = PriceTable {
             schema_version: PRICES_SCHEMA_VERSION,
             prices,
@@ -488,7 +584,7 @@ mod tests {
         // Claude-style event: full split, cache-heavy.
         by_model.insert(
             "m-split".to_string(),
-            usage(2_000_000, 1_000_000, 10_000_000, 0),
+            usage(2_000_000, 1_000_000, 10_000_000, 2_000_000),
         );
         // Codex-style event: only total_tokens known.
         by_model.insert(
@@ -502,10 +598,15 @@ mod tests {
         let est = estimate(&by_model, &table);
 
         let split = &est.by_model["m-split"];
-        // input 2M×$3 + output 1M×$15 = $21; cache counted, not priced.
-        assert!((split.usd - 21.0).abs() < 1e-9);
+        // input 2M×$3 + output 1M×$15 + cache read 10M×$0.3 +
+        // cache write 2M×$3.75 = $31.5.
+        assert!((split.usd - 31.5).abs() < 1e-9);
         assert_eq!(split.blended_tokens, 0);
-        assert_eq!(split.cache_tokens, 10_000_000);
+        assert_eq!(split.cache_read_tokens, 10_000_000);
+        assert_eq!(split.cache_write_tokens, 2_000_000);
+        assert_eq!(split.cache_tokens, 12_000_000);
+        assert_eq!(split.cache_read_per_mtok, 0.3);
+        assert_eq!(split.cache_write_per_mtok, 3.75);
 
         let total_only = &est.by_model["m-total-only"];
         // 4M unsplit tokens at blended (1+3)/2 = $2/MTok → $8.
@@ -513,7 +614,7 @@ mod tests {
         assert_eq!(total_only.blended_tokens, 4_000_000);
         assert_eq!(total_only.input_tokens, 0);
 
-        assert!((est.total_usd - 29.0).abs() < 1e-9);
+        assert!((est.total_usd - 39.5).abs() < 1e-9);
         assert_eq!(est.unpriced_tokens, 0);
     }
 
@@ -606,13 +707,7 @@ mod tests {
         // The whole point: `total` is the SAME computation as `estimate`, so
         // "total spent" can never drift from the per-model rows.
         let mut prices = BTreeMap::new();
-        prices.insert(
-            "m-split".to_string(),
-            ModelPrice {
-                input_per_mtok: 3.0,
-                output_per_mtok: 15.0,
-            },
-        );
+        prices.insert("m-split".to_string(), price(3.0, 15.0));
         let table = PriceTable {
             schema_version: PRICES_SCHEMA_VERSION,
             prices,
@@ -629,20 +724,8 @@ mod tests {
     #[test]
     fn estimate_summary_splits_projects_by_key_with_distinct_models() {
         let mut prices = BTreeMap::new();
-        prices.insert(
-            "m-a".to_string(),
-            ModelPrice {
-                input_per_mtok: 3.0,
-                output_per_mtok: 15.0,
-            },
-        );
-        prices.insert(
-            "m-b".to_string(),
-            ModelPrice {
-                input_per_mtok: 1.0,
-                output_per_mtok: 3.0,
-            },
-        );
+        prices.insert("m-a".to_string(), price_with_cache(3.0, 15.0, 0.3, 3.75));
+        prices.insert("m-b".to_string(), price(1.0, 3.0));
         let table = PriceTable {
             schema_version: PRICES_SCHEMA_VERSION,
             prices,
@@ -681,19 +764,13 @@ mod tests {
     #[test]
     fn estimate_summary_keeps_cache_only_and_total_only_projects() {
         let mut prices = BTreeMap::new();
-        prices.insert(
-            "m-blend".to_string(),
-            ModelPrice {
-                input_per_mtok: 1.0,
-                output_per_mtok: 3.0,
-            },
-        );
+        prices.insert("m-blend".to_string(), price_with_cache(1.0, 3.0, 0.5, 1.25));
         let table = PriceTable {
             schema_version: PRICES_SCHEMA_VERSION,
             prices,
         };
-        // Cache-only: carries tokens, so it is kept; cache is counted-not-priced
-        // so the estimate is $0 with the cache surfaced.
+        // Cache-only: carries tokens, so it is kept and priced when the table
+        // has a cache read rate.
         let cache_only = project_with("demo-cache", one("m-blend", usage(0, 0, 4_000_000, 0)));
         // Total-only (Codex-style): one unsplit total, priced at blended $2/MTok.
         let total_only = project_with(
@@ -709,7 +786,7 @@ mod tests {
         let summary = summary_with(BTreeMap::new(), vec![cache_only, total_only]);
 
         let cost = estimate_summary(&summary, &table);
-        assert_eq!(cost.by_project["demo-cache"].total_usd, 0.0);
+        assert!((cost.by_project["demo-cache"].total_usd - 2.0).abs() < 1e-9);
         assert_eq!(
             cost.by_project["demo-cache"].by_model["m-blend"].cache_tokens,
             4_000_000
@@ -749,24 +826,20 @@ mod tests {
         // The UI's "$X/$Y per MTok" line reads these back, so they must equal
         // the table rate that produced `usd` — in the total and per project.
         let mut prices = BTreeMap::new();
-        prices.insert(
-            "m-a".to_string(),
-            ModelPrice {
-                input_per_mtok: 3.0,
-                output_per_mtok: 15.0,
-            },
-        );
+        prices.insert("m-a".to_string(), price_with_cache(3.0, 15.0, 0.3, 3.75));
         let table = PriceTable {
             schema_version: PRICES_SCHEMA_VERSION,
             prices,
         };
-        let models = one("m-a", usage(1_000_000, 1_000_000, 0, 0));
+        let models = one("m-a", usage(1_000_000, 1_000_000, 500_000, 100_000));
         let summary = summary_with(models.clone(), vec![project_with("demo-a", models)]);
 
         let cost = estimate_summary(&summary, &table);
         let row = &cost.total.by_model["m-a"];
         assert_eq!(row.input_per_mtok, 3.0);
         assert_eq!(row.output_per_mtok, 15.0);
+        assert_eq!(row.cache_read_per_mtok, 0.3);
+        assert_eq!(row.cache_write_per_mtok, 3.75);
         assert_eq!(
             cost.by_project["demo-a"].by_model["m-a"].input_per_mtok,
             3.0

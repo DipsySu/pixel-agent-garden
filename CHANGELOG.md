@@ -41,8 +41,10 @@ privacy / release-governance hardening.
   after the system tints it in the menu bar, while Windows/Linux keep colored
   lit and unlit variants.
 - Clarified cost rows for cache-heavy models: each priced model now shows cache
-  tokens inline as counted-but-not-priced, and the row footer distinguishes the
-  number of tokens actually priced from the larger total-token rollup.
+  read/write tokens inline with their own rates. `prices.json` schema v2 adds
+  `cache_read_per_mtok` and `cache_write_per_mtok`, so cache-heavy Claude /
+  OpenAI usage now contributes to the local estimate instead of being only
+  counted in the total-token rollup.
 
 ### Year Review + Weekly Recap (PRD §P3)
 

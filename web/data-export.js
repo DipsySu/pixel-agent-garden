@@ -44,11 +44,15 @@ export function buildCostEstimateCsv(cost, summary) {
     'input_tokens',
     'output_tokens',
     'blended_tokens',
+    'cache_read_tokens',
+    'cache_write_tokens',
     'cache_tokens',
     'total_tokens',
     'usd',
     'input_per_mtok',
-    'output_per_mtok'
+    'output_per_mtok',
+    'cache_read_per_mtok',
+    'cache_write_per_mtok'
   ].map(csvCell).join(',')];
   for (const row of rows) {
     lines.push([
@@ -60,11 +64,15 @@ export function buildCostEstimateCsv(cost, summary) {
       String(row.input_tokens),
       String(row.output_tokens),
       String(row.blended_tokens),
+      String(row.cache_read_tokens),
+      String(row.cache_write_tokens),
       String(row.cache_tokens),
       String(row.total_tokens),
       row.usd,
       row.input_per_mtok,
-      row.output_per_mtok
+      row.output_per_mtok,
+      row.cache_read_per_mtok,
+      row.cache_write_per_mtok
     ].map(csvCell).join(','));
   }
   return lines.join('\n') + '\n';
@@ -177,7 +185,8 @@ function pricedCostRow({ scope, projectKey, projectName, model, cost }) {
   const input = uint(cost?.input_tokens);
   const output = uint(cost?.output_tokens);
   const blended = uint(cost?.blended_tokens);
-  const cache = uint(cost?.cache_tokens);
+  const splitCache = uint(cost?.cache_read_tokens) + uint(cost?.cache_write_tokens);
+  const cache = splitCache || uint(cost?.cache_tokens);
   return {
     scope,
     project_id: projectId(projectKey),
@@ -187,11 +196,15 @@ function pricedCostRow({ scope, projectKey, projectName, model, cost }) {
     input_tokens: input,
     output_tokens: output,
     blended_tokens: blended,
+    cache_read_tokens: uint(cost?.cache_read_tokens),
+    cache_write_tokens: uint(cost?.cache_write_tokens),
     cache_tokens: cache,
     total_tokens: input + output + blended + cache,
     usd: decimal(cost?.usd),
     input_per_mtok: decimal(cost?.input_per_mtok),
-    output_per_mtok: decimal(cost?.output_per_mtok)
+    output_per_mtok: decimal(cost?.output_per_mtok),
+    cache_read_per_mtok: decimal(cost?.cache_read_per_mtok),
+    cache_write_per_mtok: decimal(cost?.cache_write_per_mtok)
   };
 }
 
@@ -205,11 +218,15 @@ function unpricedCostRow({ scope, projectKey, projectName, model, tokens }) {
     input_tokens: 0,
     output_tokens: 0,
     blended_tokens: 0,
+    cache_read_tokens: 0,
+    cache_write_tokens: 0,
     cache_tokens: 0,
     total_tokens: uint(tokens),
     usd: '',
     input_per_mtok: '',
-    output_per_mtok: ''
+    output_per_mtok: '',
+    cache_read_per_mtok: '',
+    cache_write_per_mtok: ''
   };
 }
 
@@ -220,10 +237,14 @@ function cleanEstimate(estimate) {
       input_tokens: uint(cost?.input_tokens),
       output_tokens: uint(cost?.output_tokens),
       blended_tokens: uint(cost?.blended_tokens),
-      cache_tokens: uint(cost?.cache_tokens),
+      cache_read_tokens: uint(cost?.cache_read_tokens),
+      cache_write_tokens: uint(cost?.cache_write_tokens),
+      cache_tokens: uint(cost?.cache_read_tokens) + uint(cost?.cache_write_tokens) || uint(cost?.cache_tokens),
       usd: number(cost?.usd),
       input_per_mtok: number(cost?.input_per_mtok),
-      output_per_mtok: number(cost?.output_per_mtok)
+      output_per_mtok: number(cost?.output_per_mtok),
+      cache_read_per_mtok: number(cost?.cache_read_per_mtok),
+      cache_write_per_mtok: number(cost?.cache_write_per_mtok)
     };
   }
   const unpricedByModel = {};

@@ -101,11 +101,15 @@ fetch. `core::prices` owns the contract:
   with each release. Rates are a best-effort snapshot; the UI must label every
   derived figure an estimate ("以账单为准").
 - The user override lives at `~/.local-agent-garden/prices.json`
-  (`prices::PRICES_SCHEMA_VERSION`, currently `1`; same document shape as the
+  (`prices::PRICES_SCHEMA_VERSION`, currently `2`; same document shape as the
   bundled file). Merge rule: user entries override factory entries **per model
   id**; models the user never edited keep tracking shipped defaults across
-  upgrades. Read/write goes through the thin `load_prices` / `save_prices`
-  commands.
+  upgrades. v2 adds `cache_read_per_mtok` and `cache_write_per_mtok`; v1 or
+  hand-written entries that only contain input/output still load. Known factory
+  models inherit shipped cache rates for omitted cache fields, while custom
+  user models default missing cache rates to `0.0` so the app does not guess a
+  provider policy. Read/write goes through the thin `load_prices` /
+  `save_prices` commands.
 - A malformed or future-versioned `prices.json` surfaces as a typed error and
   the file is **never quarantined or renamed** — unlike `rings.json` (a
   product-owned memory we may restart), `prices.json` is user-authored data,
@@ -116,12 +120,14 @@ fetch. `core::prices` owns the contract:
   counts that only exist as an unsplit total (Codex reports one `tokens_used`
   number) are priced at the explicitly named *blended*
   `(input_per_mtok + output_per_mtok) / 2` rate; cache read/write tokens are
-  counted but **not** priced (schema v1 carries no cache rates and provider
-  cache multipliers are not guessed — cache-heavy projects under-estimate);
-  unknown model ids accumulate into `unpriced_tokens`, never guessed. The
-  per-model inputs come from `GardenSummary.models` / `ProjectGrowth.
-  model_tokens` (summary schema v8), where model-less events bucket under
-  `"unknown"`.
+  priced at `cache_read_per_mtok` / `cache_write_per_mtok` when the table has
+  rates, otherwise they are counted with zero cost rather than guessed. Claude
+  bundled defaults use the first-party 5-minute cache-write price because the
+  local event schema does not record cache TTL; users who know their workload
+  used 1-hour writes can override `cache_write_per_mtok` locally. Unknown model
+  ids accumulate into `unpriced_tokens`, never guessed. The per-model inputs
+  come from `GardenSummary.models` / `ProjectGrowth.model_tokens` (summary
+  schema v8), where model-less events bucket under `"unknown"`.
 
 ## Garden Memory And High-Water Policy
 

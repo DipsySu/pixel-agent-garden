@@ -120,9 +120,9 @@ function renderSummary(host, cost, state) {
   const total = cost.total || { total_usd: 0, by_model: {}, unpriced_tokens: 0 };
   const byModel = total.by_model || {};
   const pricedCount = Object.keys(byModel).length;
-  // Cache tokens are counted-not-priced; sum them across the priced models the
-  // estimate actually kept (unpriced models are surfaced as the KPI count).
-  const cacheTokens = Object.values(byModel).reduce((sum, m) => sum + (Number(m.cache_tokens) || 0), 0);
+  // Cache read/write tokens are priced with their own rates when the backend
+  // table has them. Older estimates may only have the aggregate cache_tokens.
+  const cacheTokens = Object.values(byModel).reduce((sum, m) => sum + cacheTotal(m), 0);
   if (kpis) {
     kpis.innerHTML = `
       ${kpiCard(t('cost.estimate'), formatUsd(total.total_usd), t('cost.estimateSub'))}
@@ -145,8 +145,8 @@ function modelRows(byModel, unpricedByModel) {
     .map(([model, mc]) => ({
       model,
       // total = input + output + blended + cache reconstructs the row's tokens
-      // (blended = total − input − output − cache, so the four sum back).
-      total: uintish(mc.input_tokens) + uintish(mc.output_tokens) + uintish(mc.blended_tokens) + uintish(mc.cache_tokens),
+      // (blended = total − input − output − cache, so the parts sum back).
+      total: uintish(mc.input_tokens) + uintish(mc.output_tokens) + uintish(mc.blended_tokens) + cacheTotal(mc),
       cost: mc,
     }))
     .filter((row) => row.total > 0)
@@ -171,19 +171,29 @@ function modelRows(byModel, unpricedByModel) {
 function pricedRow(row) {
   const c = row.cost;
   const usd = formatUsd(c.usd);
-  const cache = uintish(c.cache_tokens);
-  const pricedTokens = uintish(c.input_tokens) + uintish(c.output_tokens) + uintish(c.blended_tokens);
+  const cacheRead = uintish(c.cache_read_tokens);
+  const cacheWrite = uintish(c.cache_write_tokens);
+  const blendedRate = (Number(c.input_per_mtok || 0) + Number(c.output_per_mtok || 0)) / 2;
+  const pricedTokens =
+    (Number(c.input_per_mtok || 0) > 0 ? uintish(c.input_tokens) : 0) +
+    (Number(c.output_per_mtok || 0) > 0 ? uintish(c.output_tokens) : 0) +
+    (blendedRate > 0 ? uintish(c.blended_tokens) : 0) +
+    (Number(c.cache_read_per_mtok || 0) > 0 ? cacheRead : 0) +
+    (Number(c.cache_write_per_mtok || 0) > 0 ? cacheWrite : 0);
   const split = t('cost.rowSplit', {
     input: fmtLocal(c.input_tokens),
     output: fmtLocal(c.output_tokens),
     blended: fmtLocal(c.blended_tokens),
-    cache: fmtLocal(cache),
+    cacheRead: fmtLocal(cacheRead),
+    cacheWrite: fmtLocal(cacheWrite),
   });
   // Rate echoed by core alongside the usd it produced — no second price lookup,
   // so the shown rate can never disagree with the computed cost.
   const rate = t('cost.rowRate', {
     input: c.input_per_mtok,
     output: c.output_per_mtok,
+    cacheRead: c.cache_read_per_mtok || 0,
+    cacheWrite: c.cache_write_per_mtok || 0,
   });
   return costRowHtml(
     row.model,
@@ -213,6 +223,11 @@ function costRowHtml(model, detailHtml, amountHtml, pricedTokens, total) {
         <small>${escapeHtml(tokenLabel)}</small>
       </div>
     </div>`;
+}
+
+function cacheTotal(cost) {
+  const split = uintish(cost?.cache_read_tokens) + uintish(cost?.cache_write_tokens);
+  return split || uintish(cost?.cache_tokens);
 }
 
 function uintish(value) {
