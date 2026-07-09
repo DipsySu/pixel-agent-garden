@@ -58,6 +58,30 @@ export function installWindowDrag({
     }
   };
 
+  // Double-click the drag region to toggle maximize — the gesture native
+  // `data-tauri-drag-region` gave for free before we moved to explicit
+  // dragging. Skipped over interactive children (a double-click on a button is
+  // theirs) and a no-op without the Tauri command (browser preview / missing
+  // capability).
+  const onDblClick = (event) => {
+    if (isInteractiveDragTarget(event.target)) return;
+    const appWindow = tauri?.window?.getCurrentWindow?.();
+    const toggleMaximize = appWindow?.toggleMaximize;
+    if (typeof toggleMaximize !== 'function') return;
+
+    event.preventDefault?.();
+    try {
+      const result = toggleMaximize.call(appWindow);
+      if (result && typeof result.catch === 'function') result.catch(() => {});
+    } catch (_) {
+      // Non-fatal, same as the drag path.
+    }
+  };
+
   region.addEventListener('mousedown', onMouseDown);
-  return () => region.removeEventListener?.('mousedown', onMouseDown);
+  region.addEventListener('dblclick', onDblClick);
+  return () => {
+    region.removeEventListener?.('mousedown', onMouseDown);
+    region.removeEventListener?.('dblclick', onDblClick);
+  };
 }

@@ -16,8 +16,10 @@ hardening.
   `docs/25-model-pricing-refresh.md`; Codex credit rates are intentionally not
   converted into USD.
 - Made the frameless desktop window draggable from the header. The app now uses
-  an explicit `startDragging()` bridge for the non-interactive header area and
-  grants only the needed `core:window:allow-start-dragging` capability.
+  an explicit `startDragging()` bridge for the non-interactive header area, plus
+  a double-click-to-maximize gesture (the one the native drag region gave for
+  free), granting only the needed `core:window:allow-start-dragging` and
+  `core:window:allow-toggle-maximize` capabilities.
 - Redesigned the tray status icon from a full stone-lantern silhouette into a
   compact pixel garden-gate mark with a centered lantern. The macOS template
   variants now keep an open doorway / lamp cutout so the icon stays readable

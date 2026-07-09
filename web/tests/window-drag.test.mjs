@@ -27,33 +27,56 @@ test('interactive descendants never start a window drag', () => {
   assert.equal(shouldStartWindowDrag({ button: 0, buttons: 1, target: target(true) }), false);
 });
 
-test('installWindowDrag calls Tauri startDragging from the drag region', () => {
-  let handler = null;
-  let removed = false;
+// Captures listeners by event type so a test can fire mousedown / dblclick
+// independently and assert both are torn down.
+function fakeRegion() {
+  const handlers = {};
+  const removed = {};
+  return {
+    handlers,
+    removed,
+    addEventListener(type, fn) { handlers[type] = fn; },
+    removeEventListener(type, fn) { if (handlers[type] === fn) removed[type] = true; }
+  };
+}
+
+function fakeTauri(win) {
+  return { window: { getCurrentWindow: () => win } };
+}
+
+test('installWindowDrag calls Tauri startDragging on mousedown, and tears down both listeners', () => {
   let started = 0;
   let prevented = 0;
-  const region = {
-    addEventListener(type, fn) {
-      assert.equal(type, 'mousedown');
-      handler = fn;
-    },
-    removeEventListener(type, fn) {
-      assert.equal(type, 'mousedown');
-      assert.equal(fn, handler);
-      removed = true;
-    }
-  };
+  const region = fakeRegion();
   const teardown = installWindowDrag({
     documentRef: { querySelector: () => region },
-    tauri: { window: { getCurrentWindow: () => ({ startDragging: () => { started += 1; } }) } }
+    tauri: fakeTauri({ startDragging: () => { started += 1; }, toggleMaximize: () => {} })
   });
 
   assert.equal(typeof teardown, 'function');
-  handler({ button: 0, buttons: 1, target: target(false), preventDefault: () => { prevented += 1; } });
-  handler({ button: 0, buttons: 1, target: target(true), preventDefault: () => { throw new Error('should not prevent'); } });
+  region.handlers.mousedown({ button: 0, buttons: 1, target: target(false), preventDefault: () => { prevented += 1; } });
+  region.handlers.mousedown({ button: 0, buttons: 1, target: target(true), preventDefault: () => { throw new Error('should not prevent'); } });
   teardown();
 
   assert.equal(started, 1);
   assert.equal(prevented, 1);
-  assert.equal(removed, true);
+  assert.equal(region.removed.mousedown, true);
+  assert.equal(region.removed.dblclick, true);
+});
+
+test('installWindowDrag toggles maximize on double-click, but not over interactive children', () => {
+  let maximized = 0;
+  let prevented = 0;
+  const region = fakeRegion();
+  installWindowDrag({
+    documentRef: { querySelector: () => region },
+    tauri: fakeTauri({ startDragging: () => {}, toggleMaximize: () => { maximized += 1; } })
+  });
+
+  region.handlers.dblclick({ target: target(false), preventDefault: () => { prevented += 1; } });
+  assert.equal(maximized, 1);
+  assert.equal(prevented, 1);
+  // A double-click on a button belongs to the button, not the window.
+  region.handlers.dblclick({ target: target(true), preventDefault: () => { throw new Error('should not prevent'); } });
+  assert.equal(maximized, 1);
 });
