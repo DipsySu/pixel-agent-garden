@@ -36,6 +36,7 @@ import {
   rendererModeFromLocation
 } from './renderers/renderer-factory.js';
 import { applyStaticTranslations, currentLocale, setLocale, t } from './i18n.js';
+import { installWindowDrag } from './window-drag.js';
 
 const scene = document.getElementById('pg6-scene');
 const assetRoot = window.__TAURI__ ? './assets' : '../assets';
@@ -44,6 +45,7 @@ const manifestUrl = spriteRoot + 'ivy_courtyard_manifest.json';
 const dataUrl = './data/garden-summary.json';
 
 applyStaticTranslations();
+installWindowDrag();
 
 // Locale toggle: the button shows the language you'd switch TO (zh UI → "EN",
 // en UI → "中"). Persisting + reloading is the simplest correct way to re-render

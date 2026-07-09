@@ -21,6 +21,26 @@ privacy / release-governance hardening.
   narrow `shortcuts.rs` shell reconciled from `settings.toml` at startup and
   after each save (mirrors `autostart`); core never touches the OS.
 
+### Pricing + Desktop Shell
+
+- Refreshed the bundled default model price table from current OpenAI and
+  Anthropic public API pricing. The table now includes current Claude ids
+  (`claude-fable-5`, `claude-opus-4-8`, `claude-sonnet-5`,
+  `claude-sonnet-4-6`) plus current OpenAI ids (`gpt-5.5`, `gpt-5.4`, and
+  `gpt-5.3-codex`). The price-source note is recorded in
+  `docs/25-model-pricing-refresh.md`; Codex credit rates are intentionally not
+  converted into USD.
+- Made the frameless desktop window draggable from the header. The app now uses
+  an explicit `startDragging()` bridge for the non-interactive header area, plus
+  a double-click-to-maximize gesture (the one the native drag region gave for
+  free), granting only the needed `core:window:allow-start-dragging` and
+  `core:window:allow-toggle-maximize` capabilities.
+- Redesigned the tray status icon from a full stone-lantern silhouette into a
+  compact pixel garden-gate mark with a centered lantern. The macOS template
+  variants now keep an open doorway / lamp cutout so the icon stays readable
+  after the system tints it in the menu bar, while Windows/Linux keep colored
+  lit and unlit variants.
+
 ### Year Review + Weekly Recap (PRD §P3)
 
 - Made the Year Review "growth" card real (PRD §P3-3 item 2). It was listed in
