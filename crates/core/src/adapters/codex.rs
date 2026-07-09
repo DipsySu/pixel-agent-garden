@@ -158,10 +158,17 @@ impl CodexAdapter {
                 .and_then(|p| rollout_usage_from_ref(p, db_path))
                 .unwrap_or_default();
             if db_total > 0 {
-                // The SQLite thread row is Codex's canonical total. Rollout
-                // logs add split buckets when available, but the DB total wins
-                // if the two ever disagree.
-                event.usage.total_tokens = db_total;
+                // The SQLite thread row is Codex's canonical total and wins over
+                // the rollout's own tally — but never DROPS BELOW the split
+                // buckets it must contain. The total and the split come from two
+                // stores that can disagree; clamping keeps `total >= input +
+                // output + cache` so the cost math's `blended = total - split`
+                // can't underflow and no bucket is ever priced beyond the total.
+                let split = event.usage.input_tokens
+                    + event.usage.output_tokens
+                    + event.usage.cache_read_tokens
+                    + event.usage.cache_write_tokens;
+                event.usage.total_tokens = db_total.max(split);
             }
             event.model = row.model.clone();
             event.raw_ref = Some(
@@ -870,6 +877,55 @@ mod tests {
         assert_eq!(usage.cache_read_tokens, 70);
         assert_eq!(usage.output_tokens, 20);
         assert_eq!(usage.cache_write_tokens, 0);
+
+        std::fs::remove_dir_all(&tmp).ok();
+    }
+
+    #[test]
+    fn threads_db_total_never_drops_below_rollout_split() {
+        // Canonical DB total and rollout split come from two stores. When the DB
+        // undercounts (150 < the 180 the rollout's own buckets sum to), the total
+        // clamps UP to the split so `blended = total - split` stays >= 0 and no
+        // bucket is ever priced beyond the reported total.
+        let tmp = std::env::temp_dir().join(format!("lag-codex-clamp-{}", std::process::id()));
+        std::fs::create_dir_all(&tmp).unwrap();
+        let rollout_path = tmp.join("rollout-2026-06-13T09-58-42-aaaa-bbbb-cccc-dddd-eeee.jsonl");
+        let rollout = json!({
+            "timestamp": "2026-06-13T01:58:57Z",
+            "type": "event_msg",
+            "payload": { "type": "token_count", "info": { "total_token_usage": {
+                "input_tokens": 160, "cached_input_tokens": 70,
+                "output_tokens": 20, "total_tokens": 180
+            } } }
+        });
+        std::fs::write(&rollout_path, format!("{rollout}\n")).unwrap();
+
+        let db_path = tmp.join("state_5.sqlite");
+        let conn = rusqlite::Connection::open(&db_path).unwrap();
+        conn.execute(
+            "CREATE TABLE threads (id TEXT, rollout_path TEXT, created_at TEXT, \
+             updated_at TEXT, source TEXT, model_provider TEXT, cwd TEXT, title TEXT, \
+             tokens_used INTEGER, cli_version TEXT, model TEXT, reasoning_effort TEXT, \
+             git_branch TEXT, first_user_message TEXT, archived INTEGER)",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO threads VALUES ('session-a', ?1, '2026-06-13T01:58:00Z', \
+             '2026-06-13T01:59:00Z', 'codex-cli', 'openai', '/tmp/demo', 't', 150, \
+             '1.2.3', 'gpt-5.5', 'medium', 'main', 'hi', 0)",
+            [rollout_path.to_string_lossy().as_ref()],
+        )
+        .unwrap();
+
+        let events = CodexAdapter.read_threads_db(&db_path);
+        assert_eq!(events.len(), 1);
+        let usage = &events[0].usage;
+        // db_total (150) < split (90 + 70 + 20 = 180) → clamped up to 180.
+        assert_eq!(usage.total_tokens, 180);
+        assert_eq!(usage.input_tokens, 90);
+        assert_eq!(usage.cache_read_tokens, 70);
+        assert_eq!(usage.output_tokens, 20);
 
         std::fs::remove_dir_all(&tmp).ok();
     }
