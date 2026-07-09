@@ -12,8 +12,8 @@ privacy / release-governance hardening.
   courtyard and wall screenshots as the product visuals. The page explains the
   local-only data flow, privacy boundary, visual modes, install path, and core
   features without loading CDN assets or app runtime code.
-- Added a Pages deployment workflow that publishes the `docs/` directory from
-  `main`, plus a README link to the public product page.
+- Enabled GitHub Pages publishing from the `docs/` directory on `main`, plus a
+  README link to the public product page.
 
 ### Desktop global hotkey (show / hide)
 
