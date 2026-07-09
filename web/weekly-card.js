@@ -42,6 +42,7 @@ import {
   utcDayKey
 } from './card-canvas.js';
 import { escapeHtml, fmtLocal } from './render-helpers.js';
+import { ringEventTitle } from './rings-panel.js';
 import { t } from './i18n.js';
 
 // --- pure week math (node-testable, no DOM) ---------------------------------
@@ -162,9 +163,13 @@ export function suggestedWeeklyName(week) {
  * involved. Returns the canvas plus the week/stats it rendered so callers
  * can name the file without recomputing.
  */
-export async function buildWeeklyCanvas({ summary, now = new Date() }) {
+export async function buildWeeklyCanvas({ summary, rings = null, now = new Date() }) {
   const week = previousIsoWeek(localCalendarDay(now));
   const stats = weeklyStats(summary, week);
+  // `rings` is the (possibly null) RingBook from loadRings(); it feeds only the
+  // "new growth" narrative and degrades to a quiet fallback when null (demo and
+  // browser fallback pass null — loadRings is demo/Tauri-gated).
+  const growth = weekGrowthEvents(rings, week);
   const canvas = document.createElement('canvas');
   canvas.width = CARD_W;
   canvas.height = CARD_H;
@@ -172,11 +177,33 @@ export async function buildWeeklyCanvas({ summary, now = new Date() }) {
   if (!ctx) throw new Error('canvas 2D context unavailable');
   ctx.imageSmoothingEnabled = false;
   await ensureCardFonts();
-  drawCard(ctx, week, stats, dailyTotals(summary, week.days));
+  drawCard(ctx, week, stats, dailyTotals(summary, week.days), growth);
   return { canvas, week, stats };
 }
 
-function drawCard(ctx, week, stats, totals) {
+// Ring events whose UTC day-key falls inside the week window. Milestone types
+// float first so the single "new growth" line surfaces the most meaningful
+// moments when several land in one week; ties break by date. Kept module-level
+// (not inside buildWeeklyCanvas) so the week-window matching is node-testable.
+const WEEKLY_MILESTONE_TYPES = new Set(['tier_up', 'trinket_unlocked', 'busiest_day_record']);
+
+function weekGrowthEvents(book, week) {
+  const daySet = new Set(Array.isArray(week?.days) ? week.days : []);
+  const events = (Array.isArray(book?.events) ? book.events : [])
+    .filter((event) => daySet.has(event?.utc_date));
+  const rank = (event) => (WEEKLY_MILESTONE_TYPES.has(event?.type) ? 0 : 1);
+  return events.sort((a, b) =>
+    rank(a) - rank(b) || String(a?.utc_date || '').localeCompare(String(b?.utc_date || '')));
+}
+
+// "多了一盏灯" (PRD §P3-1 closing example): a tier-up or trinket this week means
+// the garden gained something permanent, so the closing swaps to the
+// celebratory line; otherwise it keeps the quiet default.
+function weekGainedLight(growth) {
+  return growth.some((event) => event?.type === 'tier_up' || event?.type === 'trinket_unlocked');
+}
+
+function drawCard(ctx, week, stats, totals, growth = []) {
   drawPaperFrame(ctx);
 
   // Silkscreen title bar: ink band, paper text (§5.4-E anatomy, row 1).
@@ -195,8 +222,9 @@ function drawCard(ctx, week, stats, totals) {
   ctx.textAlign = 'right';
   ctx.fillText(week.start + ' – ' + week.end + ' · UTC', CARD_W - 66, 176);
 
-  // Pixel visual block: the week as seven chunky bars.
-  drawWeekBars(ctx, totals, week.days, { x: 66, y: 216, w: CARD_W - 132, h: 470 });
+  // Pixel visual block: the week as seven chunky bars. Trimmed a touch from
+  // the original height to make vertical room for the new-growth line below.
+  drawWeekBars(ctx, totals, week.days, { x: 66, y: 216, w: CARD_W - 132, h: 430 });
 
   // VT323 number line (§5.4-E anatomy, row 3) — digits render in VT323,
   // CJK unit words fall through to the system stack.
@@ -208,16 +236,24 @@ function drawCard(ctx, week, stats, totals) {
   ctx.font = '92px ' + FONT_NUM;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
-  ctx.fillText(fitOneLine(ctx, numberLine, CARD_W - 132), 66, 790);
+  ctx.fillText(fitOneLine(ctx, numberLine, CARD_W - 132), 66, 762);
 
   // Top-3 project lines (or the quiet empty-week line).
-  drawTopProjects(ctx, stats, { x: 66, y: 900, w: CARD_W - 132 });
+  drawTopProjects(ctx, stats, { x: 66, y: 852, w: CARD_W - 132 });
 
-  // Closing line — the ritual's soft landing.
+  // "新长出的东西" line (PRD §P3-1): what the garden's memory recorded this
+  // week — reusing the same ring events the private Rings tab shows, but
+  // path-free for a shareable card.
+  drawNewGrowth(ctx, growth, { x: 66, y: 1088, w: CARD_W - 132 });
+
+  // Closing line — the ritual's soft landing. A week that gained a tier/trinket
+  // gets the "多了一盏灯" line; otherwise the quiet default.
   ctx.fillStyle = MUTED;
   ctx.font = '34px ' + FONT_STACK;
   ctx.textAlign = 'left';
-  ctx.fillText(fitOneLine(ctx, t('share.weekly.closing'), CARD_W - 132), 66, 1130);
+  ctx.textBaseline = 'alphabetic';
+  const closingKey = weekGainedLight(growth) ? 'share.weekly.closing.lamp' : 'share.weekly.closing';
+  ctx.fillText(fitOneLine(ctx, t(closingKey), CARD_W - 132), 66, 1150);
 
   // Product watermark (§5.4-E anatomy, row 4) — fixed latin string, never
   // localized: it is the card's propagation signature.
@@ -225,6 +261,28 @@ function drawCard(ctx, week, stats, totals) {
   ctx.font = '24px ' + FONT_PIXEL;
   ctx.textAlign = 'center';
   ctx.fillText('pixel-agent-garden', CARD_W / 2, 1218);
+}
+
+// "庭院里新长出的东西" (PRD §P3-1): one line naming up to three ring moments
+// that landed inside the week, localized via ringEventTitle so no raw project
+// path leaks onto the shareable card. A bookless/quiet week gets a calm
+// fallback in the same muted tone as the empty-week project line.
+function drawNewGrowth(ctx, growth, box) {
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  if (!growth.length) {
+    ctx.fillStyle = MUTED;
+    ctx.font = '32px ' + FONT_STACK;
+    ctx.fillText(fitOneLine(ctx, t('share.weekly.growth.quiet'), box.w), box.x, box.y);
+    return;
+  }
+  // A small green sprout bullet ties the line to the garden-growth metaphor.
+  ctx.fillStyle = GREEN;
+  ctx.fillRect(box.x, box.y - 10, 20, 20);
+  const items = growth.slice(0, 3).map((event) => ringEventTitle(event)).join(' · ');
+  ctx.fillStyle = INK;
+  ctx.font = '32px ' + FONT_STACK;
+  ctx.fillText(fitOneLine(ctx, t('share.weekly.growth.label', { items }), box.w - 44), box.x + 44, box.y);
 }
 
 // Seven bars on a cream panel, heights snapped to an 8px grid so the
@@ -298,10 +356,11 @@ function drawTopProjects(ctx, stats, box) {
  *   getSummary: () => object | null,
  *   onError?: (message: string, err: unknown) => void,
  *   onRequestClose?: () => void,
+ *   loadRings?: () => Promise<object | null>,
  * }} opts
  * @returns {{ activate: () => void }}
  */
-export function mountWeeklyCardContent({ host, getSummary, onError, onRequestClose }) {
+export function mountWeeklyCardContent({ host, getSummary, onError, onRequestClose, loadRings }) {
   host.innerHTML =
     '<div class="pg6-postcard-title">' + escapeHtml(t('share.weekly.name')) + '</div>' +
     '<canvas class="pg6-weekly-preview" width="960" height="1280" aria-hidden="true"></canvas>' +
@@ -315,6 +374,21 @@ export function mountWeeklyCardContent({ host, getSummary, onError, onRequestClo
   let lastCanvas = null;  // the live preview canvas, reused on Save (no re-render)
   let lastWeek = null;
   let rendering = false;
+  // Fetch the rings book once per activation and cache it: loadRings hits the
+  // Tauri backend (and is null in demo/browser), and a throw degrades to a
+  // bookless card (the quiet growth fallback).
+  let ringsBook = null;
+  let ringsLoaded = false;
+  async function ensureRings() {
+    if (ringsLoaded) return ringsBook;
+    ringsLoaded = true;
+    try {
+      ringsBook = typeof loadRings === 'function' ? await loadRings() : null;
+    } catch (_) {
+      ringsBook = null;
+    }
+    return ringsBook;
+  }
 
   exportButton.addEventListener('click', async () => {
     if (rendering) return;
@@ -343,7 +417,8 @@ export function mountWeeklyCardContent({ host, getSummary, onError, onRequestClo
     setStatus(t('postcard.rendering'));
     try {
       const { canvas, week } = await buildWeeklyCanvas({
-        summary: typeof getSummary === 'function' ? getSummary() : null
+        summary: typeof getSummary === 'function' ? getSummary() : null,
+        rings: await ensureRings()
       });
       lastCanvas = canvas;
       lastWeek = week;

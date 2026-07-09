@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Made the Year Review "growth" card real (PRD §P3-3 item 2). It was listed in
+  the deck but fell through to the generic year overview; it now renders a
+  vertical timeline of up to five curated ring moments (milestones and the
+  earliest first-seen preferred, then filled by date, shown chronologically).
+  It reads the core-owned rings book through `loadRings()` and shows a calm
+  single-line fallback when the book is absent (demo/browser) or the year has
+  no moments.
+- Gave the Weekly Recap its "new growth" narrative (PRD §P3-1). The card now
+  lists up to three ring moments that landed inside the week (reusing the
+  return-diff memory) and swaps its closing line to "上周,庭院多了一盏灯。"
+  when a tier or trinket was gained that week, keeping the quiet closing
+  otherwise. Bookless/quiet weeks fall back to a calm growth line.
+- Both share cards render ring moments through `ringEventTitle`/`ringDate`
+  (localized, name/label-based) only — never a raw project path or internal
+  key — so a shareable card cannot leak what the private Rings tab shows.
+
 ## v2.0.0 - 2026-07-08
 
 - Started the v2.0 Agent Nursery promotion path. The source-share nursery first

@@ -15,6 +15,7 @@ import {
   shouldOfferWeeklyRecap,
   weeklyStats
 } from '../weekly-card.js';
+import { t } from '../i18n.js';
 
 // ---- previousIsoWeek --------------------------------------------------------
 
@@ -185,4 +186,73 @@ test('buildWeeklyCanvas runs through the canvas path with an injected document',
     if (previousDocument === undefined) delete globalThis.document;
     else globalThis.document = previousDocument;
   }
+});
+
+// ---- new growth line + dynamic closing (§P3-1 return-diff reuse) -------------
+
+// Mid-week Wednesday: previousIsoWeek(local) resolves to WEEK in every timezone.
+const WEDNESDAY = new Date(Date.UTC(2026, 6, 8, 12, 0, 0));
+
+async function withCanvasCalls(fn) {
+  const previousDocument = globalThis.document;
+  const calls = [];
+  const ctx = {
+    set fillStyle(value) { calls.push(['fillStyle', value]); },
+    set strokeStyle(value) { calls.push(['strokeStyle', value]); },
+    set lineWidth(value) { calls.push(['lineWidth', value]); },
+    set font(value) { calls.push(['font', value]); },
+    set textAlign(value) { calls.push(['textAlign', value]); },
+    set textBaseline(value) { calls.push(['textBaseline', value]); },
+    fillRect: (...args) => calls.push(['fillRect', ...args]),
+    strokeRect: (...args) => calls.push(['strokeRect', ...args]),
+    fillText: (...args) => calls.push(['fillText', ...args]),
+    measureText: (text) => ({ width: String(text).length * 10 })
+  };
+  globalThis.document = {
+    createElement: () => ({ width: 0, height: 0, getContext: () => ctx })
+  };
+  try {
+    await fn(calls);
+  } finally {
+    if (previousDocument === undefined) delete globalThis.document;
+    else globalThis.document = previousDocument;
+  }
+}
+
+const fillTexts = (calls) => calls.filter((call) => call[0] === 'fillText').map((call) => String(call[1]));
+
+test('a week-window ring moment surfaces in the new-growth line, path-free', async () => {
+  await withCanvasCalls(async (calls) => {
+    const book = {
+      events: [
+        { id: 'in', type: 'first_seen_project', entity: '/x', utc_date: '2026-07-01', label: 'newbie-proj', payload: { project_path: '/Users/secret/x' } },
+        { id: 'out', type: 'first_seen_project', entity: '/y', utc_date: '2026-06-01', label: 'last-month-proj' }
+      ]
+    };
+    await buildWeeklyCanvas({ summary: craftedSummary(), rings: book, now: WEDNESDAY });
+    const texts = fillTexts(calls);
+    assert.ok(texts.some((s) => s.includes('newbie-proj')), 'the in-window moment appears');
+    assert.ok(!texts.some((s) => s.includes('last-month-proj')), 'the out-of-window moment is excluded');
+    assert.ok(!texts.some((s) => s.includes('/Users/secret')), 'raw project path never renders');
+  });
+});
+
+test('a tier gained in the week switches the closing to the lamp line', async () => {
+  await withCanvasCalls(async (calls) => {
+    const book = { events: [{ id: 't', type: 'tier_up', entity: 'pavilion', to: 'mid', utc_date: '2026-07-03' }] };
+    await buildWeeklyCanvas({ summary: craftedSummary(), rings: book, now: WEDNESDAY });
+    const texts = fillTexts(calls);
+    assert.ok(texts.includes(t('share.weekly.closing.lamp')), 'the lamp closing is drawn');
+    assert.ok(!texts.includes(t('share.weekly.closing')), 'the quiet closing is not drawn');
+  });
+});
+
+test('a bookless week draws the quiet growth fallback and quiet closing', async () => {
+  await withCanvasCalls(async (calls) => {
+    await buildWeeklyCanvas({ summary: craftedSummary(), rings: null, now: WEDNESDAY });
+    const texts = fillTexts(calls);
+    assert.ok(texts.includes(t('share.weekly.growth.quiet')), 'the quiet growth fallback is drawn');
+    assert.ok(texts.includes(t('share.weekly.closing')), 'the quiet closing is drawn');
+    assert.ok(!texts.includes(t('share.weekly.closing.lamp')), 'the lamp closing is not drawn');
+  });
 });
