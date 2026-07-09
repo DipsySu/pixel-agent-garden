@@ -21,8 +21,74 @@ env:
     https://github.com/DipsySu/pixel-agent-garden/blob/main/docs/unsigned-installs.md
 
 jobs:
+  # Gate before ANY bundle is built or published: a `v*` tag must clear the same
+  # zero-network / quality checks CI enforces on main (see PRIVACY.md). Without
+  # this, pushing a tag could publish a release from a commit that never passed
+  # CI. `build` depends on it, so a failed gate blocks the release.
+  preflight:
+    name: preflight (gate before publish)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Tag version matches crate + bundle version
+        if: env.RELEASE_TAG != ''
+        run: |
+          # A v* tag must ship the version it names: guard against a `v2.0.1`
+          # tag publishing `2.0.0` binaries. Compare the tag (sans leading v)
+          # against the tauri-app crate version and the bundle version in
+          # tauri.conf.json — the two that actually stamp the artifact.
+          want="${RELEASE_TAG#v}"
+          conf=$(grep -m1 '"version"' crates/tauri-app/tauri.conf.json | sed -E 's/.*"version" *: *"([^"]+)".*/\1/')
+          cargo_v=$(grep -m1 '^version' crates/tauri-app/Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "tag=$want  tauri.conf.json=$conf  Cargo.toml=$cargo_v"
+          if [ "$want" != "$conf" ] || [ "$want" != "$cargo_v" ]; then
+            echo "::error::Release tag v$want disagrees with tauri.conf.json ($conf) / Cargo.toml ($cargo_v) — bump the version to match the tag before publishing."
+            exit 1
+          fi
+          echo "OK — tag, crate, and bundle versions all agree ($want)."
+      - name: No network / telemetry client crates in Cargo.lock
+        run: |
+          # Keep this list in sync with .github/workflows/ci.yml and deny.toml.
+          banned='ureq|isahc|surf|attohttpc|curl|curl-sys|sentry|sentry-core|opentelemetry|tracing-opentelemetry|tungstenite|tokio-tungstenite|async-tungstenite|websocket|axum|warp|actix-web|rocket|tiny_http|rouille|quinn|lettre|ssh2'
+          if grep -nE "^name = \"($banned)\"$" Cargo.lock; then
+            echo "::error::A network/telemetry crate entered Cargo.lock — violates the zero-network contract (see PRIVACY.md)."
+            exit 1
+          fi
+          echo "OK — no egress/telemetry client crates in Cargo.lock."
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            pkg-config \
+            patchelf \
+            libfuse2 \
+            build-essential \
+            libxdo-dev \
+            libssl-dev \
+            file
+      - uses: dtolnay/rust-toolchain@1.85.0
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-preflight
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+      - run: node --test "web/tests/**/*.test.mjs"
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
+      - run: cargo deny check advisories bans sources
+
   build:
     name: build (${{ matrix.platform }})
+    needs: preflight
     runs-on: ${{ matrix.platform }}
     permissions:
       contents: write

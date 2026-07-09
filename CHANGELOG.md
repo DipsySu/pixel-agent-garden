@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+Post-2.0 hardening from two independent review passes (merged + cross-verified).
+No user-facing feature changes — correctness, privacy, and release governance.
+
+- Fixed a `size_strength` NaN: when the busiest project sat exactly on the
+  10k-token floor (`max_tokens == 9999`) the ratio computed `0/0 = NaN`, which
+  serde renders as `null` and the tray's `GardenSummary` re-parse then rejected.
+- Stopped the CSV/JSON export from leaking on-disk project paths. `project_key`
+  is the local path when known, so exports now emit an opaque per-project id plus
+  the display name instead of the raw key, and neutralize spreadsheet formula
+  injection (cells starting `= + - @`).
+- Fixed Codex data loss: `extract_token_total` no longer sums a `total_tokens`
+  together with the components it already includes (~2x inflation of every Codex
+  row); `discover()` now recognizes rollout-only installs (`sessions/`), matching
+  what `collect()` reads; and the threads DB opens by path instead of a `file:`
+  URI that broke on `#` / `?` / `%` in the home path.
+- Applied the source filter on cache hits, and stopped a filtered scan from
+  persisting a subset into the shared `events.json` (previously served whole to
+  later unfiltered reads).
+- Rejected negative / non-finite user price rates instead of producing negative
+  or `null` cost.
+- Made the Cost and Projects tabs recompute their estimate when new data arrives
+  (they had cached it for the whole session), moved the Rings tab's disk read off
+  mount onto first open, and fixed an error-toast leak where a pruned toast's
+  entry lingered on a detached node and swallowed later same-source errors.
+- Gated releases behind a preflight job: a `v*` tag must now pass the
+  zero-network / fmt / clippy / test / cargo-deny checks before any bundle is
+  built or published (the release workflow previously bypassed CI entirely).
+
 ## v2.0.0 - 2026-07-08
 
 - Started the v2.0 Agent Nursery promotion path. The source-share nursery first

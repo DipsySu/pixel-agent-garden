@@ -5,11 +5,11 @@
 
 export function buildDailyTokensCsv(summary) {
   const rows = dailyTokenRows(summary);
-  const lines = [['date', 'project_key', 'project_name', 'tokens'].map(csvCell).join(',')];
+  const lines = [['date', 'project_id', 'project_name', 'tokens'].map(csvCell).join(',')];
   for (const row of rows) {
     lines.push([
       row.date,
-      row.project_key,
+      row.project_id,
       row.project_name,
       String(row.tokens)
     ].map(csvCell).join(','));
@@ -19,13 +19,13 @@ export function buildDailyTokensCsv(summary) {
 
 export function buildDailyTokensJson(summary, generatedAt = new Date()) {
   const projects = (summary?.projects || []).map((project) => ({
-    project_key: String(project.project_key || ''),
-    display_name: String(project.display_name || project.project_key || 'unknown'),
+    project_id: projectId(project.project_key),
+    display_name: String(project.display_name || displayNameFromKey(project.project_key)),
     total_tokens: uint(project.total_tokens),
     daily_tokens: cleanDailyTokens(project.daily_tokens || {})
   }));
   return JSON.stringify({
-    schema_version: 1,
+    schema_version: 2,
     generated_at: generatedAt.toISOString(),
     kind: 'daily_project_tokens',
     total_tokens: uint(summary?.total_tokens),
@@ -37,7 +37,7 @@ export function buildCostEstimateCsv(cost, summary) {
   const rows = costEstimateRows(cost, summary);
   const lines = [[
     'scope',
-    'project_key',
+    'project_id',
     'project_name',
     'model',
     'pricing_status',
@@ -53,7 +53,7 @@ export function buildCostEstimateCsv(cost, summary) {
   for (const row of rows) {
     lines.push([
       row.scope,
-      row.project_key,
+      row.project_id,
       row.project_name,
       row.model,
       row.pricing_status,
@@ -74,7 +74,7 @@ export function buildCostEstimateJson(cost, summary, generatedAt = new Date()) {
   const projectNames = projectNameMap(summary);
   const projects = Object.entries(cost?.by_project || {})
     .map(([projectKey, estimate]) => ({
-      project_key: String(projectKey || ''),
+      project_id: projectId(projectKey),
       display_name: projectNames.get(String(projectKey || '')) || displayNameFromKey(projectKey),
       estimate: cleanEstimate(estimate)
     }))
@@ -82,10 +82,10 @@ export function buildCostEstimateJson(cost, summary, generatedAt = new Date()) {
       Number(b.estimate.total_usd || 0) - Number(a.estimate.total_usd || 0) ||
       Number(b.estimate.unpriced_tokens || 0) - Number(a.estimate.unpriced_tokens || 0) ||
       a.display_name.localeCompare(b.display_name) ||
-      a.project_key.localeCompare(b.project_key)
+      a.project_id.localeCompare(b.project_id)
     );
   return JSON.stringify({
-    schema_version: 1,
+    schema_version: 2,
     generated_at: generatedAt.toISOString(),
     kind: 'cost_estimate',
     total: cleanEstimate(cost?.total),
@@ -102,8 +102,8 @@ export function dailyTokenRows(summary) {
       if (value <= 0) continue;
       rows.push({
         date,
-        project_key: String(project.project_key || ''),
-        project_name: String(project.display_name || project.project_key || 'unknown'),
+        project_id: projectId(project.project_key),
+        project_name: String(project.display_name || displayNameFromKey(project.project_key)),
         tokens: value
       });
     }
@@ -111,7 +111,7 @@ export function dailyTokenRows(summary) {
   rows.sort((a, b) =>
     a.date.localeCompare(b.date) ||
     a.project_name.localeCompare(b.project_name) ||
-    a.project_key.localeCompare(b.project_key)
+    a.project_id.localeCompare(b.project_id)
   );
   return rows;
 }
@@ -180,7 +180,7 @@ function pricedCostRow({ scope, projectKey, projectName, model, cost }) {
   const cache = uint(cost?.cache_tokens);
   return {
     scope,
-    project_key: String(projectKey || ''),
+    project_id: projectId(projectKey),
     project_name: String(projectName || ''),
     model: String(model || ''),
     pricing_status: 'priced',
@@ -198,7 +198,7 @@ function pricedCostRow({ scope, projectKey, projectName, model, cost }) {
 function unpricedCostRow({ scope, projectKey, projectName, model, tokens }) {
   return {
     scope,
-    project_key: String(projectKey || ''),
+    project_id: projectId(projectKey),
     project_name: String(projectName || ''),
     model: String(model || ''),
     pricing_status: 'unpriced',
@@ -273,8 +273,27 @@ function cleanDailyTokens(daily) {
   return out;
 }
 
+// Stable, opaque per-project id for JOINING exported rows across files without
+// leaking the raw project_key — which is the on-disk path when a project_path
+// is known (Rust `event.project_key()` → `normalize_path(path)`), e.g.
+// `/Users/alice/Developer/secret`. FNV-1a/32 over the key.
+export function projectId(projectKey) {
+  const key = String(projectKey || '');
+  if (!key) return '';
+  let h = 0x811c9dc5;
+  for (let i = 0; i < key.length; i += 1) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return 'p_' + (h >>> 0).toString(16).padStart(8, '0');
+}
+
 function csvCell(value) {
-  const s = String(value == null ? '' : value);
+  let s = String(value == null ? '' : value);
+  // Formula-injection guard: a cell starting with = + - @ (or a leading tab /
+  // CR before one) is executed as a formula by Excel / Sheets. Prefix a single
+  // quote to force it to literal text, then apply normal quoting.
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
   if (!/[",\n\r]/.test(s)) return s;
   return '"' + s.replace(/"/g, '""') + '"';
 }
