@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v2.0.2 - 2026-07-10
+
 ### Product page
 
 - Rebuilt the GitHub Pages landing page as a static editorial pixel-garden
