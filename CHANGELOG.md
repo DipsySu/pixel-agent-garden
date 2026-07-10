@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Product page
+
+- Rebuilt the GitHub Pages landing page as a static editorial pixel-garden
+  story: the courtyard is now the first-viewport product signal, followed by
+  growth mapping, Courtyard/Wall views, local architecture, privacy, install,
+  and FAQ sections.
+- Kept the page dependency-free while preserving English, Simplified Chinese,
+  Traditional Chinese, and auto/paper/night themes. New local pixel fonts and
+  courtyard specimen assets ship from `docs/` with no CDN or analytics.
+
 ## v2.0.1 - 2026-07-10
 
 Post-2.0 work from two independent review passes (merged + cross-verified):

@@ -8,31 +8,7 @@
       name="description"
       content="Pixel Agent Garden turns local Claude Code, Claude Cowork, Codex, and other AI agent activity into a private desktop pixel garden."
     />
-    <link rel="icon" type="image/png" href="images/app-icon.png" />
-    <link rel="apple-touch-icon" href="images/app-icon.png" />
-    <meta name="theme-color" content="#15150f" />
-    <script>
-      (() => {
-        const root = document.documentElement;
-        const stored = (key) => {
-          try {
-            return localStorage.getItem(key);
-          } catch {
-            return null;
-          }
-        };
-        const browserLang = navigator.language && navigator.language.toLowerCase();
-        const theme = stored("pag.theme") || "auto";
-        const lang = stored("pag.lang") || (
-          browserLang && browserLang.startsWith("zh")
-            ? (browserLang.includes("tw") || browserLang.includes("hk") ? "zh_tw" : "zh_cn")
-            : "en"
-        );
-        root.dataset.theme = ["dark", "light", "auto"].includes(theme) ? theme : "auto";
-        root.dataset.lang = ["en", "zh_cn", "zh_tw"].includes(lang) ? lang : "en";
-        root.lang = root.dataset.lang === "zh_tw" ? "zh-TW" : root.dataset.lang === "zh_cn" ? "zh-CN" : "en";
-      })();
-    </script>
+    <meta name="theme-color" content="#f1e8cd" />
     <meta property="og:title" content="Pixel Agent Garden" />
     <meta
       property="og:description"
@@ -43,1343 +19,11 @@
       property="og:image"
       content="https://dipsysu.github.io/pixel-agent-garden/images/garden.png"
     />
-    <style>
-      @font-face {
-        font-family: "Silkscreen";
-        font-style: normal;
-        font-weight: 700;
-        font-display: swap;
-        src: url("fonts/silkscreen-700.woff2") format("woff2");
-      }
-
-      :root {
-        color-scheme: dark;
-        --font-display: "Silkscreen", ui-sans-serif, system-ui, sans-serif;
-        --ink: #17130e;
-        --night: #15150f;
-        --bg: #15150f;
-        --bg-soft: #1c2118;
-        --bg-raised: #20281b;
-        --panel: #211c15;
-        --card: #2a241a;
-        --text: #efe2c4;
-        --text-strong: #fff1c8;
-        --muted: rgba(239, 226, 196, 0.72);
-        --muted-strong: rgba(239, 226, 196, 0.9);
-        --inverse: #22180f;
-        --surface: #efe2c4;
-        --surface-soft: #f7edcc;
-        --surface-muted: #55422f;
-        --surface-border: #4b3322;
-        --topbar-bg: rgba(21, 21, 15, 0.84);
-        --hero-scrim: rgba(9, 10, 7, 0.5);
-        --hero-floor: rgba(12, 14, 9, 0.78);
-        --canopy: #223222;
-        --leaf: #86b957;
-        --moss: #5f7f3e;
-        --paper: #efe2c4;
-        --paper-soft: #d9c59d;
-        --brick: #8f7154;
-        --wood: #4b2d1e;
-        --lantern: #f0a23e;
-        --sky: #7ca4b4;
-        --line: rgba(239, 226, 196, 0.3);
-        --border: rgba(239, 226, 196, 0.2);
-        --shadow: rgba(0, 0, 0, 0.46);
-        --max: 1180px;
-        --radius: 6px;
-      }
-
-      html[data-theme="light"] {
-        color-scheme: light;
-        --ink: #1e170f;
-        --night: #f4f0e2;
-        --bg: #f4f0e2;
-        --bg-soft: #e8f0dc;
-        --bg-raised: #f9f5e8;
-        --panel: #e9e2cf;
-        --card: #fff9e9;
-        --text: #251b10;
-        --text-strong: #17120c;
-        --muted: rgba(37, 27, 16, 0.72);
-        --muted-strong: rgba(37, 27, 16, 0.88);
-        --inverse: #22180f;
-        --surface: #e9f3df;
-        --surface-soft: #fff9e9;
-        --surface-muted: #5c4932;
-        --surface-border: #5a3a22;
-        --topbar-bg: rgba(244, 240, 226, 0.88);
-        --paper: #fff4ce;
-        --paper-soft: #775e3e;
-        --line: rgba(37, 27, 16, 0.22);
-        --border: rgba(37, 27, 16, 0.18);
-        --shadow: rgba(64, 47, 24, 0.25);
-      }
-
-      @media (prefers-color-scheme: light) {
-        html[data-theme="auto"] {
-          color-scheme: light;
-          --ink: #1e170f;
-          --night: #f4f0e2;
-          --bg: #f4f0e2;
-          --bg-soft: #e8f0dc;
-          --bg-raised: #f9f5e8;
-          --panel: #e9e2cf;
-          --card: #fff9e9;
-          --text: #251b10;
-          --text-strong: #17120c;
-          --muted: rgba(37, 27, 16, 0.72);
-          --muted-strong: rgba(37, 27, 16, 0.88);
-          --inverse: #22180f;
-          --surface: #e9f3df;
-          --surface-soft: #fff9e9;
-          --surface-muted: #5c4932;
-          --surface-border: #5a3a22;
-          --topbar-bg: rgba(244, 240, 226, 0.88);
-          --paper: #fff4ce;
-          --paper-soft: #775e3e;
-          --line: rgba(37, 27, 16, 0.22);
-          --border: rgba(37, 27, 16, 0.18);
-          --shadow: rgba(64, 47, 24, 0.25);
-        }
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      html {
-        scroll-behavior: smooth;
-      }
-
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--text);
-        font-family:
-          ui-sans-serif,
-          system-ui,
-          -apple-system,
-          BlinkMacSystemFont,
-          "Segoe UI",
-          sans-serif;
-        line-height: 1.55;
-      }
-
-      a {
-        color: inherit;
-      }
-
-      img {
-        display: block;
-        max-width: 100%;
-      }
-
-      .topbar {
-        position: fixed;
-        z-index: 20;
-        top: 0;
-        left: 0;
-        right: 0;
-        border-bottom: 1px solid var(--border);
-        background: var(--topbar-bg);
-        backdrop-filter: blur(12px);
-      }
-
-      .topbar-inner {
-        width: min(calc(100% - 32px), var(--max));
-        min-height: 64px;
-        margin: 0 auto;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 18px;
-      }
-
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        color: var(--text-strong);
-        font-family: var(--font-display);
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0;
-        text-decoration: none;
-      }
-
-      .brand-mark {
-        width: 38px;
-        height: 38px;
-        object-fit: contain;
-        image-rendering: pixelated;
-      }
-
-      .nav {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 13px;
-        color: var(--muted);
-      }
-
-      .nav a {
-        min-height: 40px;
-        display: inline-flex;
-        align-items: center;
-        padding: 8px 10px;
-        border-radius: var(--radius);
-        text-decoration: none;
-      }
-
-      .nav a:hover,
-      .nav a:focus-visible {
-        color: var(--text-strong);
-        background: color-mix(in srgb, var(--text) 12%, transparent);
-      }
-
-      .nav a:focus-visible,
-      .segmented button:focus-visible,
-      .topbar-download:focus-visible,
-      .brand:focus-visible {
-        outline: 3px solid var(--lantern);
-        outline-offset: 2px;
-      }
-
-      .topbar-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-      }
-
-      .segmented {
-        display: inline-flex;
-        align-items: center;
-        gap: 2px;
-        padding: 3px;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        background: color-mix(in srgb, var(--bg) 76%, transparent);
-      }
-
-      .segmented button {
-        min-height: 40px;
-        padding: 0 10px;
-        border: 0;
-        border-radius: 4px;
-        color: var(--muted);
-        background: transparent;
-        font: inherit;
-        font-size: 12px;
-        font-weight: 800;
-        letter-spacing: 0.02em;
-        cursor: pointer;
-      }
-
-      .segmented button:hover,
-      .segmented button:focus-visible {
-        color: var(--text-strong);
-        background: color-mix(in srgb, var(--text) 10%, transparent);
-      }
-
-      .segmented button[aria-pressed="true"] {
-        color: var(--inverse);
-        background: var(--paper);
-      }
-
-      .topbar-download {
-        min-height: 40px;
-        display: inline-flex;
-        align-items: center;
-        padding: 0 13px;
-        border: 2px solid color-mix(in srgb, var(--text) 72%, transparent);
-        border-radius: var(--radius);
-        color: var(--inverse);
-        background: var(--paper);
-        font-size: 13px;
-        font-weight: 900;
-        text-decoration: none;
-        box-shadow: 0 3px 0 var(--shadow);
-      }
-
-      .hero {
-        position: relative;
-        min-height: 72svh;
-        display: flex;
-        align-items: flex-end;
-        isolation: isolate;
-        overflow: hidden;
-        --text: #efe2c4;
-        --text-strong: #fff1c8;
-        --muted-strong: rgba(255, 241, 200, 0.92);
-        --paper: #fff1c8;
-        --paper-soft: #e2c98f;
-        --ink: #17130e;
-        --bg: #15150f;
-        --border: rgba(255, 241, 200, 0.22);
-        background: #15150f url("images/garden.png") center 54% / cover no-repeat;
-      }
-
-      .hero::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        z-index: -1;
-        background: var(--hero-scrim);
-      }
-
-      .hero::after {
-        content: "";
-        position: absolute;
-        inset: auto 0 0;
-        height: 240px;
-        z-index: -1;
-        background: var(--hero-floor);
-        border-top: 1px solid var(--border);
-      }
-
-      .hero-inner {
-        width: min(calc(100% - 32px), var(--max));
-        margin: 0 auto;
-        padding: 112px 0 48px;
-      }
-
-      .eyebrow {
-        width: fit-content;
-        margin: 0 0 16px;
-        padding: 7px 10px;
-        border: 1px solid color-mix(in srgb, var(--text) 34%, transparent);
-        background: color-mix(in srgb, var(--bg) 70%, transparent);
-        color: var(--paper-soft);
-        font-size: 12px;
-        font-family: var(--font-display);
-        font-weight: 700;
-        letter-spacing: 0;
-        text-transform: uppercase;
-      }
-
-      h1 {
-        max-width: 800px;
-        margin: 0;
-        color: var(--text-strong);
-        font-family: var(--font-display);
-        font-size: clamp(42px, 5vw, 64px);
-        line-height: 1;
-        letter-spacing: 0;
-        text-wrap: balance;
-        text-shadow: 0 6px 0 rgba(0, 0, 0, 0.32);
-      }
-
-      .hero-copy {
-        max-width: 610px;
-        margin: 20px 0 0;
-        color: var(--muted-strong);
-        font-size: clamp(17px, 1.8vw, 21px);
-      }
-
-      .actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-top: 28px;
-      }
-
-      .button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 46px;
-        padding: 0 16px;
-        border: 2px solid color-mix(in srgb, var(--text) 86%, transparent);
-        border-radius: var(--radius);
-        color: var(--ink);
-        background: var(--paper);
-        font-weight: 800;
-        text-decoration: none;
-        box-shadow: 0 5px 0 var(--shadow);
-      }
-
-      .button.secondary {
-        color: var(--text);
-        background: color-mix(in srgb, var(--bg) 76%, transparent);
-      }
-
-      .button:hover,
-      .button:focus-visible {
-        transform: translateY(-1px);
-      }
-
-      .button:focus-visible {
-        outline: 3px solid var(--lantern);
-        outline-offset: 3px;
-      }
-
-      .proof {
-        background: var(--bg-soft);
-        border-top: 1px solid var(--border);
-        border-bottom: 1px solid var(--border);
-      }
-
-      .proof-grid {
-        width: min(calc(100% - 32px), var(--max));
-        margin: 0 auto;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 1px;
-        background: var(--border);
-      }
-
-      .proof-item {
-        min-height: 116px;
-        padding: 24px;
-        background: var(--bg-raised);
-      }
-
-      .proof-item strong {
-        display: block;
-        color: var(--text-strong);
-        font-size: 18px;
-      }
-
-      .proof-item span {
-        display: block;
-        margin-top: 6px;
-        color: var(--muted);
-        font-size: 14px;
-      }
-
-      section {
-        padding: 84px 0;
-      }
-
-      section[id] {
-        scroll-margin-top: 64px;
-      }
-
-      .section-inner {
-        width: min(calc(100% - 32px), var(--max));
-        margin: 0 auto;
-      }
-
-      .section-kicker {
-        margin: 0 0 12px;
-        color: var(--lantern);
-        font-size: 12px;
-        font-weight: 900;
-        letter-spacing: 0.13em;
-        text-transform: uppercase;
-      }
-
-      h2 {
-        max-width: 820px;
-        margin: 0;
-        color: var(--text-strong);
-        font-size: clamp(32px, 5vw, 64px);
-        line-height: 1;
-        letter-spacing: 0;
-        text-wrap: balance;
-      }
-
-      .lede {
-        max-width: 790px;
-        margin: 18px 0 0;
-        color: var(--muted);
-        font-size: 18px;
-      }
-
-      .flow {
-        background: var(--surface);
-        color: var(--inverse);
-      }
-
-      .flow h2,
-      .flow .section-kicker {
-        color: var(--inverse);
-      }
-
-      .flow-line {
-        margin-top: 32px;
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 14px;
-      }
-
-      .flow-step {
-        min-height: 148px;
-        padding: 18px;
-        border: 2px solid var(--surface-border);
-        border-radius: var(--radius);
-        background: var(--surface-soft);
-        box-shadow: 5px 5px 0 var(--surface-border);
-      }
-
-      .flow-step code {
-        color: color-mix(in srgb, var(--moss) 68%, var(--inverse));
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: 15px;
-        font-weight: 900;
-      }
-
-      .flow-step p {
-        margin: 12px 0 0;
-        color: var(--surface-muted);
-      }
-
-      .wall {
-        background: var(--bg);
-      }
-
-      .wall-layout {
-        display: grid;
-        grid-template-columns: minmax(300px, 0.9fr) minmax(420px, 1.1fr);
-        gap: clamp(28px, 5vw, 54px);
-        align-items: center;
-      }
-
-      .wall-copy {
-        max-width: 500px;
-      }
-
-      .media-frame {
-        overflow: hidden;
-        aspect-ratio: 2292 / 1614;
-        border: 2px solid color-mix(in srgb, var(--text) 34%, transparent);
-        border-radius: var(--radius);
-        background: color-mix(in srgb, var(--bg) 88%, #000);
-        box-shadow: 10px 10px 0 var(--shadow);
-      }
-
-      .media-frame img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        image-rendering: auto;
-      }
-
-      .features {
-        background: var(--panel);
-      }
-
-      .feature-grid {
-        margin-top: 32px;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 16px;
-      }
-
-      .feature {
-        min-height: 228px;
-        padding: 22px;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        background: var(--card);
-      }
-
-      .feature .label {
-        color: var(--leaf);
-        font-family: var(--font-display);
-        font-size: 12px;
-        font-weight: 700;
-        text-transform: uppercase;
-      }
-
-      .feature h3 {
-        margin: 18px 0 0;
-        color: var(--text-strong);
-        font-size: 24px;
-        line-height: 1.05;
-      }
-
-      .feature p {
-        margin: 12px 0 0;
-        color: var(--muted);
-      }
-
-      .install {
-        background: var(--bg-raised);
-      }
-
-      .install-layout {
-        display: grid;
-        grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
-        gap: 34px;
-        align-items: start;
-      }
-
-      .terminal {
-        margin: 0;
-        overflow: auto;
-        padding: 20px;
-        border: 2px solid #566146;
-        border-radius: var(--radius);
-        background: #11150f;
-        color: #e1efbd;
-        box-shadow: 7px 7px 0 var(--shadow);
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: 14px;
-        line-height: 1.65;
-      }
-
-      .terminal .muted {
-        color: #a9bb8d;
-      }
-
-      .privacy {
-        background: var(--bg-soft);
-        color: var(--text);
-      }
-
-      .privacy h2 {
-        color: var(--text-strong);
-      }
-
-      .privacy .lede {
-        color: var(--muted);
-      }
-
-      .privacy-grid {
-        margin-top: 30px;
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14px;
-      }
-
-      .privacy-item {
-        padding: 20px;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        background: var(--card);
-      }
-
-      .privacy-item strong {
-        display: block;
-        color: var(--text-strong);
-      }
-
-      .privacy-item span {
-        display: block;
-        margin-top: 6px;
-        color: var(--muted);
-      }
-
-      .platforms {
-        margin: 22px 0 0;
-        color: var(--leaf);
-        font-family: var(--font-display);
-        font-size: 12px;
-        font-weight: 700;
-      }
-
-      footer {
-        padding: 34px 0;
-        border-top: 1px solid var(--border);
-        background: var(--bg);
-        color: var(--muted);
-      }
-
-      .footer-inner {
-        width: min(calc(100% - 32px), var(--max));
-        margin: 0 auto;
-        display: flex;
-        justify-content: space-between;
-        gap: 18px;
-        flex-wrap: wrap;
-        font-size: 14px;
-      }
-
-      .footer-inner a {
-        color: var(--text-strong);
-        text-decoration-color: color-mix(in srgb, var(--text) 38%, transparent);
-      }
-
-      @media (max-width: 880px) {
-        .topbar-inner {
-          align-items: flex-start;
-          flex-direction: column;
-          padding: 12px 0;
-        }
-
-        .nav {
-          width: 100%;
-          overflow-x: auto;
-          padding-bottom: 2px;
-        }
-
-        .topbar-actions {
-          width: 100%;
-          justify-content: flex-start;
-        }
-
-        .hero {
-          min-height: 80svh;
-          background-position: center bottom;
-        }
-
-        .hero-inner {
-          padding-top: 132px;
-        }
-
-        .proof-grid,
-        .flow-line,
-        .feature-grid,
-        .privacy-grid,
-        .wall-layout,
-        .install-layout {
-          grid-template-columns: 1fr;
-        }
-
-        section {
-          padding: 62px 0;
-        }
-      }
-
-      @media (max-width: 520px) {
-        .hero {
-          min-height: 82svh;
-        }
-
-        .brand {
-          font-size: 15px;
-        }
-
-        .nav a {
-          padding-inline: 8px;
-        }
-
-        .segmented button {
-          padding-inline: 7px;
-        }
-
-        .hero-copy,
-        .lede {
-          font-size: 16px;
-        }
-
-        .actions {
-          flex-direction: column;
-        }
-
-        .button {
-          width: 100%;
-        }
-
-        .proof-item,
-        .flow-step,
-        .feature,
-        .privacy-item {
-          padding: 18px;
-        }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        html {
-          scroll-behavior: auto;
-        }
-
-        .button:hover,
-        .button:focus-visible {
-          transform: none;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <header class="topbar">
-      <div class="topbar-inner">
-        <a
-          class="brand"
-          href="#top"
-          aria-label="Pixel Agent Garden home"
-          data-i18n-aria-label="brand.home"
-        >
-          <img
-            class="brand-mark"
-            src="images/app-icon.png"
-            alt=""
-            width="38"
-            height="38"
-            aria-hidden="true"
-          />
-          Pixel Agent Garden
-        </a>
-        <div class="topbar-actions">
-          <nav
-            class="nav"
-            aria-label="Primary navigation"
-            data-i18n-aria-label="nav.aria"
-          >
-            <a href="#features" data-i18n="nav.features">Features</a>
-            <a href="#wall" data-i18n="nav.wall">Wall</a>
-            <a href="#privacy" data-i18n="nav.privacy">Privacy</a>
-            <a href="https://github.com/DipsySu/pixel-agent-garden">GitHub</a>
-          </nav>
-          <a
-            class="topbar-download"
-            href="https://github.com/DipsySu/pixel-agent-garden/releases"
-            data-i18n="nav.download"
-            >Download</a
-          >
-          <div
-            class="segmented"
-            role="group"
-            aria-label="Theme"
-            data-i18n-aria-label="theme.aria"
-          >
-            <button type="button" data-theme-choice="auto" data-i18n="theme.auto">
-              Auto
-            </button>
-            <button type="button" data-theme-choice="dark" data-i18n="theme.dark">
-              Dark
-            </button>
-            <button type="button" data-theme-choice="light" data-i18n="theme.light">
-              Light
-            </button>
-          </div>
-          <div
-            class="segmented"
-            role="group"
-            aria-label="Language"
-            data-i18n-aria-label="lang.aria"
-          >
-            <button type="button" data-lang-choice="en">EN</button>
-            <button type="button" data-lang-choice="zh_cn">简</button>
-            <button type="button" data-lang-choice="zh_tw">繁</button>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <main id="top">
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-inner">
-          <p class="eyebrow" data-i18n="hero.eyebrow">Local AI activity, grown into a garden</p>
-          <h1 id="hero-title">Pixel Agent Garden</h1>
-          <p class="hero-copy" data-i18n="hero.copy">
-            A private desktop garden that turns local Claude Code, Claude
-            Cowork, and Codex activity into something that grows with your work.
-          </p>
-          <div class="actions" aria-label="Primary actions" data-i18n-aria-label="actions.aria">
-            <a
-              class="button"
-              href="https://github.com/DipsySu/pixel-agent-garden/releases"
-              data-i18n="hero.download"
-              >Download latest release</a
-            >
-            <a
-              class="button secondary"
-              href="#features"
-              data-i18n="hero.explore"
-              >See how it grows</a
-            >
-          </div>
-        </div>
-      </section>
-
-      <aside class="proof" aria-label="Product highlights" data-i18n-aria-label="proof.aria">
-        <div class="proof-grid">
-          <div class="proof-item">
-            <strong data-i18n="proof.growth.title">Work leaves a living trace</strong>
-            <span data-i18n="proof.growth.copy">Tokens and sessions become vines, light, seasons, and small courtyard details.</span>
-          </div>
-          <div class="proof-item">
-            <strong data-i18n="proof.agents.title">Claude and Codex, one garden</strong>
-            <span data-i18n="proof.agents.copy">Separate local sources grow through one shared model without mixing their raw formats.</span>
-          </div>
-          <div class="proof-item">
-            <strong data-i18n="proof.local.title">Local by design</strong>
-            <span data-i18n="proof.local.copy">Your activity stays on this computer. Source agent directories remain read-only.</span>
-          </div>
-        </div>
-      </aside>
-
-      <section class="features" id="features">
-        <div class="section-inner">
-          <p class="section-kicker" data-i18n="features.kicker">What grows</p>
-          <h2 data-i18n="features.title">A quiet garden first. The numbers when you need them.</h2>
-          <p class="lede" data-i18n="features.copy">
-            Glance at the courtyard, notice what changed, and return to work.
-            Project history, costs, and model details stay one step away.
-          </p>
-          <div class="feature-grid">
-            <article class="feature">
-              <span class="label" data-i18n="feature.1.label">Grow</span>
-              <h3 data-i18n="feature.1.title">See your work take root</h3>
-              <p data-i18n="feature.1.copy">Tokens, sessions, recent activity, time, and season shape vines, lights, cats, trees, and pavilion details.</p>
-            </article>
-            <article class="feature">
-              <span class="label" data-i18n="feature.2.label">Understand</span>
-              <h3 data-i18n="feature.2.title">Open the numbers when useful</h3>
-              <p data-i18n="feature.2.copy">Inspect projects, model mix, daily activity, local cost estimates, history, and share cards without turning the home screen into a dashboard.</p>
-            </article>
-            <article class="feature">
-              <span class="label" data-i18n="feature.3.label">Stay local</span>
-              <h3 data-i18n="feature.3.title">Fit the tools already on your machine</h3>
-              <p data-i18n="feature.3.copy">Claude Code, Claude Cowork, Codex, and manual JSONL feed one garden through isolated adapters, with tray and CLI access built in.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="wall" id="wall">
-        <div class="section-inner wall-layout">
-          <div class="wall-copy">
-            <p class="section-kicker" data-i18n="wall.kicker">Wall mode</p>
-            <h2 data-i18n="wall.title">A brick wall for vines, stickers, and project memory.</h2>
-            <p class="lede" data-i18n="wall.copy">
-              The Wall view keeps the original visual metaphor visible: project
-              growth hangs from the wall edge, programming stickers mark the
-              ecosystems around the work, and the wall surface becomes a direct
-              map of local agent activity.
-            </p>
-          </div>
-          <figure
-            class="media-frame"
-            aria-label="Pixel Agent Garden wall mode screenshot"
-            data-i18n-aria-label="wall.figure"
-          >
-            <img
-              src="images/wall-page.jpg"
-              alt="Pixel Agent Garden Wall view showing project vines and programming stickers on a pixel courtyard wall"
-              data-i18n-alt="wall.alt"
-              width="2292"
-              height="1614"
-              loading="lazy"
-            />
-          </figure>
-        </div>
-      </section>
-
-      <section class="flow" id="how-it-works">
-        <div class="section-inner">
-          <p class="section-kicker" data-i18n="flow.kicker">How it grows</p>
-          <h2>
-            <span data-i18n="flow.title.lead">Your local activity</span><br />
-            <span data-i18n="flow.title.tail">becomes something you can see.</span>
-          </h2>
-          <p class="lede" data-i18n="flow.copy">
-            Each source is read through an isolated adapter, summarized by the
-            Rust core, and rendered into the same garden without exposing raw
-            source formats to the interface.
-          </p>
-          <div class="flow-line" aria-label="Data flow" data-i18n-aria-label="flow.aria">
-            <div class="flow-step">
-              <code>local traces</code>
-              <p data-i18n="flow.step1">Claude Code, Claude Cowork, Codex, and manual JSONL stay where they already live.</p>
-            </div>
-            <div class="flow-step">
-              <code>adapter</code>
-              <p data-i18n="flow.step2">Each adapter reads one source and emits the same private event shape.</p>
-            </div>
-            <div class="flow-step">
-              <code>garden summary</code>
-              <p data-i18n="flow.step3">The core deduplicates sessions and summarizes projects, models, tokens, and local cost estimates.</p>
-            </div>
-            <div class="flow-step">
-              <code>garden surfaces</code>
-              <p data-i18n="flow.step4">The courtyard, Wall, Insight, tray, CLI, and share cards all read the same summary.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="privacy" id="privacy">
-        <div class="section-inner">
-          <p class="section-kicker" data-i18n="privacy.kicker">Privacy and data</p>
-          <h2>
-            <span data-i18n="privacy.title.lead">The garden grows.</span><br />
-            <span data-i18n="privacy.title.tail">Your data stays on your computer.</span>
-          </h2>
-          <p class="lede" data-i18n="privacy.copy">
-            Pixel Agent Garden reads local agent data only. It never uploads
-            activity, collects telemetry, or modifies Claude and Codex source
-            files.
-          </p>
-          <div class="privacy-grid">
-            <div class="privacy-item">
-              <strong data-i18n="privacy.1.title">Nothing is uploaded</strong>
-              <span data-i18n="privacy.1.copy">Scanning and rendering happen entirely on this computer.</span>
-            </div>
-            <div class="privacy-item">
-              <strong data-i18n="privacy.2.title">No behavior tracking</strong>
-              <span data-i18n="privacy.2.copy">No analytics, remote crash reports, hidden usage events, or remote logs.</span>
-            </div>
-            <div class="privacy-item">
-              <strong data-i18n="privacy.3.title">Agent files stay untouched</strong>
-              <span data-i18n="privacy.3.copy">Claude, Codex, and future source directories are always treated as read-only input.</span>
-            </div>
-            <div class="privacy-item">
-              <strong data-i18n="privacy.4.title">Local state stays in your control</strong>
-              <span data-i18n="privacy.4.copy">Cache, settings, and pricing data live under ~/.local-agent-garden/ for you to inspect or remove.</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="install" id="install">
-        <div class="section-inner install-layout">
-          <div>
-            <p class="section-kicker" data-i18n="install.kicker">Start here</p>
-            <h2 data-i18n="install.title">Bring the garden to your desktop.</h2>
-            <p class="lede" data-i18n="install.copy">
-              Open Releases to see the available macOS, Windows, and Linux
-              builds. Developers can also build from source without npm, a CDN,
-              or runtime telemetry.
-            </p>
-            <p class="platforms" data-i18n="install.platforms">macOS · Windows · Linux</p>
-            <div class="actions">
-              <a
-                class="button"
-                href="https://github.com/DipsySu/pixel-agent-garden/releases"
-                data-i18n="install.releases"
-                >Download from Releases</a
-              >
-              <a
-                class="button secondary"
-                href="https://github.com/DipsySu/pixel-agent-garden/blob/main/README.md"
-                data-i18n="install.readme"
-                >Build from source</a
-              >
-            </div>
-          </div>
-          <pre class="terminal" aria-label="CLI quick start" data-i18n-aria-label="install.terminal"><code><span class="muted"># Inspect adapters</span>
-cargo run --release -p local-agent-garden-cli -- adapters
-
-<span class="muted"># Scan local agent activity</span>
-cargo run --release -p local-agent-garden-cli -- scan
-
-<span class="muted"># Render the terminal wall</span>
-cargo run --release -p local-agent-garden-cli -- garden
-
-<span class="muted"># Launch the desktop app</span>
-cd crates/tauri-app
-cargo tauri dev</code></pre>
-        </div>
-      </section>
-    </main>
-
-    <footer>
-      <div class="footer-inner">
-        <span data-i18n="footer.copy">Pixel Agent Garden, a private local AI activity garden.</span>
-        <span>
-          <a
-            href="https://github.com/DipsySu/pixel-agent-garden/blob/main/PRIVACY.md"
-            data-i18n="footer.privacy"
-            >Privacy</a
-          >
-          ·
-          <a
-            href="https://github.com/DipsySu/pixel-agent-garden/blob/main/docs/architecture.md"
-            data-i18n="footer.architecture"
-            >Architecture</a
-          >
-          ·
-          <a
-            href="https://github.com/DipsySu/pixel-agent-garden/releases"
-            data-i18n="footer.releases"
-            >Releases</a
-          >
-        </span>
-      </div>
-    </footer>
+    <link rel="icon" type="image/png" href="images/app-icon.png" />
+    <link rel="apple-touch-icon" href="images/app-icon.png" />
+    <link rel="stylesheet" href="landing.css" />
     <script>
       (() => {
-        const THEME_KEY = "pag.theme";
-        const LANG_KEY = "pag.lang";
-        const THEMES = ["auto", "dark", "light"];
-        const LANGS = ["en", "zh_cn", "zh_tw"];
-        const LANG_TAGS = {
-          en: "en",
-          zh_cn: "zh-CN",
-          zh_tw: "zh-TW",
-        };
-
-        const copy = {
-          en: {
-            "meta.title": "Pixel Agent Garden",
-            "meta.description":
-              "Pixel Agent Garden turns local Claude Code, Claude Cowork, Codex, and other AI agent activity into a private desktop pixel garden.",
-            "brand.home": "Pixel Agent Garden home",
-            "nav.aria": "Primary navigation",
-            "nav.privacy": "Privacy",
-            "nav.wall": "Wall",
-            "nav.features": "Features",
-            "nav.download": "Download",
-            "theme.aria": "Theme",
-            "theme.auto": "Auto",
-            "theme.dark": "Dark",
-            "theme.light": "Light",
-            "lang.aria": "Language",
-            "hero.eyebrow": "Local AI activity, grown into a garden",
-            "hero.copy":
-              "A private desktop garden that turns local Claude Code, Claude Cowork, and Codex activity into something that grows with your work.",
-            "hero.download": "Download latest release",
-            "hero.explore": "See how it grows",
-            "actions.aria": "Primary actions",
-            "proof.aria": "Product highlights",
-            "proof.growth.title": "Work leaves a living trace",
-            "proof.growth.copy":
-              "Tokens and sessions become vines, light, seasons, and small courtyard details.",
-            "proof.agents.title": "Claude and Codex, one garden",
-            "proof.agents.copy":
-              "Separate local sources grow through one shared model without mixing their raw formats.",
-            "proof.local.title": "Local by design",
-            "proof.local.copy":
-              "Your activity stays on this computer. Source agent directories remain read-only.",
-            "features.kicker": "What grows",
-            "features.title": "A quiet garden first. The numbers when you need them.",
-            "features.copy":
-              "Glance at the courtyard, notice what changed, and return to work. Project history, costs, and model details stay one step away.",
-            "feature.1.label": "Grow",
-            "feature.1.title": "See your work take root",
-            "feature.1.copy":
-              "Tokens, sessions, recent activity, time, and season shape vines, lights, cats, trees, and pavilion details.",
-            "feature.2.label": "Understand",
-            "feature.2.title": "Open the numbers when useful",
-            "feature.2.copy":
-              "Inspect projects, model mix, daily activity, local cost estimates, history, and share cards without turning the home screen into a dashboard.",
-            "feature.3.label": "Stay local",
-            "feature.3.title": "Fit the tools already on your machine",
-            "feature.3.copy":
-              "Claude Code, Claude Cowork, Codex, and manual JSONL feed one garden through isolated adapters, with tray and CLI access built in.",
-            "flow.kicker": "How it grows",
-            "flow.title.lead": "Your local activity",
-            "flow.title.tail": "becomes something you can see.",
-            "flow.copy":
-              "Each source is read through an isolated adapter, summarized by the Rust core, and rendered into the same garden without exposing raw source formats to the interface.",
-            "flow.aria": "Data flow",
-            "flow.step1":
-              "Claude Code, Claude Cowork, Codex, and manual JSONL stay where they already live.",
-            "flow.step2":
-              "Each adapter reads one source and emits the same private event shape.",
-            "flow.step3":
-              "The core deduplicates sessions and summarizes projects, models, tokens, and local cost estimates.",
-            "flow.step4":
-              "The courtyard, Wall, Insight, tray, CLI, and share cards all read the same summary.",
-            "wall.kicker": "Wall mode",
-            "wall.title": "A brick wall for vines, stickers, and project memory.",
-            "wall.copy":
-              "The Wall view keeps the original visual metaphor visible: project growth hangs from the wall edge, programming stickers mark the ecosystems around the work, and the wall surface becomes a direct map of local agent activity.",
-            "wall.figure": "Pixel Agent Garden wall mode screenshot",
-            "wall.alt":
-              "Pixel Agent Garden Wall view showing project vines and programming stickers on a pixel courtyard wall",
-            "privacy.kicker": "Privacy and data",
-            "privacy.title.lead": "The garden grows.",
-            "privacy.title.tail": "Your data stays on your computer.",
-            "privacy.copy":
-              "Pixel Agent Garden reads local agent data only. It never uploads activity, collects telemetry, or modifies Claude and Codex source files.",
-            "privacy.1.title": "Nothing is uploaded",
-            "privacy.1.copy": "Scanning and rendering happen entirely on this computer.",
-            "privacy.2.title": "No behavior tracking",
-            "privacy.2.copy":
-              "No analytics, remote crash reports, hidden usage events, or remote logs.",
-            "privacy.3.title": "Agent files stay untouched",
-            "privacy.3.copy":
-              "Claude, Codex, and future source directories are always treated as read-only input.",
-            "privacy.4.title": "Local state stays in your control",
-            "privacy.4.copy":
-              "Cache, settings, and pricing data live under ~/.local-agent-garden/ for you to inspect or remove.",
-            "install.kicker": "Start here",
-            "install.title": "Bring the garden to your desktop.",
-            "install.copy":
-              "Open Releases to see the available macOS, Windows, and Linux builds. Developers can also build from source without npm, a CDN, or runtime telemetry.",
-            "install.platforms": "macOS · Windows · Linux",
-            "install.releases": "Download from Releases",
-            "install.readme": "Build from source",
-            "install.terminal": "CLI quick start",
-            "footer.copy": "Pixel Agent Garden, a private local AI activity garden.",
-            "footer.privacy": "Privacy",
-            "footer.architecture": "Architecture",
-            "footer.releases": "Releases",
-          },
-          zh_cn: {
-            "meta.title": "Pixel Agent Garden",
-            "meta.description":
-              "Pixel Agent Garden 把本机 Claude Code、Claude Cowork、Codex 和其他 AI agent 活动变成一座私有的桌面像素花园。",
-            "brand.home": "Pixel Agent Garden 首页",
-            "nav.aria": "主导航",
-            "nav.privacy": "隐私",
-            "nav.wall": "藤墙",
-            "nav.features": "功能",
-            "nav.download": "下载",
-            "theme.aria": "主题",
-            "theme.auto": "自动",
-            "theme.dark": "深色",
-            "theme.light": "浅色",
-            "lang.aria": "语言",
-            "hero.eyebrow": "让本机 AI 活动长成一座花园",
-            "hero.copy":
-              "把本机 Claude Code、Claude Cowork 和 Codex 的活动痕迹，长成一座会陪着你的桌面像素庭院。",
-            "hero.download": "下载最新版本",
-            "hero.explore": "看看它如何生长",
-            "actions.aria": "主要操作",
-            "proof.aria": "产品亮点",
-            "proof.growth.title": "让工作留下会生长的痕迹",
-            "proof.growth.copy":
-              "Token 和 session 会变成藤蔓、灯光、季节与庭院里的小细节。",
-            "proof.agents.title": "Claude 与 Codex，共同长成一座花园",
-            "proof.agents.copy":
-              "不同本地来源通过同一套模型生长，原始数据格式仍各自隔离。",
-            "proof.local.title": "从设计上坚持本地",
-            "proof.local.copy":
-              "活动数据留在这台电脑里，Claude、Codex 等源目录始终只读。",
-            "features.kicker": "花园会长出什么",
-            "features.title": "先是一座安静的花园，需要时再打开数字。",
-            "features.copy":
-              "瞄一眼庭院，看看今天有什么变化，然后回到工作。项目历史、成本和模型细节始终只隔一步。",
-            "feature.1.label": "生长",
-            "feature.1.title": "看见工作慢慢扎根",
-            "feature.1.copy":
-              "Token、session、近期活动、时间和季节会共同塑造藤蔓、灯光、猫、树与亭子细节。",
-            "feature.2.label": "洞察",
-            "feature.2.title": "需要时再打开数字",
-            "feature.2.copy":
-              "查看项目、模型构成、每日活动、本地成本估算、历史和分享卡片，同时让首页继续保持安静。",
-            "feature.3.label": "本地",
-            "feature.3.title": "融入你已经在用的工具",
-            "feature.3.copy":
-              "Claude Code、Claude Cowork、Codex 和手动 JSONL 通过独立 adapter 汇入同一座花园，并提供托盘与 CLI 入口。",
-            "flow.kicker": "它如何生长",
-            "flow.title.lead": "把本机活动，",
-            "flow.title.tail": "变成真正看得见的东西。",
-            "flow.copy":
-              "每种来源都由独立 adapter 读取，再由 Rust core 汇总并渲染成同一座花园；界面不需要理解任何原始数据格式。",
-            "flow.aria": "数据流",
-            "flow.step1": "Claude Code、Claude Cowork、Codex 和手动 JSONL 仍留在原来的位置。",
-            "flow.step2": "每个 adapter 只读取一种来源，并输出同一种私有事件格式。",
-            "flow.step3": "Core 去重 session，并汇总项目、模型、token 与本地成本估算。",
-            "flow.step4": "庭院、藤墙、Insight、托盘、CLI 和分享卡片都读取同一份摘要。",
-            "wall.kicker": "藤墙模式",
-            "wall.title": "一面承载藤蔓、贴纸和项目记忆的砖墙。",
-            "wall.copy":
-              "Wall 视图保留最早的视觉隐喻：项目生长从墙沿垂落，编程贴纸标记工作生态，墙面本身变成本机 agent 活动的地图。",
-            "wall.figure": "Pixel Agent Garden 藤墙模式截图",
-            "wall.alt": "Pixel Agent Garden Wall 视图，像素庭院墙上有项目藤蔓和编程贴纸",
-            "privacy.kicker": "隐私与数据",
-            "privacy.title.lead": "花园会生长，",
-            "privacy.title.tail": "数据不会离开你的电脑。",
-            "privacy.copy":
-              "Pixel Agent Garden 只读取本机 agent 数据，不上传、不遥测，也不会修改 Claude 或 Codex 的源文件。",
-            "privacy.1.title": "不上传任何数据",
-            "privacy.1.copy": "扫描和渲染完全在这台电脑上完成。",
-            "privacy.2.title": "不采集使用行为",
-            "privacy.2.copy": "没有 analytics、远程崩溃报告、隐藏使用事件或远程日志。",
-            "privacy.3.title": "不修改 agent 文件",
-            "privacy.3.copy": "Claude、Codex 和未来数据源目录始终只作为只读输入。",
-            "privacy.4.title": "本地状态由你掌控",
-            "privacy.4.copy":
-              "缓存、设置和价格数据保存在 ~/.local-agent-garden/，可以随时查看或删除。",
-            "install.kicker": "从这里开始",
-            "install.title": "把花园带到你的桌面。",
-            "install.copy":
-              "在 Releases 查看可用的 macOS、Windows 和 Linux 构建。开发者也可以直接从源码构建，不需要 npm、CDN 或运行时遥测。",
-            "install.platforms": "macOS · Windows · Linux",
-            "install.releases": "从 Releases 下载",
-            "install.readme": "从源码构建",
-            "install.terminal": "CLI 快速开始",
-            "footer.copy": "Pixel Agent Garden，一个私有的本机 AI 活动花园。",
-            "footer.privacy": "隐私",
-            "footer.architecture": "架构",
-            "footer.releases": "Releases",
-          },
-          zh_tw: {
-            "meta.title": "Pixel Agent Garden",
-            "meta.description":
-              "Pixel Agent Garden 把本機 Claude Code、Claude Cowork、Codex 和其他 AI agent 活動變成一座私有的桌面像素花園。",
-            "brand.home": "Pixel Agent Garden 首頁",
-            "nav.aria": "主導覽",
-            "nav.privacy": "隱私",
-            "nav.wall": "藤牆",
-            "nav.features": "功能",
-            "nav.download": "下載",
-            "theme.aria": "主題",
-            "theme.auto": "自動",
-            "theme.dark": "深色",
-            "theme.light": "淺色",
-            "lang.aria": "語言",
-            "hero.eyebrow": "讓本機 AI 活動長成一座花園",
-            "hero.copy":
-              "把本機 Claude Code、Claude Cowork 和 Codex 的活動痕跡，長成一座會陪著你的桌面像素庭院。",
-            "hero.download": "下載最新版本",
-            "hero.explore": "看看它如何生長",
-            "actions.aria": "主要操作",
-            "proof.aria": "產品亮點",
-            "proof.growth.title": "讓工作留下會生長的痕跡",
-            "proof.growth.copy":
-              "Token 和 session 會變成藤蔓、燈光、季節與庭院裡的小細節。",
-            "proof.agents.title": "Claude 與 Codex，共同長成一座花園",
-            "proof.agents.copy":
-              "不同本地來源透過同一套模型生長，原始資料格式仍各自隔離。",
-            "proof.local.title": "從設計上堅持本地",
-            "proof.local.copy":
-              "活動資料留在這台電腦裡，Claude、Codex 等來源目錄始終唯讀。",
-            "features.kicker": "花園會長出什麼",
-            "features.title": "先是一座安靜的花園，需要時再打開數字。",
-            "features.copy":
-              "瞄一眼庭院，看看今天有什麼變化，然後回到工作。專案歷史、成本和模型細節始終只隔一步。",
-            "feature.1.label": "生長",
-            "feature.1.title": "看見工作慢慢扎根",
-            "feature.1.copy":
-              "Token、session、近期活動、時間和季節會共同塑造藤蔓、燈光、貓、樹與亭子細節。",
-            "feature.2.label": "洞察",
-            "feature.2.title": "需要時再打開數字",
-            "feature.2.copy":
-              "查看專案、模型構成、每日活動、本地成本估算、歷史和分享卡片，同時讓首頁繼續保持安靜。",
-            "feature.3.label": "本地",
-            "feature.3.title": "融入你已經在用的工具",
-            "feature.3.copy":
-              "Claude Code、Claude Cowork、Codex 和手動 JSONL 透過獨立 adapter 匯入同一座花園，並提供托盤與 CLI 入口。",
-            "flow.kicker": "它如何生長",
-            "flow.title.lead": "把本機活動，",
-            "flow.title.tail": "變成真正看得見的東西。",
-            "flow.copy":
-              "每種來源都由獨立 adapter 讀取，再由 Rust core 彙整並渲染成同一座花園；介面不需要理解任何原始資料格式。",
-            "flow.aria": "資料流",
-            "flow.step1": "Claude Code、Claude Cowork、Codex 和手動 JSONL 仍留在原來的位置。",
-            "flow.step2": "每個 adapter 只讀取一種來源，並輸出同一種私有事件格式。",
-            "flow.step3": "Core 去重 session，並彙總專案、模型、token 與本地成本估算。",
-            "flow.step4": "庭院、藤牆、Insight、托盤、CLI 和分享卡片都讀取同一份摘要。",
-            "wall.kicker": "藤牆模式",
-            "wall.title": "一面承載藤蔓、貼紙和專案記憶的磚牆。",
-            "wall.copy":
-              "Wall 視圖保留最早的視覺隱喻：專案生長從牆沿垂落，程式貼紙標記工作生態，牆面本身變成本機 agent 活動的地圖。",
-            "wall.figure": "Pixel Agent Garden 藤牆模式截圖",
-            "wall.alt": "Pixel Agent Garden Wall 視圖，像素庭院牆上有專案藤蔓和程式貼紙",
-            "privacy.kicker": "隱私與資料",
-            "privacy.title.lead": "花園會生長，",
-            "privacy.title.tail": "資料不會離開你的電腦。",
-            "privacy.copy":
-              "Pixel Agent Garden 只讀取本機 agent 資料，不上傳、不遙測，也不會修改 Claude 或 Codex 的來源檔案。",
-            "privacy.1.title": "不上傳任何資料",
-            "privacy.1.copy": "掃描和渲染完全在這台電腦上完成。",
-            "privacy.2.title": "不蒐集使用行為",
-            "privacy.2.copy": "沒有 analytics、遠端崩潰報告、隱藏使用事件或遠端日誌。",
-            "privacy.3.title": "不修改 agent 檔案",
-            "privacy.3.copy": "Claude、Codex 和未來資料來源目錄始終只作為唯讀輸入。",
-            "privacy.4.title": "本地狀態由你掌控",
-            "privacy.4.copy":
-              "快取、設定和價格資料保存在 ~/.local-agent-garden/，可以隨時查看或刪除。",
-            "install.kicker": "從這裡開始",
-            "install.title": "把花園帶到你的桌面。",
-            "install.copy":
-              "在 Releases 查看可用的 macOS、Windows 和 Linux 建置。開發者也可以直接從原始碼建置，不需要 npm、CDN 或執行期遙測。",
-            "install.platforms": "macOS · Windows · Linux",
-            "install.releases": "從 Releases 下載",
-            "install.readme": "從原始碼建置",
-            "install.terminal": "CLI 快速開始",
-            "footer.copy": "Pixel Agent Garden，一個私有的本機 AI 活動花園。",
-            "footer.privacy": "隱私",
-            "footer.architecture": "架構",
-            "footer.releases": "Releases",
-          },
-        };
-
-        const root = document.documentElement;
-        const description = document.querySelector('meta[name="description"]');
-        const themeColor = document.querySelector('meta[name="theme-color"]');
-        const prefersLight = window.matchMedia("(prefers-color-scheme: light)");
-
         const stored = (key) => {
           try {
             return localStorage.getItem(key);
@@ -1387,84 +31,289 @@ cargo tauri dev</code></pre>
             return null;
           }
         };
-
-        const persist = (key, value) => {
-          try {
-            localStorage.setItem(key, value);
-          } catch {
-            // The controls still work for the current page when storage is blocked.
-          }
-        };
-
-        const normalizeTheme = (value) => (THEMES.includes(value) ? value : "auto");
-        const normalizeLang = (value) => (LANGS.includes(value) ? value : "en");
-
-        const currentLang = () => normalizeLang(root.dataset.lang || stored(LANG_KEY));
-
-        const resolvedThemeColor = (theme) => {
-          if (theme === "light" || (theme === "auto" && prefersLight.matches)) {
-            return "#f4f0e2";
-          }
-          return "#15150f";
-        };
-
-        const applyTheme = (nextTheme, shouldPersist = true) => {
-          const theme = normalizeTheme(nextTheme);
-          root.dataset.theme = theme;
-          if (themeColor) {
-            themeColor.setAttribute("content", resolvedThemeColor(theme));
-          }
-          document.querySelectorAll("[data-theme-choice]").forEach((button) => {
-            button.setAttribute("aria-pressed", String(button.dataset.themeChoice === theme));
-          });
-          if (shouldPersist) {
-            persist(THEME_KEY, theme);
-          }
-        };
-
-        const applyLang = (nextLang, shouldPersist = true) => {
-          const lang = normalizeLang(nextLang);
-          root.dataset.lang = lang;
-          root.lang = LANG_TAGS[lang];
-
-          const t = (key) => copy[lang][key] || copy.en[key] || key;
-          document.title = t("meta.title");
-          if (description) {
-            description.setAttribute("content", t("meta.description"));
-          }
-          document.querySelectorAll("[data-i18n]").forEach((node) => {
-            node.textContent = t(node.dataset.i18n);
-          });
-          document.querySelectorAll("[data-i18n-alt]").forEach((node) => {
-            node.setAttribute("alt", t(node.dataset.i18nAlt));
-          });
-          document.querySelectorAll("[data-i18n-aria-label]").forEach((node) => {
-            node.setAttribute("aria-label", t(node.dataset.i18nAriaLabel));
-          });
-          document.querySelectorAll("[data-lang-choice]").forEach((button) => {
-            button.setAttribute("aria-pressed", String(button.dataset.langChoice === lang));
-          });
-          if (shouldPersist) {
-            persist(LANG_KEY, lang);
-          }
-        };
-
-        document.querySelectorAll("[data-theme-choice]").forEach((button) => {
-          button.addEventListener("click", () => applyTheme(button.dataset.themeChoice));
-        });
-        document.querySelectorAll("[data-lang-choice]").forEach((button) => {
-          button.addEventListener("click", () => applyLang(button.dataset.langChoice));
-        });
-
-        prefersLight.addEventListener("change", () => {
-          if (root.dataset.theme === "auto") {
-            applyTheme("auto", false);
-          }
-        });
-
-        applyTheme(normalizeTheme(root.dataset.theme || stored(THEME_KEY)), false);
-        applyLang(normalizeLang(root.dataset.lang || stored(LANG_KEY)), false);
+        const root = document.documentElement;
+        const browserLang = (navigator.language || "").toLowerCase();
+        const theme = stored("pag.theme") || "auto";
+        const lang = stored("pag.lang") || (
+          browserLang.startsWith("zh")
+            ? (browserLang.includes("tw") || browserLang.includes("hk") ? "zh_tw" : "zh_cn")
+            : "en"
+        );
+        root.dataset.theme = ["auto", "dark", "light"].includes(theme) ? theme : "auto";
+        root.dataset.lang = ["en", "zh_cn", "zh_tw"].includes(lang) ? lang : "en";
+        root.lang = root.dataset.lang === "zh_tw" ? "zh-TW" : root.dataset.lang === "zh_cn" ? "zh-CN" : "en";
       })();
     </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main" data-i18n="a11y.skip">Skip to content</a>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Pixel Agent Garden home" data-i18n-aria-label="brand.home">
+        <img src="images/app-icon.png" alt="" width="42" height="42" aria-hidden="true" />
+        <span>
+          <strong>PIXEL AGENT GARDEN</strong>
+          <small>LOCAL AGENT COURTYARD</small>
+        </span>
+      </a>
+
+      <nav aria-label="Primary navigation" data-i18n-aria-label="nav.aria">
+        <a href="#growth" data-i18n="nav.growth">How it grows</a>
+        <a href="#views" data-i18n="nav.views">Views</a>
+        <a href="#privacy" data-i18n="nav.privacy">Privacy</a>
+        <a href="#install" data-i18n="nav.install">Install</a>
+      </nav>
+
+      <div class="header-actions">
+        <div class="header-controls">
+          <div class="segmented" role="group" aria-label="Theme" data-i18n-aria-label="theme.aria">
+            <button type="button" data-theme-choice="auto" data-i18n="theme.auto">Auto</button>
+            <button type="button" data-theme-choice="light" data-i18n="theme.light">Paper</button>
+            <button type="button" data-theme-choice="dark" data-i18n="theme.dark">Night</button>
+          </div>
+          <div class="segmented" role="group" aria-label="Language" data-i18n-aria-label="lang.aria">
+            <button type="button" data-lang-choice="en">EN</button>
+            <button type="button" data-lang-choice="zh_cn">简</button>
+            <button type="button" data-lang-choice="zh_tw">繁</button>
+          </div>
+        </div>
+        <a class="header-link" href="https://github.com/DipsySu/pixel-agent-garden">GitHub</a>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero section-shell" id="top" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <div class="issue-line" aria-hidden="true">
+            <span>VOL. 02</span>
+            <span>100% LOCAL</span>
+            <span>2026</span>
+          </div>
+
+          <p class="eyebrow" data-i18n="hero.eyebrow">A private desktop garden for AI builders</p>
+          <h1 id="hero-title">
+            <span data-i18n="hero.title">Pixel Agent Garden</span>
+            <em>
+              <span data-i18n="hero.subtitle1">Grow local AI</span>
+              <span data-i18n="hero.subtitle2">work into a living</span>
+              <span data-i18n="hero.subtitle3">courtyard.</span>
+            </em>
+          </h1>
+          <p class="hero-lede" data-i18n="hero.copy">
+            Local Claude Code, Claude Cowork, and Codex activity becomes vines, light, seasons, and small courtyard changes. Your work stays on your machine.
+          </p>
+
+          <div class="agent-line" aria-label="Supported local Agent sources" data-i18n-aria-label="hero.agentsAria">
+            <span>CLAUDE CODE</span><i aria-hidden="true">×</i>
+            <span>CLAUDE COWORK</span><i aria-hidden="true">×</i>
+            <span>CODEX</span>
+          </div>
+
+          <div class="hero-actions">
+            <a class="button button-primary" href="https://github.com/DipsySu/pixel-agent-garden/releases/latest" data-i18n="hero.download">Download latest</a>
+            <a class="button button-secondary" href="#growth" data-i18n="hero.explore">See how it grows</a>
+          </div>
+        </div>
+
+        <figure class="hero-plate">
+          <div class="plate-index" aria-hidden="true">FIG. 01</div>
+          <img
+            src="images/garden.png"
+            width="1280"
+            height="900"
+            alt="Pixel Agent Garden courtyard with a pavilion, koi pond, trees, project vines, and a small cat"
+            data-i18n-alt="hero.imageAlt"
+          />
+          <figcaption>
+            <span>THE COURTYARD VIEW</span>
+            <span data-i18n="hero.caption">Projects grow. Data stays where it started.</span>
+          </figcaption>
+          <span class="local-stamp" aria-hidden="true">LOCAL ONLY</span>
+        </figure>
+      </section>
+
+      <aside class="trust-strip" aria-label="Product promises" data-i18n-aria-label="trust.aria">
+        <div><b>01</b><span data-i18n="trust.localTitle">100% local</span><small data-i18n="trust.localCopy">No network in scan or render</small></div>
+        <div><b>02</b><span data-i18n="trust.telemetryTitle">Zero telemetry</span><small data-i18n="trust.telemetryCopy">No analytics or remote logs</small></div>
+        <div><b>03</b><span data-i18n="trust.readonlyTitle">Read-only sources</span><small data-i18n="trust.readonlyCopy">Only app-owned cache is written</small></div>
+        <div><b>04</b><span data-i18n="trust.openTitle">MIT open source</span><small data-i18n="trust.openCopy">The privacy boundary is inspectable</small></div>
+      </aside>
+
+      <section class="growth section-shell" id="growth" aria-labelledby="growth-title">
+        <div class="section-heading">
+          <p class="kicker">FIELD NOTES / 01</p>
+          <h2 id="growth-title"><span data-i18n="growth.titleLead">Work should leave more than</span><br /><span data-i18n="growth.titleTail">another log file.</span></h2>
+          <p data-i18n="growth.copy">The garden is not another dashboard asking for attention. It quietly shows what has been growing, while detailed local data stays one step away.</p>
+        </div>
+
+        <div class="growth-grid">
+          <article class="growth-card">
+            <div class="card-meta"><span>01</span><span>PROJECTS</span></div>
+            <h3 data-i18n="growth.1.title">Projects become vines</h3>
+            <p data-i18n="growth.1.copy">Every project keeps its own growth path, even when two folders share the same name.</p>
+          </article>
+          <article class="growth-card">
+            <div class="card-meta"><span>02</span><span>TOKENS</span></div>
+            <h3 data-i18n="growth.2.title">Tokens shape the garden</h3>
+            <p data-i18n="growth.2.copy">Usage, cache activity, and model mix gradually change the courtyard's richness.</p>
+          </article>
+          <article class="growth-card">
+            <div class="card-meta"><span>03</span><span>SESSIONS</span></div>
+            <h3 data-i18n="growth.3.title">Sessions leave footprints</h3>
+            <p data-i18n="growth.3.copy">Repeated building and thinking becomes stone steps, cats, trees, and pavilion objects.</p>
+          </article>
+          <article class="growth-card">
+            <div class="card-meta"><span>04</span><span>RECENCY</span></div>
+            <h3 data-i18n="growth.4.title">Recent work lights lanterns</h3>
+            <p data-i18n="growth.4.copy">Local time, season, and recent activity make each visit feel slightly different.</p>
+          </article>
+        </div>
+
+        <div class="specimen-row" aria-hidden="true">
+          <img src="images/cherry.png" alt="" width="224" height="224" />
+          <div><span>PROJECT</span><b>→</b><span>VINE</span></div>
+          <img src="images/stone-cat.png" alt="" width="160" height="160" />
+          <div><span>SESSION</span><b>→</b><span>FOOTPRINT</span></div>
+          <img src="images/pavilion.png" alt="" width="320" height="320" />
+        </div>
+      </section>
+
+      <section class="views" id="views" aria-labelledby="views-title">
+        <div class="section-shell">
+          <div class="section-heading views-heading">
+            <p class="kicker">TWO WAYS TO SEE THE SAME WORK / 02</p>
+            <h2 id="views-title"><span data-i18n="views.titleLead">One garden,</span><br /><span data-i18n="views.titleTail">two ways to look.</span></h2>
+            <p data-i18n="views.copy">The same local summary drives an ambient 2.5D courtyard and a more direct Wall map of project activity.</p>
+          </div>
+
+          <div class="view-pair">
+            <figure class="view-card view-card-main">
+              <img src="images/garden.png" width="1280" height="900" alt="2.5D courtyard view" data-i18n-alt="views.courtyardAlt" />
+              <figcaption><b>01 / COURTYARD</b><span data-i18n="views.courtyardCopy">A pavilion, pond, trees, seasons, and details that appear over time.</span></figcaption>
+            </figure>
+            <figure class="view-card view-card-wall">
+              <img src="images/wall-page.jpg" width="2292" height="1614" alt="Wall view with project vines and programming stickers" data-i18n-alt="views.wallAlt" />
+              <figcaption><b>02 / WALL</b><span data-i18n="views.wallCopy">Each project becomes a vine; programming stickers mark the ecosystems around it.</span></figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="features section-shell" id="features" aria-labelledby="features-title">
+        <div class="section-heading compact-heading">
+          <p class="kicker">GARDEN TOOLS / 03</p>
+          <h2 id="features-title"><span data-i18n="features.titleLead">Quiet at a glance.</span><br /><span data-i18n="features.titleTail">Detailed when needed.</span></h2>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card"><span>01</span><h3 data-i18n="feature.1.title">Local insight</h3><p data-i18n="feature.1.copy">Explore project rankings, model mix, daily activity, cache ratio, and local cost estimates.</p></article>
+          <article class="feature-card"><span>02</span><h3 data-i18n="feature.2.title">Agent nursery</h3><p data-i18n="feature.2.copy">Claude Code, Claude Cowork, and Codex each tend a visible part of the same garden.</p></article>
+          <article class="feature-card"><span>03</span><h3 data-i18n="feature.3.title">A quiet tray companion</h3><p data-i18n="feature.3.copy">Watcher, Scan Now, show and hide, and configurable shortcuts stay close without taking over.</p></article>
+          <article class="feature-card"><span>04</span><h3 data-i18n="feature.4.title">Local share cards</h3><p data-i18n="feature.4.copy">Export the garden, weekly recap, seasonal moment, and year review as local PNG files.</p></article>
+          <article class="feature-card"><span>05</span><h3 data-i18n="feature.5.title">Desktop and CLI</h3><p data-i18n="feature.5.copy">Keep the Tauri garden open, or inspect usage, adapters, cost, and health from the terminal.</p></article>
+          <article class="feature-card"><span>06</span><h3 data-i18n="feature.6.title">Changes worth mentioning</h3><p data-i18n="feature.6.copy">When the garden really grows, a small return summary tells you what changed.</p></article>
+        </div>
+      </section>
+
+      <section class="pipeline section-shell" aria-labelledby="pipeline-title">
+        <div class="pipeline-intro">
+          <p class="kicker">FROM LOG TO LANDSCAPE / 04</p>
+          <h2 id="pipeline-title"><span data-i18n="pipeline.titleLead">Activity becomes scenery.</span><br /><span data-i18n="pipeline.titleTail">Data stays local.</span></h2>
+        </div>
+        <ol class="pipeline-steps">
+          <li><b>01</b><span data-i18n="pipeline.1.title">Read local records</span><small>CLAUDE CODE · COWORK · CODEX · MANUAL JSONL</small></li>
+          <li><b>02</b><span data-i18n="pipeline.2.title">Normalize through adapters</span><small>LOCAL SOURCES → AGENT EVENT</small></li>
+          <li><b>03</b><span data-i18n="pipeline.3.title">Summarize in Rust core</span><small>DEDUPE → GARDEN SUMMARY</small></li>
+          <li><b>04</b><span data-i18n="pipeline.4.title">Render to local surfaces</span><small>COURTYARD · WALL · INSIGHT · CLI · CARDS</small></li>
+        </ol>
+        <p class="pipeline-footnote">SOURCE DIRECTORIES: READ ONLY / APP STATE: ~/.local-agent-garden/</p>
+      </section>
+
+      <section class="privacy" id="privacy" aria-labelledby="privacy-title">
+        <div class="privacy-art" aria-hidden="true">
+          <img src="images/app-icon.png" alt="" width="512" height="512" />
+          <span>PRIVATE BY ARCHITECTURE</span>
+        </div>
+        <div class="privacy-copy">
+          <p class="kicker">PRIVACY PLEDGE / 05</p>
+          <h2 id="privacy-title"><span data-i18n="privacy.titleLead">The garden grows.</span><br /><span data-i18n="privacy.titleTail">Your data does not leave the computer.</span></h2>
+          <ul>
+            <li><span>01</span><b data-i18n="privacy.1">Scan, render, and reports all happen locally</b></li>
+            <li><span>02</span><b data-i18n="privacy.2">No analytics, telemetry, or remote crash reports</b></li>
+            <li><span>03</span><b data-i18n="privacy.3">Agent source directories always remain read-only</b></li>
+            <li><span>04</span><b data-i18n="privacy.4">Postcards and reviews export only to local PNG files</b></li>
+          </ul>
+          <div class="privacy-links">
+            <a href="https://github.com/DipsySu/pixel-agent-garden/blob/main/PRIVACY.md" data-i18n="privacy.policy">Read the privacy and security policy</a>
+            <a href="https://github.com/DipsySu/pixel-agent-garden/blob/main/docs/architecture.md" data-i18n="privacy.architecture">Inspect the local architecture</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="install section-shell" id="install" aria-labelledby="install-title">
+        <div class="section-heading install-heading">
+          <p class="kicker">START GROWING / 06</p>
+          <h2 id="install-title"><span data-i18n="install.titleLead">Three steps</span><br /><span data-i18n="install.titleTail">to start growing.</span></h2>
+          <a class="button button-primary" href="https://github.com/DipsySu/pixel-agent-garden/releases/latest" data-i18n="install.release">Open official Releases</a>
+        </div>
+
+        <ol class="install-steps">
+          <li><span class="step-number">01</span><div><h3 data-i18n="install.1.title">Choose your platform</h3><p data-i18n="install.1.copy">Download DMG for macOS, setup.exe for Windows, or AppImage/deb for Linux.</p></div></li>
+          <li><span class="step-number">02</span><div><h3 data-i18n="install.2.title">Install from the official release</h3><p data-i18n="install.2.copy">macOS and Windows community builds are currently unsigned; follow the linked first-launch notes.</p></div></li>
+          <li><span class="step-number">03</span><div><h3 data-i18n="install.3.title">Run the first local scan</h3><p data-i18n="install.3.copy">The app reads existing local Agent activity and the garden begins growing. The tray watcher keeps it current.</p></div></li>
+        </ol>
+
+        <details class="source-install">
+          <summary data-i18n="install.sourceSummary">Prefer to run from source?</summary>
+          <div>
+            <p data-i18n="install.sourceCopy">You need Rust 1.85+ and the Tauri 2 CLI.</p>
+            <pre><code>cargo install tauri-cli --version "^2.0" --locked
+cd crates/tauri-app
+cargo tauri dev</code></pre>
+          </div>
+        </details>
+      </section>
+
+      <section class="faq section-shell" id="faq" aria-labelledby="faq-title">
+        <div class="section-heading faq-heading">
+          <p class="kicker">COMMON QUESTIONS / 07</p>
+          <h2 id="faq-title" data-i18n="faq.title">First time in the garden?</h2>
+        </div>
+        <div class="faq-list">
+          <details><summary><span>01</span><b data-i18n="faq.1.q">Which AI agents are supported?</b></summary><p data-i18n="faq.1.a">Claude Code, Claude Cowork, and Codex have native adapters. Other sources can use the documented manual JSONL format.</p></details>
+          <details><summary><span>02</span><b data-i18n="faq.2.q">Will it upload my code or conversations?</b></summary><p data-i18n="faq.2.a">No. Scan and render paths are local, with no analytics, telemetry, remote logs, or remote crash reporting.</p></details>
+          <details><summary><span>03</span><b data-i18n="faq.3.q">Will it modify Claude or Codex files?</b></summary><p data-i18n="faq.3.a">No. Source directories are read-only inputs. The app writes only its own state under ~/.local-agent-garden/.</p></details>
+          <details><summary><span>04</span><b data-i18n="faq.4.q">Which operating systems are supported?</b></summary><p data-i18n="faq.4.a">Official Releases include macOS, Windows, and Linux builds. Linux offers AppImage and deb packages.</p></details>
+          <details><summary><span>05</span><b data-i18n="faq.5.q">Why might the installer show a warning?</b></summary><p data-i18n="faq.5.a">Current macOS and Windows community builds are unsigned. Download only from the official Releases page and follow the first-launch notes.</p></details>
+          <details><summary><span>06</span><b data-i18n="faq.6.q">Does the local cost estimate equal my bill?</b></summary><p data-i18n="faq.6.a">No. It is a local trend estimate based on available token splits and the bundled price table. Unknown models remain explicitly unpriced.</p></details>
+        </div>
+      </section>
+
+      <section class="closing" aria-labelledby="closing-title">
+        <img src="images/koi-pond.png" alt="" width="256" height="192" aria-hidden="true" />
+        <p class="kicker">YOUR NEXT SESSION CAN GROW HERE</p>
+        <h2 id="closing-title"><span data-i18n="closing.titleLead">Let the next Agent session</span><br /><span data-i18n="closing.titleTail">become part of the scenery.</span></h2>
+        <p data-i18n="closing.copy">No new cloud account. No activity handed to another service. Just open the garden.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="https://github.com/DipsySu/pixel-agent-garden/releases/latest" data-i18n="closing.download">Download latest</a>
+          <a class="button button-secondary" href="https://github.com/DipsySu/pixel-agent-garden" data-i18n="closing.github">View on GitHub</a>
+        </div>
+        <small data-i18n="closing.note">100% LOCAL · ZERO TELEMETRY · MIT OPEN SOURCE</small>
+      </section>
+    </main>
+
+    <footer>
+      <a class="brand footer-brand" href="#top">
+        <img src="images/app-icon.png" alt="" width="40" height="40" aria-hidden="true" />
+        <span><strong>PIXEL AGENT GARDEN</strong><small>GROW LOCALLY</small></span>
+      </a>
+      <p data-i18n="footer.copy">A private desktop garden grown from local AI agent activity.</p>
+      <div>
+        <a href="https://github.com/DipsySu/pixel-agent-garden">GitHub</a>
+        <a href="https://github.com/DipsySu/pixel-agent-garden/blob/main/LICENSE">MIT License</a>
+        <a href="https://github.com/DipsySu/pixel-agent-garden/blob/main/docs/unsigned-installs.md" data-i18n="footer.install">Install notes</a>
+      </div>
+    </footer>
+
+    <script type="module" src="landing.js"></script>
   </body>
 </html>
