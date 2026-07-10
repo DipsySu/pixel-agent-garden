@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v2.0.1 - 2026-07-10
+
 Post-2.0 work from two independent review passes (merged + cross-verified):
 two PRD gaps closed, a new optional global hotkey, plus a batch of correctness /
 privacy / release-governance hardening.
