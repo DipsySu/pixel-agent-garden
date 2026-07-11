@@ -4,6 +4,15 @@
 
 ### Adapters and pricing
 
+- Added a native `antigravity` activity adapter for the current Gemini consumer
+  migration path. It prefers populated rows from Antigravity CLI 1.1.1's local
+  summary index, but a real completed CLI session proved that table can remain
+  empty; the truthful fallback uses `cache/last_conversations.json` and exact
+  `conversations/<id>.db` files for workspace, native session id, step count,
+  and database activity time. Titles, previews, protobuf blobs, transcripts,
+  logs, app-data paths, config, and credentials are never read or watched.
+  Token/model fields remain empty instead of being inferred from text;
+  `gemini-cli` remains legacy/API-key/Vertex/Standard/Enterprise coverage.
 - Added native `cline` and `goose` adapters for the first priority wave, based
   on current upstream serializers rather than inferred schemas. Cline reads
   current SDK `~/.cline/data/db/sessions.db` plus per-session message artifacts,

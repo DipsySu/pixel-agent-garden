@@ -82,6 +82,10 @@ settings, and quit.
 
 ## Adapters
 
+- `antigravity`: Antigravity CLI conversation index at
+  `~/.gemini/antigravity-cli/` (read-only summary index plus the CLI's
+  `cache/last_conversations.json` and per-conversation SQLite stores;
+  session-level activity only, with no token estimates)
 - `claude-code`: `~/.claude/projects/**/*.jsonl`
 - `claude-cowork`: Claude Desktop Cowork local agent sessions under
   `~/Library/Application Support/Claude/local-agent-mode-sessions/`
@@ -312,6 +316,10 @@ scan/render 路径不发网络请求，也不会写入源 agent 目录。
 
 ### 适配器
 
+- `antigravity`: Antigravity CLI 的会话索引
+  `~/.gemini/antigravity-cli/`（只读解析 summary index、CLI 的
+  `cache/last_conversations.json` 与逐会话 SQLite；只统计 session-level
+  真实活动，不估算 token）
 - `claude-code`: `~/.claude/projects/**/*.jsonl`
 - `claude-cowork`: Claude Desktop Cowork 本地 agent sessions，
   位于 `~/Library/Application Support/Claude/local-agent-mode-sessions/`

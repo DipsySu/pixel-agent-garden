@@ -3,9 +3,10 @@
 
 use crate::adapter::Adapter;
 use crate::adapters::{
-    claude_code::ClaudeCodeAdapter, claude_cowork::ClaudeCoworkAdapter, cline::ClineAdapter,
-    codex::CodexAdapter, copilot_cli::CopilotCliAdapter, gemini_cli::GeminiCliAdapter,
-    goose::GooseAdapter, manual_jsonl::ManualJsonlAdapter, opencode::OpenCodeAdapter,
+    antigravity::AntigravityAdapter, claude_code::ClaudeCodeAdapter,
+    claude_cowork::ClaudeCoworkAdapter, cline::ClineAdapter, codex::CodexAdapter,
+    copilot_cli::CopilotCliAdapter, gemini_cli::GeminiCliAdapter, goose::GooseAdapter,
+    manual_jsonl::ManualJsonlAdapter, opencode::OpenCodeAdapter,
 };
 
 /// Construct one fresh instance of every built-in adapter. Cheap — adapters
@@ -13,6 +14,7 @@ use crate::adapters::{
 /// bridge for sources without a native adapter.
 pub fn default_adapters() -> Vec<Box<dyn Adapter>> {
     vec![
+        Box::new(AntigravityAdapter),
         Box::new(ClaudeCodeAdapter),
         Box::new(ClaudeCoworkAdapter),
         Box::new(ClineAdapter),
@@ -39,6 +41,7 @@ mod tests {
         assert_eq!(
             names,
             vec![
+                "antigravity",
                 "claude-code",
                 "claude-cowork",
                 "cline",

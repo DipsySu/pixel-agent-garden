@@ -24,10 +24,12 @@ GitHub stars，有的只公布企业客户或收入，不能做成一条精确�
 
 对 adapter 的直接结论是：
 
-- 现有代码已经覆盖其中 4 个：Copilot CLI、Codex、Claude Code、OpenCode；
-- 下一轮优先实现 **Goose + Cline**，两者都有稳定的本地数据和精确 usage；
-- Antigravity CLI 是 Gemini CLI 个人用户迁移后的重要入口，但 token 持久化仍需
-  真机 fixture 证明；
+- 现有代码已经覆盖其中 7 个：Copilot CLI、Codex、Claude Code、OpenCode、Cline、
+  Goose，以及 activity-only 的 Antigravity；
+- Goose + Cline 已完成，两者都有稳定的本地数据和精确 usage；
+- Antigravity CLI 是 Gemini CLI 个人用户迁移后的重要入口；当前已用官方 1.1.1
+  真机会话确认 workspace map 与逐会话 SQLite，并以 activity-only 接入，token
+  持久化仍需稳定 schema 证明；
 - Cursor / Windsurf 应保留在 Top 10 里，但在拿到两个版本的本地 schema 前不能
   承诺 native token adapter；
 - Aider 默认只能做 activity adapter；只有用户主动配置本地 analytics JSONL 时，
@@ -62,7 +64,7 @@ Continue 34,803、Kilo Code 25,989、Qwen Code 25,928。Roo Code 24,317 stars，
 | Claude Code | Anthropic 的 2026 报告分析约 40 万个 session、约 23.5 万人，用户平均每周使用 20 小时 | 现有 adapter 已读取本地 project JSONL 和 usage | **已覆盖** |
 | OpenCode | 184,556 stars；官方数据页近期约 10 万–19 万 daily unique users | SQLite/legacy JSON 均有 per-message model、token、cache 与 cost | **已覆盖**；已支持 XDG override、损坏 canonical row fallback 与 WAL 创建监听 |
 | Cline | 2026-01 官方公布跨编辑器超过 500 万 installs；64,531 stars | `tasks/<id>/ui_messages.json` 的 usage rows 含 `tokensIn/out`、cache read/write、cost 和 subagent usage | **P0 GO**；适合 request-level exact adapter |
-| Google Antigravity CLI | Google 称 Antigravity ecosystem 已有数百万开发者；它是 Gemini consumer 用户的官方迁移方向 | 已知配置和 brain/session 根在 `~/.gemini/antigravity-cli/`，但尚未证明稳定的 per-turn token 记录 | **P0 Research**；先做真机与 serializer 取证 |
+| Google Antigravity CLI | Google 称 Antigravity ecosystem 已有数百万开发者；它是 Gemini consumer 用户的官方迁移方向 | 官方 CLI 1.1.1 创建 summary DB，但真机会话未写入；当前真实索引是 `cache/last_conversations.json` + `conversations/*.db`，可提供 workspace、conversation 与 session-level activity；尚未证明稳定的 per-turn token 记录 | **Activity adapter 已覆盖**；token 继续 research |
 | Windsurf | 主流 agentic IDE，市场覆盖价值高；未找到可与其他项目直接比较的官方当前用户数 | 闭源，公开契约不足以证明本地精确 token；不能把 VS Code `state.vscdb` 的存在当成 usage 证据 | **Research only** |
 | Goose | 51,043 stars，仓库和 schema 近期持续活跃 | `sessions/sessions.db` 的 `usage_ledger` 有 timestamp、model、input/output、cache、cost、`cost_source`、`is_compaction` | **P0 GO**；目前证据质量最高的新 adapter |
 | Aider | 47,259 stars，成熟 CLI 社区 | 默认 `.aider.chat.history.md` 没有可靠 usage；可选 `--analytics-log` JSONL 会记录 `message_send` token/cost | **P2 bridge**；默认 activity-only，optional log 才 exact/estimated 混合 |
@@ -112,7 +114,7 @@ Cline 的 host `globalStorageFsPath` 下有 `tasks/<taskId>/`，关键文件包�
 
 推荐 dedupe key：`cline:<task-id>:<usage-message-ts-or-native-id>`。
 
-### 4.3 Antigravity CLI — 先研究再实现
+### 4.3 Antigravity CLI — Activity 已接入，Token 继续研究
 
 2026-06-18 起，Google 已停止 Gemini Code Assist consumer tiers 的 Login with Google
 访问 Gemini CLI，并要求个人用户迁移到 Antigravity。Gemini CLI 仍可用于 API key、
@@ -122,8 +124,16 @@ Vertex AI、Standard / Enterprise，但它已经不是 consumer growth path。
 
 - 仓库中的 `gemini-cli` adapter 可以保留为 legacy/enterprise/API-key coverage；
 - 不再把 Gemini CLI 作为下一轮新增 adapter 的 P0 代表；
-- Antigravity 的研究先确认 `~/.gemini/antigravity-cli/brain/<uuid>/` 下哪些文件是
-  session 权威源，哪些只是生成 artifact；
+- 官方 CLI 1.1.1 已确认在 `~/.gemini/antigravity-cli/` 创建 summary DB，但用户
+  完成并退出的真实会话仍未写入该表；不能把“存在空表”当成有效数据源；
+- CLI 会真实维护 `cache/last_conversations.json`（workspace → conversation id）和
+  `conversations/<id>.db`。Adapter 优先使用非空 summary row，否则只读映射、
+  `trajectory_meta.cascade_id`、step count 与数据库 mtime；不读取任何 protobuf blob；
+- 每个 conversation 生成一条 activity-only event，native conversation id 作为 dedupe
+  key；watch path 仅包含精确的 summary/map/conversation 文件及 WAL；
+- 未出现在 latest map 的旧会话仍保留 activity，但 project 安全降级为空；
+- adapter 不读取 title、preview、app data、transcript、log 或凭证；
+- 每会话 trajectory/transcript 中哪些字段是权威 usage 仍需真机证明；
 - 必须从 serializer 或两版真机 fixture 证明 model、timestamp、usage 和 parent/subagent
   关系；只有文本和 artifact 时只能 activity-only；
 - 不能调用 Antigravity CLI、网络 API 或登录流程来完成日常 scan。
@@ -187,7 +197,8 @@ Qwen Code 目前 25,928 stars，虽然没有进入市场覆盖 Top 10，但对�
 
 ### Wave 2 — 新入口与闭源研究
 
-1. `antigravity-cli`：先 serializer/真机 fixture，再做 go/no-go；
+1. [x] `antigravity` activity-only：只读官方 conversation summary SQLite；
+   token ledger 仍需 serializer/真机 fixture 后再做 go/no-go；
 2. Cursor：两版本 SQLite study；
 3. Windsurf：两版本 globalStorage/SQLite study。
 
@@ -221,6 +232,8 @@ Qwen Code 目前 25,928 stars，虽然没有进入市场覆盖 Top 10，但对�
 - [Cline: 5M installations](https://cline.bot/blog/5m-installs-1m-open-source-grant-program)
 - [OpenCode current usage data](https://opencode.ai/data)
 - [Google Antigravity adoption](https://antigravity.google/blog/introducing-google-antigravity-2)
+- [Antigravity CLI official repository and releases](https://github.com/google-antigravity/antigravity-cli)
+- [Antigravity Hooks and local app-data roots](https://antigravity.google/docs/hooks)
 - [Antigravity CLI local configuration and brain layout](https://codelabs.developers.google.com/antigravity-cli-hands-on)
 - [Gemini Code Assist consumer deprecation](https://developers.google.com/gemini-code-assist/docs/deprecations/code-assist-individuals)
 

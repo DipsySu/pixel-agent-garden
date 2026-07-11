@@ -68,11 +68,16 @@ Rules:
 
 ## Built-In Adapters
 
+- `antigravity`: reads safe local summary/map fields plus per-conversation
+  SQLite indexes as activity-only; it does not infer token usage from blobs or
+  transcripts.
 - `claude-code`: reads Claude Code JSONL transcripts.
 - `claude-cowork`: reads Claude Desktop Cowork embedded Claude Code transcripts.
+- `cline`: reads current SDK SQLite/message artifacts plus legacy task stores.
 - `codex`: reads Codex SQLite/session/rollout local state.
 - `copilot-cli`: reads API-reported cumulative per-model CLI session metrics.
 - `gemini-cli`: legacy/API-key/Vertex/Standard/Enterprise recorded chats.
+- `goose`: reads the per-inference SQLite usage ledger plus legacy totals.
 - `opencode`: reads the XDG SQLite store plus both legacy JSON layouts.
 - `manual-jsonl`: escape hatch for local agents without native adapters.
 

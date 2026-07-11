@@ -2,6 +2,7 @@
 //! never call each other — cross-adapter logic (dedup, source mixing) lives
 //! in `crate::scan`.
 
+pub mod antigravity;
 pub mod claude_code;
 pub mod claude_cowork;
 pub mod cline;

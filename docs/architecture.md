@@ -6,6 +6,9 @@ events; everything else consumes normalized events.
 ## Data Flow
 
 ```text
+~/.gemini/antigravity-cli/conversation_summaries.db
+~/.gemini/antigravity-cli/cache/last_conversations.json
+~/.gemini/antigravity-cli/conversations/*.db
 ~/.claude/projects/**/*.jsonl
 ~/Library/Application Support/Claude/local-agent-mode-sessions/**/.claude/projects/**/*.jsonl
 ~/.codex/state_5.sqlite
@@ -76,6 +79,30 @@ score rather than token usage alone.
 5. Add focused Rust tests with fixture-style local files.
 
 For agents with no stable local log format yet, use `manual-jsonl` as a bridge.
+
+## Antigravity Accuracy Notes
+
+Antigravity CLI 1.1.1 creates a summary index at
+`~/.gemini/antigravity-cli/conversation_summaries.db`, but a real completed CLI
+session did not populate it. The adapter therefore treats populated summary
+rows as the preferred source and falls back to the CLI-maintained
+`cache/last_conversations.json` workspace map plus exact
+`conversations/<id>.db` files. It emits one activity-only event per native
+conversation. Summary rows use their recorded activity time; fallback rows use
+the conversation database modification time and declare that timestamp source
+in metadata. Older conversations absent from the latest-workspace map remain
+visible with an unknown project rather than being silently dropped.
+
+The adapter deliberately ignores title, preview, step payload/metadata blobs,
+transcript contents, per-conversation app-data paths, logs, config, and
+authentication state. It reads only safe SQLite index fields and step counts.
+
+The summary index does not persist a verified token ledger. Antigravity's
+private per-conversation trajectory storage must not be inferred from protobuf
+names or text length, so token and model fields stay empty until a stable
+source-recorded schema is proven with versioned fixtures. The watcher follows
+only exact summary/map/conversation files and their WALs, never the broader
+credential-bearing root.
 
 ## Cline And Goose Accuracy Notes
 
