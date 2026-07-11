@@ -6,6 +6,13 @@
 //! API-key, Vertex AI, Standard, and Enterprise usage; it is legacy coverage,
 //! not the consumer growth path.
 //!
+//! Neighbor boundary: the Antigravity CLI stores its data under
+//! `~/.gemini/antigravity-cli/` (see `adapters::antigravity`). The two
+//! adapters share the `~/.gemini` parent but disjoint subtrees — keep this
+//! adapter's discovery and `watch_paths()` scoped to `~/.gemini/tmp/`; do not
+//! widen them to `~/.gemini`, or Antigravity writes would trigger pointless
+//! rescans here (and vice versa).
+//!
 //! Paths read (all READ-ONLY; nothing is ever written into `~/.gemini/`):
 //!   - `~/.gemini/tmp/<project-id>/chats/session-*.jsonl` — append-only chat
 //!     recordings, one JSON record per line (current format). `<project-id>`

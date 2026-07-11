@@ -1,5 +1,11 @@
 //! Antigravity adapter — reads local, content-free conversation indexes.
 //!
+//! Neighbor boundary: this adapter lives under `~/.gemini/antigravity-cli/`,
+//! sharing the `~/.gemini` parent with the Gemini CLI adapter's
+//! `~/.gemini/tmp/` subtree (see `adapters::gemini_cli`). The subtrees are
+//! disjoint; keep discovery/watching scoped below `antigravity-cli/` so the
+//! two adapters never react to each other's writes.
+//!
 //! Antigravity CLI 1.1.1 stores its summary index at
 //! `~/.gemini/antigravity-cli/conversation_summaries.db`. CLI releases that do
 //! not populate that index still maintain `cache/last_conversations.json` and

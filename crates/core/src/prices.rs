@@ -25,6 +25,13 @@
 //! totals are priced at an explicitly *blended* rate. Cache read/write tokens
 //! are priced only when the table carries cache rates for that model; missing
 //! cache rates stay zero rather than being guessed.
+//!
+//! One more honesty rule: `AgentEvent.cost_usd` (a cost some sources record
+//! themselves) is deliberately **not** an input here. Only three sources
+//! persist it, with mixed provenance (provider-reported vs client-computed),
+//! so folding it in would mix two methodologies inside one total. It stays
+//! informational metadata on the event; every USD figure the garden shows is
+//! table-priced through this module.
 
 use crate::aggregate::GardenSummary;
 use crate::error::Error;

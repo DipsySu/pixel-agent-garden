@@ -45,6 +45,14 @@ pub struct AgentEvent {
     #[serde(default)]
     pub files_touched: Vec<String>,
 
+    /// Source-recorded cost, informational only. Some sources persist a cost
+    /// per row (opencode, cline, goose — where it can be provider-reported OR
+    /// client-calculated; see each adapter's module doc), most persist none.
+    /// The garden's USD figures therefore NEVER read this field: estimates
+    /// always come from `core::prices` (tokens × the local price table), one
+    /// consistent methodology across every source. Consumers wanting the
+    /// source's own number may surface it per event, but must not mix the two
+    /// methodologies inside one total.
     #[serde(default)]
     pub cost_usd: Option<f64>,
 

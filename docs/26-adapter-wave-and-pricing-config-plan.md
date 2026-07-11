@@ -222,7 +222,13 @@ Rules:
 - only models the user edits belong in the override file;
 - deleting a user entry restores the shipped default for that model;
 - malformed/future-versioned user files are reported and never quarantined;
-- all cost math stays in `core::prices`; frontend code only displays results.
+- all cost math stays in `core::prices`; frontend code only displays results;
+- `AgentEvent.cost_usd` (a cost some sources record themselves — currently
+  opencode, cline, goose, with mixed provider-reported/client-computed
+  provenance) is informational metadata only and is never an input to the
+  garden's USD estimates. Mixing source-recorded costs with table-priced
+  estimates inside one total is forbidden; a future "source-reported cost"
+  display must be a separate, clearly-labeled figure.
 
 Why not `settings.toml`: settings is a full user-preference document, while
 prices is an overlay whose untouched rows must keep changing with releases.
