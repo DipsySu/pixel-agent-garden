@@ -5,8 +5,9 @@ use crate::adapter::Adapter;
 use crate::adapters::{
     antigravity::AntigravityAdapter, claude_code::ClaudeCodeAdapter,
     claude_cowork::ClaudeCoworkAdapter, cline::ClineAdapter, codex::CodexAdapter,
-    copilot_cli::CopilotCliAdapter, gemini_cli::GeminiCliAdapter, goose::GooseAdapter,
-    manual_jsonl::ManualJsonlAdapter, opencode::OpenCodeAdapter,
+    copilot_cli::CopilotCliAdapter, cursor::CursorAdapter, gemini_cli::GeminiCliAdapter,
+    goose::GooseAdapter, kiro::KiroAdapter, manual_jsonl::ManualJsonlAdapter,
+    opencode::OpenCodeAdapter, qwen_code::QwenCodeAdapter,
 };
 
 /// Construct one fresh instance of every built-in adapter. Cheap — adapters
@@ -20,9 +21,12 @@ pub fn default_adapters() -> Vec<Box<dyn Adapter>> {
         Box::new(ClineAdapter),
         Box::new(CodexAdapter),
         Box::new(CopilotCliAdapter),
+        Box::new(CursorAdapter),
         Box::new(GeminiCliAdapter::gemini()),
         Box::new(GooseAdapter),
+        Box::new(KiroAdapter),
         Box::new(OpenCodeAdapter),
+        Box::new(QwenCodeAdapter),
         Box::new(ManualJsonlAdapter),
     ]
 }
@@ -47,9 +51,12 @@ mod tests {
                 "cline",
                 "codex",
                 "copilot-cli",
+                "cursor",
                 "gemini-cli",
                 "goose",
+                "kiro",
                 "opencode",
+                "qwen-code",
                 "manual-jsonl"
             ]
         );

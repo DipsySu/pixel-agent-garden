@@ -4,6 +4,26 @@
 
 ### Adapters and pricing
 
+- Added three evidence-gated local adapters. `qwen-code` follows Qwen Code
+  0.19.9's real `projects/*/chats/*.jsonl` serializer plus legacy whole-file
+  recordings, preserves source-reported prompt/output/cache/thinking semantics,
+  and skips fork-copied history; a real local 0.19.9 session confirmed the
+  schema and normalized counters. `kiro` reads Kiro CLI 2.12.1's structural
+  `~/.kiro/sessions/cli/*.json` metadata as activity-only, never opens sibling
+  transcript JSONL, and accepts a `conversations_v2` database only when its
+  safe identity/timestamp schema is present, so generic Kiro shell-history and
+  auth/state databases cannot trigger false agent activity. `cursor` reads
+  Cursor 3.11.13 foreground/local `composerHeaders` and workspace mappings as
+  activity-only while excluding drafts, startup placeholders,
+  background/cloud origins, transcript/body/checkpoint stores, titles, and
+  mutable cumulative token state.
+- Recorded a strict Windsurf no-go instead of shipping a guessed parser. The
+  current official update endpoint now returns Devin Desktop, while a signed
+  fixed Windsurf 2.3.15 package contains neither the community-claimed
+  `cascade.sessionData` nor `cascade.chatdata` contract and exposes no proven
+  content-free Cascade index. A native adapter now requires a fixed legacy
+  two-workspace fixture that can bind session, timestamp, and project without
+  reading protobuf trajectory content.
 - Added a native `antigravity` activity adapter for the current Gemini consumer
   migration path. It prefers populated rows from Antigravity CLI 1.1.1's local
   summary index, but a real completed CLI session proved that table can remain

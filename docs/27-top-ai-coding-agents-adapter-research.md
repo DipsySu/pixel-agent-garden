@@ -14,7 +14,7 @@
 5. OpenCode
 6. Cline
 7. Google Antigravity CLI
-8. Windsurf
+8. Kiro CLI
 9. Goose
 10. Aider
 
@@ -24,18 +24,22 @@ GitHub stars，有的只公布企业客户或收入，不能做成一条精确�
 
 对 adapter 的直接结论是：
 
-- 现有代码已经覆盖其中 7 个：Copilot CLI、Codex、Claude Code、OpenCode、Cline、
-  Goose，以及 activity-only 的 Antigravity；
+- 现有代码已经覆盖其中 9 个：Copilot CLI、Codex、Cursor、Claude Code、OpenCode、
+  Cline、Kiro、Goose，以及 activity-only 的 Antigravity；
 - Goose + Cline 已完成，两者都有稳定的本地数据和精确 usage；
 - Antigravity CLI 是 Gemini CLI 个人用户迁移后的重要入口；当前已用官方 1.1.1
   真机会话确认 workspace map 与逐会话 SQLite，并以 activity-only 接入，token
   持久化仍需稳定 schema 证明；
-- Cursor / Windsurf 应保留在 Top 10 里，但在拿到两个版本的本地 schema 前不能
-  承诺 native token adapter；
+- Cursor 3.11 已用官方包与本机 `composerHeaders` schema 放行 activity-only；它的
+  mutable cumulative token state 仍不能作为逐请求账单；
+- Windsurf 的当前官方更新入口已经指向 Devin Desktop，固定旧版 2.3.15 也没有可证明
+  的 content-free Cascade 索引，因此保持 NO-GO，不提交猜测 parser；
 - Aider 默认只能做 activity adapter；只有用户主动配置本地 analytics JSONL 时，
   才能提供 usage；产品不能替用户开启 analytics；
-- Qwen Code 虽未进入这份市场 Top 10，仍是很有价值的区域性 quick win；它已经
-  与 Gemini CLI 的记录格式分叉，不能靠“复用 Gemini adapter 后改一行注册”接入。
+- Qwen Code 虽未进入这份市场 Top 10，仍是很有价值的区域性 quick win；独立
+  `qwen-code` adapter 已按 0.19.9 serializer 与本机真实 session 接入；
+- Kiro CLI 2.12.1 已按本机 `~/.kiro/sessions/cli/` metadata 接入 activity-only；
+  私有 token-looking 字段在有公开 accounting 契约前不计费。
 
 ## 2. 调研方法
 
@@ -60,14 +64,17 @@ Continue 34,803、Kilo Code 25,989、Qwen Code 25,928。Roo Code 24,317 stars，
 |---|---|---|---|
 | GitHub Copilot / CLI | GitHub 称 Copilot 有数百万个人用户、数万企业客户，是其最广泛采用的 AI developer tool | CLI 的 `~/.copilot/session-state/*/events.jsonl` 持久化 session；现有 adapter 按源端 model 读取累计 metrics，跨日不可归属 token 不进入每日曲线 | **CLI 已覆盖**；VS Code/IDE 是独立 research gap |
 | OpenAI Codex | OpenAI 在 2026-06-02 公布超过 500 万 weekly active users | 现有本地 rollout JSONL 可提供 session、model、usage 和 tool 信息 | **已覆盖** |
-| Cursor | 官方称有数百万开发者，且年化收入超过 10 亿美元 | 官方只保证本地 chat history；公开契约没有稳定 token 表/字段，background agents 还涉及远端数据 | **Research only**；两版本 SQLite fixture 后再决定 exact/activity/no-go |
+| Cursor | 官方称有数百万开发者，且年化收入超过 10 亿美元 | 官方保证 foreground history 本地持久化；3.11.13 真机 `composerHeaders` 可安全提供 session、workspace 与 timestamp，但 `tokenCount` 是未证明结算语义的 mutable cumulative state | **Activity adapter 已覆盖**；draft/background/cloud/body/checkpoint 均排除，token 继续 research |
 | Claude Code | Anthropic 的 2026 报告分析约 40 万个 session、约 23.5 万人，用户平均每周使用 20 小时 | 现有 adapter 已读取本地 project JSONL 和 usage | **已覆盖** |
 | OpenCode | 184,556 stars；官方数据页近期约 10 万–19 万 daily unique users | SQLite/legacy JSON 均有 per-message model、token、cache 与 cost | **已覆盖**；已支持 XDG override、损坏 canonical row fallback 与 WAL 创建监听 |
 | Cline | 2026-01 官方公布跨编辑器超过 500 万 installs；64,531 stars | `tasks/<id>/ui_messages.json` 的 usage rows 含 `tokensIn/out`、cache read/write、cost 和 subagent usage | **P0 GO**；适合 request-level exact adapter |
 | Google Antigravity CLI | Google 称 Antigravity ecosystem 已有数百万开发者；它是 Gemini consumer 用户的官方迁移方向 | 官方 CLI 1.1.1 创建 summary DB，但真机会话未写入；当前真实索引是 `cache/last_conversations.json` + `conversations/*.db`，可提供 workspace、conversation 与 session-level activity；尚未证明稳定的 per-turn token 记录 | **Activity adapter 已覆盖**；token 继续 research |
-| Windsurf | 主流 agentic IDE，市场覆盖价值高；未找到可与其他项目直接比较的官方当前用户数 | 闭源，公开契约不足以证明本地精确 token；不能把 VS Code `state.vscdb` 的存在当成 usage 证据 | **Research only** |
+| Kiro CLI | AWS Q Developer CLI 的当前产品迁移方向；官方 2.12.1 安装包与 session management 仍在活跃发布 | 真机 `~/.kiro/sessions/cli/*.json` 提供 session、project、turn timestamp 与 model；token-looking fields 没有公开 accounting contract | **Activity adapter 已覆盖**；transcript/auth/shell history 排除，token 继续 research |
 | Goose | 51,043 stars，仓库和 schema 近期持续活跃 | `sessions/sessions.db` 的 `usage_ledger` 有 timestamp、model、input/output、cache、cost、`cost_source`、`is_compaction` | **P0 GO**；目前证据质量最高的新 adapter |
 | Aider | 47,259 stars，成熟 CLI 社区 | 默认 `.aider.chat.history.md` 没有可靠 usage；可选 `--analytics-log` JSONL 会记录 `message_send` token/cost | **P2 bridge**；默认 activity-only，optional log 才 exact/estimated 混合 |
+
+Windsurf 从当前 Top 10 coverage set 移到兼容性 watch list：其 2026 官方更新入口
+已经返回 Devin Desktop，而固定 Windsurf 2.3.15 仍没有可安全解析的本地 Cascade 索引。
 
 ## 4. 新 Adapter 的解析设计
 
@@ -138,17 +145,41 @@ Vertex AI、Standard / Enterprise，但它已经不是 consumer growth path。
   关系；只有文本和 artifact 时只能 activity-only；
 - 不能调用 Antigravity CLI、网络 API 或登录流程来完成日常 scan。
 
-### 4.4 Cursor / Windsurf — 高需求、高漂移
+### 4.4 Cursor — Activity 已接入，Token 继续研究
 
-两者都值得覆盖，但当前只能建立 discovery research：
+Cursor 3.11.13 官方包与本机真机 schema 共同确认：
 
-- 先收集两个当前版本的脱敏 SQLite / globalStorage fixture；
-- 明确 foreground chat、background/cloud agent、autocomplete 的边界；
-- 只读取本地持久化数据，不调用云端 usage API；
-- 如果只有 chat 文本，就只做 activity event，绝不按文本长度估 token；
-- 若 provider/model/usage 不能稳定绑定到 turn，则结论应是 no-go，而不是用猜测填充。
+- foreground history 的结构索引位于平台 `User/globalStorage/state.vscdb` 与
+  `User/workspaceStorage/*/state.vscdb`；workspace 由同目录 `workspace.json` 映射；
+- 当前 `composerHeaders` 表的 content-free columns 包含 `composerId`、
+  `workspaceId`、`createdAt`、`lastUpdatedAt`、`isArchived`、`isSubagent`、
+  `recency` 与 `checkpointAt`；`value` 只按显式 structural allowlist 解析；
+- draft/empty heads、background/cloud origin 与没有 conversation checkpoint 的启动占位
+  不产生事件；同一 composer 只保留最新 header；
+- `cursorDiskKV`、`agentKv:*`、bubble/checkpoint/artifact blob、transcript JSONL 正文、
+  title/name/subtitle、auth 和 settings 均不读取或输出；
+- header `tokenCount` 是会随 checkpoint/迁移改变的累计 UI state，公开契约没有证明
+  cache/reasoning/逐请求结算语义，因此全部保持 activity-only。
 
-### 4.5 Aider — opt-in bridge
+Background Agents 的历史位于远程数据库，不属于本地 adapter；日常 scan 不调用任何
+Cursor API。
+
+### 4.5 Windsurf — 当前 NO-GO
+
+2026-07-11 的官方 Windsurf update endpoint 已经返回 Devin Desktop 3.4.27，而不是
+旧 Windsurf。对固定官方旧版 2.3.15 DMG 的静态复核又确认：
+
+- 全包没有社区实现声称的 `cascade.sessionData` 或 `cascade.chatdata` key；
+- VS Code-compatible `state.vscdb` 的存在不能证明 Cascade activity，按 DB mtime 会把
+  普通编辑器操作误计为 agent；
+- protobuf descriptors 虽有 Cascade/trajectory 类型，但同一结构含 prompt、content、
+  tool result 等正文，且没有稳定本地文件名、封装格式或 workspace mapping 契约；
+- `user_settings.pb`、`mcp_config.json`、memories、rules、brain、auth 与 logs 均应排除。
+
+因此当前不提交空壳或猜测 parser。未来 gate 是固定旧版、两个 workspace、两个 session
+的脱敏真机 fixture，并证明存在不含正文的 `session_id + timestamp + project` 索引。
+
+### 4.6 Aider — opt-in bridge
 
 Aider 默认 history 适合判断“发生过活动”，不适合 token 统计。其可选
 `--analytics-log filename.jsonl` 会记录 `message_send`、model、prompt/completion token
@@ -166,14 +197,23 @@ Aider 默认 history 适合判断“发生过活动”，不适合 token 统计�
 Qwen Code 目前 25,928 stars，虽然没有进入市场覆盖 Top 10，但对中文和亚洲用户很有
 价值。上游当前格式已经与 Gemini CLI 明显分叉：
 
-- 根目录是 `QWEN_HOME` 或 `~/.qwen`；
-- session 位于 `tmp/<project_id>/chats/<session>.jsonl`；
+- 默认根目录是 `~/.qwen`；上游还支持 runtime override，但当前
+  `AdapterContext` 不读取 ambient process env；
+- 0.19.9 session 位于 `projects/<sanitized-cwd>/chats/<session>.jsonl`；
+  v0.3 及更早 whole-file records 位于 `tmp/<project-hash>/chats/session-*.json`；
 - `ChatRecord` 有 `uuid`、`parentUuid`、`sessionId`、`timestamp`、`cwd`、`version`、
   `model`、`usageMetadata`、tool 和 subagent 字段；
 - token 语义包括 input、output、cached、thoughts 和 total。
 
-所以 Qwen 应是独立 `qwen-code` adapter。可以共享 source-neutral helper，但不能直接
-注册现有 `gemini-cli` parser；旧计划里“未来一行注册即可复用”的假设已经失效。
+独立 `qwen-code` adapter 已完成。它只读取源端持久化 usage，不按文本估 token；cache
+从 prompt input 中拆出，fork 复制的父历史不重复计数，current/legacy migration collision
+以 current UUID row 为准。0.19.9 本机真实会话已完成脱敏 spot-check。
+
+Kiro CLI 2.12.1 也已作为 activity-only quick win 接入：当前结构索引是
+`~/.kiro/sessions/cli/<session>.json`，sibling `.jsonl` 正文永不打开；兼容旧
+`conversations_v2` 时只 SELECT identity/timestamp columns。Kiro 通用 shell DB 中的
+`history`、`auth_kv`、`state` 不算 agent session。私有 token-looking fields 没有官方
+accounting 契约，所以保持零 token，不按 context percentage 或正文估算。
 
 ## 6. 执行顺序
 
@@ -199,14 +239,17 @@ Qwen Code 目前 25,928 stars，虽然没有进入市场覆盖 Top 10，但对�
 
 1. [x] `antigravity` activity-only：只读官方 conversation summary SQLite；
    token ledger 仍需 serializer/真机 fixture 后再做 go/no-go；
-2. Cursor：两版本 SQLite study；
-3. Windsurf：两版本 globalStorage/SQLite study。
+2. [x] `cursor` activity-only：3.11.13 `composerHeaders` + workspace mapping，
+   排除 draft/background/cloud/body/checkpoint，token 继续 research；
+3. [x] Windsurf NO-GO：当前官方入口已迁移 Devin，旧版无安全稳定 Cascade index；
+   等固定旧版双 workspace fixture 再重开。
 
 ### Wave 3 — bridge 与区域扩展
 
 1. Aider activity + user-supplied analytics log；
-2. 独立 `qwen-code` adapter；
-3. Cline family helper 稳定后，再评估 Kilo Code；Roo Code 只做 legacy compatibility。
+2. [x] 独立 `qwen-code` adapter；
+3. [x] `kiro` activity-only adapter；
+4. Cline family helper 稳定后，再评估 Kilo Code；Roo Code 只做 legacy compatibility。
 
 ## 7. Adapter Go/No-Go Gate
 
@@ -236,6 +279,9 @@ Qwen Code 目前 25,928 stars，虽然没有进入市场覆盖 Top 10，但对�
 - [Antigravity Hooks and local app-data roots](https://antigravity.google/docs/hooks)
 - [Antigravity CLI local configuration and brain layout](https://codelabs.developers.google.com/antigravity-cli-hands-on)
 - [Gemini Code Assist consumer deprecation](https://developers.google.com/gemini-code-assist/docs/deprecations/code-assist-individuals)
+- [Cursor local history contract](https://docs.cursor.com/en/agent/chat/history)
+- [Kiro CLI session management](https://kiro.dev/docs/cli/chat/session-management/)
+- [Windsurf Cascade product documentation](https://docs.windsurf.com/windsurf/cascade/cascade)
 
 上游持久化与 token schema（调研时固定到 commit）：
 
@@ -243,7 +289,7 @@ Qwen Code 目前 25,928 stars，虽然没有进入市场覆盖 Top 10，但对�
 - [Cline request/subagent metrics](https://github.com/cline/cline/blob/2d2c6694215cd5eeca987085018b12f08ff557a8/apps/vscode/src/shared/getApiMetrics.ts)
 - [Goose platform paths](https://github.com/aaif-goose/goose/blob/9cec9f2f4f1f5d5c9bfce351423539b7f313dc9f/crates/goose/src/config/paths.rs)
 - [Goose session and usage ledger schema](https://github.com/aaif-goose/goose/blob/9cec9f2f4f1f5d5c9bfce351423539b7f313dc9f/crates/goose/src/session/session_manager.rs)
-- [Qwen Code chat recording schema](https://github.com/QwenLM/qwen-code/blob/25f491d3ac47942fbd9973e5ed8008ab5ce3f5c4/packages/core/src/services/chatRecordingService.ts)
+- [Qwen Code 0.19.9 chat recording schema](https://github.com/QwenLM/qwen-code/blob/8e6a57256297685761bb0554bd3458f05218399e/packages/core/src/services/chatRecordingService.ts)
 - [Qwen Code token usage semantics](https://github.com/QwenLM/qwen-code/blob/25f491d3ac47942fbd9973e5ed8008ab5ce3f5c4/packages/core/src/services/tokenUsageService.ts)
 - [Aider analytics log documentation](https://github.com/Aider-AI/aider/blob/5dc9490bb35f9729ef2c95d00a19ccd30c26339c/aider/website/docs/more/analytics.md)
 - [Aider usage event implementation](https://github.com/Aider-AI/aider/blob/5dc9490bb35f9729ef2c95d00a19ccd30c26339c/aider/coders/base_coder.py)

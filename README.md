@@ -99,15 +99,27 @@ settings, and quit.
   `~/.copilot/session-state/*/events.jsonl` (API-reported per-session token
   totals split by source model; multi-day cumulative totals stay in lifetime
   usage but are not assigned to a fabricated daily bucket)
+- `cursor`: Cursor foreground/local conversation indexes under its platform
+  `User/globalStorage` and `User/workspaceStorage` roots (activity only; draft,
+  background/cloud, transcript body, checkpoint blob, and token estimates are
+  excluded)
 - `gemini-cli`: Gemini CLI recorded chats under `~/.gemini/tmp/<project>/chats/`
   (legacy/API-key/Vertex/Standard/Enterprise coverage; API-reported per-message
   usage including cached and thinking tokens)
 - `goose`: Goose `sessions/sessions.db` under the platform data directory
   (read-only per-inference usage ledger with cache splits, model, recorded cost,
   cost source, and compaction flag; legacy JSONL cumulative totals supported)
+- `kiro`: Kiro CLI session metadata under `~/.kiro/sessions/cli/`, plus
+  compatible `conversations_v2` indexes when present (activity only; transcript
+  JSONL, conversation values, shell history, auth state, and token-looking
+  private fields are excluded)
 - `opencode`: OpenCode local store under `$XDG_DATA_HOME/opencode/` (default
   `~/.local/share/opencode/`)
   (SQLite and older JSON layouts; per-message tokens, cache splits, and cost)
+- `qwen-code`: Qwen Code recordings under
+  `~/.qwen/projects/*/chats/*.jsonl`, with legacy `~/.qwen/tmp/*/chats/`
+  compatibility (source-reported per-message usage with cache and thinking
+  metadata; forked history is not counted twice)
 - `manual-jsonl`: optional local JSONL import for agents before native adapters
   exist
 
@@ -171,7 +183,7 @@ paths are shortened to `~`, but review the report before sharing it.
 
 ## Manual JSONL Format
 
-Use this for Cursor, Aider, or any source before a native adapter is added:
+Use this for Aider or any source before a native adapter is added:
 
 ```json
 {"source":"aider","timestamp":"2026-05-27T09:00:00Z","project_path":"/repo","session_id":"s1","input_tokens":1200,"output_tokens":400,"tool_calls":3}
@@ -332,16 +344,25 @@ scan/render 路径不发网络请求，也不会写入源 agent 目录。
 - `copilot-cli`: GitHub Copilot CLI 会话日志，位于
   `~/.copilot/session-state/*/events.jsonl`（API 上报的会话级 token 总量;
   按源端 model 独立统计;跨日累计总量保留在全量统计中，不伪造每日归属）
+- `cursor`: Cursor 平台 `User/globalStorage` 与 `User/workspaceStorage` 下的
+  本地前台会话索引（仅统计真实活动;排除草稿、background/cloud、聊天正文、
+  checkpoint blob 与 token 猜测）
 - `gemini-cli`: Gemini CLI 保存的对话，位于 `~/.gemini/tmp/<project>/chats/`
   （legacy/API key/Vertex/Standard/Enterprise 覆盖;API 上报的逐消息用量，
   含缓存与思考 token）
 - `goose`: 平台数据目录中的 Goose `sessions/sessions.db`（只读解析逐次
   usage ledger，包含 cache 拆分、model、源端 cost、cost source 与 compaction；
   同时兼容 legacy JSONL 累计总量）
+- `kiro`: Kiro CLI 的 `~/.kiro/sessions/cli/` session metadata，并兼容存在时
+  的 `conversations_v2` 索引（仅统计真实活动;不读 transcript JSONL、会话
+  value、shell history、auth state，也不采用语义未证实的 token 字段）
 - `opencode`: OpenCode 本地存储，位于 `$XDG_DATA_HOME/opencode/`（默认
   `~/.local/share/opencode/`）
   （SQLite 与旧版 JSON 布局;逐消息 token、缓存拆分与成本）
-- `manual-jsonl`: 在原生 adapter 支持之前，用于 Cursor、Aider 等来源的本地 JSONL 入口
+- `qwen-code`: Qwen Code 的 `~/.qwen/projects/*/chats/*.jsonl`，并兼容
+  legacy `~/.qwen/tmp/*/chats/`（源端逐消息 usage，包含 cache 与 thinking
+  metadata；fork 继承历史不会重复计数）
+- `manual-jsonl`: 在原生 adapter 支持之前，用于 Aider 等来源的本地 JSONL 入口
 
 ### 从源码构建
 
@@ -401,7 +422,7 @@ doctor 报告只检查本地状态：state 目录是否可写、`settings.toml`�
 
 ### Manual JSONL 格式
 
-Cursor、Aider 或任何还没有原生 adapter 的来源，都可以先用这个格式接入：
+Aider 或任何还没有原生 adapter 的来源，都可以先用这个格式接入：
 
 ```json
 {"source":"aider","timestamp":"2026-05-27T09:00:00Z","project_path":"/repo","session_id":"s1","input_tokens":1200,"output_tokens":400,"tool_calls":3}

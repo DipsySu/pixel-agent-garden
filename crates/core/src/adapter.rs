@@ -1,6 +1,6 @@
 //! Cross-adapter contract.
 //!
-//! New agents (Cursor, Aider, Gemini CLI, …) plug into the garden by
+//! New agents (Aider, Continue, Kilo Code, …) plug into the garden by
 //! implementing this trait and registering themselves in `registry::default_adapters`.
 //! The trait is sync (per spec §Q3) so adapters live as plain library code,
 //! callable from any context.

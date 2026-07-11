@@ -1,6 +1,6 @@
 //! Manual JSONL adapter — escape hatch for agents without a native adapter.
 //!
-//! Users point this adapter at any JSONL file (Cursor, Aider, Gemini CLI, …)
+//! Users point this adapter at any JSONL file (Aider, Continue, Kilo Code, …)
 //! and each row's fields map directly to AgentEvent.
 
 use crate::adapter::{Adapter, AdapterContext};

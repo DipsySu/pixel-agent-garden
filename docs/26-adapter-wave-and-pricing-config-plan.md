@@ -10,6 +10,11 @@
 > but use `docs/27-top-ai-coding-agents-adapter-research.md` for the current
 > market Top 10 and the next adapter execution order.
 
+> 2026-07-11 execution update: Qwen Code exact source usage, Kiro activity, and
+> Cursor foreground activity have crossed their evidence gates. Windsurf is an
+> explicit no-go until a fixed legacy installation proves a content-free local
+> Cascade index; the current official endpoint is Devin Desktop.
+
 ## 1. Outcome
 
 The next adapter wave should begin with evidence, not parser code:
@@ -313,8 +318,14 @@ therefore remains unpriced instead of inheriting a guessed Sol/Pro rate.
 ### M3 — P1 evidence and decision
 
 - [ ] Cline/Roo path matrix and request-token semantics;
-- [ ] Cursor two-version SQLite study with an explicit exact/activity-only/no-go
-  decision;
+- [x] Cursor 3.11.13 package + real-machine SQLite study: ship activity-only
+  from structural `composerHeaders`, exclude draft/background/cloud/body
+  stores, and keep mutable cumulative token state unpriced;
+- [x] Windsurf explicit no-go: the current official endpoint is Devin Desktop,
+  and fixed Windsurf 2.3.15 has no proven content-free Cascade index; require a
+  two-workspace legacy fixture before reopening;
+- [x] Qwen Code 0.19.9 source-reported usage adapter and Kiro CLI 2.12.1
+  activity-only adapter, both spot-checked against real local storage;
 - [ ] keep Aider/Continue on `manual-jsonl` unless their evidence crosses the
   native gate.
 

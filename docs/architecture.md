@@ -13,11 +13,20 @@ events; everything else consumes normalized events.
 ~/Library/Application Support/Claude/local-agent-mode-sessions/**/.claude/projects/**/*.jsonl
 ~/.codex/state_5.sqlite
 ~/.codex/sessions/**/*.jsonl
+~/.copilot/session-state/*/events.jsonl
+~/.gemini/tmp/*/chats/*.{json,jsonl}
 ~/.cline/data/db/sessions.db
 ~/.cline/data/sessions/**/*.messages.json
 ~/.cline/data/tasks/*/ui_messages.json
 <editor globalStorage>/saoudrizwan.claude-dev/tasks/*/ui_messages.json
 <goose data>/sessions/sessions.db
+~/.kiro/sessions/cli/*.json
+<kiro data>/data.sqlite3 (supported conversations_v2 only)
+<opencode data>/opencode.db and legacy JSON stores
+~/.qwen/projects/*/chats/*.jsonl
+~/.qwen/tmp/*/chats/*.{json,jsonl}
+<Cursor User>/globalStorage/state.vscdb
+<Cursor User>/workspaceStorage/*/{state.vscdb,workspace.json}
 manual imports
         |
         v
@@ -120,6 +129,35 @@ includes cache read/write as subsets, so the adapter carves those subsets out
 before filling normalized `AgentEvent` buckets. Legacy JSONL stores only
 session-level accumulated totals; those remain useful for lifetime totals but
 opt out of daily token attribution.
+
+## Qwen Code, Kiro, And Cursor Accuracy Notes
+
+Qwen Code 0.19.9 writes append-only records to
+`~/.qwen/projects/<sanitized-cwd>/chats/<session>.jsonl`. A local 0.19.9
+session confirmed the upstream serializer contract and its persisted
+`usageMetadata`: prompt, candidate, cached, thought, and total counters are
+source-reported. Cache reads are carved out of prompt input, and output uses
+Qwen's own `total - prompt` rule when possible so provider-specific overlap
+between candidate and thought counters is not guessed. Fork-copied history is
+skipped, native message UUIDs are deduplicated, and legacy whole-file records
+under `~/.qwen/tmp/*/chats/` remain compatible.
+
+Kiro CLI 2.12.1 writes structural session metadata to
+`~/.kiro/sessions/cli/<session>.json` and chat content to a sibling `.jsonl`.
+The adapter opens only the metadata snapshot through an explicit field
+allowlist and never opens the transcript. It can also read only the identity
+and timestamp columns of a supported `conversations_v2` table; generic Kiro
+shell state databases (`history`, `auth_kv`, and `state`) do not count as agent
+discovery. Kiro's private token-looking fields do not have a published
+accounting contract, so all Kiro events remain activity-only.
+
+Cursor 3.11 stores foreground conversation headers in the `composerHeaders`
+table of its platform `User` databases. The adapter reads only structural
+header fields, rejects drafts and non-local/background origins, resolves
+workspace IDs through `workspace.json`, and never reads `cursorDiskKV`, body
+blobs, checkpoint artifacts, transcript contents, titles, or subtitles.
+Cursor's header token counters are mutable cumulative UI state rather than a
+documented per-request ledger, so Cursor events are activity-only.
 
 ## Claude Cowork
 
