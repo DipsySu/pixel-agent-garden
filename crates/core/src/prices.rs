@@ -421,6 +421,16 @@ mod tests {
         assert_eq!(sonnet.cache_write_per_mtok, 2.5);
         assert_eq!(table.prices["claude-opus-4-8"].input_per_mtok, 5.0);
         assert_eq!(table.prices["claude-opus-4-8"].cache_read_per_mtok, 0.5);
+        assert_eq!(table.prices["gpt-5.6-sol"].input_per_mtok, 5.0);
+        assert_eq!(table.prices["gpt-5.6-sol"].output_per_mtok, 30.0);
+        assert_eq!(table.prices["gpt-5.6-sol"].cache_read_per_mtok, 0.5);
+        assert_eq!(table.prices["gpt-5.6-sol"].cache_write_per_mtok, 6.25);
+        assert_eq!(table.prices["gpt-5.6-terra"].input_per_mtok, 2.5);
+        assert_eq!(table.prices["gpt-5.6-terra"].output_per_mtok, 15.0);
+        assert_eq!(table.prices["gpt-5.6-terra"].cache_write_per_mtok, 3.125);
+        assert_eq!(table.prices["gpt-5.6-luna"].input_per_mtok, 1.0);
+        assert_eq!(table.prices["gpt-5.6-luna"].output_per_mtok, 6.0);
+        assert_eq!(table.prices["gpt-5.6-luna"].cache_read_per_mtok, 0.1);
         assert_eq!(table.prices["gpt-5.5"].output_per_mtok, 30.0);
         assert_eq!(table.prices["gpt-5.5"].cache_read_per_mtok, 0.5);
         assert_eq!(table.prices["gpt-5.3-codex"].input_per_mtok, 1.75);
@@ -564,6 +574,26 @@ mod tests {
             table.prices["gpt-5.5"],
             bundled_defaults().prices["gpt-5.5"]
         );
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn empty_user_table_keeps_every_bundled_default() {
+        // The desktop "Open Model Prices" entry initializes a missing file
+        // this way. It must remain an empty overlay rather than pinning a copy
+        // of today's effective defaults into user-owned state.
+        let path = tmp("empty-overlay");
+        let _ = std::fs::remove_file(&path);
+        let empty = PriceTable {
+            schema_version: PRICES_SCHEMA_VERSION,
+            prices: BTreeMap::new(),
+        };
+        save_user(&path, &empty).unwrap();
+
+        let raw: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(raw["prices"].as_object().unwrap().len(), 0);
+        assert_eq!(load_effective(&path).unwrap(), bundled_defaults());
         std::fs::remove_file(&path).ok();
     }
 

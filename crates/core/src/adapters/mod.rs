@@ -5,5 +5,8 @@
 pub mod claude_code;
 pub mod claude_cowork;
 pub mod codex;
+pub mod copilot_cli;
+pub mod gemini_cli;
 pub mod manual_jsonl;
+pub mod opencode;
 pub mod util;

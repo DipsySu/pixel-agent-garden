@@ -13,11 +13,19 @@ use local_agent_garden_core::aggregate::GardenSummary;
 use local_agent_garden_core::cache;
 use local_agent_garden_core::registry;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Receiver, Sender, channel};
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 
 const DEBOUNCE_MS: u64 = 800;
+
+#[derive(Clone, Debug)]
+struct WatchTarget {
+    path: PathBuf,
+    recursive: bool,
+}
 
 pub fn run(app: AppHandle) -> Result<(), String> {
     let ctx = AdapterContext::from_env();
@@ -31,6 +39,14 @@ pub fn run(app: AppHandle) -> Result<(), String> {
         eprintln!("[watcher] no adapter watch paths — running in static mode");
         return Ok(());
     }
+    let targets = watch_paths
+        .iter()
+        .map(|path| WatchTarget {
+            path: path.clone(),
+            recursive: path.is_dir(),
+        })
+        .collect::<Vec<_>>();
+    let registrations = watch_registrations(&targets);
 
     // 2. Wire the OS watcher to a synchronous channel. We don't need async
     //    here; the channel naturally serializes events, the debounce loop
@@ -44,10 +60,19 @@ pub fn run(app: AppHandle) -> Result<(), String> {
     // miss real activity.
     let (tx, rx): (Sender<notify::Event>, Receiver<notify::Event>) = channel();
     let error_app = app.clone();
+    let callback_targets = targets.clone();
     let mut watcher =
         notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
             match res {
                 Ok(ev) => {
+                    // A target file such as `opencode.db-wal` may not exist
+                    // when the app starts. We register its nearest existing
+                    // parent, then filter here to the exact requested target.
+                    // Sibling credentials therefore never trigger a scan or
+                    // enter debug logs.
+                    if !event_paths_match(&ev.paths, &callback_targets) {
+                        return;
+                    }
                     // Debug only — set AGENT_GARDEN_DEBUG=1 to see every fs event.
                     if std::env::var_os("AGENT_GARDEN_DEBUG").is_some() {
                         eprintln!("[watcher] event: kind={:?} paths={:?}", ev.kind, ev.paths);
@@ -62,11 +87,8 @@ pub fn run(app: AppHandle) -> Result<(), String> {
         })
         .map_err(|e| format!("create watcher: {e}"))?;
 
-    for path in &watch_paths {
-        if !path.exists() {
-            continue;
-        }
-        let mode = if path.is_dir() {
+    for (path, recursive) in &registrations {
+        let mode = if *recursive {
             RecursiveMode::Recursive
         } else {
             RecursiveMode::NonRecursive
@@ -122,6 +144,41 @@ pub fn run(app: AppHandle) -> Result<(), String> {
     }
 }
 
+/// Build the smallest OS-level registrations that cover all logical targets.
+/// Missing leaf files use a non-recursive parent registration so their later
+/// creation is observable; callback filtering keeps unrelated siblings out.
+fn watch_registrations(targets: &[WatchTarget]) -> Vec<(PathBuf, bool)> {
+    let mut registrations: BTreeMap<PathBuf, bool> = BTreeMap::new();
+    for target in targets {
+        let registration = if target.path.exists() {
+            target.path.clone()
+        } else {
+            nearest_existing_parent(&target.path).unwrap_or_else(|| target.path.clone())
+        };
+        let recursive = target.path.exists() && target.recursive;
+        registrations
+            .entry(registration)
+            .and_modify(|value| *value |= recursive)
+            .or_insert(recursive);
+    }
+    registrations.into_iter().collect()
+}
+
+fn nearest_existing_parent(path: &Path) -> Option<PathBuf> {
+    path.ancestors()
+        .skip(1)
+        .find(|ancestor| ancestor.exists())
+        .map(Path::to_path_buf)
+}
+
+fn event_paths_match(paths: &[PathBuf], targets: &[WatchTarget]) -> bool {
+    paths.iter().any(|changed| {
+        targets.iter().any(|target| {
+            changed == &target.path || (target.recursive && changed.starts_with(&target.path))
+        })
+    })
+}
+
 fn emit_watcher_error(app: &AppHandle, message: impl Into<String>) {
     let payload = ErrorPayload::new("watcher", message);
     if let Err(emit_err) = app.emit(GARDEN_ERROR, &payload) {
@@ -156,3 +213,41 @@ type _W = RecommendedWatcher;
 // `notify::recommended_watcher` returns the watcher; dropping it stops the
 // callbacks. Since `run()` loops forever (or until the channel closes), the
 // watcher local stays alive for the whole app lifetime. Wired implicitly.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn missing_wal_uses_parent_but_filters_credential_siblings() {
+        let root =
+            std::env::temp_dir().join(format!("lag-watcher-missing-wal-{}", std::process::id()));
+        std::fs::create_dir_all(&root).unwrap();
+        let wal = root.join("opencode.db-wal");
+        let targets = vec![WatchTarget {
+            path: wal.clone(),
+            recursive: false,
+        }];
+
+        assert_eq!(watch_registrations(&targets), vec![(root.clone(), false)]);
+        assert!(event_paths_match(std::slice::from_ref(&wal), &targets));
+        assert!(!event_paths_match(&[root.join("auth.json")], &targets));
+        assert!(!event_paths_match(&[root.join("mcp-auth.json")], &targets));
+
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn directory_target_matches_descendants_only() {
+        let root = PathBuf::from("/tmp/example-storage");
+        let targets = vec![WatchTarget {
+            path: root.clone(),
+            recursive: true,
+        }];
+        assert!(event_paths_match(&[root.join("message/a.json")], &targets));
+        assert!(!event_paths_match(
+            &[PathBuf::from("/tmp/auth.json")],
+            &targets
+        ));
+    }
+}

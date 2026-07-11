@@ -542,8 +542,9 @@ mod tests {
 
         assert_eq!(summary.total_events, 0);
         let text = std::fs::read_to_string(&path).unwrap();
+        let expected = format!(r#""schema_version": {}"#, storage::EVENTS_SCHEMA_VERSION);
         assert!(
-            text.contains(r#""schema_version": 1"#),
+            text.contains(&expected),
             "future cache should be replaced, got: {text}"
         );
         std::fs::remove_file(&path).ok();

@@ -432,10 +432,13 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
         *accum.daily_activity.entry(day_key.clone()).or_insert(0) += bump;
 
         // daily_tokens: honest per-day tokens, per-project and rolled up across
-        // all projects. Drives token heatmaps/sparklines without the tool_call
-        // contamination baked into daily_activity.
-        *accum.daily_tokens.entry(day_key.clone()).or_insert(0) += event.usage.total_tokens;
-        *daily_tokens.entry(day_key).or_insert(0) += event.usage.total_tokens;
+        // all projects. A few sources persist only a multi-day cumulative
+        // session total; those tokens remain in all-time/source/model totals
+        // but are deliberately omitted here instead of inventing a day.
+        if event.has_daily_token_attribution() {
+            *accum.daily_tokens.entry(day_key.clone()).or_insert(0) += event.usage.total_tokens;
+            *daily_tokens.entry(day_key).or_insert(0) += event.usage.total_tokens;
+        }
 
         if let Some(model) = event.model.as_ref() {
             if !model.is_empty() {
@@ -1305,6 +1308,37 @@ mod tests {
         let two = s.projects.iter().find(|p| p.display_name == "two").unwrap();
         assert_eq!(one.daily_tokens["2026-05-27"], 1000);
         assert_eq!(two.daily_tokens["2026-05-27"], 500);
+    }
+
+    #[test]
+    fn multi_day_cumulative_usage_stays_in_totals_but_not_fake_daily_series() {
+        let day = Utc.with_ymd_and_hms(2026, 5, 27, 23, 55, 0).unwrap();
+        let mut event = make_event(EventFixture {
+            source: "copilot-cli",
+            ts: day,
+            project: Some("/a/cross-day"),
+            session: Some("s1"),
+            input: 900,
+            output: 100,
+            cache_read: 0,
+            tool_calls: 1,
+            model: Some("gpt-5-mini"),
+        });
+        event.metadata.insert(
+            crate::event::DAILY_TOKEN_ATTRIBUTION_KEY.to_string(),
+            crate::event::DAILY_TOKEN_ATTRIBUTION_UNAVAILABLE.into(),
+        );
+
+        let summary = summarize_at(&[event], day + chrono::Duration::hours(2));
+        let project = &summary.projects[0];
+        assert_eq!(summary.total_tokens, 1000);
+        assert_eq!(summary.models["gpt-5-mini"].total_tokens, 1000);
+        assert_eq!(project.total_tokens, 1000);
+        assert!(summary.daily_tokens.is_empty());
+        assert!(project.daily_tokens.is_empty());
+        // The real session start still counts as activity without pretending
+        // the cumulative token total belongs wholly to that day.
+        assert_eq!(project.daily_activity["2026-05-27"], 2);
     }
 
     #[test]

@@ -84,6 +84,13 @@ fn default_event_type() -> String {
 pub const PATH_SOURCE_KEY: &str = "path_source";
 pub const PATH_SOURCE_INFERRED: &str = "inferred";
 
+/// Metadata key used when a source reports real aggregate usage but does not
+/// preserve enough timestamps to assign it to one UTC day. Such usage still
+/// contributes to all-time/source/model totals, but must not be presented in
+/// the daily token series as if its day were known.
+pub const DAILY_TOKEN_ATTRIBUTION_KEY: &str = "daily_token_attribution";
+pub const DAILY_TOKEN_ATTRIBUTION_UNAVAILABLE: &str = "unavailable";
+
 impl AgentEvent {
     /// Convenience builder: fill in the required fields, leave the rest
     /// defaulted. Used heavily by adapter code.
@@ -130,6 +137,16 @@ impl AgentEvent {
     /// may not be a real filesystem path.
     pub fn path_is_inferred(&self) -> bool {
         self.metadata.get(PATH_SOURCE_KEY).and_then(|v| v.as_str()) == Some(PATH_SOURCE_INFERRED)
+    }
+
+    /// Whether this event's token total can truthfully be assigned to its UTC
+    /// calendar day. Adapters opt out only when the upstream source exposes a
+    /// multi-day cumulative total with no per-turn/per-day split.
+    pub fn has_daily_token_attribution(&self) -> bool {
+        self.metadata
+            .get(DAILY_TOKEN_ATTRIBUTION_KEY)
+            .and_then(|v| v.as_str())
+            != Some(DAILY_TOKEN_ATTRIBUTION_UNAVAILABLE)
     }
 
     /// Project key strategy: project_path when known, otherwise

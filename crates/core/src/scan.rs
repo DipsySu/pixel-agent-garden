@@ -172,4 +172,40 @@ mod tests {
             vec!["manual.jsonl:1", "manual.jsonl:2", "manual.jsonl:3"]
         );
     }
+
+    #[test]
+    fn dedupe_stays_source_scoped_across_the_p0_adapter_wave() {
+        // The P0 wave introduced sources whose native ids can collide as raw
+        // text: gemini-cli and opencode both stamp per-message uuids, while
+        // copilot-cli session events carry no uuid and rely on the fallback
+        // row key. The key must keep identical-looking ids apart BY SOURCE
+        // while still collapsing true duplicates (a rescan) within one source.
+        let mut gemini = event("gemini-cli", 0, "chats/session-x.jsonl:2");
+        mark_uuid(&mut gemini, "msg-1");
+        let mut gemini_rescan = gemini.clone();
+        gemini_rescan.raw_ref = Some("chats/session-x.jsonl:9".to_string());
+
+        let mut opencode = event("opencode", 0, "opencode.db#message:msg-1");
+        mark_uuid(&mut opencode, "msg-1"); // same uuid text, different source
+
+        let copilot = event("copilot-cli", 0, "session-state/s1/events.jsonl");
+        let copilot_rescan = copilot.clone();
+
+        let events = dedupe_events(vec![
+            gemini,
+            gemini_rescan,
+            opencode,
+            copilot,
+            copilot_rescan,
+        ]);
+
+        assert_eq!(events.len(), 3);
+        for source in ["gemini-cli", "opencode", "copilot-cli"] {
+            assert_eq!(
+                events.iter().filter(|e| e.source == source).count(),
+                1,
+                "exactly one event should survive for {source}"
+            );
+        }
+    }
 }

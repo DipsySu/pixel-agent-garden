@@ -1,6 +1,6 @@
 # 25 — Model Pricing Refresh
 
-Date: 2026-07-09
+Date: 2026-07-10
 
 This note records the sources used for the bundled `core::prices` defaults in
 `crates/core/src/prices-default.json`.
@@ -12,12 +12,17 @@ snapshot used for local estimates only; user overrides in
 ## Sources
 
 - OpenAI API pricing, "Flagship models"
-  (`https://developers.openai.com/api/docs/pricing`): `gpt-5.5`, `gpt-5.5-pro`,
-  `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.4-nano`, and `gpt-5.4-pro` standard
-  short-context USD rates. The OpenAI `Cached input` column maps to
-  `cache_read_per_mtok`; OpenAI does not expose a separate cache-write rate in
-  this table, so `cache_write_per_mtok` defaults to the normal input rate for
-  OpenAI rows.
+  (`https://developers.openai.com/api/docs/pricing`): `gpt-5.6-sol`,
+  `gpt-5.6-terra`, `gpt-5.6-luna`, `gpt-5.5`, `gpt-5.5-pro`, `gpt-5.4`,
+  `gpt-5.4-mini`, `gpt-5.4-nano`, and `gpt-5.4-pro` standard short-context USD
+  rates. The OpenAI `Cached input` column maps to `cache_read_per_mtok`.
+  GPT-5.6 publishes an explicit cache-write rate, which maps directly to
+  `cache_write_per_mtok`; older OpenAI rows without that column retain the
+  existing normal-input-rate fallback.
+- OpenAI's GPT-5.6 release note
+  (`https://openai.com/index/previewing-gpt-5-6-sol/`): used to confirm the
+  Sol/Terra/Luna family names and the GPT-5.6 cache policy (90% read discount,
+  cache writes at 1.25x uncached input).
 - OpenAI API pricing, "Specialized models"
   (`https://developers.openai.com/api/docs/pricing`): `chat-latest` and
   `gpt-5.3-codex` standard USD rates, including cached-input rates where
@@ -48,6 +53,15 @@ logs do not abruptly become unpriced. This refresh does not certify those
 legacy ids as current OpenAI offerings; the current-id path is the source list
 above.
 
+The GPT-5.6 API table also publishes a higher long-context tier. Local agent
+events do not record the per-request context threshold needed to select that
+tier, so bundled defaults continue to represent Standard short-context rates.
+Users with a known long-context workload can override the four local rates.
+
+`GPT-5.6 Sol Pro` is exposed as a ChatGPT product option, but the API pricing
+table used here does not publish a matching standard per-token API row/model
+id. It remains unpriced instead of inheriting a guessed Sol or legacy Pro rate.
+
 ## Cache Pricing Notes
 
 `prices.json` schema 2 adds:
@@ -62,7 +76,7 @@ the 5-minute write price, matching the lower default caching tier. If a user's
 local workload is known to use 1-hour writes, they can override
 `cache_write_per_mtok` in `~/.local-agent-garden/prices.json`.
 
-For OpenAI rows, cached input is a read-side price; the public table does not
-publish a distinct cache-write price. Bundled defaults therefore use the normal
-input rate for `cache_write_per_mtok`, and the published cached-input rate for
-`cache_read_per_mtok`.
+For GPT-5.6, the public table now publishes both cached-input and cache-write
+rates, so both map directly. Older OpenAI rows without a distinct cache-write
+column continue using the normal input rate for `cache_write_per_mtok`, and the
+published cached-input rate for `cache_read_per_mtok`.

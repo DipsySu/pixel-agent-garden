@@ -2,6 +2,53 @@
 
 ## Unreleased
 
+### Adapters and pricing
+
+- Hardened the first native adapter wave against false attribution. Copilot CLI
+  now uses its real `session.start.data.context.cwd`, anchors cumulative usage
+  to the real session start, emits one source-reported bucket per model, and
+  omits multi-day cumulative totals from daily charts instead of inventing a
+  day while preserving lifetime/model totals. Its modern fixture is redacted
+  from a real local Copilot CLI 1.0.70 session. OpenCode now honors
+  `XDG_DATA_HOME`, lets a valid legacy row recover from an unusable canonical
+  row, and watches WAL creation through an exact-path filter that ignores
+  credential siblings. Raw-event cache schema v2 forces one safe rescan so a
+  v1 cache cannot preserve the old mixed-model Copilot interpretation.
+- Added a current Top 10 AI coding-agent coverage study, separating market
+  adoption from local token feasibility. It recommends Goose and Cline as the
+  next exact-usage adapters, moves Antigravity into evidence research, treats
+  Cursor/Windsurf as schema research, and reclassifies Gemini CLI as
+  legacy/enterprise/API-key coverage after Google's consumer OAuth deprecation.
+- Added the evidence-first plan for the next native adapter wave. Gemini CLI,
+  GitHub Copilot CLI, and OpenCode are the P0 fixture/research targets; Cline /
+  Roo Code and Cursor follow only after their local schemas and token precision
+  are proven with versioned redacted samples.
+- Added the published GPT-5.6 Sol, Terra, and Luna Standard short-context API
+  prices to the bundled local table, including GPT-5.6's explicit cached-input
+  and cache-write rates. Sol Pro remains unpriced because the API pricing table
+  does not publish a matching standard per-token row.
+- Made the existing user price overlay discoverable: the app and tray menus now
+  open `~/.local-agent-garden/prices.json`, creating an empty override table
+  when absent so untouched factory models keep receiving release updates.
+- Implemented the three P0 native adapters (`gemini-cli`, `copilot-cli`,
+  `opencode`), researched from upstream source code and official docs because
+  no local sample data existed on the development machine — each module doc
+  states its evidence URLs, verified date, token-precision contract, and
+  dedupe key. Gemini CLI reads `~/.gemini/tmp/<project>/chats/` recordings
+  (per-message API usage incl. cached + thinking tokens; lossless project-path
+  recovery via the CLI's own `projects.json` / `.project_root` records, never
+  hash reversing). Copilot CLI reads `~/.copilot/session-state/*/events.jsonl`
+  (cumulative per-session API totals from the richest metrics event; sessions
+  without one degrade to activity-only; the derived `session-store.db` is
+  never opened). OpenCode reads the XDG store across all three storage eras —
+  current SQLite (opened read-only), flat-JSON, and the legacy
+  per-project tree — with per-message tokens, cache splits, and recorded cost;
+  credentials (`auth.json`) are never read or allowed to trigger scans. All three ship
+  two-era temp-dir fixtures plus expanded truthfulness, cache-upgrade, XDG,
+  WAL-filter, corrupt-input, and dedupe coverage (the workspace suite is now
+  182), and register through
+  `mod.rs` + the registry with `manual-jsonl` kept last as the catch-all.
+
 ## v2.0.2 - 2026-07-10
 
 ### Product page

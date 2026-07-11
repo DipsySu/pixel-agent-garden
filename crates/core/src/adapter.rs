@@ -16,6 +16,11 @@ pub struct AdapterContext {
     /// User home directory. Adapters resolve agent dirs relative to this so
     /// tests can point at a synthetic home.
     pub home: PathBuf,
+    /// XDG data root captured when the scan context is constructed. Keeping
+    /// this in the context (instead of reading the process environment inside
+    /// an adapter) preserves deterministic fixture tests and lets XDG-backed
+    /// sources honor non-default installations.
+    pub xdg_data_home: Option<PathBuf>,
     /// Extra JSONL paths handed in via CLI / config — used by the
     /// `manual_jsonl` adapter as an escape hatch for agents without a
     /// native adapter yet.
@@ -30,8 +35,12 @@ impl AdapterContext {
             .or_else(|| std::env::var_os("USERPROFILE"))
             .map(PathBuf::from)
             .unwrap_or_else(|| PathBuf::from("/"));
+        let xdg_data_home = std::env::var_os("XDG_DATA_HOME")
+            .map(PathBuf::from)
+            .filter(|path| path.is_absolute());
         Self {
             home,
+            xdg_data_home,
             manual_jsonl: Vec::new(),
         }
     }
@@ -39,8 +48,16 @@ impl AdapterContext {
     pub fn with_home(home: impl Into<PathBuf>) -> Self {
         Self {
             home: home.into(),
+            xdg_data_home: None,
             manual_jsonl: Vec::new(),
         }
+    }
+
+    /// Override the XDG data root for a synthetic context. Primarily used by
+    /// adapter fixtures; callers should normally prefer [`Self::from_env`].
+    pub fn with_xdg_data_home(mut self, path: impl Into<PathBuf>) -> Self {
+        self.xdg_data_home = Some(path.into());
+        self
     }
 
     pub fn with_manual_jsonl(mut self, paths: impl IntoIterator<Item = PathBuf>) -> Self {

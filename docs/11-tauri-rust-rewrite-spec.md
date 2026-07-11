@@ -71,6 +71,9 @@ Rules:
 - `claude-code`: reads Claude Code JSONL transcripts.
 - `claude-cowork`: reads Claude Desktop Cowork embedded Claude Code transcripts.
 - `codex`: reads Codex SQLite/session/rollout local state.
+- `copilot-cli`: reads API-reported cumulative per-model CLI session metrics.
+- `gemini-cli`: legacy/API-key/Vertex/Standard/Enterprise recorded chats.
+- `opencode`: reads the XDG SQLite store plus both legacy JSON layouts.
 - `manual-jsonl`: escape hatch for local agents without native adapters.
 
 ## Schema Versioning
@@ -110,6 +113,11 @@ fetch. `core::prices` owns the contract:
   user models default missing cache rates to `0.0` so the app does not guess a
   provider policy. Read/write goes through the thin `load_prices` /
   `save_prices` commands.
+- The native app/tray menu exposes **Open Model Prices** next to **Open
+  Settings**. If the override file does not exist, the shell asks
+  `core::prices` to create an empty table; it never copies the effective table,
+  because doing so would pin every factory model and block future default
+  refreshes.
 - A malformed or future-versioned `prices.json` surfaces as a typed error and
   the file is **never quarantined or renamed** — unlike `rings.json` (a
   product-owned memory we may restart), `prices.json` is user-authored data,
