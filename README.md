@@ -85,6 +85,10 @@ settings, and quit.
 - `claude-code`: `~/.claude/projects/**/*.jsonl`
 - `claude-cowork`: Claude Desktop Cowork local agent sessions under
   `~/Library/Application Support/Claude/local-agent-mode-sessions/`
+- `cline`: current SDK sessions under `~/.cline/data/db/sessions.db` and
+  `~/.cline/data/sessions/`, plus legacy CLI/shared and VS Code-family task
+  directories (per-turn/request, deleted-history, and subagent usage; no
+  text-based token estimates)
 - `codex`: `~/.codex/state_5.sqlite`, `~/.codex/session_index.jsonl`, and
   Codex rollout JSONL files when present
 - `copilot-cli`: GitHub Copilot CLI session logs under
@@ -94,6 +98,9 @@ settings, and quit.
 - `gemini-cli`: Gemini CLI recorded chats under `~/.gemini/tmp/<project>/chats/`
   (legacy/API-key/Vertex/Standard/Enterprise coverage; API-reported per-message
   usage including cached and thinking tokens)
+- `goose`: Goose `sessions/sessions.db` under the platform data directory
+  (read-only per-inference usage ledger with cache splits, model, recorded cost,
+  cost source, and compaction flag; legacy JSONL cumulative totals supported)
 - `opencode`: OpenCode local store under `$XDG_DATA_HOME/opencode/` (default
   `~/.local/share/opencode/`)
   (SQLite and older JSON layouts; per-message tokens, cache splits, and cost)
@@ -308,6 +315,10 @@ scan/render 路径不发网络请求，也不会写入源 agent 目录。
 - `claude-code`: `~/.claude/projects/**/*.jsonl`
 - `claude-cowork`: Claude Desktop Cowork 本地 agent sessions，
   位于 `~/Library/Application Support/Claude/local-agent-mode-sessions/`
+- `cline`: 当前 SDK 的 `~/.cline/data/db/sessions.db` 与
+  `~/.cline/data/sessions/`，并兼容旧 CLI/shared 及 VS Code 系编辑器 task
+  目录（逐 turn/request、已删除历史和 subagent 的真实用量；不按文本长度
+  估算 token）
 - `codex`: `~/.codex/state_5.sqlite`、`~/.codex/session_index.jsonl`，
   以及存在时的 Codex rollout JSONL 文件
 - `copilot-cli`: GitHub Copilot CLI 会话日志，位于
@@ -316,6 +327,9 @@ scan/render 路径不发网络请求，也不会写入源 agent 目录。
 - `gemini-cli`: Gemini CLI 保存的对话，位于 `~/.gemini/tmp/<project>/chats/`
   （legacy/API key/Vertex/Standard/Enterprise 覆盖;API 上报的逐消息用量，
   含缓存与思考 token）
+- `goose`: 平台数据目录中的 Goose `sessions/sessions.db`（只读解析逐次
+  usage ledger，包含 cache 拆分、model、源端 cost、cost source 与 compaction；
+  同时兼容 legacy JSONL 累计总量）
 - `opencode`: OpenCode 本地存储，位于 `$XDG_DATA_HOME/opencode/`（默认
   `~/.local/share/opencode/`）
   （SQLite 与旧版 JSON 布局;逐消息 token、缓存拆分与成本）

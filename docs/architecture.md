@@ -10,6 +10,11 @@ events; everything else consumes normalized events.
 ~/Library/Application Support/Claude/local-agent-mode-sessions/**/.claude/projects/**/*.jsonl
 ~/.codex/state_5.sqlite
 ~/.codex/sessions/**/*.jsonl
+~/.cline/data/db/sessions.db
+~/.cline/data/sessions/**/*.messages.json
+~/.cline/data/tasks/*/ui_messages.json
+<editor globalStorage>/saoudrizwan.claude-dev/tasks/*/ui_messages.json
+<goose data>/sessions/sessions.db
 manual imports
         |
         v
@@ -71,6 +76,23 @@ score rather than token usage alone.
 5. Add focused Rust tests with fixture-style local files.
 
 For agents with no stable local log format yet, use `manual-jsonl` as a bridge.
+
+## Cline And Goose Accuracy Notes
+
+Cline's current SDK message store persists per-turn assistant metrics. Current
+`inputTokens` contains cache subsets, so the adapter carves them out. Legacy
+task storage already contains disjoint buckets; there the adapter counts the
+same three usage-bearing row types as Cline's own `getApiMetrics`: completed API
+request rows, deleted-request aggregates, and subagent aggregates. Aggregate
+rows do not identify one model, so the adapter does not guess one from the
+parent task. A migrated task found in both stores is counted from the current
+SDK store only.
+
+Goose's SQLite `usage_ledger` records one inference per row. Its input field
+includes cache read/write as subsets, so the adapter carves those subsets out
+before filling normalized `AgentEvent` buckets. Legacy JSONL stores only
+session-level accumulated totals; those remain useful for lifetime totals but
+opt out of daily token attribution.
 
 ## Claude Cowork
 

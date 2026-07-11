@@ -4,6 +4,22 @@
 
 ### Adapters and pricing
 
+- Added native `cline` and `goose` adapters for the first priority wave, based
+  on current upstream serializers rather than inferred schemas. Cline reads
+  current SDK `~/.cline/data/db/sessions.db` plus per-session message artifacts,
+  then falls back to shared/VS Code-family legacy task records. Current
+  per-turn metrics carve cache subsets out of full input; legacy parsing mirrors
+  Cline's own accounting set (`api_req_started`, deleted request aggregates,
+  and subagent usage), preserves recorded cost, and leaves aggregate rows
+  unassigned to a model when the source does not identify one.
+  Goose opens the platform `sessions/sessions.db` read-only and emits one event
+  per `usage_ledger` row, carving cache subsets out of input to prevent double
+  counting while retaining model, cost source, compaction, session type and
+  parent session metadata. Pre-ledger JSONL session totals remain supported but
+  are excluded from daily token charts because their original day is unknown.
+  Both adapters avoid credentials, never estimate tokens from text, include
+  current/legacy storage fixtures, corrupt-input and duplicate-store coverage,
+  and keep `manual-jsonl` last in the registry.
 - Hardened the first native adapter wave against false attribution. Copilot CLI
   now uses its real `session.start.data.context.cwd`, anchors cumulative usage
   to the real session start, emits one source-reported bucket per model, and
@@ -46,7 +62,7 @@
   credentials (`auth.json`) are never read or allowed to trigger scans. All three ship
   two-era temp-dir fixtures plus expanded truthfulness, cache-upgrade, XDG,
   WAL-filter, corrupt-input, and dedupe coverage (the workspace suite is now
-  182), and register through
+  197), and register through
   `mod.rs` + the registry with `manual-jsonl` kept last as the catch-all.
 
 ## v2.0.2 - 2026-07-10

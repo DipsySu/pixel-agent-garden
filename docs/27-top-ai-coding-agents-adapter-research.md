@@ -176,9 +176,14 @@ Qwen Code 目前 25,928 stars，虽然没有进入市场覆盖 Top 10，但对�
 
 ### Wave 1 — 两个高置信原生 adapter
 
-1. `goose`：SQLite `usage_ledger` + legacy JSONL；
-2. `cline`：task storage + request/subagent usage；
-3. 每个来源至少两版本 fixture、损坏输入、dedupe、只读、watch path 测试。
+1. [x] `goose`：只读 SQLite `usage_ledger` + legacy JSONL；cache 是 input
+   子集，归一化时拆出，保留 `cost_source` / compaction / parent session；
+2. [x] `cline`：当前 SDK SQLite + message artifacts，兼容 shared/CLI 与
+   VS Code-family legacy task storage；当前逐 turn metrics 拆分 cache 子集，
+   legacy 的逐请求、删除历史汇总、subagent usage 复用上游 `getApiMetrics` 语义；
+3. [x] 覆盖当前/legacy 存储 fixture、损坏输入、迁移副本 dedupe、只读与
+   最小 watch path；fixture 来自上游 serializer/schema，尚待有真实本机数据后
+   再做一次脱敏 spot-check。
 
 ### Wave 2 — 新入口与闭源研究
 
