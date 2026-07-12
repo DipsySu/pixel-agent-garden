@@ -14,8 +14,9 @@ use std::path::{Path, PathBuf};
 /// Schema version for the on-disk events cache (`events.json`). Deliberately
 /// independent from `aggregate::SUMMARY_SCHEMA_VERSION`: the summary JSON shape
 /// can change without invalidating cached raw events, and vice-versa. Bump only
-/// when the `EventsCache` / `AgentEvent` on-disk shape changes incompatibly.
-pub const EVENTS_SCHEMA_VERSION: u32 = 1;
+/// when the `EventsCache` / `AgentEvent` shape or interpretation changes
+/// incompatibly. Version 2 invalidates pre-model-split Copilot CLI rows.
+pub const EVENTS_SCHEMA_VERSION: u32 = 2;
 
 /// Fingerprint of the source files the cached events were built from. Used by
 /// `crate::cache` to decide whether a cache is stale relative to the agent
@@ -118,20 +119,20 @@ pub fn save_events_with_fingerprint(
     Ok(())
 }
 
-/// Read the full cache envelope (events + fingerprint). Rejects caches with an
-/// unknown future schema version so the caller rescans rather than
-/// misinterpreting fields. Legacy unwrapped event arrays load as an envelope
-/// with `fingerprint: None`.
+/// Read the full cache envelope (events + fingerprint). Rejects any wrapped
+/// cache from a different schema version so the caller rescans rather than
+/// preserving stale semantics. Legacy unwrapped event arrays load with
+/// `fingerprint: None`, which also forces a safe refresh in cache consumers.
 pub fn load_cache(path: &Path) -> Result<EventsCache, Error> {
     let text = std::fs::read_to_string(path).map_err(|e| Error::io(path, e))?;
     // Try the wrapped form first; fall back to a bare array.
     match serde_json::from_str::<EventsCache>(&text) {
         Ok(cache) => {
-            if cache.schema_version > EVENTS_SCHEMA_VERSION {
+            if cache.schema_version != EVENTS_SCHEMA_VERSION {
                 return Err(Error::InvalidRecord {
                     context: path.display().to_string(),
                     message: format!(
-                        "cache schema_version {} exceeds reader version {}; \
+                        "cache schema_version {} does not match reader version {}; \
                          delete the cache to rescan",
                         cache.schema_version, EVENTS_SCHEMA_VERSION
                     ),
@@ -226,7 +227,7 @@ mod tests {
         let path = tmp("legacyfp");
         std::fs::write(
             &path,
-            r#"{"schema_version":1,"events":[],"fingerprint":{"max_mtime_ms":123,"file_count":2}}"#,
+            r#"{"schema_version":2,"events":[],"fingerprint":{"max_mtime_ms":123,"file_count":2}}"#,
         )
         .unwrap();
         let back = load_cache(&path).unwrap();
@@ -244,7 +245,7 @@ mod tests {
         save_events(&sample_events(), &path).unwrap();
         let text = std::fs::read_to_string(&path).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&text).unwrap();
-        assert_eq!(parsed["schema_version"], 1);
+        assert_eq!(parsed["schema_version"], 2);
         assert!(parsed["events"].is_array());
         std::fs::remove_file(&path).ok();
     }
@@ -275,6 +276,16 @@ mod tests {
             matches!(err, Error::InvalidRecord { .. }),
             "expected InvalidRecord, got {err:?}"
         );
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn load_rejects_older_wrapped_schema_to_force_truthful_rescan() {
+        let path = tmp("old-schema");
+        std::fs::write(&path, r#"{"schema_version":1,"events":[]}"#).unwrap();
+        let err = load_events(&path).unwrap_err();
+        assert!(matches!(err, Error::InvalidRecord { .. }));
+        assert!(err.to_string().contains("does not match reader version 2"));
         std::fs::remove_file(&path).ok();
     }
 

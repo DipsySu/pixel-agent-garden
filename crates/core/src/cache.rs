@@ -23,6 +23,12 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
+#[derive(Debug)]
+pub struct RefreshResult {
+    pub summary: GardenSummary,
+    pub failures: Vec<scan::AdapterFailure>,
+}
+
 /// Default event cache path — `~/.local-agent-garden/events.json`.
 pub fn default_events_path() -> PathBuf {
     storage::default_state_dir().join("events.json")
@@ -36,7 +42,14 @@ pub fn summary_from_cache_or_scan(
     ctx: &AdapterContext,
     sources_filter: Option<&[String]>,
 ) -> Result<GardenSummary, Error> {
-    summary_from_cache_or_scan_at(ctx, sources_filter, &default_events_path())
+    Ok(summary_from_cache_or_scan_with_failures(ctx, sources_filter)?.summary)
+}
+
+pub fn summary_from_cache_or_scan_with_failures(
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+) -> Result<RefreshResult, Error> {
+    summary_from_cache_or_scan_at_with_failures(ctx, sources_filter, &default_events_path())
 }
 
 /// Same as `summary_from_cache_or_scan`, but lets tests or callers pin the
@@ -46,6 +59,14 @@ pub fn summary_from_cache_or_scan_at(
     sources_filter: Option<&[String]>,
     cache_path: &Path,
 ) -> Result<GardenSummary, Error> {
+    Ok(summary_from_cache_or_scan_at_with_failures(ctx, sources_filter, cache_path)?.summary)
+}
+
+pub fn summary_from_cache_or_scan_at_with_failures(
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+    cache_path: &Path,
+) -> Result<RefreshResult, Error> {
     if let Ok(cache) = storage::load_cache(cache_path) {
         // Only trust the cache if it carries a fingerprint AND that fingerprint
         // still matches the source files. A `None` fingerprint (legacy cache or
@@ -56,15 +77,18 @@ pub fn summary_from_cache_or_scan_at(
                 // always holds the FULL event set (see refresh_summary_at), so a
                 // filtered request narrows it here instead of being ignored.
                 let summary = summarize_filtered(&cache.events, sources_filter);
-                return Ok(rings::record_summary_best_effort(
-                    summary,
-                    &rings::path_for_events_cache(cache_path),
-                    chrono::Utc::now(),
-                ));
+                return Ok(RefreshResult {
+                    summary: rings::record_summary_best_effort(
+                        summary,
+                        &rings::path_for_events_cache(cache_path),
+                        chrono::Utc::now(),
+                    ),
+                    failures: Vec::new(),
+                });
             }
         }
     }
-    refresh_summary_at(ctx, sources_filter, cache_path)
+    refresh_summary_at_with_failures(ctx, sources_filter, cache_path)
 }
 
 /// Force a scan, persist the normalized event cache (with a fresh fingerprint),
@@ -73,7 +97,16 @@ pub fn refresh_summary(
     ctx: &AdapterContext,
     sources_filter: Option<&[String]>,
 ) -> Result<GardenSummary, Error> {
-    refresh_summary_at(ctx, sources_filter, &default_events_path())
+    Ok(refresh_summary_with_failures(ctx, sources_filter)?.summary)
+}
+
+/// Force a scan while retaining adapter-local diagnostics for interactive
+/// shells. Healthy adapters still refresh when one source is unreadable.
+pub fn refresh_summary_with_failures(
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+) -> Result<RefreshResult, Error> {
+    refresh_summary_at_with_failures(ctx, sources_filter, &default_events_path())
 }
 
 /// Same as `refresh_summary`, but lets tests or callers pin the cache path.
@@ -82,6 +115,14 @@ pub fn refresh_summary_at(
     sources_filter: Option<&[String]>,
     cache_path: &Path,
 ) -> Result<GardenSummary, Error> {
+    Ok(refresh_summary_at_with_failures(ctx, sources_filter, cache_path)?.summary)
+}
+
+pub fn refresh_summary_at_with_failures(
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+    cache_path: &Path,
+) -> Result<RefreshResult, Error> {
     // Fingerprint BEFORE scanning: if a source changes mid-scan, the stored
     // fingerprint will be slightly older than the data, so the next read sees
     // "newer source → stale" and refreshes again. That errs toward an extra
@@ -97,14 +138,44 @@ pub fn refresh_summary_at(
     // the fingerprint is filter-independent, so writing a filtered subset would
     // be served whole to later unfiltered reads (cache pollution). A filtered
     // request stays a transient view computed from the full scan.
-    let result = scan::collect_events(ctx, None)?;
-    storage::save_events_with_fingerprint(&result.events, Some(fingerprint), cache_path)?;
+    let mut result = scan::collect_events(ctx, None)?;
+    let stored_fingerprint = if result.failures.is_empty() {
+        Some(fingerprint)
+    } else {
+        // Preserve the last known partition for failed adapters while healthy
+        // adapters refresh. A missing fingerprint deliberately keeps this
+        // cache stale so the next read retries the failed source.
+        if let Ok(cache) = storage::load_cache(cache_path) {
+            let failed = result
+                .failures
+                .iter()
+                .map(|failure| failure.adapter.as_str())
+                .collect::<HashSet<_>>();
+            result.events.extend(
+                cache
+                    .events
+                    .into_iter()
+                    .filter(|event| failed.contains(event.source.as_str())),
+            );
+        }
+        None
+    };
+    // A manual JSONL row may intentionally use the same source name as a
+    // native adapter. When that native adapter fails, its retained cache
+    // partition can therefore overlap freshly scanned manual rows. Re-run the
+    // canonical cross-source dedupe after merging so partial recovery never
+    // double-counts an identical logical event.
+    result.events = scan::dedupe_events(result.events);
+    storage::save_events_with_fingerprint(&result.events, stored_fingerprint, cache_path)?;
     let summary = summarize_filtered(&result.events, sources_filter);
-    Ok(rings::record_summary_best_effort(
-        summary,
-        &rings::path_for_events_cache(cache_path),
-        chrono::Utc::now(),
-    ))
+    Ok(RefreshResult {
+        summary: rings::record_summary_best_effort(
+            summary,
+            &rings::path_for_events_cache(cache_path),
+            chrono::Utc::now(),
+        ),
+        failures: result.failures,
+    })
 }
 
 /// Summarize `events`, optionally narrowed to a set of source (adapter) names.
@@ -542,10 +613,84 @@ mod tests {
 
         assert_eq!(summary.total_events, 0);
         let text = std::fs::read_to_string(&path).unwrap();
+        let expected = format!(r#""schema_version": {}"#, storage::EVENTS_SCHEMA_VERSION);
         assert!(
-            text.contains(r#""schema_version": 1"#),
+            text.contains(&expected),
             "future cache should be replaced, got: {text}"
         );
         std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn failed_adapter_keeps_last_partition_but_forces_retry() {
+        let home = std::env::temp_dir().join(format!(
+            "lag-cache-partial-failure-home-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&home);
+        let goose_root = home
+            .join("Library")
+            .join("Application Support")
+            .join("Block")
+            .join("goose")
+            .join("sessions");
+        std::fs::create_dir_all(&goose_root).unwrap();
+        let conn = rusqlite::Connection::open(goose_root.join("sessions.db")).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE sessions (id TEXT PRIMARY KEY, working_dir TEXT);
+             CREATE TABLE usage_ledger (
+               id INTEGER PRIMARY KEY, session_id TEXT, created_timestamp INTEGER,
+               model TEXT, input_tokens INTEGER, output_tokens INTEGER,
+               total_tokens INTEGER, cache_read_tokens INTEGER,
+               cache_write_tokens INTEGER, cost REAL, is_compaction INTEGER
+             );",
+        )
+        .unwrap();
+        drop(conn);
+        write_session(&home, "healthy", "session.jsonl", 7);
+        let manual_path = home.join("manual.jsonl");
+        std::fs::write(
+            &manual_path,
+            r#"{"source":"goose","timestamp":"2026-05-29T12:00:00Z","project_path":"D:/repo/pixel-agent-garden","total_tokens":99}"#,
+        )
+        .unwrap();
+
+        let cache_path = tmp_path("partial-failure");
+        let mut old_goose = sample_event();
+        old_goose.source = "goose".to_string();
+        old_goose.usage.total_tokens = 99;
+        old_goose.raw_ref = Some(format!("{}:1", manual_path.display()));
+        storage::save_events_with_fingerprint(
+            &[old_goose],
+            Some(SourceFingerprint::default()),
+            &cache_path,
+        )
+        .unwrap();
+
+        let ctx = AdapterContext::with_home(&home).with_manual_jsonl([manual_path]);
+        let refresh = refresh_summary_at_with_failures(&ctx, None, &cache_path).unwrap();
+        assert_eq!(refresh.failures.len(), 1);
+        assert_eq!(refresh.failures[0].adapter, "goose");
+        assert_eq!(refresh.summary.source_tokens["goose"].total_tokens, 99);
+        assert_eq!(
+            refresh
+                .summary
+                .sources
+                .get("goose")
+                .copied()
+                .unwrap_or_default(),
+            1
+        );
+        assert_eq!(refresh.summary.source_tokens["claude-code"].total_tokens, 7);
+        assert!(
+            storage::load_cache(&cache_path)
+                .unwrap()
+                .fingerprint
+                .is_none()
+        );
+
+        std::fs::remove_file(rings::path_for_events_cache(&cache_path)).ok();
+        std::fs::remove_file(&cache_path).ok();
+        std::fs::remove_dir_all(&home).ok();
     }
 }

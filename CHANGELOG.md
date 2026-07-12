@@ -1,6 +1,112 @@
 # Changelog
 
-## Unreleased
+## v2.1.0 - 2026-07-12
+
+### Adapters and pricing
+
+- Added three evidence-gated local adapters. `qwen-code` follows Qwen Code
+  0.19.9's real `projects/*/chats/*.jsonl` serializer plus legacy whole-file
+  recordings, preserves source-reported prompt/output/cache/thinking semantics,
+  and skips fork-copied history; a real local 0.19.9 session confirmed the
+  schema and normalized counters. `kiro` reads Kiro CLI 2.12.1's structural
+  `~/.kiro/sessions/cli/*.json` metadata as activity-only, never opens sibling
+  transcript JSONL, and accepts a `conversations_v2` database only when its
+  safe identity/timestamp schema is present, so generic Kiro shell-history and
+  auth/state databases cannot trigger false agent activity. `cursor` reads
+  Cursor 3.11.13 foreground/local `composerHeaders` and workspace mappings as
+  activity-only while excluding drafts, startup placeholders,
+  background/cloud origins, transcript/body/checkpoint stores, titles, and
+  mutable cumulative token state.
+- Recorded a strict Windsurf no-go instead of shipping a guessed parser. The
+  current official update endpoint now returns Devin Desktop, while a signed
+  fixed Windsurf 2.3.15 package contains neither the community-claimed
+  `cascade.sessionData` nor `cascade.chatdata` contract and exposes no proven
+  content-free Cascade index. A native adapter now requires a fixed legacy
+  two-workspace fixture that can bind session, timestamp, and project without
+  reading protobuf trajectory content.
+- Added a native `antigravity` activity adapter for the current Gemini consumer
+  migration path. It prefers populated rows from Antigravity CLI 1.1.1's local
+  summary index, but a real completed CLI session proved that table can remain
+  empty; the truthful fallback uses `cache/last_conversations.json` and exact
+  `conversations/<id>.db` files for workspace, native session id, step count,
+  and database activity time. Titles, previews, protobuf blobs, transcripts,
+  logs, app-data paths, config, and credentials are never read or watched.
+  Token/model fields remain empty instead of being inferred from text;
+  `gemini-cli` remains legacy/API-key/Vertex/Standard/Enterprise coverage.
+- Added native `cline` and `goose` adapters for the first priority wave, based
+  on current upstream serializers rather than inferred schemas. Cline reads
+  current SDK `~/.cline/data/db/sessions.db` plus per-session message artifacts,
+  then falls back to shared/VS Code-family legacy task records. Current
+  per-turn metrics carve cache subsets out of full input; legacy parsing mirrors
+  Cline's own accounting set (`api_req_started`, deleted request aggregates,
+  and subagent usage), preserves recorded cost, and leaves aggregate rows
+  unassigned to a model when the source does not identify one.
+  Goose opens the platform `sessions/sessions.db` read-only and emits one event
+  per `usage_ledger` row, carving cache subsets out of input to prevent double
+  counting while retaining model, cost source, compaction, session type and
+  parent session metadata. Pre-ledger JSONL session totals remain supported but
+  are excluded from daily token charts because their original day is unknown.
+  Both adapters avoid credentials, never estimate tokens from text, include
+  current/legacy storage fixtures, corrupt-input and duplicate-store coverage,
+  and keep `manual-jsonl` last in the registry.
+- Hardened the first native adapter wave against false attribution. Copilot CLI
+  now uses its real `session.start.data.context.cwd`, anchors cumulative usage
+  to the real session start, emits one source-reported bucket per model, and
+  omits multi-day cumulative totals from daily charts instead of inventing a
+  day while preserving lifetime/model totals. Its modern fixture is redacted
+  from a real local Copilot CLI 1.0.70 session. OpenCode now honors
+  `XDG_DATA_HOME`, lets a valid legacy row recover from an unusable canonical
+  row, and watches WAL creation through an exact-path filter that ignores
+  credential siblings. Raw-event cache schema v2 forces one safe rescan so a
+  v1 cache cannot preserve the old mixed-model Copilot interpretation.
+- Completed three adversarial review passes across adapter truthfulness,
+  aggregation, cache isolation, and live watching. Cumulative session totals
+  that cannot be assigned to a day now contribute only one activity marker and
+  never enter trailing-30-day token shares. A failing adapter no longer aborts
+  healthy sources: the last cached partition for that adapter is retained,
+  surfaced as an adapter-specific warning, and deliberately left stale so the
+  next load retries it. The desktop watcher now reconciles newly created roots,
+  session databases, and nested targets after launch; multi-level missing paths
+  use bounded polling instead of recursively watching `$HOME`, while exact-path
+  filtering still excludes credential siblings. Gemini's exact `projects.json`
+  input participates in watching/fingerprinting. Goose derives pre-ledger
+  residuals from authoritative SQLite session totals rather than leftover
+  JSONL, and Qwen classifies native tool-result prompt tokens as input instead
+  of output.
+- Added a current Top 10 AI coding-agent coverage study, separating market
+  adoption from local token feasibility. It recommends Goose and Cline as the
+  next exact-usage adapters, moves Antigravity into evidence research, treats
+  Cursor/Windsurf as schema research, and reclassifies Gemini CLI as
+  legacy/enterprise/API-key coverage after Google's consumer OAuth deprecation.
+- Added the evidence-first plan for the next native adapter wave. Gemini CLI,
+  GitHub Copilot CLI, and OpenCode are the P0 fixture/research targets; Cline /
+  Roo Code and Cursor follow only after their local schemas and token precision
+  are proven with versioned redacted samples.
+- Added the published GPT-5.6 Sol, Terra, and Luna Standard short-context API
+  prices to the bundled local table, including GPT-5.6's explicit cached-input
+  and cache-write rates. Sol Pro remains unpriced because the API pricing table
+  does not publish a matching standard per-token row.
+- Made the existing user price overlay discoverable: the app and tray menus now
+  open `~/.local-agent-garden/prices.json`, creating an empty override table
+  when absent so untouched factory models keep receiving release updates.
+- Implemented the three P0 native adapters (`gemini-cli`, `copilot-cli`,
+  `opencode`), researched from upstream source code and official docs because
+  no local sample data existed on the development machine — each module doc
+  states its evidence URLs, verified date, token-precision contract, and
+  dedupe key. Gemini CLI reads `~/.gemini/tmp/<project>/chats/` recordings
+  (per-message API usage incl. cached + thinking tokens; lossless project-path
+  recovery via the CLI's own `projects.json` / `.project_root` records, never
+  hash reversing). Copilot CLI reads `~/.copilot/session-state/*/events.jsonl`
+  (cumulative per-session API totals from the richest metrics event; sessions
+  without one degrade to activity-only; the derived `session-store.db` is
+  never opened). OpenCode reads the XDG store across all three storage eras —
+  current SQLite (opened read-only), flat-JSON, and the legacy
+  per-project tree — with per-message tokens, cache splits, and recorded cost;
+  credentials (`auth.json`) are never read or allowed to trigger scans. All three ship
+  two-era temp-dir fixtures plus expanded truthfulness, cache-upgrade, XDG,
+  WAL-filter, corrupt-input, and dedupe coverage (the workspace suite is now
+  252), and register through
+  `mod.rs` + the registry with `manual-jsonl` kept last as the catch-all.
 
 ## v2.0.2 - 2026-07-10
 

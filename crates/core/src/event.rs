@@ -45,6 +45,14 @@ pub struct AgentEvent {
     #[serde(default)]
     pub files_touched: Vec<String>,
 
+    /// Source-recorded cost, informational only. Some sources persist a cost
+    /// per row (opencode, cline, goose — where it can be provider-reported OR
+    /// client-calculated; see each adapter's module doc), most persist none.
+    /// The garden's USD figures therefore NEVER read this field: estimates
+    /// always come from `core::prices` (tokens × the local price table), one
+    /// consistent methodology across every source. Consumers wanting the
+    /// source's own number may surface it per event, but must not mix the two
+    /// methodologies inside one total.
     #[serde(default)]
     pub cost_usd: Option<f64>,
 
@@ -83,6 +91,13 @@ fn default_event_type() -> String {
 /// "open in terminal"; surface it as a best-effort guess).
 pub const PATH_SOURCE_KEY: &str = "path_source";
 pub const PATH_SOURCE_INFERRED: &str = "inferred";
+
+/// Metadata key used when a source reports real aggregate usage but does not
+/// preserve enough timestamps to assign it to one UTC day. Such usage still
+/// contributes to all-time/source/model totals, but must not be presented in
+/// the daily token series as if its day were known.
+pub const DAILY_TOKEN_ATTRIBUTION_KEY: &str = "daily_token_attribution";
+pub const DAILY_TOKEN_ATTRIBUTION_UNAVAILABLE: &str = "unavailable";
 
 impl AgentEvent {
     /// Convenience builder: fill in the required fields, leave the rest
@@ -130,6 +145,16 @@ impl AgentEvent {
     /// may not be a real filesystem path.
     pub fn path_is_inferred(&self) -> bool {
         self.metadata.get(PATH_SOURCE_KEY).and_then(|v| v.as_str()) == Some(PATH_SOURCE_INFERRED)
+    }
+
+    /// Whether this event's token total can truthfully be assigned to its UTC
+    /// calendar day. Adapters opt out only when the upstream source exposes a
+    /// multi-day cumulative total with no per-turn/per-day split.
+    pub fn has_daily_token_attribution(&self) -> bool {
+        self.metadata
+            .get(DAILY_TOKEN_ATTRIBUTION_KEY)
+            .and_then(|v| v.as_str())
+            != Some(DAILY_TOKEN_ATTRIBUTION_UNAVAILABLE)
     }
 
     /// Project key strategy: project_path when known, otherwise

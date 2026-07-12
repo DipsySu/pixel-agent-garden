@@ -82,11 +82,44 @@ settings, and quit.
 
 ## Adapters
 
+- `antigravity`: Antigravity CLI conversation index at
+  `~/.gemini/antigravity-cli/` (read-only summary index plus the CLI's
+  `cache/last_conversations.json` and per-conversation SQLite stores;
+  session-level activity only, with no token estimates)
 - `claude-code`: `~/.claude/projects/**/*.jsonl`
 - `claude-cowork`: Claude Desktop Cowork local agent sessions under
   `~/Library/Application Support/Claude/local-agent-mode-sessions/`
+- `cline`: current SDK sessions under `~/.cline/data/db/sessions.db` and
+  `~/.cline/data/sessions/`, plus legacy CLI/shared and VS Code-family task
+  directories (per-turn/request, deleted-history, and subagent usage; no
+  text-based token estimates)
 - `codex`: `~/.codex/state_5.sqlite`, `~/.codex/session_index.jsonl`, and
   Codex rollout JSONL files when present
+- `copilot-cli`: GitHub Copilot CLI session logs under
+  `~/.copilot/session-state/*/events.jsonl` (API-reported per-session token
+  totals split by source model; multi-day cumulative totals stay in lifetime
+  usage but are not assigned to a fabricated daily bucket)
+- `cursor`: Cursor foreground/local conversation indexes under its platform
+  `User/globalStorage` and `User/workspaceStorage` roots (activity only; draft,
+  background/cloud, transcript body, checkpoint blob, and token estimates are
+  excluded)
+- `gemini-cli`: Gemini CLI recorded chats under `~/.gemini/tmp/<project>/chats/`
+  (legacy/API-key/Vertex/Standard/Enterprise coverage; API-reported per-message
+  usage including cached and thinking tokens)
+- `goose`: Goose `sessions/sessions.db` under the platform data directory
+  (read-only per-inference usage ledger with cache splits, model, recorded cost,
+  cost source, and compaction flag; legacy JSONL cumulative totals supported)
+- `kiro`: Kiro CLI session metadata under `~/.kiro/sessions/cli/`, plus
+  compatible `conversations_v2` indexes when present (activity only; transcript
+  JSONL, conversation values, shell history, auth state, and token-looking
+  private fields are excluded)
+- `opencode`: OpenCode local store under `$XDG_DATA_HOME/opencode/` (default
+  `~/.local/share/opencode/`)
+  (SQLite and older JSON layouts; per-message tokens, cache splits, and cost)
+- `qwen-code`: Qwen Code recordings under
+  `~/.qwen/projects/*/chats/*.jsonl`, with legacy `~/.qwen/tmp/*/chats/`
+  compatibility (source-reported per-message usage with cache and thinking
+  metadata; forked history is not counted twice)
 - `manual-jsonl`: optional local JSONL import for agents before native adapters
   exist
 
@@ -150,8 +183,7 @@ paths are shortened to `~`, but review the report before sharing it.
 
 ## Manual JSONL Format
 
-Use this for Cursor, Aider, Gemini CLI, or any source before a native adapter is
-added:
+Use this for Aider or any source before a native adapter is added:
 
 ```json
 {"source":"aider","timestamp":"2026-05-27T09:00:00Z","project_path":"/repo","session_id":"s1","input_tokens":1200,"output_tokens":400,"tool_calls":3}
@@ -164,6 +196,34 @@ Native adapter contributions should start with
 [`docs/23-adapter-development-guide.md`](docs/23-adapter-development-guide.md).
 When requesting support for a new agent, attach redacted local path patterns
 and the output of `agent-garden adapters --json --watch-paths`.
+
+## Model Price Overrides
+
+Cost estimates use bundled model defaults plus your local override file at
+`~/.local-agent-garden/prices.json`. In the desktop app, choose **Garden → Open
+Model Prices** (or the same item in the tray menu). The app creates an empty
+override table when the file does not exist; add only models you want to pin:
+
+```json
+{
+  "schema_version": 2,
+  "prices": {
+    "my-provider/my-model": {
+      "input_per_mtok": 1.25,
+      "output_per_mtok": 5.0,
+      "cache_read_per_mtok": 0.125,
+      "cache_write_per_mtok": 1.25
+    }
+  }
+}
+```
+
+Rates are USD per million tokens and match exact model ids. Unknown models stay
+unpriced; the app never guesses. Deleting an override restores the bundled
+default for that model. GPT-5.6 Sol, Terra, and Luna standard short-context
+rates are included in the current default snapshot; see
+[`docs/25-model-pricing-refresh.md`](docs/25-model-pricing-refresh.md) for source
+and cache-pricing notes.
 
 ## Architecture
 
@@ -268,12 +328,41 @@ scan/render 路径不发网络请求，也不会写入源 agent 目录。
 
 ### 适配器
 
+- `antigravity`: Antigravity CLI 的会话索引
+  `~/.gemini/antigravity-cli/`（只读解析 summary index、CLI 的
+  `cache/last_conversations.json` 与逐会话 SQLite；只统计 session-level
+  真实活动，不估算 token）
 - `claude-code`: `~/.claude/projects/**/*.jsonl`
 - `claude-cowork`: Claude Desktop Cowork 本地 agent sessions，
   位于 `~/Library/Application Support/Claude/local-agent-mode-sessions/`
+- `cline`: 当前 SDK 的 `~/.cline/data/db/sessions.db` 与
+  `~/.cline/data/sessions/`，并兼容旧 CLI/shared 及 VS Code 系编辑器 task
+  目录（逐 turn/request、已删除历史和 subagent 的真实用量；不按文本长度
+  估算 token）
 - `codex`: `~/.codex/state_5.sqlite`、`~/.codex/session_index.jsonl`，
   以及存在时的 Codex rollout JSONL 文件
-- `manual-jsonl`: 在原生 adapter 支持之前，用于 Cursor、Aider、Gemini CLI 等来源的本地 JSONL 入口
+- `copilot-cli`: GitHub Copilot CLI 会话日志，位于
+  `~/.copilot/session-state/*/events.jsonl`（API 上报的会话级 token 总量;
+  按源端 model 独立统计;跨日累计总量保留在全量统计中，不伪造每日归属）
+- `cursor`: Cursor 平台 `User/globalStorage` 与 `User/workspaceStorage` 下的
+  本地前台会话索引（仅统计真实活动;排除草稿、background/cloud、聊天正文、
+  checkpoint blob 与 token 猜测）
+- `gemini-cli`: Gemini CLI 保存的对话，位于 `~/.gemini/tmp/<project>/chats/`
+  （legacy/API key/Vertex/Standard/Enterprise 覆盖;API 上报的逐消息用量，
+  含缓存与思考 token）
+- `goose`: 平台数据目录中的 Goose `sessions/sessions.db`（只读解析逐次
+  usage ledger，包含 cache 拆分、model、源端 cost、cost source 与 compaction；
+  同时兼容 legacy JSONL 累计总量）
+- `kiro`: Kiro CLI 的 `~/.kiro/sessions/cli/` session metadata，并兼容存在时
+  的 `conversations_v2` 索引（仅统计真实活动;不读 transcript JSONL、会话
+  value、shell history、auth state，也不采用语义未证实的 token 字段）
+- `opencode`: OpenCode 本地存储，位于 `$XDG_DATA_HOME/opencode/`（默认
+  `~/.local/share/opencode/`）
+  （SQLite 与旧版 JSON 布局;逐消息 token、缓存拆分与成本）
+- `qwen-code`: Qwen Code 的 `~/.qwen/projects/*/chats/*.jsonl`，并兼容
+  legacy `~/.qwen/tmp/*/chats/`（源端逐消息 usage，包含 cache 与 thinking
+  metadata；fork 继承历史不会重复计数）
+- `manual-jsonl`: 在原生 adapter 支持之前，用于 Aider 等来源的本地 JSONL 入口
 
 ### 从源码构建
 
@@ -333,7 +422,7 @@ doctor 报告只检查本地状态：state 目录是否可写、`settings.toml`�
 
 ### Manual JSONL 格式
 
-Cursor、Aider、Gemini CLI 或任何还没有原生 adapter 的来源，都可以先用这个格式接入：
+Aider 或任何还没有原生 adapter 的来源，都可以先用这个格式接入：
 
 ```json
 {"source":"aider","timestamp":"2026-05-27T09:00:00Z","project_path":"/repo","session_id":"s1","input_tokens":1200,"output_tokens":400,"tool_calls":3}
@@ -345,6 +434,31 @@ Cursor、Aider、Gemini CLI 或任何还没有原生 adapter 的来源，都可�
 [`docs/23-adapter-development-guide.md`](docs/23-adapter-development-guide.md)
 开始。请求支持新 agent 时，请附上脱敏后的本地路径模式，以及
 `agent-garden adapters --json --watch-paths` 输出。
+
+### 模型价格配置
+
+成本估算会合并内置默认价格和本机
+`~/.local-agent-garden/prices.json`。在桌面 App 中选择 **Garden → 打开模型价格**
+（托盘菜单也有同名入口）。文件不存在时，App 会先创建一个空的 override 表；只填写你确实想固定价格的模型：
+
+```json
+{
+  "schema_version": 2,
+  "prices": {
+    "my-provider/my-model": {
+      "input_per_mtok": 1.25,
+      "output_per_mtok": 5.0,
+      "cache_read_per_mtok": 0.125,
+      "cache_write_per_mtok": 1.25
+    }
+  }
+}
+```
+
+费率单位是每百万 token 的美元价格，并按精确 model id 匹配；未知模型保持“未计价”，
+应用不会猜价格。删除某条 override 后，该模型会重新跟随内置默认值。当前默认快照已包含
+GPT-5.6 Sol、Terra、Luna 的 standard short-context 费率；来源和 cache 计价边界见
+[`docs/25-model-pricing-refresh.md`](docs/25-model-pricing-refresh.md)。
 
 ### 架构
 

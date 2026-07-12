@@ -4,6 +4,21 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
+/// Validate an absolute local path by its serialized spelling rather than the
+/// host running the parser. Adapter fixtures and synchronized agent data can
+/// contain POSIX paths on Windows (or drive paths on Unix), so
+/// `Path::is_absolute()` would incorrectly make parsing host-dependent.
+pub(crate) fn is_portable_absolute_path(path: &str) -> bool {
+    if path.starts_with('/') {
+        return true;
+    }
+    let bytes = path.as_bytes();
+    bytes.len() >= 3
+        && bytes[0].is_ascii_alphabetic()
+        && bytes[1] == b':'
+        && matches!(bytes[2], b'/' | b'\\')
+}
+
 use chrono::{DateTime, Utc};
 
 /// One parsed JSONL row plus its 1-indexed line number. The line number is
@@ -285,6 +300,16 @@ mod tests {
         assert_eq!(as_int(&json!("abc")), 0);
         assert_eq!(as_int(&json!(1.7)), 1); // truncates
         assert_eq!(as_int(&json!({})), 0);
+    }
+
+    #[test]
+    fn portable_absolute_paths_do_not_depend_on_test_host() {
+        assert!(is_portable_absolute_path("/Users/demo/project"));
+        assert!(is_portable_absolute_path("C:/Users/demo/project"));
+        assert!(is_portable_absolute_path(r"d:\Users\demo\project"));
+        assert!(!is_portable_absolute_path("relative/project"));
+        assert!(!is_portable_absolute_path("C:relative"));
+        assert!(!is_portable_absolute_path(r"\\server\share"));
     }
 
     #[test]

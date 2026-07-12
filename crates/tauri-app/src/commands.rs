@@ -14,15 +14,21 @@ use local_agent_garden_core::registry;
 use local_agent_garden_core::rings::{self, RingBook};
 use local_agent_garden_core::settings::{self, Settings};
 use serde::Serialize;
+use tauri::Emitter;
 use tauri_plugin_dialog::DialogExt;
+
+use crate::events::{ErrorPayload, GARDEN_ERROR};
 
 /// Return the current garden summary from cache when possible, falling back to
 /// a fresh scan that writes `~/.local-agent-garden/events.json`.
 #[tauri::command]
-pub async fn garden_summary() -> Result<GardenSummary, String> {
-    tokio::task::spawn_blocking(|| {
+pub async fn garden_summary(app: tauri::AppHandle) -> Result<GardenSummary, String> {
+    tokio::task::spawn_blocking(move || {
         let ctx = AdapterContext::from_env();
-        cache::summary_from_cache_or_scan(&ctx, None).map_err(|e| e.to_string())
+        let refresh = cache::summary_from_cache_or_scan_with_failures(&ctx, None)
+            .map_err(|e| e.to_string())?;
+        emit_adapter_failures(&app, &refresh.failures);
+        Ok(refresh.summary)
     })
     .await
     .map_err(|e| format!("garden_summary task panicked: {e}"))?
@@ -30,13 +36,32 @@ pub async fn garden_summary() -> Result<GardenSummary, String> {
 
 /// Force a fresh scan, update the cache, and return the new summary.
 #[tauri::command]
-pub async fn trigger_scan() -> Result<GardenSummary, String> {
-    tokio::task::spawn_blocking(|| {
+pub async fn trigger_scan(app: tauri::AppHandle) -> Result<GardenSummary, String> {
+    tokio::task::spawn_blocking(move || {
         let ctx = AdapterContext::from_env();
-        cache::refresh_summary(&ctx, None).map_err(|e| e.to_string())
+        let refresh =
+            cache::refresh_summary_with_failures(&ctx, None).map_err(|e| e.to_string())?;
+        emit_adapter_failures(&app, &refresh.failures);
+        Ok(refresh.summary)
     })
     .await
     .map_err(|e| format!("trigger_scan task panicked: {e}"))?
+}
+
+fn emit_adapter_failures(
+    app: &tauri::AppHandle,
+    failures: &[local_agent_garden_core::scan::AdapterFailure],
+) {
+    for failure in failures {
+        let payload = ErrorPayload {
+            source: "scan",
+            message: failure.message.clone(),
+            adapter: Some(failure.adapter.clone()),
+        };
+        if let Err(error) = app.emit(GARDEN_ERROR, &payload) {
+            eprintln!("[commands] emit adapter error failed: {error}");
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -66,8 +91,8 @@ pub async fn list_adapters() -> Result<Vec<AdapterStatus>, String> {
 /// "updated N minutes ago" pill uses this when the summary is cached. ISO
 /// 8601 string for easy JS Date parsing.
 #[tauri::command]
-pub async fn data_freshness() -> Result<Option<String>, String> {
-    let summary = garden_summary().await?;
+pub async fn data_freshness(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let summary = garden_summary(app).await?;
     Ok(summary.last_seen.map(|d| d.to_rfc3339()))
 }
 

@@ -10,6 +10,7 @@ use chrono::Utc;
 use local_agent_garden_core::adapter::AdapterContext;
 use local_agent_garden_core::aggregate::{GardenSummary, top_by_tokens, utc_day_key};
 use local_agent_garden_core::cache;
+use local_agent_garden_core::prices::{self, PRICES_SCHEMA_VERSION, PriceTable};
 use local_agent_garden_core::rings;
 use local_agent_garden_core::settings::{self, Settings};
 use local_agent_garden_core::storage;
@@ -32,6 +33,7 @@ const MENU_SHOW: &str = "garden-show";
 const MENU_HIDE: &str = "garden-hide";
 const MENU_SCAN: &str = "garden-scan";
 const MENU_OPEN_SETTINGS: &str = "garden-open-settings";
+const MENU_OPEN_PRICES: &str = "garden-open-prices";
 const MENU_OPEN_DATA_DIR: &str = "garden-open-data-dir";
 const MENU_QUIT: &str = "garden-quit";
 const MENU_STATUS: &str = "garden-status";
@@ -174,6 +176,7 @@ pub fn handle_menu_event(app: &AppHandle, event: MenuEvent) {
         MENU_HIDE => hide_main_window(app),
         MENU_SCAN => trigger_scan(app),
         MENU_OPEN_SETTINGS => open_settings(app),
+        MENU_OPEN_PRICES => open_prices(app),
         MENU_OPEN_DATA_DIR => open_data_dir(app),
         MENU_QUIT => app.exit(0),
         _ => {}
@@ -254,6 +257,13 @@ fn build_tray_menu<R: Runtime>(
         true,
         None::<&str>,
     )?;
+    let open_prices = MenuItem::with_id(
+        app,
+        MENU_OPEN_PRICES,
+        tr("Open Model Prices", "打开模型价格"),
+        true,
+        None::<&str>,
+    )?;
     let open_data_dir = MenuItem::with_id(
         app,
         MENU_OPEN_DATA_DIR,
@@ -283,6 +293,7 @@ fn build_tray_menu<R: Runtime>(
             &sep1,
             &scan,
             &open_settings,
+            &open_prices,
             &open_data_dir,
             &sep2,
             &quit,
@@ -464,6 +475,13 @@ fn build_control_submenu<R: Runtime>(app: &AppHandle<R>, title: &str) -> tauri::
         true,
         None::<&str>,
     )?;
+    let open_prices = MenuItem::with_id(
+        app,
+        MENU_OPEN_PRICES,
+        tr("Open Model Prices", "打开模型价格"),
+        true,
+        None::<&str>,
+    )?;
     let open_data_dir = MenuItem::with_id(
         app,
         MENU_OPEN_DATA_DIR,
@@ -491,6 +509,7 @@ fn build_control_submenu<R: Runtime>(app: &AppHandle<R>, title: &str) -> tauri::
             &sep1,
             &scan,
             &open_settings,
+            &open_prices,
             &open_data_dir,
             &sep2,
             &quit,
@@ -541,8 +560,18 @@ fn trigger_scan<R: Runtime>(app: &AppHandle<R>) {
     std::thread::spawn(move || {
         let _ = app.emit(GARDEN_SCANNING, &ScanningPayload { adapter: None });
         match watcher::run_summary_blocking() {
-            Ok(summary) => {
-                if let Err(err) = app.emit(GARDEN_UPDATED, &summary) {
+            Ok(refresh) => {
+                for failure in &refresh.failures {
+                    let payload = ErrorPayload {
+                        source: "tray",
+                        message: failure.message.clone(),
+                        adapter: Some(failure.adapter.clone()),
+                    };
+                    if let Err(err) = app.emit(GARDEN_ERROR, &payload) {
+                        eprintln!("[tray] emit adapter error failed: {err}");
+                    }
+                }
+                if let Err(err) = app.emit(GARDEN_UPDATED, &refresh.summary) {
                     eprintln!("[tray] emit updated failed: {err}");
                 }
             }
@@ -564,6 +593,27 @@ fn open_settings<R: Runtime>(app: &AppHandle<R>) {
         return;
     }
     open_path(app, &path, "settings.toml");
+}
+
+/// Open the user-authored model-price overlay next to the normal settings
+/// entry. A missing file is initialized as an EMPTY override table: copying
+/// the bundled effective table here would pin every factory value and prevent
+/// future releases from refreshing models the user never edited.
+fn open_prices<R: Runtime>(app: &AppHandle<R>) {
+    let path = prices::default_user_prices_path();
+    if path.exists() {
+        open_path(app, &path, "prices.json");
+        return;
+    }
+    let empty = PriceTable {
+        schema_version: PRICES_SCHEMA_VERSION,
+        prices: Default::default(),
+    };
+    if let Err(err) = prices::save_user(&path, &empty) {
+        emit_error(app, "tray", format!("create prices.json: {err}"));
+        return;
+    }
+    open_path(app, &path, "prices.json");
 }
 
 fn open_data_dir<R: Runtime>(app: &AppHandle<R>) {

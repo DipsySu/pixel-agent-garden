@@ -63,14 +63,24 @@ Rules:
 - Adapters are read-only.
 - Adapters do not call each other.
 - Cross-source logic, including dedupe, lives in `scan.rs`.
-- Bad rows are skipped; I/O and database failures return typed `Error`.
+- Bad rows are skipped; I/O and database failures return typed `Error` to the
+  scan orchestrator. The orchestrator isolates them per adapter, keeps healthy
+  events, and exposes structured adapter failures to CLI/Tauri callers.
 - Source-specific details go into `AgentEvent.metadata`.
 
 ## Built-In Adapters
 
+- `antigravity`: reads safe local summary/map fields plus per-conversation
+  SQLite indexes as activity-only; it does not infer token usage from blobs or
+  transcripts.
 - `claude-code`: reads Claude Code JSONL transcripts.
 - `claude-cowork`: reads Claude Desktop Cowork embedded Claude Code transcripts.
+- `cline`: reads current SDK SQLite/message artifacts plus legacy task stores.
 - `codex`: reads Codex SQLite/session/rollout local state.
+- `copilot-cli`: reads API-reported cumulative per-model CLI session metrics.
+- `gemini-cli`: legacy/API-key/Vertex/Standard/Enterprise recorded chats.
+- `goose`: reads the per-inference SQLite usage ledger plus legacy totals.
+- `opencode`: reads the XDG SQLite store plus both legacy JSON layouts.
 - `manual-jsonl`: escape hatch for local agents without native adapters.
 
 ## Schema Versioning
@@ -110,6 +120,11 @@ fetch. `core::prices` owns the contract:
   user models default missing cache rates to `0.0` so the app does not guess a
   provider policy. Read/write goes through the thin `load_prices` /
   `save_prices` commands.
+- The native app/tray menu exposes **Open Model Prices** next to **Open
+  Settings**. If the override file does not exist, the shell asks
+  `core::prices` to create an empty table; it never copies the effective table,
+  because doing so would pin every factory model and block future default
+  refreshes.
 - A malformed or future-versioned `prices.json` surfaces as a typed error and
   the file is **never quarantined or renamed** — unlike `rings.json` (a
   product-owned memory we may restart), `prices.json` is user-authored data,
