@@ -277,7 +277,7 @@ fn read_last_conversations(path: &Path) -> HashMap<String, String> {
         if workspace != trimmed_workspace
             || conversation_id != trimmed_id
             || workspace.contains('\0')
-            || !Path::new(&workspace).is_absolute()
+            || !is_portable_absolute_path(&workspace)
             || conversation_id.is_empty()
         {
             return HashMap::new();
