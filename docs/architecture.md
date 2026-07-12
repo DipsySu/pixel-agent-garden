@@ -61,6 +61,19 @@ pub trait Adapter: Send + Sync {
 Adapters must be read-only. They should tolerate missing files, unknown fields,
 older schemas, partial JSONL rows, and locked SQLite databases.
 
+`scan` isolates typed adapter failures: healthy adapters still produce events,
+while each failed adapter is returned as an `AdapterFailure`. Cache refreshes
+retain that adapter's last known partition, omit the source fingerprint so the
+next load retries, and surface an adapter-specific CLI warning / Tauri error
+event. A malformed source must never erase unrelated garden data.
+
+The desktop watcher periodically reconciles `watch_paths()` as well as doing so
+after filesystem-triggered scans. This is required because agent roots,
+workspaces, and session databases can be created after app launch. A missing
+leaf may watch its direct parent with exact logical filtering; targets missing
+multiple path levels rely on the bounded reconciliation interval rather than
+recursively watching a broad ancestor such as the user's home directory.
+
 ## Unified Event
 
 `AgentEvent` is intentionally broad:
@@ -126,19 +139,23 @@ SDK store only.
 
 Goose's SQLite `usage_ledger` records one inference per row. Its input field
 includes cache read/write as subsets, so the adapter carves those subsets out
-before filling normalized `AgentEvent` buckets. Legacy JSONL stores only
-session-level accumulated totals; those remain useful for lifetime totals but
-opt out of daily token attribution.
+before filling normalized `AgentEvent` buckets. Goose does not eagerly backfill
+imported/pre-ledger totals, so the adapter compares each authoritative SQLite
+session total with its ledger sums and emits only a positive residual as one
+carried-forward event. That cumulative residual opts out of daily attribution.
+Legacy JSONL is consulted only when the database has no ledger table; leftover
+JSONL beside a modern database is never used as fallback truth.
 
 ## Qwen Code, Kiro, And Cursor Accuracy Notes
 
 Qwen Code 0.19.9 writes append-only records to
 `~/.qwen/projects/<sanitized-cwd>/chats/<session>.jsonl`. A local 0.19.9
 session confirmed the upstream serializer contract and its persisted
-`usageMetadata`: prompt, candidate, cached, thought, and total counters are
-source-reported. Cache reads are carved out of prompt input, and output uses
-Qwen's own `total - prompt` rule when possible so provider-specific overlap
-between candidate and thought counters is not guessed. Fork-copied history is
+`usageMetadata`: prompt, candidate, cached, thought, tool-prompt, and total
+counters are source-reported. Cache reads are carved out of prompt input.
+Native tool-result prompt tokens are separate input under the Google GenAI
+contract and are subtracted from the reported output remainder; rows without
+that field retain Qwen's overlap-safe `total - prompt` rule. Fork-copied history is
 skipped, native message UUIDs are deduplicated, and legacy whole-file records
 under `~/.qwen/tmp/*/chats/` remain compatible.
 

@@ -1,6 +1,6 @@
 //! Cross-adapter orchestration.
 
-use crate::adapter::AdapterContext;
+use crate::adapter::{Adapter, AdapterContext};
 use crate::error::Error;
 use crate::event::AgentEvent;
 use crate::registry;
@@ -12,15 +12,35 @@ use std::collections::HashSet;
 pub struct ScanResult {
     pub events: Vec<AgentEvent>,
     pub active_sources: Vec<String>,
+    /// Adapter-local failures are isolated so one corrupt source cannot erase
+    /// every healthy source from the garden. Callers should surface these as
+    /// warnings while still using `events`.
+    pub failures: Vec<AdapterFailure>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AdapterFailure {
+    pub adapter: String,
+    pub message: String,
 }
 
 pub fn collect_events(
     ctx: &AdapterContext,
     sources_filter: Option<&[String]>,
 ) -> Result<ScanResult, Error> {
+    let adapters = registry::default_adapters();
+    Ok(collect_from_adapters(&adapters, ctx, sources_filter))
+}
+
+fn collect_from_adapters(
+    adapters: &[Box<dyn Adapter>],
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+) -> ScanResult {
     let mut events = Vec::new();
     let mut active = Vec::new();
-    for adapter in registry::default_adapters() {
+    let mut failures = Vec::new();
+    for adapter in adapters {
         let name = adapter.name().to_string();
         if let Some(filter) = sources_filter {
             if !filter.iter().any(|s| s == &name) {
@@ -30,19 +50,27 @@ pub fn collect_events(
         if !adapter.discover(ctx) {
             continue;
         }
-        let mut got = adapter.collect(ctx)?;
-        if !got.is_empty() {
-            active.push(name);
+        match adapter.collect(ctx) {
+            Ok(mut got) => {
+                if !got.is_empty() {
+                    active.push(name);
+                }
+                events.append(&mut got);
+            }
+            Err(error) => failures.push(AdapterFailure {
+                adapter: name,
+                message: error.to_string(),
+            }),
         }
-        events.append(&mut got);
     }
-    Ok(ScanResult {
+    ScanResult {
         events: dedupe_events(events),
         active_sources: active,
-    })
+        failures,
+    }
 }
 
-fn dedupe_events(mut events: Vec<AgentEvent>) -> Vec<AgentEvent> {
+pub(crate) fn dedupe_events(mut events: Vec<AgentEvent>) -> Vec<AgentEvent> {
     events.sort_by(|a, b| {
         (
             a.timestamp,
@@ -91,8 +119,32 @@ fn dedupe_key(event: &AgentEvent) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::Error;
     use chrono::{TimeZone, Utc};
     use serde_json::json;
+    use std::path::PathBuf;
+
+    struct FakeAdapter {
+        name: &'static str,
+        result: Result<Vec<AgentEvent>, &'static str>,
+    }
+
+    impl Adapter for FakeAdapter {
+        fn name(&self) -> &str {
+            self.name
+        }
+
+        fn discover(&self, _ctx: &AdapterContext) -> bool {
+            true
+        }
+
+        fn collect(&self, _ctx: &AdapterContext) -> Result<Vec<AgentEvent>, Error> {
+            self.result.clone().map_err(|message| Error::InvalidRecord {
+                context: self.name.to_string(),
+                message: message.to_string(),
+            })
+        }
+    }
 
     fn event(source: &str, second: u32, raw_ref: &str) -> AgentEvent {
         let mut event = AgentEvent::new(
@@ -108,6 +160,32 @@ mod tests {
 
     fn mark_uuid(event: &mut AgentEvent, uuid: &str) {
         event.metadata.insert("uuid".to_string(), json!(uuid));
+    }
+
+    #[test]
+    fn adapter_failure_does_not_discard_healthy_sources() {
+        let healthy = event("healthy", 0, "healthy.jsonl:1");
+        let adapters: Vec<Box<dyn Adapter>> = vec![
+            Box::new(FakeAdapter {
+                name: "broken",
+                result: Err("bad database"),
+            }),
+            Box::new(FakeAdapter {
+                name: "healthy",
+                result: Ok(vec![healthy]),
+            }),
+        ];
+        let result = collect_from_adapters(
+            &adapters,
+            &AdapterContext::with_home(PathBuf::from("/tmp/fake-home")),
+            None,
+        );
+
+        assert_eq!(result.events.len(), 1);
+        assert_eq!(result.active_sources, vec!["healthy"]);
+        assert_eq!(result.failures.len(), 1);
+        assert_eq!(result.failures[0].adapter, "broken");
+        assert!(result.failures[0].message.contains("bad database"));
     }
 
     #[test]

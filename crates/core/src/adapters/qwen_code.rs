@@ -39,18 +39,22 @@
 //! estimated by this adapter. `recordAssistantTurn` copies the
 //! provider-normalized
 //! `GenerateContentResponseUsageMetadata` directly to the row. Qwen's own
-//! `getUsageOutputTokenCountForPromptEstimate` treats
-//! `totalTokenCount - promptTokenCount` as the unambiguous output total when
-//! both are present because `thoughtsTokenCount` may overlap
-//! `candidatesTokenCount` for OpenAI-compatible providers. This adapter uses
-//! the same authoritative subtraction; without `totalTokenCount`, it keeps
-//! `candidatesTokenCount` and exposes thoughts separately instead of guessing.
+//! `getUsageOutputTokenCountForPromptEstimate` uses
+//! `totalTokenCount - promptTokenCount`, but that helper estimates the next
+//! context size rather than billing buckets. Google GenAI defines native
+//! `toolUsePromptTokenCount` as separate input and defines `totalTokenCount`
+//! as prompt + candidates + tool prompt + thoughts. When a persisted row has
+//! tool-prompt tokens, this adapter therefore subtracts them from the reported
+//! output remainder and adds them to input. With no tool-prompt counter it
+//! retains Qwen's overlap-safe total-minus-prompt rule for provider-normalized
+//! OpenAI-compatible rows. Without `totalTokenCount`, it keeps candidates (or
+//! candidates + thoughts for native tool-prompt rows) instead of estimating.
 //! `cachedContentTokenCount` is contained in `promptTokenCount`, so cached
 //! input is split into `cache_read_tokens` and subtracted from
 //! `input_tokens`. Qwen folds Anthropic cache-creation input into the prompt
 //! total and does not persist a distinct cache-write field, therefore
-//! `cache_write_tokens` remains zero. `toolUsePromptTokenCount` and raw
-//! thought counts are preserved in metadata. The persisted total is retained,
+//! `cache_write_tokens` remains zero. Tool-prompt and raw thought counts are
+//! also preserved in metadata. The persisted total is retained,
 //! clamped only for internally inconsistent rows so downstream arithmetic
 //! cannot underflow. Qwen's OpenAI converter can itself synthesize a 70/30
 //! prompt/completion split when a provider returns only a total, so precision
@@ -430,11 +434,15 @@ fn apply_current_usage(event: &mut AgentEvent, usage: &Map<String, Value>) -> u6
     let tool_prompt = count(usage.get("toolUsePromptTokenCount"));
     let reported_total = count(usage.get("totalTokenCount"));
 
-    event.usage.input_tokens = prompt.saturating_sub(cached);
+    event.usage.input_tokens = prompt.saturating_sub(cached).saturating_add(tool_prompt);
     event.usage.cache_read_tokens = cached;
     event.usage.cache_write_tokens = 0;
     event.usage.output_tokens = if reported_total > 0 && prompt > 0 {
-        reported_total.saturating_sub(prompt)
+        reported_total
+            .saturating_sub(prompt)
+            .saturating_sub(tool_prompt)
+    } else if tool_prompt > 0 {
+        candidates.saturating_add(thoughts)
     } else {
         // Candidate/thought overlap is provider-dependent. Candidate count is
         // the only safe non-estimated fallback when total is absent.
@@ -487,11 +495,15 @@ fn apply_legacy_usage(event: &mut AgentEvent, usage: &Map<String, Value>) -> u64
     let tool_prompt = count(usage.get("tool"));
     let reported_total = count(usage.get("total"));
 
-    event.usage.input_tokens = prompt.saturating_sub(cached);
+    event.usage.input_tokens = prompt.saturating_sub(cached).saturating_add(tool_prompt);
     event.usage.cache_read_tokens = cached;
     event.usage.cache_write_tokens = 0;
     event.usage.output_tokens = if reported_total > 0 && prompt > 0 {
-        reported_total.saturating_sub(prompt)
+        reported_total
+            .saturating_sub(prompt)
+            .saturating_sub(tool_prompt)
+    } else if tool_prompt > 0 {
+        candidates.saturating_add(thoughts)
     } else {
         candidates
     };
@@ -671,7 +683,7 @@ mod tests {
                     "usageMetadata": {
                         "promptTokenCount": 100, "candidatesTokenCount": 50,
                         "cachedContentTokenCount": 40, "thoughtsTokenCount": 30,
-                        "toolUsePromptTokenCount": 7, "totalTokenCount": 180
+                        "toolUsePromptTokenCount": 7, "totalTokenCount": 187
                     }
                 }),
                 json!({
@@ -694,12 +706,12 @@ mod tests {
             Some("/Users/demo/garden")
         );
         assert_eq!(assistant.model.as_deref(), Some("qwen3-coder-plus"));
-        assert_eq!(assistant.usage.input_tokens, 60);
+        assert_eq!(assistant.usage.input_tokens, 67);
         assert_eq!(assistant.usage.cache_read_tokens, 40);
         assert_eq!(assistant.usage.cache_write_tokens, 0);
-        // Qwen's total-prompt rule avoids candidate/thought overlap guessing.
+        // Native tool-result input is separate from the prompt and output.
         assert_eq!(assistant.usage.output_tokens, 80);
-        assert_eq!(assistant.usage.total_tokens, 180);
+        assert_eq!(assistant.usage.total_tokens, 187);
         assert_eq!(assistant.metadata.get("thoughts_tokens"), Some(&json!(30)));
         assert_eq!(
             assistant.metadata.get("tool_prompt_tokens"),
@@ -737,7 +749,7 @@ mod tests {
                 {"id": "old-qwen", "timestamp": "2025-11-01T10:00:02Z",
                  "type": "qwen", "model": "qwen3-coder-plus", "content": [],
                  "tokens": {"input": 90, "output": 20, "cached": 30,
-                            "thoughts": 10, "tool": 4, "total": 125},
+                            "thoughts": 10, "tool": 4, "total": 124},
                  "toolCalls": [{"name": "read_file"}]}
             ]
         });
@@ -755,10 +767,10 @@ mod tests {
             .find(|event| event.event_type == "assistant")
             .unwrap();
         assert_eq!(assistant.session_id.as_deref(), Some("legacy-session"));
-        assert_eq!(assistant.usage.input_tokens, 60);
+        assert_eq!(assistant.usage.input_tokens, 64);
         assert_eq!(assistant.usage.cache_read_tokens, 30);
-        assert_eq!(assistant.usage.output_tokens, 35);
-        assert_eq!(assistant.usage.total_tokens, 125);
+        assert_eq!(assistant.usage.output_tokens, 30);
+        assert_eq!(assistant.usage.total_tokens, 124);
         assert_eq!(assistant.tool_calls, 1);
 
         std::fs::remove_dir_all(home).ok();

@@ -342,23 +342,26 @@ fn cmd_scan(
 ) -> ExitCode {
     let out = out.unwrap_or_else(|| storage::default_state_dir().join("events.json"));
     match scan::collect_events(ctx, sources_filter) {
-        Ok(result) => match storage::save_events(&result.events, &out) {
-            Ok(()) => {
-                let sources = if result.active_sources.is_empty() {
-                    "no adapters".to_string()
-                } else {
-                    result.active_sources.join(", ")
-                };
-                println!(
-                    "wrote {} events from {} to {}",
-                    result.events.len(),
-                    sources,
-                    out.display()
-                );
-                ExitCode::SUCCESS
+        Ok(result) => {
+            print_scan_failures(&result.failures);
+            match storage::save_events(&result.events, &out) {
+                Ok(()) => {
+                    let sources = if result.active_sources.is_empty() {
+                        "no adapters".to_string()
+                    } else {
+                        result.active_sources.join(", ")
+                    };
+                    println!(
+                        "wrote {} events from {} to {}",
+                        result.events.len(),
+                        sources,
+                        out.display()
+                    );
+                    ExitCode::SUCCESS
+                }
+                Err(err) => bail("write failed", err),
             }
-            Err(err) => bail("write failed", err),
-        },
+        }
         Err(err) => bail("scan failed", err),
     }
 }
@@ -494,7 +497,10 @@ fn build_events(
         }
     } else {
         match scan::collect_events(ctx, sources_filter) {
-            Ok(result) => result.events,
+            Ok(result) => {
+                print_scan_failures(&result.failures);
+                result.events
+            }
             Err(err) => {
                 eprintln!("scan failed: {}", err);
                 return Err(ExitCode::FAILURE);
@@ -502,6 +508,15 @@ fn build_events(
         }
     };
     Ok(events)
+}
+
+fn print_scan_failures(failures: &[scan::AdapterFailure]) {
+    for failure in failures {
+        eprintln!(
+            "warning: adapter {} failed: {}",
+            failure.adapter, failure.message
+        );
+    }
 }
 
 #[derive(Default)]

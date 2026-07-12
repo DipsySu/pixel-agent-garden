@@ -218,12 +218,26 @@ impl Adapter for AntigravityAdapter {
             let Some(event) = Self::read_conversation_db(&path, &projects) else {
                 continue;
             };
+            let file_id = path
+                .file_stem()
+                .and_then(|value| value.to_str())
+                .map(str::trim)
+                .filter(|value| !value.is_empty());
             let Some(session_id) = event.session_id.as_ref() else {
                 continue;
             };
-            if seen_ids.insert(session_id.clone()) {
-                events.push(event);
+            // The summary index may use the conversation database filename
+            // while trajectory_meta exposes a different cascade id.
+            if seen_ids.contains(session_id)
+                || file_id.is_some_and(|file_id| seen_ids.contains(file_id))
+            {
+                continue;
             }
+            seen_ids.insert(session_id.clone());
+            if let Some(file_id) = file_id {
+                seen_ids.insert(file_id.to_string());
+            }
+            events.push(event);
         }
         Ok(events)
     }
@@ -898,6 +912,57 @@ mod tests {
                 .as_deref()
                 .unwrap()
                 .contains("conversation_summaries.db")
+        );
+    }
+
+    #[test]
+    fn summary_file_id_alias_wins_without_dropping_unrelated_history() {
+        let home = temp_home("summary-file-alias");
+        let conn = create_full_db(&home);
+        conn.execute(
+            "INSERT INTO conversation_summaries (conversation_id, last_modified_time) VALUES (?1, ?2)",
+            ("summary-file-id", "2026-07-11 01:02:03"),
+        )
+        .unwrap();
+        drop(conn);
+        create_conversation_db(&home, "summary-file-id", Some("different-cascade-id"));
+        let historical_db =
+            create_conversation_db(&home, "historical-file-id", Some("historical-cascade-id"));
+
+        let events = AntigravityAdapter
+            .collect(&AdapterContext::with_home(&home))
+            .unwrap();
+        assert_eq!(events.len(), 2);
+
+        let summary = events
+            .iter()
+            .find(|event| event.session_id.as_deref() == Some("summary-file-id"))
+            .unwrap();
+        assert!(!summary.metadata.contains_key("storage_kind"));
+        assert!(
+            summary
+                .raw_ref
+                .as_deref()
+                .unwrap()
+                .contains("conversation_summaries.db")
+        );
+        assert!(
+            events
+                .iter()
+                .all(|event| event.session_id.as_deref() != Some("different-cascade-id"))
+        );
+
+        let historical = events
+            .iter()
+            .find(|event| event.session_id.as_deref() == Some("historical-cascade-id"))
+            .unwrap();
+        assert_eq!(historical.raw_ref.as_deref(), historical_db.to_str());
+        assert_eq!(
+            historical
+                .metadata
+                .get("storage_kind")
+                .and_then(|value| value.as_str()),
+            Some("conversation_db")
         );
     }
 

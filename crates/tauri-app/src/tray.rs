@@ -560,8 +560,18 @@ fn trigger_scan<R: Runtime>(app: &AppHandle<R>) {
     std::thread::spawn(move || {
         let _ = app.emit(GARDEN_SCANNING, &ScanningPayload { adapter: None });
         match watcher::run_summary_blocking() {
-            Ok(summary) => {
-                if let Err(err) = app.emit(GARDEN_UPDATED, &summary) {
+            Ok(refresh) => {
+                for failure in &refresh.failures {
+                    let payload = ErrorPayload {
+                        source: "tray",
+                        message: failure.message.clone(),
+                        adapter: Some(failure.adapter.clone()),
+                    };
+                    if let Err(err) = app.emit(GARDEN_ERROR, &payload) {
+                        eprintln!("[tray] emit adapter error failed: {err}");
+                    }
+                }
+                if let Err(err) = app.emit(GARDEN_UPDATED, &refresh.summary) {
                     eprintln!("[tray] emit updated failed: {err}");
                 }
             }

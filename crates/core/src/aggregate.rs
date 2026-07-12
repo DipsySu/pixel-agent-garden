@@ -5,7 +5,9 @@
 //!
 //! Two distinct per-day maps exist, do not conflate them:
 //! - `daily_activity`: an activity-intensity proxy (`max(1, tokens/1000 +
-//!   tool_calls)`), used for the recent_activity window / liveliness.
+//!   tool_calls)`), used for the recent_activity window / liveliness. Events
+//!   whose cumulative usage cannot be assigned to one day contribute only an
+//!   existence marker of `1`.
 //! - `daily_tokens`: honest per-day token totals, used for token
 //!   heatmaps/sparklines. A dark `daily_activity` cell can mean "many tool
 //!   calls", not "many tokens" — only `daily_tokens` answers the token question.
@@ -398,7 +400,10 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
             source_tokens.entry(event.source.clone()).or_default(),
             &event.usage,
         );
-        if event.timestamp >= recent_source_cutoff && event.timestamp <= now {
+        if event.has_daily_token_attribution()
+            && event.timestamp >= recent_source_cutoff
+            && event.timestamp <= now
+        {
             *source_recent_tokens
                 .entry(event.source.clone())
                 .or_insert(0) += event.usage.total_tokens;
@@ -426,8 +431,15 @@ pub fn summarize_at(events: &[AgentEvent], now: DateTime<Utc>) -> GardenSummary 
         // Guarantees each event contributes at least 1 so sparse low-token
         // chats still register on the recent_activity window. This is an
         // intensity PROXY — not tokens. For honest token series see below.
-        let bump = (event.usage.total_tokens / 1000) + u64::from(event.tool_calls);
-        let bump = bump.max(1);
+        let bump = if event.has_daily_token_attribution() {
+            ((event.usage.total_tokens / 1000) + u64::from(event.tool_calls)).max(1)
+        } else {
+            // The source exposes only a cumulative multi-day/session total.
+            // Preserve that total above, but record only the event's existence
+            // here instead of assigning cumulative tokens or tool calls to one
+            // arbitrary calendar day.
+            1
+        };
         let day_key = utc_day_key(event.timestamp);
         *accum.daily_activity.entry(day_key.clone()).or_insert(0) += bump;
 
@@ -1318,8 +1330,8 @@ mod tests {
             ts: day,
             project: Some("/a/cross-day"),
             session: Some("s1"),
-            input: 900,
-            output: 100,
+            input: 900_000_000,
+            output: 100_000_000,
             cache_read: 0,
             tool_calls: 1,
             model: Some("gpt-5-mini"),
@@ -1329,16 +1341,25 @@ mod tests {
             crate::event::DAILY_TOKEN_ATTRIBUTION_UNAVAILABLE.into(),
         );
 
-        let summary = summarize_at(&[event], day + chrono::Duration::hours(2));
+        let summary = summarize_at(&[event], day + chrono::Duration::minutes(1));
         let project = &summary.projects[0];
-        assert_eq!(summary.total_tokens, 1000);
-        assert_eq!(summary.models["gpt-5-mini"].total_tokens, 1000);
-        assert_eq!(project.total_tokens, 1000);
+        assert_eq!(summary.total_tokens, 1_000_000_000);
+        assert_eq!(summary.models["gpt-5-mini"].total_tokens, 1_000_000_000);
+        assert_eq!(project.total_tokens, 1_000_000_000);
         assert!(summary.daily_tokens.is_empty());
         assert!(project.daily_tokens.is_empty());
+        assert!(summary.source_recent_tokens.is_empty());
         // The real session start still counts as activity without pretending
         // the cumulative token total belongs wholly to that day.
-        assert_eq!(project.daily_activity["2026-05-27"], 2);
+        assert_eq!(project.daily_activity["2026-05-27"], 1);
+        assert_eq!(project.recent_activity, 1);
+        assert_eq!(summary.tiers.as_ref().unwrap().today_activity, 1);
+        let day = summary
+            .flowerbed_year
+            .iter()
+            .find(|entry| entry.date == "2026-05-27")
+            .unwrap();
+        assert_eq!(day.activity, 1);
     }
 
     #[test]
@@ -1374,6 +1395,43 @@ mod tests {
         assert_eq!(s.source_tokens["codex"].total_tokens, 500);
         assert_eq!(s.source_recent_tokens["claude-code"], 1000);
         assert!(!s.source_recent_tokens.contains_key("codex"));
+    }
+
+    #[test]
+    fn source_recent_tokens_exclude_unattributable_cumulative_usage() {
+        let now = Utc.with_ymd_and_hms(2026, 7, 8, 12, 0, 0).unwrap();
+        let mut cumulative = make_event(EventFixture {
+            source: "cline",
+            ts: now,
+            project: Some("/a/cumulative"),
+            session: Some("s1"),
+            input: 9_000,
+            output: 1_000,
+            cache_read: 0,
+            tool_calls: 0,
+            model: None,
+        });
+        cumulative.metadata.insert(
+            crate::event::DAILY_TOKEN_ATTRIBUTION_KEY.to_string(),
+            crate::event::DAILY_TOKEN_ATTRIBUTION_UNAVAILABLE.into(),
+        );
+        let attributable = make_event(EventFixture {
+            source: "claude-code",
+            ts: now,
+            project: Some("/a/recent"),
+            session: Some("s2"),
+            input: 2_000,
+            output: 0,
+            cache_read: 0,
+            tool_calls: 0,
+            model: None,
+        });
+
+        let summary = summarize_at(&[cumulative, attributable], now);
+        assert_eq!(summary.source_tokens["cline"].total_tokens, 10_000);
+        assert_eq!(summary.source_tokens["claude-code"].total_tokens, 2_000);
+        assert!(!summary.source_recent_tokens.contains_key("cline"));
+        assert_eq!(summary.source_recent_tokens["claude-code"], 2_000);
     }
 
     #[test]

@@ -105,7 +105,7 @@ impl ClineAdapter {
         ctx.home.join(".cline").join("data")
     }
 
-    fn collect_current(root: &Path, seen_tasks: &mut HashSet<String>) -> Vec<AgentEvent> {
+    fn collect_current(root: &Path) -> Vec<AgentEvent> {
         let db = root.join("db").join("sessions.db");
         let sessions_root = root.join("sessions");
         let sessions = if db.is_file() {
@@ -114,8 +114,9 @@ impl ClineAdapter {
             read_current_index(&sessions_root.join("sessions.index.json"))
         };
         let mut events = Vec::new();
+        let mut seen_sessions = HashSet::new();
         for session in sessions {
-            if !seen_tasks.insert(session.id.clone()) {
+            if !seen_sessions.insert(session.id.clone()) {
                 continue;
             }
             events.extend(current_session_events(&session, &sessions_root));
@@ -186,16 +187,45 @@ impl Adapter for ClineAdapter {
     }
 
     fn collect(&self, ctx: &AdapterContext) -> Result<Vec<AgentEvent>, Error> {
-        let mut events = Vec::new();
-        let mut seen_tasks = HashSet::new();
-        events.extend(Self::collect_current(
-            &Self::shared_root(ctx),
-            &mut seen_tasks,
-        ));
+        let mut current = Self::collect_current(&Self::shared_root(ctx));
+        let mut legacy = Vec::new();
+        let mut seen_legacy_tasks = HashSet::new();
         for root in Self::storage_roots(ctx) {
-            events.extend(Self::collect_root(&root, &mut seen_tasks));
+            legacy.extend(Self::collect_root(&root, &mut seen_legacy_tasks));
         }
-        Ok(events)
+
+        let current_ids: HashSet<String> = current
+            .iter()
+            .filter_map(|event| event.session_id.clone())
+            .collect();
+        let current_usage_ids: HashSet<String> = current
+            .iter()
+            .filter(|event| has_recorded_usage(event))
+            .filter_map(|event| event.session_id.clone())
+            .collect();
+        let legacy_usage_ids: HashSet<String> = legacy
+            .iter()
+            .filter(|event| has_recorded_usage(event))
+            .filter_map(|event| event.session_id.clone())
+            .collect();
+
+        // Current source-recorded usage is authoritative for a migrated task.
+        // An activity-only current marker is not: when legacy still carries
+        // real usage, retain that usage and drop only the redundant marker.
+        current.retain(|event| {
+            event
+                .session_id
+                .as_ref()
+                .is_none_or(|id| current_usage_ids.contains(id) || !legacy_usage_ids.contains(id))
+        });
+        legacy.retain(|event| {
+            event.session_id.as_ref().is_none_or(|id| {
+                !current_usage_ids.contains(id)
+                    && (!current_ids.contains(id) || legacy_usage_ids.contains(id))
+            })
+        });
+        current.extend(legacy);
+        Ok(current)
     }
 
     fn watch_paths(&self, ctx: &AdapterContext) -> Vec<PathBuf> {
@@ -222,6 +252,15 @@ impl Adapter for ClineAdapter {
         }
         paths
     }
+}
+
+fn has_recorded_usage(event: &AgentEvent) -> bool {
+    event.usage.input_tokens > 0
+        || event.usage.output_tokens > 0
+        || event.usage.cache_read_tokens > 0
+        || event.usage.cache_write_tokens > 0
+        || event.usage.total_tokens > 0
+        || event.cost_usd.is_some()
 }
 
 #[derive(Debug, Default, Clone)]
@@ -923,6 +962,44 @@ mod tests {
         .unwrap();
     }
 
+    fn current_activity_fixture(home: &Path, session_id: &str) {
+        let db_dir = shared_root(home).join("db");
+        std::fs::create_dir_all(&db_dir).unwrap();
+        let conn = Connection::open(db_dir.join("sessions.db")).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE sessions (
+                session_id TEXT PRIMARY KEY, started_at TEXT, updated_at TEXT,
+                provider TEXT, model TEXT, cwd TEXT, workspace_root TEXT,
+                parent_session_id TEXT, is_subagent INTEGER, messages_path TEXT,
+                metadata_json TEXT
+             );",
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO sessions VALUES
+             (?1, '2026-07-11T00:00:00.000Z', '2026-07-11T00:00:01.000Z',
+              NULL, NULL, '/tmp/current-project', '/tmp/current-project',
+              NULL, 0, NULL, NULL)",
+            [session_id],
+        )
+        .unwrap();
+    }
+
+    fn legacy_activity_fixture(root: &Path, task_id: &str) {
+        write_json(
+            &root.join("state").join("taskHistory.json"),
+            &json!([{
+                "id": task_id,
+                "ts": TS,
+                "cwdOnTaskInitialization": "/tmp/legacy-project"
+            }]),
+        );
+        write_json(
+            &root.join("tasks").join(task_id).join("ui_messages.json"),
+            &json!([{"ts": TS, "type": "say", "say": "text", "text": "done"}]),
+        );
+    }
+
     #[test]
     fn current_sdk_store_emits_per_turn_metrics_without_cache_double_count() {
         let home = temp_home("current");
@@ -956,6 +1033,43 @@ mod tests {
         assert_eq!(
             events[0].metadata.get("uuid").and_then(|v| v.as_str()),
             Some("msg-current-1")
+        );
+    }
+
+    #[test]
+    fn legacy_usage_replaces_current_activity_only_marker() {
+        let home = temp_home("current-activity-legacy-usage");
+        current_activity_fixture(&home, "same-task");
+        fixture(&shared_root(&home), "same-task");
+
+        let events = ClineAdapter
+            .collect(&AdapterContext::with_home(&home))
+            .unwrap();
+        assert_eq!(events.len(), 3);
+        assert!(events.iter().all(has_recorded_usage));
+        assert!(events.iter().all(|event| {
+            event.metadata.get("uuid").and_then(|value| value.as_str())
+                != Some("same-task:activity")
+        }));
+    }
+
+    #[test]
+    fn current_activity_wins_when_legacy_is_also_activity_only() {
+        let home = temp_home("both-activity");
+        current_activity_fixture(&home, "same-task");
+        legacy_activity_fixture(&shared_root(&home), "same-task");
+
+        let events = ClineAdapter
+            .collect(&AdapterContext::with_home(&home))
+            .unwrap();
+        assert_eq!(events.len(), 1);
+        assert!(!has_recorded_usage(&events[0]));
+        assert_eq!(
+            events[0]
+                .metadata
+                .get("uuid")
+                .and_then(|value| value.as_str()),
+            Some("same-task:activity")
         );
     }
 

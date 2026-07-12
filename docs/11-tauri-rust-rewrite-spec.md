@@ -63,7 +63,9 @@ Rules:
 - Adapters are read-only.
 - Adapters do not call each other.
 - Cross-source logic, including dedupe, lives in `scan.rs`.
-- Bad rows are skipped; I/O and database failures return typed `Error`.
+- Bad rows are skipped; I/O and database failures return typed `Error` to the
+  scan orchestrator. The orchestrator isolates them per adapter, keeps healthy
+  events, and exposes structured adapter failures to CLI/Tauri callers.
 - Source-specific details go into `AgentEvent.metadata`.
 
 ## Built-In Adapters

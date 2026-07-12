@@ -84,8 +84,9 @@ pub trait Adapter: Send + Sync {
     fn discover(&self, ctx: &AdapterContext) -> bool;
 
     /// Read raw files → normalized `AgentEvent`s. MUST tolerate partial /
-    /// corrupt files (skip the row, keep the rest). I/O failures bubble up
-    /// as `Error` so the caller can decide whether to fail the whole scan.
+    /// corrupt files (skip the row, keep the rest). Source-level I/O/database
+    /// failures bubble up as `Error`; `scan` isolates them per adapter and
+    /// reports a structured warning while retaining healthy sources.
     fn collect(&self, ctx: &AdapterContext) -> Result<Vec<AgentEvent>, Error>;
 
     /// Paths to watch for live updates. The Tauri layer subscribes to every

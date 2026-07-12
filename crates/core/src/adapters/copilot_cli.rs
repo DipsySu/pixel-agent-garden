@@ -8,7 +8,7 @@
 //!   buckets; combining them under `currentModel` would misprice model
 //!   switches.
 //! - `~/.copilot/session-state/<session-id>/workspace.yaml` — flat
-//!   `key: value` session metadata (`cwd`, `branch`, `repository`, `name`),
+//!   `key: value` session metadata (`cwd`, `branch`, `repository`),
 //!   used only as a fallback when the event log carries no workspace path.
 //!
 //! `~/.copilot/session-store.db` (SQLite) is deliberately NOT read: it is a
@@ -43,7 +43,7 @@
 //!   `data.modelMetrics.<model>.requests.count` and `data.currentModel`;
 //!   `inputTokens` INCLUDES cached input (uncached = `inputTokens -
 //!   cacheReadTokens`); `workspace.yaml` is flat YAML with `cwd` / `branch` /
-//!   `repository` / `name` keys.
+//!   `repository` keys. Its prompt-derived `name` is deliberately excluded.
 //! - copilot-token-tracker (PyPI page, read 2026-07-11; secondary evidence):
 //!   confirms the same `data.modelMetrics.<model>.usage.*` paths and that CLI
 //!   sessions carry *server-reported* token counts. VS Code's ordinary chat
@@ -192,7 +192,8 @@ fn parse_session_dir(dir: &Path) -> Vec<AgentEvent> {
     let mut first_ts: Option<DateTime<Utc>> = None;
     let mut last_ts: Option<DateTime<Utc>> = None;
     let mut session_start_ts: Option<DateTime<Utc>> = None;
-    let mut cwd: Option<String> = None;
+    let mut session_start_cwd: Option<String> = None;
+    let mut generic_event_cwd: Option<String> = None;
     let mut cli_version: Option<String> = None;
     let mut start_model: Option<String> = None;
     let mut last_model: Option<String> = None;
@@ -216,7 +217,7 @@ fn parse_session_dir(dir: &Path) -> Vec<AgentEvent> {
         if event_type == "session.start" {
             session_start_ts = row_ts.or(session_start_ts);
             if let Some(d) = data {
-                cwd = cwd.or_else(|| extract_workspace_dir(d));
+                session_start_cwd = session_start_cwd.or_else(|| extract_workspace_dir(d));
                 cli_version = cli_version.or_else(|| {
                     ["copilotVersion", "version", "cliVersion"]
                         .iter()
@@ -243,7 +244,9 @@ fn parse_session_dir(dir: &Path) -> Vec<AgentEvent> {
         }
 
         if let Some(d) = data {
-            cwd = cwd.or_else(|| extract_workspace_dir(d));
+            if event_type != "session.start" {
+                generic_event_cwd = generic_event_cwd.or_else(|| extract_workspace_dir(d));
+            }
             if let Some(mut metrics) = extract_metrics(d) {
                 metrics.reported_at = row_ts;
                 let better = best_metrics
@@ -269,8 +272,12 @@ fn parse_session_dir(dir: &Path) -> Vec<AgentEvent> {
     // derived SQLite index).
     let workspace = parse_workspace_yaml(&dir.join("workspace.yaml"));
 
-    let workspace_path = cwd
+    // A session.start path is the event log's authoritative workspace. The
+    // dedicated workspace snapshot is the next-best source. Other event cwd
+    // fields are only a compatibility fallback and must never override either.
+    let workspace_path = session_start_cwd
         .or_else(|| workspace.get("cwd").cloned())
+        .or(generic_event_cwd)
         .filter(|s| !s.is_empty());
     let metrics = best_metrics.unwrap_or_default();
     let current_model = metrics.current_model.clone().or(last_model).or(start_model);
@@ -380,9 +387,6 @@ fn add_common_metadata(
     );
     event
         .metadata
-        .insert("title".into(), opt_string_value(workspace.get("name")));
-    event
-        .metadata
         .insert("usage_scope".into(), "session_cumulative".into());
     event
         .metadata
@@ -482,10 +486,10 @@ fn extract_metrics(data: &serde_json::Value) -> Option<SessionMetrics> {
     Some(metrics)
 }
 
-/// Minimal flat `key: value` YAML reader for `workspace.yaml`. The file is a
-/// flat scalar map written by the CLI (id/name/cwd/branch/repository/…), so a
-/// full YAML dependency would be overkill; unknown or nested lines are
-/// ignored.
+/// Minimal flat `key: value` YAML reader for `workspace.yaml`. Only structural
+/// workspace fields are retained. In particular, `name` is an automatically
+/// generated summary of the prompt when `user_named: false`, so retaining it
+/// would copy conversation semantics into the garden cache.
 fn parse_workspace_yaml(path: &Path) -> std::collections::BTreeMap<String, String> {
     let mut out = std::collections::BTreeMap::new();
     let Ok(raw) = std::fs::read_to_string(path) else {
@@ -496,7 +500,7 @@ fn parse_workspace_yaml(path: &Path) -> std::collections::BTreeMap<String, Strin
             continue;
         };
         let key = key.trim();
-        if key.is_empty() || !key.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+        if !matches!(key, "cwd" | "branch" | "repository") {
             continue;
         }
         let value = unquote(value.trim());
@@ -636,7 +640,7 @@ mod tests {
         std::fs::write(
             dir.join("workspace.yaml"),
             "id: 0198c5a1-aaaa-bbbb-cccc-1234567890ab\n\
-             name: \"Fix the flaky test\"\n\
+             name: \"SECRET prompt-derived name\"\n\
              cwd: /Users/demo/dev/legacy-project\n\
              repository: demo/legacy-project\n\
              branch: main\n",
@@ -718,15 +722,99 @@ mod tests {
             event.metadata.get("git_branch"),
             Some(&serde_json::Value::String("main".into()))
         );
-        assert_eq!(
-            event.metadata.get("title"),
-            Some(&serde_json::Value::String("Fix the flaky test".into()))
+        assert!(!event.metadata.contains_key("title"));
+        assert!(
+            !serde_json::to_string(event)
+                .unwrap()
+                .contains("SECRET prompt-derived name")
         );
         assert_eq!(
             event.metadata.get("cli_version"),
             Some(&serde_json::Value::Null)
         );
 
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn session_start_workspace_path_overrides_earlier_generic_event() {
+        let dir = session_dir("path-session-start");
+        let early = json!({
+            "type": "system.message",
+            "timestamp": "2026-05-06T10:59:59.000Z",
+            "data": { "cwd": "/untrusted/early-event" }
+        });
+        let start = json!({
+            "type": "session.start",
+            "timestamp": "2026-05-06T11:00:00.000Z",
+            "data": { "context": { "cwd": "/authoritative/session-start" } }
+        });
+        std::fs::write(dir.join("events.jsonl"), format!("{early}\n{start}\n")).unwrap();
+        std::fs::write(
+            dir.join("workspace.yaml"),
+            "cwd: /authoritative/workspace-snapshot\n",
+        )
+        .unwrap();
+
+        let events = parse_session_dir(&dir);
+        assert_eq!(events.len(), 1);
+        assert_eq!(
+            events[0].project_path.as_deref(),
+            Some("/authoritative/session-start")
+        );
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn workspace_snapshot_overrides_generic_event_when_start_has_no_path() {
+        let dir = session_dir("path-workspace-snapshot");
+        let early = json!({
+            "type": "system.message",
+            "timestamp": "2026-05-06T10:59:59.000Z",
+            "data": { "cwd": "/untrusted/early-event" }
+        });
+        let start = json!({
+            "type": "session.start",
+            "timestamp": "2026-05-06T11:00:00.000Z",
+            "data": {}
+        });
+        std::fs::write(dir.join("events.jsonl"), format!("{early}\n{start}\n")).unwrap();
+        std::fs::write(
+            dir.join("workspace.yaml"),
+            "cwd: /authoritative/workspace-snapshot\n",
+        )
+        .unwrap();
+
+        let events = parse_session_dir(&dir);
+        assert_eq!(events.len(), 1);
+        assert_eq!(
+            events[0].project_path.as_deref(),
+            Some("/authoritative/workspace-snapshot")
+        );
+        cleanup(&dir);
+    }
+
+    #[test]
+    fn generic_event_workspace_is_last_resort() {
+        let dir = session_dir("path-generic-fallback");
+        let start = json!({
+            "type": "session.start",
+            "timestamp": "2026-05-06T11:00:00.000Z",
+            "data": {}
+        });
+        let later = json!({
+            "type": "system.message",
+            "timestamp": "2026-05-06T11:00:01.000Z",
+            "data": { "workspaceDirectory": "/compatibility/generic-event" }
+        });
+        std::fs::write(dir.join("events.jsonl"), format!("{start}\n{later}\n")).unwrap();
+
+        let events = parse_session_dir(&dir);
+        assert_eq!(events.len(), 1);
+        assert_eq!(
+            events[0].project_path.as_deref(),
+            Some("/compatibility/generic-event")
+        );
         cleanup(&dir);
     }
 

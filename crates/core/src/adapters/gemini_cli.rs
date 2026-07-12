@@ -8,10 +8,10 @@
 //!
 //! Neighbor boundary: the Antigravity CLI stores its data under
 //! `~/.gemini/antigravity-cli/` (see `adapters::antigravity`). The two
-//! adapters share the `~/.gemini` parent but disjoint subtrees — keep this
-//! adapter's discovery and `watch_paths()` scoped to `~/.gemini/tmp/`; do not
-//! widen them to `~/.gemini`, or Antigravity writes would trigger pointless
-//! rescans here (and vice versa).
+//! adapters share the `~/.gemini` parent but disjoint data — keep discovery
+//! scoped to `~/.gemini/tmp/` and watch only that subtree plus the exact
+//! `~/.gemini/projects.json` registry file. Never watch the broad
+//! `~/.gemini` parent, or Antigravity writes would trigger pointless rescans.
 //!
 //! Paths read (all READ-ONLY; nothing is ever written into `~/.gemini/`):
 //!   - `~/.gemini/tmp/<project-id>/chats/session-*.jsonl` — append-only chat
@@ -68,13 +68,13 @@
 //! message (`input` = promptTokenCount, `output` = candidatesTokenCount,
 //! `cached` = cachedContentTokenCount, `thoughts` = thoughtsTokenCount,
 //! `tool` = toolUsePromptTokenCount, `total` = totalTokenCount). Mapping used
-//! here: `cached` is a subset of the prompt count, so `input_tokens = input −
-//! cached` and `cache_read_tokens = cached`; thinking tokens are billed as
-//! output by the Gemini API, so `output_tokens = output + thoughts`;
+//! here: `cached` is a subset of the prompt count, while `tool` is the separate
+//! tool-result prompt input defined by Google GenAI, so `input_tokens = input −
+//! cached + tool` and `cache_read_tokens = cached`; thinking tokens are billed
+//! as output by the Gemini API, so `output_tokens = output + thoughts`.
 //! `total_tokens` keeps the reported total, clamped up to the bucket sum so
-//! downstream `total − split` math never underflows (tool-prompt tokens stay
-//! inside the total as a blended remainder). Raw `thoughts` / `tool` counts
-//! are preserved in `metadata`. No token count is ever inferred from text.
+//! downstream arithmetic never underflows. Raw `thoughts` / `tool` counts are
+//! preserved in `metadata`. No token count is ever inferred from text.
 //!
 //! Dedupe key: the native per-message uuid (`id`) is stored in
 //! `metadata["uuid"]`, which `scan::dedupe_key` combines with source and
@@ -159,15 +159,18 @@ impl Adapter for GeminiCliAdapter {
     }
 
     fn watch_paths(&self, ctx: &AdapterContext) -> Vec<PathBuf> {
-        // One stable root: project dirs (and their chats/) appear and vanish
-        // with projects, and recordings are appended in place, so watching
-        // `~/.gemini/tmp` recursively covers every write the CLI makes.
+        // Project dirs (and their chats/) appear and vanish under tmp. The
+        // sibling registry is also an input to project-path recovery, so its
+        // exact path must participate in both watching and cache fingerprints.
+        // It is returned even while missing; the watcher observes its later
+        // creation through the nearest existing ancestor without exposing
+        // unrelated sibling files to the callback.
         let root = self.tmp_root(ctx);
+        let mut paths = vec![self.registry_path(ctx)];
         if root.is_dir() {
-            vec![root]
-        } else {
-            Vec::new()
+            paths.push(root);
         }
+        paths
     }
 }
 
@@ -371,10 +374,9 @@ fn message_to_event(
     event.project_path = project_path.map(str::to_string);
     event.session_id = Some(session_id.to_string());
     event.event_type = msg_type.to_string();
-    // See module docs: cached ⊆ input; thoughts are billed as output; the
-    // reported total is clamped up to the bucket sum so `total − split`
-    // stays non-negative downstream (tool-prompt tokens remain blended).
-    event.usage.input_tokens = raw_input.saturating_sub(cached);
+    // See module docs: cached is contained in prompt input, tool-result prompt
+    // tokens are separate input, and thoughts are billed as output.
+    event.usage.input_tokens = raw_input.saturating_sub(cached).saturating_add(tool_prompt);
     event.usage.cache_read_tokens = cached;
     event.usage.output_tokens = output.saturating_add(thoughts);
     let split = event
@@ -506,9 +508,9 @@ mod tests {
         assert_eq!(gemini.event_type, "gemini");
         assert_eq!(gemini.model.as_deref(), Some("gemini-2.5-pro"));
         assert_eq!(gemini.tool_calls, 2);
-        // cached (40) split out of input (100); thoughts (5) folded into
-        // output (20); reported total (127) ≥ split (60+25+40=125) → kept.
-        assert_eq!(gemini.usage.input_tokens, 60);
+        // cached (40) split out of prompt input (100), tool-result prompt (2)
+        // added as input, and thoughts (5) folded into output (20).
+        assert_eq!(gemini.usage.input_tokens, 62);
         assert_eq!(gemini.usage.cache_read_tokens, 40);
         assert_eq!(gemini.usage.output_tokens, 25);
         assert_eq!(gemini.usage.cache_write_tokens, 0);
@@ -682,6 +684,19 @@ mod tests {
             Some("/Users/demo/my-garden")
         );
         assert_eq!(events[0].session_id.as_deref(), Some("sub-1"));
+
+        std::fs::remove_dir_all(&home).ok();
+    }
+
+    #[test]
+    fn watch_paths_include_exact_registry_without_widening_gemini_root() {
+        let (home, _) = fixture_home("watch", "proj");
+        let ctx = AdapterContext::with_home(&home);
+        let paths = GeminiCliAdapter::gemini().watch_paths(&ctx);
+
+        assert!(paths.contains(&home.join(".gemini/projects.json")));
+        assert!(paths.contains(&home.join(".gemini/tmp")));
+        assert!(!paths.contains(&home.join(".gemini")));
 
         std::fs::remove_dir_all(&home).ok();
     }
