@@ -105,7 +105,7 @@
   credentials (`auth.json`) are never read or allowed to trigger scans. All three ship
   two-era temp-dir fixtures plus expanded truthfulness, cache-upgrade, XDG,
   WAL-filter, corrupt-input, and dedupe coverage (the workspace suite is now
-  251), and register through
+  252), and register through
   `mod.rs` + the registry with `manual-jsonl` kept last as the catch-all.
 
 ## v2.0.2 - 2026-07-10

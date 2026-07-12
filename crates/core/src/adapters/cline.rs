@@ -1182,11 +1182,12 @@ mod tests {
             .collect(&AdapterContext::with_home(&home))
             .unwrap();
         assert_eq!(events.len(), 3);
+        let shared_prefix = shared_root(&home).display().to_string();
         assert!(events.iter().all(|event| {
             event
                 .raw_ref
                 .as_deref()
-                .is_some_and(|p| p.contains(".cline/data"))
+                .is_some_and(|path| path.starts_with(&shared_prefix))
         }));
     }
 

@@ -39,6 +39,7 @@
 //! transcript files are ignored.
 
 use crate::adapter::{Adapter, AdapterContext};
+use crate::adapters::util::is_portable_absolute_path;
 use crate::error::Error;
 use crate::event::AgentEvent;
 use chrono::{DateTime, Utc};
@@ -960,7 +961,7 @@ fn absolute_path(raw: &str) -> Option<String> {
     } else {
         decoded
     };
-    if normalized.contains('\0') || !Path::new(&normalized).is_absolute() {
+    if normalized.contains('\0') || !is_portable_absolute_path(&normalized) {
         return None;
     }
     Some(normalized)

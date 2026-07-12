@@ -24,6 +24,7 @@
 //! authoritative, non-duplicated token records through a stable contract.
 
 use crate::adapter::{Adapter, AdapterContext};
+use crate::adapters::util::is_portable_absolute_path;
 use crate::error::Error;
 use crate::event::AgentEvent;
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -474,7 +475,7 @@ fn absolute_path(value: &str) -> Option<String> {
         }
         value.to_string()
     };
-    if decoded.contains('\0') || !Path::new(&decoded).is_absolute() {
+    if decoded.contains('\0') || !is_portable_absolute_path(&decoded) {
         return None;
     }
     Some(decoded)
