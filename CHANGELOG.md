@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v2.1.0 - 2026-07-12
 
 ### Adapters and pricing
 
@@ -59,6 +59,20 @@
   row, and watches WAL creation through an exact-path filter that ignores
   credential siblings. Raw-event cache schema v2 forces one safe rescan so a
   v1 cache cannot preserve the old mixed-model Copilot interpretation.
+- Completed three adversarial review passes across adapter truthfulness,
+  aggregation, cache isolation, and live watching. Cumulative session totals
+  that cannot be assigned to a day now contribute only one activity marker and
+  never enter trailing-30-day token shares. A failing adapter no longer aborts
+  healthy sources: the last cached partition for that adapter is retained,
+  surfaced as an adapter-specific warning, and deliberately left stale so the
+  next load retries it. The desktop watcher now reconciles newly created roots,
+  session databases, and nested targets after launch; multi-level missing paths
+  use bounded polling instead of recursively watching `$HOME`, while exact-path
+  filtering still excludes credential siblings. Gemini's exact `projects.json`
+  input participates in watching/fingerprinting. Goose derives pre-ledger
+  residuals from authoritative SQLite session totals rather than leftover
+  JSONL, and Qwen classifies native tool-result prompt tokens as input instead
+  of output.
 - Added a current Top 10 AI coding-agent coverage study, separating market
   adoption from local token feasibility. It recommends Goose and Cline as the
   next exact-usage adapters, moves Antigravity into evidence research, treats
@@ -91,7 +105,7 @@
   credentials (`auth.json`) are never read or allowed to trigger scans. All three ship
   two-era temp-dir fixtures plus expanded truthfulness, cache-upgrade, XDG,
   WAL-filter, corrupt-input, and dedupe coverage (the workspace suite is now
-  197), and register through
+  251), and register through
   `mod.rs` + the registry with `manual-jsonl` kept last as the catch-all.
 
 ## v2.0.2 - 2026-07-10
