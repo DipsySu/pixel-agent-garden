@@ -603,6 +603,30 @@ mod tests {
     }
 
     #[test]
+    fn missing_cache_with_missing_parent_scans_via_interactive_entrypoint() {
+        // Regression for the Tauri command path:
+        // garden_summary -> summary_from_cache_or_scan_with_failures.
+        // A first launch can have neither ~/.local-agent-garden/ nor
+        // events.json. That missing read must fall through to scan + cache
+        // creation, not surface as "I/O error reading ... events.json".
+        let root =
+            std::env::temp_dir().join(format!("lag-cache-missing-parent-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let cache_path = root.join(".local-agent-garden").join("events.json");
+        let ctx = AdapterContext::with_home(root.join("empty-home"));
+
+        let refresh = summary_from_cache_or_scan_at_with_failures(&ctx, None, &cache_path)
+            .expect("missing cache should trigger a fresh empty scan");
+
+        assert_eq!(refresh.summary.total_events, 0);
+        assert!(refresh.failures.is_empty());
+        assert!(cache_path.exists(), "fallback scan should create the cache");
+        let events = storage::load_events(&cache_path).unwrap();
+        assert!(events.is_empty());
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
     fn incompatible_cache_is_replaced_after_scan() {
         let path = tmp_path("future");
         let _ = std::fs::remove_file(&path);
