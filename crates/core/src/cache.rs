@@ -19,9 +19,12 @@ use crate::registry;
 use crate::rings;
 use crate::storage::SourceFingerprint;
 use crate::{scan, storage};
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, MutexGuard};
 use std::time::UNIX_EPOCH;
+
+static REFRESH_LOCK: Mutex<()> = Mutex::new(());
 
 #[derive(Debug)]
 pub struct RefreshResult {
@@ -67,6 +70,15 @@ pub fn summary_from_cache_or_scan_at_with_failures(
     sources_filter: Option<&[String]>,
     cache_path: &Path,
 ) -> Result<RefreshResult, Error> {
+    let _guard = refresh_guard();
+    summary_from_cache_or_scan_locked(ctx, sources_filter, cache_path)
+}
+
+fn summary_from_cache_or_scan_locked(
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+    cache_path: &Path,
+) -> Result<RefreshResult, Error> {
     if let Ok(cache) = storage::load_cache(cache_path) {
         // Only trust the cache if it carries a fingerprint AND that fingerprint
         // still matches the source files. A `None` fingerprint (legacy cache or
@@ -88,7 +100,7 @@ pub fn summary_from_cache_or_scan_at_with_failures(
             }
         }
     }
-    refresh_summary_at_with_failures(ctx, sources_filter, cache_path)
+    refresh_summary_locked(ctx, sources_filter, cache_path, false)
 }
 
 /// Force a scan, persist the normalized event cache (with a fresh fingerprint),
@@ -123,6 +135,22 @@ pub fn refresh_summary_at_with_failures(
     sources_filter: Option<&[String]>,
     cache_path: &Path,
 ) -> Result<RefreshResult, Error> {
+    let _guard = refresh_guard();
+    refresh_summary_locked(ctx, sources_filter, cache_path, true)
+}
+
+fn refresh_guard() -> MutexGuard<'static, ()> {
+    REFRESH_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+fn refresh_summary_locked(
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+    cache_path: &Path,
+    force_all: bool,
+) -> Result<RefreshResult, Error> {
     // Fingerprint BEFORE scanning: if a source changes mid-scan, the stored
     // fingerprint will be slightly older than the data, so the next read sees
     // "newer source → stale" and refreshes again. That errs toward an extra
@@ -134,29 +162,57 @@ pub fn refresh_summary_at_with_failures(
     // magnitude cheaper than the parse. Do NOT "optimize" it by fingerprinting
     // after the scan: that reopens the staleness window.
     let fingerprint = source_fingerprint(ctx);
-    // Scan the FULL set and persist that: there is one shared events.json and
-    // the fingerprint is filter-independent, so writing a filtered subset would
-    // be served whole to later unfiltered reads (cache pollution). A filtered
-    // request stays a transient view computed from the full scan.
-    let mut result = scan::collect_events(ctx, None)?;
+    let current_source_fingerprints = source_fingerprints(ctx);
+    let previous = storage::load_cache(cache_path).ok();
+    let previous_source_fingerprints = previous.as_ref().map(|cache| &cache.source_fingerprints);
+    let previous_is_reusable = previous.as_ref().is_some_and(|cache| {
+        !cache.source_fingerprints.is_empty()
+            && cache.events.iter().all(|event| event.collector.is_some())
+    });
+    let changed_sources = current_source_fingerprints
+        .iter()
+        .filter_map(|(source, fingerprint)| {
+            let changed = force_all
+                || !previous_is_reusable
+                || previous_source_fingerprints.and_then(|stored| stored.get(source))
+                    != Some(fingerprint);
+            changed.then_some(source.clone())
+        })
+        .collect::<Vec<_>>();
+
+    let mut previous_partitions = partition_events(
+        previous
+            .filter(|_| previous_is_reusable)
+            .map(|cache| cache.events)
+            .unwrap_or_default(),
+    );
+    let mut retained_events = Vec::new();
+    for (source, events) in &previous_partitions {
+        if !changed_sources.iter().any(|changed| changed == source) {
+            retained_events.extend(events.iter().cloned());
+        }
+    }
+
+    // Scan only changed adapter partitions. The cache still persists the full
+    // event set, so filtered callers can never poison a later unfiltered read.
+    let mut result =
+        scan::collect_events_incremental(ctx, Some(&changed_sources), &previous_partitions)?;
+    retained_events.append(&mut result.events);
     let stored_fingerprint = if result.failures.is_empty() {
         Some(fingerprint)
     } else {
         // Preserve the last known partition for failed adapters while healthy
         // adapters refresh. A missing fingerprint deliberately keeps this
         // cache stale so the next read retries the failed source.
-        if let Ok(cache) = storage::load_cache(cache_path) {
-            let failed = result
-                .failures
-                .iter()
-                .map(|failure| failure.adapter.as_str())
-                .collect::<HashSet<_>>();
-            result.events.extend(
-                cache
-                    .events
-                    .into_iter()
-                    .filter(|event| failed.contains(event.source.as_str())),
-            );
+        let failed = result
+            .failures
+            .iter()
+            .map(|failure| failure.adapter.as_str())
+            .collect::<HashSet<_>>();
+        for source in failed {
+            if let Some(mut events) = previous_partitions.remove(source) {
+                retained_events.append(&mut events);
+            }
         }
         None
     };
@@ -165,9 +221,18 @@ pub fn refresh_summary_at_with_failures(
     // partition can therefore overlap freshly scanned manual rows. Re-run the
     // canonical cross-source dedupe after merging so partial recovery never
     // double-counts an identical logical event.
-    result.events = scan::dedupe_events(result.events);
-    storage::save_events_with_fingerprint(&result.events, stored_fingerprint, cache_path)?;
-    let summary = summarize_filtered(&result.events, sources_filter);
+    retained_events = scan::dedupe_events(retained_events);
+    let mut stored_source_fingerprints = current_source_fingerprints;
+    for failure in &result.failures {
+        stored_source_fingerprints.remove(&failure.adapter);
+    }
+    storage::save_events_with_fingerprints(
+        &retained_events,
+        stored_fingerprint,
+        &stored_source_fingerprints,
+        cache_path,
+    )?;
+    let summary = summarize_filtered(&retained_events, sources_filter);
     Ok(RefreshResult {
         summary: rings::record_summary_best_effort(
             summary,
@@ -197,6 +262,36 @@ fn summarize_filtered(
             aggregate::summarize(&filtered)
         }
     }
+}
+
+fn partition_events(
+    events: Vec<crate::event::AgentEvent>,
+) -> BTreeMap<String, Vec<crate::event::AgentEvent>> {
+    let mut partitions = BTreeMap::<String, Vec<crate::event::AgentEvent>>::new();
+    for event in events {
+        let collector = event
+            .collector
+            .clone()
+            .unwrap_or_else(|| event.source.clone());
+        partitions.entry(collector).or_default().push(event);
+    }
+    partitions
+}
+
+/// Fingerprint inputs independently for each collecting adapter. This lets a
+/// Claude-only change reuse the cached Codex partition instead of reparsing all
+/// unrelated local histories.
+pub fn source_fingerprints(ctx: &AdapterContext) -> BTreeMap<String, SourceFingerprint> {
+    let mut fingerprints = BTreeMap::new();
+    for adapter in registry::default_adapters() {
+        let mut fingerprint = SourceFingerprint::default();
+        let mut visited = HashSet::new();
+        for path in adapter.watch_paths(ctx) {
+            accumulate_path(&path, &mut fingerprint, &mut visited);
+        }
+        fingerprints.insert(adapter.name().to_string(), fingerprint);
+    }
+    fingerprints
 }
 
 /// Fingerprint every source file the active adapters watch: total bytes, newest
@@ -588,6 +683,101 @@ mod tests {
     }
 
     #[test]
+    fn stale_refresh_reuses_unchanged_adapter_partition() {
+        let home =
+            std::env::temp_dir().join(format!("lag-cache-partitions-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&home);
+        write_session(&home, "proj-a", "s1.jsonl", 10);
+        let codex_dir = home.join(".codex/sessions/2026/06/13");
+        std::fs::create_dir_all(&codex_dir).unwrap();
+        let codex_path =
+            codex_dir.join("rollout-2026-06-13T09-58-42-aaaa-bbbb-cccc-dddd-eeee.jsonl");
+        std::fs::write(
+            &codex_path,
+            concat!(
+                "{\"timestamp\":\"2026-06-13T01:58:55Z\",\"type\":\"session_meta\",",
+                "\"payload\":{\"cwd\":\"/tmp/demo\",\"timestamp\":\"2026-06-13T01:58:55Z\"}}\n",
+                "{\"timestamp\":\"2026-06-13T01:58:57Z\",\"type\":\"event_msg\",",
+                "\"payload\":{\"type\":\"token_count\",\"info\":{\"total_token_usage\":",
+                "{\"total_tokens\":20}}}}\n"
+            ),
+        )
+        .unwrap();
+        let ctx = AdapterContext::with_home(&home);
+        let cache_path = tmp_path("partitions");
+        let _ = std::fs::remove_file(&cache_path);
+        refresh_summary_at(&ctx, None, &cache_path).unwrap();
+
+        let mut cache = storage::load_cache(&cache_path).unwrap();
+        let codex = cache
+            .events
+            .iter_mut()
+            .find(|event| event.collector.as_deref() == Some("codex"))
+            .unwrap();
+        codex
+            .metadata
+            .insert("reuse_probe".into(), serde_json::Value::Bool(true));
+        storage::save_events_with_fingerprints(
+            &cache.events,
+            cache.fingerprint,
+            &cache.source_fingerprints,
+            &cache_path,
+        )
+        .unwrap();
+
+        write_session(&home, "proj-b", "s2.jsonl", 30);
+        summary_from_cache_or_scan_at(&ctx, None, &cache_path).unwrap();
+
+        let refreshed = storage::load_cache(&cache_path).unwrap();
+        let codex = refreshed
+            .events
+            .iter()
+            .find(|event| event.collector.as_deref() == Some("codex"))
+            .unwrap();
+        assert_eq!(
+            codex.metadata.get("reuse_probe"),
+            Some(&serde_json::Value::Bool(true))
+        );
+        std::fs::remove_file(rings::path_for_events_cache(&cache_path)).ok();
+        std::fs::remove_file(&cache_path).ok();
+        std::fs::remove_dir_all(&home).ok();
+    }
+
+    #[test]
+    fn stale_refresh_rescans_cache_without_collector_ownership() {
+        let home =
+            std::env::temp_dir().join(format!("lag-cache-no-collector-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&home);
+        write_session(&home, "proj-a", "s1.jsonl", 10);
+        let ctx = AdapterContext::with_home(&home);
+        let cache_path = tmp_path("no-collector");
+        let _ = std::fs::remove_file(&cache_path);
+
+        let mut events = scan::collect_events(&ctx, None).unwrap().events;
+        assert_eq!(events.len(), 1);
+        events[0].collector = None;
+        storage::save_events_with_fingerprints(
+            &events,
+            None,
+            &source_fingerprints(&ctx),
+            &cache_path,
+        )
+        .unwrap();
+
+        let summary = summary_from_cache_or_scan_at(&ctx, None, &cache_path).unwrap();
+        assert_eq!(summary.total_events, 1);
+        let refreshed = storage::load_cache(&cache_path).unwrap();
+        assert_eq!(
+            refreshed.events[0].collector.as_deref(),
+            Some("claude-code")
+        );
+
+        std::fs::remove_file(rings::path_for_events_cache(&cache_path)).ok();
+        std::fs::remove_file(&cache_path).ok();
+        std::fs::remove_dir_all(&home).ok();
+    }
+
+    #[test]
     fn missing_cache_scans_and_writes_empty_cache() {
         let path = tmp_path("missing");
         let _ = std::fs::remove_file(&path);
@@ -603,6 +793,30 @@ mod tests {
     }
 
     #[test]
+    fn missing_cache_with_missing_parent_scans_via_interactive_entrypoint() {
+        // Regression for the Tauri command path:
+        // garden_summary -> summary_from_cache_or_scan_with_failures.
+        // A first launch can have neither ~/.local-agent-garden/ nor
+        // events.json. That missing read must fall through to scan + cache
+        // creation, not surface as "I/O error reading ... events.json".
+        let root =
+            std::env::temp_dir().join(format!("lag-cache-missing-parent-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let cache_path = root.join(".local-agent-garden").join("events.json");
+        let ctx = AdapterContext::with_home(root.join("empty-home"));
+
+        let refresh = summary_from_cache_or_scan_at_with_failures(&ctx, None, &cache_path)
+            .expect("missing cache should trigger a fresh empty scan");
+
+        assert_eq!(refresh.summary.total_events, 0);
+        assert!(refresh.failures.is_empty());
+        assert!(cache_path.exists(), "fallback scan should create the cache");
+        let events = storage::load_events(&cache_path).unwrap();
+        assert!(events.is_empty());
+        std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
     fn incompatible_cache_is_replaced_after_scan() {
         let path = tmp_path("future");
         let _ = std::fs::remove_file(&path);
@@ -613,10 +827,11 @@ mod tests {
 
         assert_eq!(summary.total_events, 0);
         let text = std::fs::read_to_string(&path).unwrap();
-        let expected = format!(r#""schema_version": {}"#, storage::EVENTS_SCHEMA_VERSION);
-        assert!(
-            text.contains(&expected),
-            "future cache should be replaced, got: {text}"
+        let parsed = serde_json::from_str::<serde_json::Value>(&text).unwrap();
+        assert_eq!(
+            parsed["schema_version"],
+            storage::EVENTS_SCHEMA_VERSION,
+            "future cache should be replaced"
         );
         std::fs::remove_file(&path).ok();
     }

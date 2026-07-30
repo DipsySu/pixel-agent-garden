@@ -16,6 +16,12 @@ use std::path::Path;
 pub struct AgentEvent {
     pub source: String,
 
+    /// Adapter that collected this row. Usually identical to `source`, but a
+    /// manual JSONL adapter may faithfully preserve another source name. The
+    /// cache uses this field to reuse unchanged adapter partitions safely.
+    #[serde(default)]
+    pub collector: Option<String>,
+
     /// Always serialized as UTC ISO 8601 with `+00:00` suffix.
     #[serde(with = "ts_serde")]
     pub timestamp: DateTime<Utc>,
@@ -105,6 +111,7 @@ impl AgentEvent {
     pub fn new(source: impl Into<String>, timestamp: DateTime<Utc>) -> Self {
         Self {
             source: source.into(),
+            collector: None,
             timestamp,
             project_path: None,
             session_id: None,

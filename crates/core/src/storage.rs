@@ -9,14 +9,20 @@
 use crate::error::Error;
 use crate::event::AgentEvent;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// Schema version for the on-disk events cache (`events.json`). Deliberately
 /// independent from `aggregate::SUMMARY_SCHEMA_VERSION`: the summary JSON shape
 /// can change without invalidating cached raw events, and vice-versa. Bump only
 /// when the `EventsCache` / `AgentEvent` shape or interpretation changes
-/// incompatibly. Version 2 invalidates pre-model-split Copilot CLI rows.
-pub const EVENTS_SCHEMA_VERSION: u32 = 2;
+/// incompatibly. Version 3 removes prompt/title metadata from normalized
+/// events and adds per-adapter fingerprints for incremental refreshes.
+pub const EVENTS_SCHEMA_VERSION: u32 = 3;
+
+static ATOMIC_WRITE_NONCE: AtomicU64 = AtomicU64::new(0);
 
 /// Fingerprint of the source files the cached events were built from. Used by
 /// `crate::cache` to decide whether a cache is stale relative to the agent
@@ -56,6 +62,18 @@ pub struct EventsCache {
     /// forcing one safe refresh rather than trusting an unknown-freshness cache.
     #[serde(default)]
     pub fingerprint: Option<SourceFingerprint>,
+    /// Fingerprint for each collecting adapter. A stale cache can rescan only
+    /// the adapters whose inputs changed and reuse the remaining partitions.
+    #[serde(default)]
+    pub source_fingerprints: BTreeMap<String, SourceFingerprint>,
+}
+
+#[derive(Serialize)]
+struct EventsCacheRef<'a> {
+    schema_version: u32,
+    events: &'a [AgentEvent],
+    fingerprint: Option<SourceFingerprint>,
+    source_fingerprints: &'a BTreeMap<String, SourceFingerprint>,
 }
 
 /// Default cache directory — `~/.local-agent-garden/`.
@@ -76,9 +94,14 @@ pub fn default_state_dir() -> PathBuf {
 pub(crate) fn write_text_atomic(path: &Path, text: &str) -> Result<(), Error> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).map_err(|e| Error::io(parent, e))?;
+        harden_state_dir(parent)?;
     }
-    let tmp = atomic_tmp_path(path);
-    std::fs::write(&tmp, text).map_err(|e| Error::io(&tmp, e))?;
+    let (tmp, mut file) = create_atomic_tmp(path)?;
+    if let Err(error) = file.write_all(text.as_bytes()) {
+        let _ = std::fs::remove_file(&tmp);
+        return Err(Error::io(&tmp, error));
+    }
+    drop(file);
     std::fs::rename(&tmp, path).map_err(|e| {
         let _ = std::fs::remove_file(&tmp);
         Error::io(path, e)
@@ -86,13 +109,49 @@ pub(crate) fn write_text_atomic(path: &Path, text: &str) -> Result<(), Error> {
     Ok(())
 }
 
-fn atomic_tmp_path(path: &Path) -> PathBuf {
+fn atomic_tmp_path(path: &Path, nonce: u64) -> PathBuf {
     let file_name = path
         .file_name()
         .and_then(|s| s.to_str())
         .filter(|s| !s.is_empty())
         .unwrap_or("state");
-    path.with_file_name(format!(".{file_name}.tmp-{}", std::process::id()))
+    path.with_file_name(format!(".{file_name}.tmp-{}-{nonce}", std::process::id()))
+}
+
+fn create_atomic_tmp(path: &Path) -> Result<(PathBuf, std::fs::File), Error> {
+    for _ in 0..32 {
+        let nonce = ATOMIC_WRITE_NONCE.fetch_add(1, Ordering::Relaxed);
+        let tmp = atomic_tmp_path(path, nonce);
+        let mut options = std::fs::OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        match options.open(&tmp) {
+            Ok(file) => return Ok((tmp, file)),
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(Error::io(&tmp, error)),
+        }
+    }
+    Err(Error::InvalidRecord {
+        context: path.display().to_string(),
+        message: "could not allocate a unique atomic-write temp file".to_string(),
+    })
+}
+
+fn harden_state_dir(path: &Path) -> Result<(), Error> {
+    if path != default_state_dir() {
+        return Ok(());
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700))
+            .map_err(|e| Error::io(path, e))?;
+    }
+    Ok(())
 }
 
 /// Write events to disk wrapped in the versioned envelope, with no source
@@ -109,14 +168,43 @@ pub fn save_events_with_fingerprint(
     fingerprint: Option<SourceFingerprint>,
     path: &Path,
 ) -> Result<(), Error> {
-    let cache = EventsCache {
+    save_events_with_fingerprints(events, fingerprint, &BTreeMap::new(), path)
+}
+
+pub fn save_events_with_fingerprints(
+    events: &[AgentEvent],
+    fingerprint: Option<SourceFingerprint>,
+    source_fingerprints: &BTreeMap<String, SourceFingerprint>,
+    path: &Path,
+) -> Result<(), Error> {
+    let cache = EventsCacheRef {
         schema_version: EVENTS_SCHEMA_VERSION,
-        events: events.to_vec(),
+        events,
         fingerprint,
+        source_fingerprints,
     };
-    let json = serde_json::to_string_pretty(&cache).map_err(|e| Error::json(path, e))?;
-    write_text_atomic(path, &json)?;
-    Ok(())
+    write_json_atomic(path, &cache)
+}
+
+fn write_json_atomic<T: Serialize>(path: &Path, value: &T) -> Result<(), Error> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| Error::io(parent, e))?;
+        harden_state_dir(parent)?;
+    }
+    let (tmp, mut file) = create_atomic_tmp(path)?;
+    if let Err(error) = serde_json::to_writer(&mut file, value) {
+        let _ = std::fs::remove_file(&tmp);
+        return Err(Error::json(path, error));
+    }
+    if let Err(error) = file.flush() {
+        let _ = std::fs::remove_file(&tmp);
+        return Err(Error::io(&tmp, error));
+    }
+    drop(file);
+    std::fs::rename(&tmp, path).map_err(|error| {
+        let _ = std::fs::remove_file(&tmp);
+        Error::io(path, error)
+    })
 }
 
 /// Read the full cache envelope (events + fingerprint). Rejects any wrapped
@@ -147,6 +235,7 @@ pub fn load_cache(path: &Path) -> Result<EventsCache, Error> {
                 schema_version: EVENTS_SCHEMA_VERSION,
                 events,
                 fingerprint: None,
+                source_fingerprints: BTreeMap::new(),
             })
         }
     }
@@ -227,7 +316,10 @@ mod tests {
         let path = tmp("legacyfp");
         std::fs::write(
             &path,
-            r#"{"schema_version":2,"events":[],"fingerprint":{"max_mtime_ms":123,"file_count":2}}"#,
+            format!(
+                r#"{{"schema_version":{},"events":[],"fingerprint":{{"max_mtime_ms":123,"file_count":2}}}}"#,
+                EVENTS_SCHEMA_VERSION
+            ),
         )
         .unwrap();
         let back = load_cache(&path).unwrap();
@@ -245,7 +337,7 @@ mod tests {
         save_events(&sample_events(), &path).unwrap();
         let text = std::fs::read_to_string(&path).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&text).unwrap();
-        assert_eq!(parsed["schema_version"], 2);
+        assert_eq!(parsed["schema_version"], EVENTS_SCHEMA_VERSION);
         assert!(parsed["events"].is_array());
         std::fs::remove_file(&path).ok();
     }
@@ -258,10 +350,56 @@ mod tests {
         write_text_atomic(&path, "two").unwrap();
 
         assert_eq!(std::fs::read_to_string(&path).unwrap(), "two");
-        assert!(
-            !atomic_tmp_path(&path).exists(),
-            "temp file should not be left behind after successful rename"
+        let prefix = format!(
+            ".{}.tmp-{}-",
+            path.file_name().unwrap().to_string_lossy(),
+            std::process::id()
         );
+        let temp_left = std::fs::read_dir(path.parent().unwrap())
+            .unwrap()
+            .flatten()
+            .any(|entry| entry.file_name().to_string_lossy().starts_with(&prefix));
+        assert!(!temp_left, "temp file should not remain after rename");
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn concurrent_atomic_writes_use_distinct_temp_files() {
+        use std::sync::{Arc, Barrier};
+
+        let path = tmp("atomic-concurrent");
+        let _ = std::fs::remove_file(&path);
+        let barrier = Arc::new(Barrier::new(12));
+        let mut workers = Vec::new();
+        for index in 0..12 {
+            let path = path.clone();
+            let barrier = Arc::clone(&barrier);
+            workers.push(std::thread::spawn(move || {
+                barrier.wait();
+                write_text_atomic(&path, &format!(r#"{{"writer":{index}}}"#))
+            }));
+        }
+        for worker in workers {
+            worker.join().unwrap().unwrap();
+        }
+
+        let final_value = std::fs::read_to_string(&path).unwrap();
+        let parsed = serde_json::from_str::<serde_json::Value>(&final_value).unwrap();
+        assert!(parsed["writer"].as_u64().is_some());
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn atomic_state_files_are_owner_only() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let path = tmp("private-mode");
+        let _ = std::fs::remove_file(&path);
+        write_text_atomic(&path, "private").unwrap();
+
+        let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600);
         std::fs::remove_file(&path).ok();
     }
 
@@ -285,7 +423,9 @@ mod tests {
         std::fs::write(&path, r#"{"schema_version":1,"events":[]}"#).unwrap();
         let err = load_events(&path).unwrap_err();
         assert!(matches!(err, Error::InvalidRecord { .. }));
-        assert!(err.to_string().contains("does not match reader version 2"));
+        assert!(err.to_string().contains(&format!(
+            "does not match reader version {EVENTS_SCHEMA_VERSION}"
+        )));
         std::fs::remove_file(&path).ok();
     }
 

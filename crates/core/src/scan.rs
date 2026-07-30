@@ -4,7 +4,7 @@ use crate::adapter::{Adapter, AdapterContext};
 use crate::error::Error;
 use crate::event::AgentEvent;
 use crate::registry;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 /// Run every built-in adapter whose `discover()` returns true, collect their
 /// events, dedupe rows that multiple local ledgers expose, then return them in
@@ -28,14 +28,28 @@ pub fn collect_events(
     ctx: &AdapterContext,
     sources_filter: Option<&[String]>,
 ) -> Result<ScanResult, Error> {
+    collect_events_incremental(ctx, sources_filter, &BTreeMap::new())
+}
+
+pub fn collect_events_incremental(
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+    previous: &BTreeMap<String, Vec<AgentEvent>>,
+) -> Result<ScanResult, Error> {
     let adapters = registry::default_adapters();
-    Ok(collect_from_adapters(&adapters, ctx, sources_filter))
+    Ok(collect_from_adapters(
+        &adapters,
+        ctx,
+        sources_filter,
+        previous,
+    ))
 }
 
 fn collect_from_adapters(
     adapters: &[Box<dyn Adapter>],
     ctx: &AdapterContext,
     sources_filter: Option<&[String]>,
+    previous: &BTreeMap<String, Vec<AgentEvent>>,
 ) -> ScanResult {
     let mut events = Vec::new();
     let mut active = Vec::new();
@@ -50,10 +64,14 @@ fn collect_from_adapters(
         if !adapter.discover(ctx) {
             continue;
         }
-        match adapter.collect(ctx) {
+        let previous_events = previous.get(&name).map(Vec::as_slice).unwrap_or(&[]);
+        match adapter.collect_incremental(ctx, previous_events) {
             Ok(mut got) => {
                 if !got.is_empty() {
-                    active.push(name);
+                    active.push(name.clone());
+                }
+                for event in &mut got {
+                    event.collector = Some(name.clone());
                 }
                 events.append(&mut got);
             }
@@ -179,9 +197,11 @@ mod tests {
             &adapters,
             &AdapterContext::with_home(PathBuf::from("/tmp/fake-home")),
             None,
+            &BTreeMap::new(),
         );
 
         assert_eq!(result.events.len(), 1);
+        assert_eq!(result.events[0].collector.as_deref(), Some("healthy"));
         assert_eq!(result.active_sources, vec!["healthy"]);
         assert_eq!(result.failures.len(), 1);
         assert_eq!(result.failures[0].adapter, "broken");

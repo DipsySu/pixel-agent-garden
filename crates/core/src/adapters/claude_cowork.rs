@@ -24,7 +24,6 @@ pub struct ClaudeCoworkAdapter;
 struct CoworkSessionMeta {
     local_session_id: Option<String>,
     cli_session_id: Option<String>,
-    title: Option<String>,
     process_name: Option<String>,
     cwd: Option<String>,
     space_id: Option<String>,
@@ -246,7 +245,6 @@ fn metadata_for_row(value: &Value, meta: &CoworkSessionMeta) -> BTreeMap<String,
         "cowork_cli_session_id",
         meta.cli_session_id.as_deref(),
     );
-    insert_string(&mut metadata, "cowork_title", meta.title.as_deref());
     insert_string(
         &mut metadata,
         "cowork_process_name",
@@ -340,7 +338,6 @@ fn load_session_meta(path: &Path, spaces: &BTreeMap<String, String>) -> CoworkSe
     CoworkSessionMeta {
         local_session_id: string_field(&data, "sessionId"),
         cli_session_id: string_field(&data, "cliSessionId"),
-        title: string_field(&data, "title"),
         process_name: string_field(&data, "processName"),
         cwd: string_field(&data, "cwd"),
         space_id,
@@ -487,10 +484,7 @@ mod tests {
             events[0].metadata.get("uuid"),
             Some(&Value::String("row-1".to_string()))
         );
-        assert_eq!(
-            events[0].metadata.get("cowork_title"),
-            Some(&Value::String("Demo project".to_string()))
-        );
+        assert!(!events[0].metadata.contains_key("cowork_title"));
         assert_eq!(
             events[0].metadata.get("cowork_archived"),
             Some(&Value::Bool(true))

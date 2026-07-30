@@ -11,14 +11,19 @@
 //! "no event" rather than a hard failure.
 
 use crate::adapter::{Adapter, AdapterContext};
-use crate::adapters::util::{JsonlRow, as_int_opt, parse_rfc3339_utc, read_jsonl};
+use crate::adapters::util::{JsonlRow, as_int_opt, file_signature, parse_rfc3339_utc, read_jsonl};
 use crate::error::Error;
 use crate::event::{AgentEvent, TokenUsage};
 use chrono::{DateTime, Utc};
 use rusqlite::OpenFlags;
 use rusqlite::types::{FromSql, FromSqlResult, ValueRef};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+
+const META_DB_UPDATED_AT: &str = "codex_db_updated_at";
+const META_DB_TOTAL: &str = "codex_db_total";
+const META_ROLLOUT_BYTES: &str = "codex_rollout_bytes";
+const META_ROLLOUT_MTIME_MS: &str = "codex_rollout_mtime_ms";
 
 /// Lenient column reader — Codex's SQLite stores timestamps either as ISO
 /// 8601 TEXT or as INTEGER epoch (sec or ms) depending on CLI version.
@@ -82,7 +87,11 @@ impl CodexAdapter {
     }
 
     // ---- pass 1: threads SQLite ------------------------------------------
-    fn read_threads_db(&self, db_path: &Path) -> Vec<AgentEvent> {
+    fn read_threads_db(
+        &self,
+        db_path: &Path,
+        previous: &HashMap<String, &AgentEvent>,
+    ) -> Vec<AgentEvent> {
         if !db_path.is_file() {
             return Vec::new();
         }
@@ -103,8 +112,8 @@ impl CodexAdapter {
 
         let sql = r#"
             SELECT id, rollout_path, created_at, updated_at, source, model_provider,
-                   cwd, title, tokens_used, cli_version, model, reasoning_effort,
-                   git_branch, first_user_message, archived
+                   cwd, tokens_used, cli_version, model, reasoning_effort,
+                   git_branch, archived
             FROM threads
         "#;
         let Ok(mut stmt) = conn.prepare(sql) else {
@@ -124,14 +133,12 @@ impl CodexAdapter {
                 source: row.get::<_, FlexString>(4)?.0,
                 model_provider: row.get::<_, FlexString>(5)?.0,
                 cwd: row.get::<_, FlexString>(6)?.0,
-                title: row.get::<_, FlexString>(7)?.0,
-                tokens_used: row.get::<_, FlexInt>(8)?.0,
-                cli_version: row.get::<_, FlexString>(9)?.0,
-                model: row.get::<_, FlexString>(10)?.0,
-                reasoning_effort: row.get::<_, FlexString>(11)?.0,
-                git_branch: row.get::<_, FlexString>(12)?.0,
-                first_user_message: row.get::<_, FlexString>(13)?.0,
-                archived: row.get::<_, FlexInt>(14)?.0,
+                tokens_used: row.get::<_, FlexInt>(7)?.0,
+                cli_version: row.get::<_, FlexString>(8)?.0,
+                model: row.get::<_, FlexString>(9)?.0,
+                reasoning_effort: row.get::<_, FlexString>(10)?.0,
+                git_branch: row.get::<_, FlexString>(11)?.0,
+                archived: row.get::<_, FlexInt>(12)?.0,
             })
         });
         let Ok(rows) = rows else { return events };
@@ -142,6 +149,17 @@ impl CodexAdapter {
             let Some(timestamp) = parse_codex_timestamp(ts_str) else {
                 continue;
             };
+            let db_total = row.tokens_used.unwrap_or(0).max(0) as u64;
+            let rollout_path = row
+                .rollout_path
+                .as_deref()
+                .and_then(|path| resolve_rollout_path(path, db_path));
+            if let Some(cached) = previous.get(&row.id).copied() {
+                if cached_thread_is_current(cached, ts_str, db_total, rollout_path.as_deref()) {
+                    events.push(cached.clone());
+                    continue;
+                }
+            }
 
             let mut event = AgentEvent::new(Self::NAME, timestamp);
             event.session_id = if row.id.is_empty() {
@@ -151,11 +169,9 @@ impl CodexAdapter {
             };
             event.project_path = row.cwd.clone().filter(|s| !s.is_empty());
             event.event_type = "thread".to_string();
-            let db_total = row.tokens_used.unwrap_or(0).max(0) as u64;
-            event.usage = row
-                .rollout_path
+            event.usage = rollout_path
                 .as_deref()
-                .and_then(|p| rollout_usage_from_ref(p, db_path))
+                .and_then(extract_rollout_usage)
                 .unwrap_or_default();
             if db_total > 0 {
                 // The SQLite thread row is Codex's canonical total and wins over
@@ -172,8 +188,9 @@ impl CodexAdapter {
             }
             event.model = row.model.clone();
             event.raw_ref = Some(
-                row.rollout_path
-                    .clone()
+                rollout_path
+                    .as_ref()
+                    .map(|path| path.display().to_string())
                     .unwrap_or_else(|| db_path.display().to_string()),
             );
 
@@ -201,17 +218,16 @@ impl CodexAdapter {
                 "archived".into(),
                 serde_json::Value::Bool(row.archived.unwrap_or(0) != 0),
             );
-            let title_or_first = row
-                .title
-                .as_deref()
-                .filter(|s| !s.is_empty())
-                .or(row.first_user_message.as_deref());
             event.metadata.insert(
-                "title".into(),
-                shorten(title_or_first, 120)
-                    .map(serde_json::Value::String)
-                    .unwrap_or(serde_json::Value::Null),
+                META_DB_UPDATED_AT.into(),
+                serde_json::Value::String(ts_str.to_string()),
             );
+            event
+                .metadata
+                .insert(META_DB_TOTAL.into(), serde_json::Value::from(db_total));
+            if let Some(path) = rollout_path.as_deref() {
+                record_rollout_signature(&mut event, path);
+            }
             event.normalize_totals();
             events.push(event);
         }
@@ -242,21 +258,18 @@ impl CodexAdapter {
             event.session_id = Some(session_id.to_string());
             event.event_type = "session-index".to_string();
             event.raw_ref = Some(format!("{}:{}", path.display(), row.line_no));
-            // Always emit `title`; missing thread_name → null.
-            let title_value = v
-                .get("thread_name")
-                .and_then(|s| s.as_str())
-                .and_then(|s| shorten(Some(s), 120))
-                .map(serde_json::Value::String)
-                .unwrap_or(serde_json::Value::Null);
-            event.metadata.insert("title".into(), title_value);
             events.push(event);
         }
         events
     }
 
     // ---- pass 3: rollout JSONL files -------------------------------------
-    fn read_rollouts(&self, root: &Path, seen_sessions: &HashSet<String>) -> Vec<AgentEvent> {
+    fn read_rollouts(
+        &self,
+        root: &Path,
+        seen_sessions: &HashSet<String>,
+        previous: &HashMap<String, &AgentEvent>,
+    ) -> Vec<AgentEvent> {
         let mut events = Vec::new();
         let mut paths: Vec<PathBuf> = Vec::new();
         collect_rollout_paths(&root.join("archived_sessions"), 1, &mut paths);
@@ -268,11 +281,42 @@ impl CodexAdapter {
             if seen_sessions.contains(&session_id) {
                 continue;
             }
-            if let Some(event) = parse_rollout(&path, &session_id) {
+            if let Some(cached) = previous.get(&session_id).copied() {
+                if cached_rollout_is_current(cached, &path) {
+                    events.push(cached.clone());
+                    continue;
+                }
+            }
+            if let Some(mut event) = parse_rollout(&path, &session_id) {
+                record_rollout_signature(&mut event, &path);
                 events.push(event);
             }
         }
         events
+    }
+
+    fn collect_with_previous(
+        &self,
+        ctx: &AdapterContext,
+        previous: &[AgentEvent],
+    ) -> Result<Vec<AgentEvent>, Error> {
+        let root = Self::root(ctx);
+        let previous = previous
+            .iter()
+            .filter_map(|event| event.session_id.as_ref().map(|id| (id.clone(), event)))
+            .collect::<HashMap<_, _>>();
+        let mut events = self.read_threads_db(&root.join("state_5.sqlite"), &previous);
+        let mut seen: HashSet<String> =
+            events.iter().filter_map(|e| e.session_id.clone()).collect();
+        let index_events = self.read_session_index(&root.join("session_index.jsonl"), &seen);
+        for event in &index_events {
+            if let Some(session_id) = event.session_id.as_ref() {
+                seen.insert(session_id.clone());
+            }
+        }
+        events.extend(index_events);
+        events.extend(self.read_rollouts(&root, &seen, &previous));
+        Ok(events)
     }
 }
 
@@ -295,19 +339,15 @@ impl Adapter for CodexAdapter {
     }
 
     fn collect(&self, ctx: &AdapterContext) -> Result<Vec<AgentEvent>, Error> {
-        let root = Self::root(ctx);
-        let mut events = self.read_threads_db(&root.join("state_5.sqlite"));
-        let mut seen: HashSet<String> =
-            events.iter().filter_map(|e| e.session_id.clone()).collect();
-        let index_events = self.read_session_index(&root.join("session_index.jsonl"), &seen);
-        for e in &index_events {
-            if let Some(sid) = e.session_id.as_ref() {
-                seen.insert(sid.clone());
-            }
-        }
-        events.extend(index_events);
-        events.extend(self.read_rollouts(&root, &seen));
-        Ok(events)
+        self.collect_with_previous(ctx, &[])
+    }
+
+    fn collect_incremental(
+        &self,
+        ctx: &AdapterContext,
+        previous: &[AgentEvent],
+    ) -> Result<Vec<AgentEvent>, Error> {
+        self.collect_with_previous(ctx, previous)
     }
 
     fn watch_paths(&self, ctx: &AdapterContext) -> Vec<PathBuf> {
@@ -336,13 +376,11 @@ struct ThreadRow {
     source: Option<String>,
     model_provider: Option<String>,
     cwd: Option<String>,
-    title: Option<String>,
     tokens_used: Option<i64>,
     cli_version: Option<String>,
     model: Option<String>,
     reasoning_effort: Option<String>,
     git_branch: Option<String>,
-    first_user_message: Option<String>,
     archived: Option<i64>,
 }
 
@@ -392,17 +430,65 @@ fn walk_jsonl(dir: &Path, depth: usize, max_depth: usize, out: &mut Vec<PathBuf>
     }
 }
 
-fn rollout_usage_from_ref(raw_path: &str, anchor: &Path) -> Option<TokenUsage> {
+fn resolve_rollout_path(raw_path: &str, anchor: &Path) -> Option<PathBuf> {
     if raw_path.trim().is_empty() {
         return None;
     }
     let path = PathBuf::from(raw_path);
-    let path = if path.is_absolute() {
+    Some(if path.is_absolute() {
         path
     } else {
         anchor.parent().map(|p| p.join(&path)).unwrap_or(path)
+    })
+}
+
+fn metadata_u64(event: &AgentEvent, key: &str) -> Option<u64> {
+    event.metadata.get(key).and_then(|value| value.as_u64())
+}
+
+fn cached_rollout_is_current(event: &AgentEvent, path: &Path) -> bool {
+    if event.raw_ref.as_deref() != Some(path.to_string_lossy().as_ref()) {
+        return false;
+    }
+    let Some((bytes, modified_ms)) = file_signature(path) else {
+        return false;
     };
-    extract_rollout_usage(&path)
+    metadata_u64(event, META_ROLLOUT_BYTES) == Some(bytes)
+        && metadata_u64(event, META_ROLLOUT_MTIME_MS) == Some(modified_ms)
+}
+
+fn cached_thread_is_current(
+    event: &AgentEvent,
+    updated_at: &str,
+    db_total: u64,
+    rollout_path: Option<&Path>,
+) -> bool {
+    if event
+        .metadata
+        .get(META_DB_UPDATED_AT)
+        .and_then(|value| value.as_str())
+        != Some(updated_at)
+        || metadata_u64(event, META_DB_TOTAL) != Some(db_total)
+    {
+        return false;
+    }
+    match rollout_path {
+        Some(path) => cached_rollout_is_current(event, path),
+        None => true,
+    }
+}
+
+fn record_rollout_signature(event: &mut AgentEvent, path: &Path) {
+    let Some((bytes, modified_ms)) = file_signature(path) else {
+        return;
+    };
+    event
+        .metadata
+        .insert(META_ROLLOUT_BYTES.into(), serde_json::Value::from(bytes));
+    event.metadata.insert(
+        META_ROLLOUT_MTIME_MS.into(),
+        serde_json::Value::from(modified_ms),
+    );
 }
 
 /// Extract a stable session_id from a rollout filename. Codex names them
@@ -629,21 +715,6 @@ fn add_token_usage(dst: &mut TokenUsage, src: &TokenUsage) {
     dst.total_tokens = dst.total_tokens.saturating_add(src.total_tokens);
 }
 
-/// Whitespace-collapse + truncate.
-fn shorten(value: Option<&str>, limit: usize) -> Option<String> {
-    let v = value?;
-    let collapsed: String = v.split_whitespace().collect::<Vec<_>>().join(" ");
-    if collapsed.is_empty() {
-        return None;
-    }
-    if collapsed.chars().count() <= limit {
-        Some(collapsed)
-    } else {
-        let truncated: String = collapsed.chars().take(limit - 1).collect();
-        Some(format!("{}...", truncated))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -810,6 +881,78 @@ mod tests {
     }
 
     #[test]
+    fn incremental_collect_reuses_unchanged_rollout_and_reparses_append() {
+        use std::io::Write as _;
+
+        let home =
+            std::env::temp_dir().join(format!("lag-codex-incremental-{}", std::process::id()));
+        let sessions = home.join(".codex/sessions/2026/06/13");
+        std::fs::create_dir_all(&sessions).unwrap();
+        let path = sessions.join("rollout-2026-06-13T09-58-42-aaaa-bbbb-cccc-dddd-eeee.jsonl");
+        let initial = [
+            json!({
+                "timestamp": "2026-06-13T01:58:55Z",
+                "type": "session_meta",
+                "payload": {
+                    "cwd": "/tmp/demo-project",
+                    "timestamp": "2026-06-13T01:58:55Z"
+                }
+            }),
+            json!({
+                "timestamp": "2026-06-13T01:58:57Z",
+                "type": "event_msg",
+                "payload": {
+                    "type": "token_count",
+                    "info": { "total_token_usage": { "total_tokens": 10 } }
+                }
+            }),
+        ];
+        std::fs::write(
+            &path,
+            initial
+                .iter()
+                .map(serde_json::Value::to_string)
+                .collect::<Vec<_>>()
+                .join("\n")
+                + "\n",
+        )
+        .unwrap();
+
+        let adapter = CodexAdapter;
+        let ctx = AdapterContext::with_home(&home);
+        let mut first = adapter.collect(&ctx).unwrap();
+        assert_eq!(first.len(), 1);
+        first[0]
+            .metadata
+            .insert("reuse_probe".into(), serde_json::Value::Bool(true));
+
+        let reused = adapter.collect_incremental(&ctx, &first).unwrap();
+        assert_eq!(
+            reused[0].metadata.get("reuse_probe"),
+            Some(&serde_json::Value::Bool(true))
+        );
+
+        let appended = json!({
+            "timestamp": "2026-06-13T01:59:00Z",
+            "type": "event_msg",
+            "payload": {
+                "type": "token_count",
+                "info": { "total_token_usage": { "total_tokens": 20 } }
+            }
+        });
+        let mut file = std::fs::OpenOptions::new()
+            .append(true)
+            .open(&path)
+            .unwrap();
+        writeln!(file, "{appended}").unwrap();
+
+        let refreshed = adapter.collect_incremental(&ctx, &reused).unwrap();
+        assert_eq!(refreshed[0].usage.total_tokens, 20);
+        assert!(!refreshed[0].metadata.contains_key("reuse_probe"));
+        std::fs::remove_dir_all(&home).ok();
+    }
+
+    #[test]
     fn threads_db_enriches_canonical_total_with_rollout_split_usage() {
         let tmp = std::env::temp_dir().join(format!("lag-codex-db-{}", std::process::id()));
         std::fs::create_dir_all(&tmp).unwrap();
@@ -869,7 +1012,7 @@ mod tests {
         )
         .unwrap();
 
-        let events = CodexAdapter.read_threads_db(&db_path);
+        let events = CodexAdapter.read_threads_db(&db_path, &HashMap::new());
         assert_eq!(events.len(), 1);
         let usage = &events[0].usage;
         assert_eq!(usage.total_tokens, 181);
@@ -877,6 +1020,7 @@ mod tests {
         assert_eq!(usage.cache_read_tokens, 70);
         assert_eq!(usage.output_tokens, 20);
         assert_eq!(usage.cache_write_tokens, 0);
+        assert!(!events[0].metadata.contains_key("title"));
 
         std::fs::remove_dir_all(&tmp).ok();
     }
@@ -918,7 +1062,7 @@ mod tests {
         )
         .unwrap();
 
-        let events = CodexAdapter.read_threads_db(&db_path);
+        let events = CodexAdapter.read_threads_db(&db_path, &HashMap::new());
         assert_eq!(events.len(), 1);
         let usage = &events[0].usage;
         // db_total (150) < split (90 + 70 + 20 = 180) → clamped up to 180.
@@ -928,22 +1072,6 @@ mod tests {
         assert_eq!(usage.output_tokens, 20);
 
         std::fs::remove_dir_all(&tmp).ok();
-    }
-
-    #[test]
-    fn shorten_truncates_and_collapses_whitespace() {
-        assert_eq!(
-            shorten(Some("  hello   world "), 120),
-            Some("hello world".into())
-        );
-        assert_eq!(shorten(Some(""), 120), None);
-        assert_eq!(shorten(None, 120), None);
-        // Historical behavior: `text[..limit - 1] + "..."`, so total length
-        // is limit + 2 when truncating.
-        let long = "a".repeat(200);
-        let out = shorten(Some(&long), 50).unwrap();
-        assert_eq!(out.chars().count(), 52);
-        assert!(out.ends_with("..."));
     }
 
     #[test]
@@ -1012,10 +1140,7 @@ mod tests {
         let events = adapter.read_session_index(&path, &seen);
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].session_id.as_deref(), Some("new-one"));
-        assert_eq!(
-            events[0].metadata.get("title"),
-            Some(&serde_json::Value::String("hello".into()))
-        );
+        assert!(!events[0].metadata.contains_key("title"));
         std::fs::remove_dir_all(&tmp).ok();
     }
 }

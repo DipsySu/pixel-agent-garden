@@ -161,7 +161,7 @@ event cache on downgrade. **Split first:**
 还可能在降级时白白让事件缓存失效。**先拆:**
 
 ```rust
-pub const EVENTS_SCHEMA_VERSION: u32 = 2;   // events.json / EventsCache
+pub const EVENTS_SCHEMA_VERSION: u32 = 3;   // events.json / EventsCache
 pub const SUMMARY_SCHEMA_VERSION: u32 = 2;  // GardenSummary (bumped for daily_tokens)
 ```
 

@@ -343,30 +343,18 @@ body {
   filter: saturate(0.92) brightness(0.9) contrast(1.06) drop-shadow(0 3px 0 rgba(18, 14, 12, 0.30));
 }
 /* === Flowerbed ========================================================== */
-.pg6-flower {
-  cursor: help;
-  filter: saturate(0.92) brightness(0.95) contrast(1.04) drop-shadow(0 1px 0 rgba(30, 18, 8, 0.35));
+.pg6-flowerbed-canvas {
+  height: 100%;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   pointer-events: auto;
   position: absolute;
-  transform: var(--flower-transform, translate(-50%, -100%));
-  transform-origin: bottom center;
-  transition: filter 120ms ease, opacity 120ms ease, transform 120ms ease;
+  inset: 0;
   user-select: none;
+  width: 100%;
+  z-index: 21;
 }
-.pg6-flower.level-0 { opacity: 0.58; filter: saturate(0.58) brightness(0.78) contrast(1.05); }
-.pg6-flower.level-1 { opacity: 0.78; }
-.pg6-flower.level-2 { opacity: 0.9; }
-.pg6-flower.level-3,
-.pg6-flower.level-4 { opacity: 1; }
-.pg6-flower:hover,
-.pg6-flower:focus-visible {
-  filter: saturate(1.12) brightness(1.1) contrast(1.05) drop-shadow(0 0 3px rgba(244, 216, 120, 0.42));
-  outline: 1px solid rgba(244, 216, 120, 0.74);
-  outline-offset: 1px;
-  transform: var(--flower-transform, translate(-50%, -100%)) translateY(-2px) scale(1.35);
-}
+.pg6-flowerbed-canvas.is-hovering { cursor: help; }
 .pg6-flower-tooltip {
   background: rgba(28, 18, 10, 0.9);
   border: 1px solid rgba(244, 234, 216, 0.16);
@@ -563,7 +551,6 @@ body {
 .pg6-scene[data-motion="off"] .pg6-sprite,
 .pg6-scene[data-motion="off"] .pg6-info,
 .pg6-scene[data-motion="off"] .pg6-garden-cat,
-.pg6-scene[data-motion="off"] .pg6-flower,
 .pg6-scene[data-motion="off"] .pg6-flower-tooltip {
   animation: none !important;
   transition-duration: 0ms !important;
@@ -573,9 +560,6 @@ body {
 }
 .pg6-scene[data-motion="reduced"] .pg6-sprite {
   animation-duration: 8s !important;
-}
-.pg6-scene[data-motion="reduced"] .pg6-flower {
-  transition-duration: 0ms !important;
 }
 .pg6-scene[data-motion="reduced"] .pg6-sprite.decor-lantern.is-lit {
   animation-duration: 5s !important;
@@ -1844,7 +1828,6 @@ body {
   .pg6-info,
   .pg6-season-particle,
   .pg6-garden-cat,
-  .pg6-flower,
   .pg6-flower-tooltip {
     animation: none !important;
     transition-duration: 0ms !important;

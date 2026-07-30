@@ -228,8 +228,7 @@ pub fn save(path: &Path, settings: &Settings) -> Result<(), Error> {
         path: path.to_path_buf(),
         source: Box::new(source),
     })?;
-    std::fs::write(path, text).map_err(|e| Error::io(path, e))?;
-    Ok(())
+    crate::storage::write_text_atomic(path, &text)
 }
 
 #[cfg(test)]

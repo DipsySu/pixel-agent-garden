@@ -54,6 +54,13 @@ pub trait Adapter: Send + Sync {
     fn name(&self) -> &str;
     fn discover(&self, ctx: &AdapterContext) -> bool;
     fn collect(&self, ctx: &AdapterContext) -> Result<Vec<AgentEvent>, Error>;
+    fn collect_incremental(
+        &self,
+        ctx: &AdapterContext,
+        previous: &[AgentEvent],
+    ) -> Result<Vec<AgentEvent>, Error> {
+        self.collect(ctx)
+    }
     fn watch_paths(&self, ctx: &AdapterContext) -> Vec<PathBuf> { Vec::new() }
 }
 ```
@@ -67,18 +74,28 @@ retain that adapter's last known partition, omit the source fingerprint so the
 next load retries, and surface an adapter-specific CLI warning / Tauri error
 event. A malformed source must never erase unrelated garden data.
 
+The cache stores one fingerprint and event partition per collecting adapter.
+Only changed adapters are rescanned; large append-only adapters may override
+`collect_incremental` to validate and reuse unchanged normalized rows. `scan`
+stamps `AgentEvent.collector` after collection so manual JSONL rows can preserve
+their declared `source` without being mistaken for a native adapter partition.
+
 The desktop watcher periodically reconciles `watch_paths()` as well as doing so
 after filesystem-triggered scans. This is required because agent roots,
 workspaces, and session databases can be created after app launch. A missing
 leaf may watch its direct parent with exact logical filtering; targets missing
 multiple path levels rely on the bounded reconciliation interval rather than
 recursively watching a broad ancestor such as the user's home directory.
+Filesystem callbacks write to a one-slot dirty signal, not an event backlog;
+watch-registration failures retry with backoff and never request a scan merely
+because registration state differs.
 
 ## Unified Event
 
 `AgentEvent` is intentionally broad:
 
 - `source`: agent name, such as `claude-code`, `claude-cowork`, `codex`, `aider`
+- `collector`: adapter that collected the event (cache partition identity)
 - `timestamp`: event time
 - `project_path`: workspace or repo path when known
 - `session_id`: source session/thread id
