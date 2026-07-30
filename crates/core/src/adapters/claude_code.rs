@@ -162,11 +162,11 @@ impl ClaudeCodeAdapter {
         let mut inferred_by_dir: HashMap<PathBuf, Option<String>> = HashMap::new();
         for (project_dir, session_path) in list_claude_session_files(&root) {
             let path_key = session_path.display().to_string();
-            if let Some(cached) = previous_by_file.get(&path_key)
-                && cached_session_is_current(cached, &session_path)
-            {
-                events.extend(cached.iter().cloned());
-                continue;
+            if let Some(cached) = previous_by_file.get(&path_key) {
+                if cached_session_is_current(cached, &session_path) {
+                    events.extend(cached.iter().cloned());
+                    continue;
+                }
             }
 
             let inferred_project_path = inferred_by_dir

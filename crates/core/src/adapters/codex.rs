@@ -154,11 +154,11 @@ impl CodexAdapter {
                 .rollout_path
                 .as_deref()
                 .and_then(|path| resolve_rollout_path(path, db_path));
-            if let Some(cached) = previous.get(&row.id).copied()
-                && cached_thread_is_current(cached, ts_str, db_total, rollout_path.as_deref())
-            {
-                events.push(cached.clone());
-                continue;
+            if let Some(cached) = previous.get(&row.id).copied() {
+                if cached_thread_is_current(cached, ts_str, db_total, rollout_path.as_deref()) {
+                    events.push(cached.clone());
+                    continue;
+                }
             }
 
             let mut event = AgentEvent::new(Self::NAME, timestamp);
@@ -281,11 +281,13 @@ impl CodexAdapter {
             if seen_sessions.contains(&session_id) {
                 continue;
             }
-            if let Some(cached) = previous.get(&session_id).copied()
-                && cached_rollout_is_current(cached, &path)
-            {
-                events.push(cached.clone());
-            } else if let Some(mut event) = parse_rollout(&path, &session_id) {
+            if let Some(cached) = previous.get(&session_id).copied() {
+                if cached_rollout_is_current(cached, &path) {
+                    events.push(cached.clone());
+                    continue;
+                }
+            }
+            if let Some(mut event) = parse_rollout(&path, &session_id) {
                 record_rollout_signature(&mut event, &path);
                 events.push(event);
             }
