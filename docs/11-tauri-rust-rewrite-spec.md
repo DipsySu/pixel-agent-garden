@@ -191,8 +191,11 @@ lantern follows today's activity/time of day. This preserves the PRD 2.0 split:
 Insight answers "what is true now"; the garden remembers "what has ever
 bloomed".
 
-`rings.json` and `events.json` writes use a shared sibling-temp-file plus
-atomic-rename helper, so a process crash cannot leave a half JSON document.
+`settings.toml`, `rings.json`, `prices.json`, and `events.json` writes use a
+shared unique sibling-temp-file plus atomic-rename helper, so concurrent writers
+do not share a temp path and a process crash cannot leave a half document. On
+Unix, new state files are owner-only (`0600`), and writes under the default
+state directory tighten `~/.local-agent-garden/` to `0700`.
 CLI summary views apply the same rings high-water display layer as the Tauri
 desktop summary. CLI `usage` remains a raw accounting view over current events
 and is not high-watered.
@@ -235,6 +238,8 @@ close_to_tray = false
   `watch_paths()`) — see `core::cache::source_fingerprint`; no source file is
   re-parsed just to decide staleness. Byte total is what catches in-place
   appends to an active session log within one coarse mtime tick.
+  Stale refreshes compare per-adapter fingerprints and reuse unchanged event
+  partitions. All in-process refresh entry points share one single-flight lock.
 - `trigger_scan() -> GardenSummary`: force a fresh scan, write
   `~/.local-agent-garden/events.json`, and return the new summary.
 - `garden_rings() -> RingBook`: read `~/.local-agent-garden/rings.json` as a

@@ -3,7 +3,7 @@ import { unlockTier } from './garden-tiers.js';
 import { depthToScreen } from './render-svg.js';
 import { fmtLocal, escapeHtml, pick, pickByToken, namedSprite, jitter } from './render-helpers.js';
 import { sparklineSVG, windowTotal } from './render-insight.js';
-import { renderFlowerbed } from './render-flowerbed.js';
+import { clearFlowerbed, renderFlowerbed } from './render-flowerbed.js';
 import { t } from './i18n.js';
 
 let scene;
@@ -21,13 +21,9 @@ const dynamicLayerSelector = [
   '.pg6-wall-edge-cover',
   '.pg6-petal',
   '.pg6-season-particle',
-  // Flowerbed view: render-flowerbed.js appends `.pg6-flower` elements (and a
-  // single `.pg6-flower-tooltip`) without self-clearing, so they MUST be in
-  // the clear list — otherwise every watcher tick re-appends 366 flowers on
-  // top of the old ones (stacking + leak). NOT `.pg6-garden-cat` (below) —
-  // the cat is deliberately long-lived.
-  '.pg6-flower',
-  '.pg6-flower-tooltip'
+  // Flowerbed owns one persistent canvas and tooltip. Keeping them outside
+  // this repaint clear-list avoids rebuilding 366 image nodes on every watcher
+  // tick. renderFlowerbed updates the existing canvas; destroy handles teardown.
 ].join(', ');
 // NOTE: `.pg6-garden-cat` is deliberately NOT in the clear list. The cat owns a
 // long-lived rAF wander loop; tearing it down + recreating it at home on every
@@ -119,6 +115,8 @@ function renderEverything(groups, summary) {
   // of the flowers, not on top of them.
   if (isFlowerbedEnabled()) {
     renderFlowerbed(scene, groups.flowerbed || [], summary, { spriteRoot });
+  } else {
+    clearFlowerbed(scene);
   }
   addCourtyardObjects(groups, tiers);
   addFlowerAccents(groups, tiers);
@@ -158,6 +156,7 @@ function destroy() {
     catWanderStop = null;
   }
   scene.querySelectorAll(dynamicLayerSelector + ', .pg6-garden-cat').forEach((el) => el.remove());
+  clearFlowerbed(scene);
   currentWallProjects = [];
 }
 

@@ -2,13 +2,16 @@
 
 use crate::adapter::{Adapter, AdapterContext};
 use crate::adapters::util::{
-    JsonlRow, as_int_opt, list_claude_session_files, parse_rfc3339_utc, project_from_claude_dir,
-    read_jsonl,
+    JsonlRow, as_int_opt, file_signature, list_claude_session_files, parse_rfc3339_utc,
+    project_from_claude_dir, read_jsonl,
 };
 use crate::error::Error;
 use crate::event::AgentEvent;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+
+const META_SOURCE_BYTES: &str = "source_file_bytes";
+const META_SOURCE_MTIME_MS: &str = "source_file_mtime_ms";
 
 pub struct ClaudeCodeAdapter;
 
@@ -137,6 +140,61 @@ impl ClaudeCodeAdapter {
         event.normalize_totals();
         Some(event)
     }
+
+    fn collect_with_previous(
+        &self,
+        ctx: &AdapterContext,
+        previous: &[AgentEvent],
+    ) -> Result<Vec<AgentEvent>, Error> {
+        let root = Self::root(ctx);
+        let mut previous_by_file = HashMap::<String, Vec<AgentEvent>>::new();
+        for event in previous {
+            let Some(path) = raw_ref_file(event.raw_ref.as_deref()) else {
+                continue;
+            };
+            previous_by_file
+                .entry(path.to_string())
+                .or_default()
+                .push(event.clone());
+        }
+
+        let mut events = Vec::new();
+        let mut inferred_by_dir: HashMap<PathBuf, Option<String>> = HashMap::new();
+        for (project_dir, session_path) in list_claude_session_files(&root) {
+            let path_key = session_path.display().to_string();
+            if let Some(cached) = previous_by_file.get(&path_key)
+                && cached_session_is_current(cached, &session_path)
+            {
+                events.extend(cached.iter().cloned());
+                continue;
+            }
+
+            let inferred_project_path = inferred_by_dir
+                .entry(project_dir.clone())
+                .or_insert_with(|| project_from_claude_dir(&project_dir))
+                .clone();
+            let session_id = session_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("")
+                .to_string();
+            let mut collected =
+                self.collect_session(&session_path, inferred_project_path.as_deref(), &session_id);
+            if let Some((bytes, modified_ms)) = file_signature(&session_path) {
+                for event in &mut collected {
+                    event
+                        .metadata
+                        .insert(META_SOURCE_BYTES.into(), serde_json::Value::from(bytes));
+                    event.metadata.insert(
+                        META_SOURCE_MTIME_MS.into(),
+                        serde_json::Value::from(modified_ms),
+                    );
+                }
+            }
+            events.append(&mut collected);
+        }
+        Ok(events)
+    }
 }
 
 impl Adapter for ClaudeCodeAdapter {
@@ -149,32 +207,15 @@ impl Adapter for ClaudeCodeAdapter {
     }
 
     fn collect(&self, ctx: &AdapterContext) -> Result<Vec<AgentEvent>, Error> {
-        let root = Self::root(ctx);
-        let mut events = Vec::new();
-        // Decode each project directory name at most once. `list_claude_session_files`
-        // yields one (dir, session) pair per session, but the directory→path
-        // decode is invariant across a project's sessions and now probes the
-        // filesystem (up to a few thousand `exists()` calls for hyphen-rich
-        // Windows names). Recomputing it per session would repeat that work on
-        // every rescan, so memoize by directory.
-        let mut inferred_by_dir: HashMap<PathBuf, Option<String>> = HashMap::new();
-        for (project_dir, session_path) in list_claude_session_files(&root) {
-            let inferred_project_path = inferred_by_dir
-                .entry(project_dir.clone())
-                .or_insert_with(|| project_from_claude_dir(&project_dir))
-                .clone();
-            let session_id = session_path
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .unwrap_or("")
-                .to_string();
-            events.extend(self.collect_session(
-                &session_path,
-                inferred_project_path.as_deref(),
-                &session_id,
-            ));
-        }
-        Ok(events)
+        self.collect_with_previous(ctx, &[])
+    }
+
+    fn collect_incremental(
+        &self,
+        ctx: &AdapterContext,
+        previous: &[AgentEvent],
+    ) -> Result<Vec<AgentEvent>, Error> {
+        self.collect_with_previous(ctx, previous)
     }
 
     fn watch_paths(&self, ctx: &AdapterContext) -> Vec<PathBuf> {
@@ -185,6 +226,32 @@ impl Adapter for ClaudeCodeAdapter {
             Vec::new()
         }
     }
+}
+
+fn raw_ref_file(raw_ref: Option<&str>) -> Option<&str> {
+    let (path, line) = raw_ref?.rsplit_once(':')?;
+    line.parse::<usize>().ok()?;
+    Some(path)
+}
+
+fn cached_session_is_current(events: &[AgentEvent], path: &Path) -> bool {
+    let Some(first) = events.first() else {
+        return false;
+    };
+    let Some((bytes, modified_ms)) = file_signature(path) else {
+        return false;
+    };
+    raw_ref_file(first.raw_ref.as_deref()) == Some(path.to_string_lossy().as_ref())
+        && first
+            .metadata
+            .get(META_SOURCE_BYTES)
+            .and_then(serde_json::Value::as_u64)
+            == Some(bytes)
+        && first
+            .metadata
+            .get(META_SOURCE_MTIME_MS)
+            .and_then(serde_json::Value::as_u64)
+            == Some(modified_ms)
 }
 
 /// Count `tool_use` / `server_tool_use` blocks in a message content array.
@@ -342,6 +409,57 @@ mod tests {
         assert_eq!(events[0].tool_calls, 0);
         assert_eq!(events[0].usage.total_tokens, 0);
         std::fs::remove_dir_all(&tmp).ok();
+    }
+
+    #[test]
+    fn incremental_collect_reuses_unchanged_sessions_and_reparses_append() {
+        use std::io::Write as _;
+
+        let home = std::env::temp_dir().join(format!("lag-cc-incremental-{}", std::process::id()));
+        let project = home.join(".claude/projects/-tmp-demo");
+        std::fs::create_dir_all(&project).unwrap();
+        let session = project.join("session.jsonl");
+        let first_row = json!({
+            "timestamp": "2026-06-13T01:58:55Z",
+            "type": "assistant",
+            "sessionId": "session",
+            "cwd": "/tmp/demo",
+            "message": { "usage": { "input_tokens": 10 } }
+        });
+        std::fs::write(&session, format!("{first_row}\n")).unwrap();
+
+        let adapter = ClaudeCodeAdapter;
+        let ctx = AdapterContext::with_home(&home);
+        let mut first = adapter.collect(&ctx).unwrap();
+        assert_eq!(first.len(), 1);
+        first[0]
+            .metadata
+            .insert("reuse_probe".into(), serde_json::Value::Bool(true));
+
+        let reused = adapter.collect_incremental(&ctx, &first).unwrap();
+        assert_eq!(
+            reused[0].metadata.get("reuse_probe"),
+            Some(&serde_json::Value::Bool(true))
+        );
+
+        let second_row = json!({
+            "timestamp": "2026-06-13T01:59:00Z",
+            "type": "assistant",
+            "sessionId": "session",
+            "cwd": "/tmp/demo",
+            "message": { "usage": { "input_tokens": 20 } }
+        });
+        let mut file = std::fs::OpenOptions::new()
+            .append(true)
+            .open(&session)
+            .unwrap();
+        writeln!(file, "{second_row}").unwrap();
+
+        let refreshed = adapter.collect_incremental(&ctx, &reused).unwrap();
+        assert_eq!(refreshed.len(), 2);
+        assert_eq!(refreshed[1].usage.total_tokens, 20);
+        assert!(!refreshed[0].metadata.contains_key("reuse_probe"));
+        std::fs::remove_dir_all(&home).ok();
     }
 
     #[test]

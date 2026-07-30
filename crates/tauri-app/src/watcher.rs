@@ -14,13 +14,14 @@ use local_agent_garden_core::registry;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
+use std::sync::mpsc::{Receiver, RecvTimeoutError, SyncSender, sync_channel};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 
 const DEBOUNCE_MS: u64 = 800;
 const RECONCILE_SECS: u64 = 5;
+const REGISTRATION_RETRY_SECS: u64 = 60;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct WatchTarget {
@@ -32,9 +33,10 @@ pub fn run(app: AppHandle) -> Result<(), String> {
     let ctx = AdapterContext::from_env();
     let initial_targets = collect_watch_targets(&ctx);
 
-    // 2. Wire the OS watcher to a synchronous channel. We don't need async
-    //    here; the channel naturally serializes events, the debounce loop
-    //    reads them off in batches.
+    // 2. Wire the OS watcher to a one-slot dirty signal. The consumer performs
+    //    a blocking scan, so retaining every filesystem event would let an
+    //    active agent grow an unbounded queue while that scan runs. One pending
+    //    signal is enough: it means "something changed; scan once more".
     //
     // NOTE: we forward EVERY event kind here, including `Access` and `Other`.
     // macOS FSEvents reports mtime-only changes (what `touch` produces) as
@@ -42,7 +44,7 @@ pub fn run(app: AppHandle) -> Result<(), String> {
     // before — meaning `touch` correctly fired the OS event but our filter
     // ate it. Better to over-trigger and rely on the 800ms debounce than
     // miss real activity.
-    let (tx, rx): (Sender<notify::Event>, Receiver<notify::Event>) = channel();
+    let (tx, rx): (SyncSender<()>, Receiver<()>) = sync_channel(1);
     let error_app = app.clone();
     let callback_targets = Arc::new(RwLock::new(initial_targets.clone()));
     let event_targets = Arc::clone(&callback_targets);
@@ -65,7 +67,7 @@ pub fn run(app: AppHandle) -> Result<(), String> {
                     if std::env::var_os("AGENT_GARDEN_DEBUG").is_some() {
                         eprintln!("[watcher] event: kind={:?} paths={:?}", ev.kind, ev.paths);
                     }
-                    let _ = tx.send(ev);
+                    mark_dirty(&tx);
                 }
                 Err(err) => {
                     eprintln!("[watcher] notify error: {err}");
@@ -76,9 +78,11 @@ pub fn run(app: AppHandle) -> Result<(), String> {
         .map_err(|e| format!("create watcher: {e}"))?;
 
     let mut registrations = BTreeMap::new();
+    let mut failed_registrations = BTreeMap::new();
     apply_registrations(
         &mut watcher,
         &mut registrations,
+        &mut failed_registrations,
         watch_registrations(&initial_targets),
         &app,
     );
@@ -115,6 +119,7 @@ pub fn run(app: AppHandle) -> Result<(), String> {
             apply_registrations(
                 &mut watcher,
                 &mut registrations,
+                &mut failed_registrations,
                 desired_registrations,
                 &app,
             );
@@ -123,7 +128,7 @@ pub fn run(app: AppHandle) -> Result<(), String> {
             }
         }
 
-        if !should_scan && !targets_changed && !registrations_changed {
+        if !refresh_required(should_scan, targets_changed) {
             continue;
         }
 
@@ -131,7 +136,7 @@ pub fn run(app: AppHandle) -> Result<(), String> {
             eprintln!("[watcher] emit scanning failed: {err}");
         }
 
-        match run_summary_blocking() {
+        match run_incremental_summary_blocking() {
             Ok(refresh) => {
                 for failure in &refresh.failures {
                     emit_adapter_error(&app, "watcher", failure);
@@ -176,6 +181,7 @@ pub fn run(app: AppHandle) -> Result<(), String> {
             apply_registrations(
                 &mut watcher,
                 &mut registrations,
+                &mut failed_registrations,
                 desired_registrations,
                 &app,
             );
@@ -206,6 +212,7 @@ fn collect_watch_targets(ctx: &AdapterContext) -> Vec<WatchTarget> {
 fn apply_registrations(
     watcher: &mut RecommendedWatcher,
     current: &mut BTreeMap<PathBuf, bool>,
+    failed: &mut BTreeMap<PathBuf, Instant>,
     desired: Vec<(PathBuf, bool)>,
     app: &AppHandle,
 ) {
@@ -219,12 +226,21 @@ fn apply_registrations(
     {
         if let Err(err) = watcher.unwatch(&path) {
             eprintln!("[watcher] unwatch({}) failed: {err}", path.display());
+            failed.insert(path.clone(), Instant::now());
+            continue;
         }
         current.remove(&path);
+        failed.remove(&path);
     }
 
     for (path, recursive) in &desired {
         if current.get(path) == Some(recursive) {
+            continue;
+        }
+        if failed
+            .get(path)
+            .is_some_and(|last| last.elapsed() < Duration::from_secs(REGISTRATION_RETRY_SECS))
+        {
             continue;
         }
         let mode = if *recursive {
@@ -235,11 +251,14 @@ fn apply_registrations(
         if let Err(err) = watcher.watch(path, mode) {
             eprintln!("[watcher] watch({}) failed: {err}", path.display());
             emit_watcher_error(app, format!("watch {} failed: {err}", path.display()));
+            failed.insert(path.clone(), Instant::now());
         } else {
             eprintln!("[watcher] watching {}", path.display());
             current.insert(path.clone(), *recursive);
+            failed.remove(path);
         }
     }
+    failed.retain(|path, _| desired.contains_key(path));
 }
 
 /// Build the smallest OS-level registrations that cover all logical targets.
@@ -312,10 +331,18 @@ fn emit_adapter_error(
     }
 }
 
+fn mark_dirty(tx: &SyncSender<()>) {
+    let _ = tx.try_send(());
+}
+
+fn refresh_required(dirty: bool, targets_changed: bool) -> bool {
+    dirty || targets_changed
+}
+
 /// Drain everything that arrives within `window` of the call. Implemented
 /// with a deadline rather than fixed sleep so a steady stream of events
 /// doesn't extend the wait forever.
-fn debounce_drain(rx: &Receiver<notify::Event>, window: Duration) {
+fn debounce_drain(rx: &Receiver<()>, window: Duration) {
     let deadline = Instant::now() + window;
     while let Some(remaining) = deadline.checked_duration_since(Instant::now()) {
         match rx.recv_timeout(remaining) {
@@ -328,6 +355,11 @@ fn debounce_drain(rx: &Receiver<notify::Event>, window: Duration) {
 pub(crate) fn run_summary_blocking() -> Result<cache::RefreshResult, String> {
     let ctx = AdapterContext::from_env();
     cache::refresh_summary_with_failures(&ctx, None).map_err(|e| e.to_string())
+}
+
+fn run_incremental_summary_blocking() -> Result<cache::RefreshResult, String> {
+    let ctx = AdapterContext::from_env();
+    cache::summary_from_cache_or_scan_with_failures(&ctx, None).map_err(|e| e.to_string())
 }
 
 // Keep `RecommendedWatcher` type referenced for clarity in docs. Without
@@ -343,6 +375,7 @@ type _W = RecommendedWatcher;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::mpsc::TryRecvError;
 
     #[test]
     fn missing_wal_uses_parent_but_filters_credential_siblings() {
@@ -408,5 +441,23 @@ mod tests {
         );
 
         std::fs::remove_dir_all(&root).ok();
+    }
+
+    #[test]
+    fn dirty_signal_coalesces_while_consumer_is_busy() {
+        let (tx, rx) = sync_channel(1);
+        for _ in 0..100 {
+            mark_dirty(&tx);
+        }
+
+        assert_eq!(rx.try_recv(), Ok(()));
+        assert_eq!(rx.try_recv(), Err(TryRecvError::Empty));
+    }
+
+    #[test]
+    fn registration_mismatch_alone_does_not_request_scan() {
+        assert!(!refresh_required(false, false));
+        assert!(refresh_required(true, false));
+        assert!(refresh_required(false, true));
     }
 }

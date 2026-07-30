@@ -3,6 +3,9 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use std::time::UNIX_EPOCH;
+
+const MAX_JSONL_LINE_BYTES: usize = 8 * 1024 * 1024;
 
 /// Validate an absolute local path by its serialized spelling rather than the
 /// host running the parser. Adapter fixtures and synchronized agent data can
@@ -28,35 +31,119 @@ pub struct JsonlRow {
     pub value: serde_json::Value,
 }
 
+/// Stable-enough signature for append-only local logs. Size catches appends
+/// even on coarse-mtime filesystems; mtime catches same-size rewrites.
+pub fn file_signature(path: &Path) -> Option<(u64, u64)> {
+    let metadata = std::fs::metadata(path).ok()?;
+    if !metadata.is_file() {
+        return None;
+    }
+    let modified_ms = metadata
+        .modified()
+        .ok()?
+        .duration_since(UNIX_EPOCH)
+        .ok()
+        .map(|duration| u64::try_from(duration.as_millis()).unwrap_or(u64::MAX))?;
+    Some((metadata.len(), modified_ms))
+}
+
 /// Iterate parsed JSONL rows from `path`. Bad lines are silently skipped
 /// Returns an empty iterator if the file is missing.
 pub fn read_jsonl(path: &Path) -> impl Iterator<Item = JsonlRow> {
-    // Materialize into a Vec rather than returning a lazy iterator that
-    // borrows the file. Each adapter reads at most a few hundred MB total
-    // across all sessions; the simplification is worth it.
-    let mut rows = Vec::new();
-    let Ok(file) = File::open(path) else {
-        return rows.into_iter();
-    };
-    let reader = BufReader::new(file);
-    for (idx, line) in reader.lines().enumerate() {
-        let Ok(line) = line else { continue };
-        let text = line.trim();
-        if text.is_empty() {
-            continue;
-        }
-        let Ok(value) = serde_json::from_str::<serde_json::Value>(text) else {
-            continue;
-        };
-        if !value.is_object() {
-            continue;
-        }
-        rows.push(JsonlRow {
-            line_no: idx + 1,
-            value,
-        });
+    jsonl_rows_with_limit(path, MAX_JSONL_LINE_BYTES)
+}
+
+struct JsonlRows {
+    reader: Option<BufReader<File>>,
+    line_no: usize,
+    max_line_bytes: usize,
+    buffer: Vec<u8>,
+}
+
+fn jsonl_rows_with_limit(path: &Path, max_line_bytes: usize) -> JsonlRows {
+    JsonlRows {
+        reader: File::open(path).ok().map(BufReader::new),
+        line_no: 0,
+        max_line_bytes,
+        buffer: Vec::new(),
     }
-    rows.into_iter()
+}
+
+impl Iterator for JsonlRows {
+    type Item = JsonlRow;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let reader = self.reader.as_mut()?;
+            self.buffer.clear();
+            let (read, oversized) =
+                read_bounded_line(reader, &mut self.buffer, self.max_line_bytes).ok()?;
+            if read == 0 {
+                self.reader = None;
+                return None;
+            }
+            self.line_no += 1;
+            if oversized {
+                continue;
+            }
+            let Some((start, end)) = trimmed_ascii_range(&self.buffer) else {
+                continue;
+            };
+            let Ok(value) = serde_json::from_slice::<serde_json::Value>(&self.buffer[start..end])
+            else {
+                continue;
+            };
+            if !value.is_object() {
+                continue;
+            }
+            return Some(JsonlRow {
+                line_no: self.line_no,
+                value,
+            });
+        }
+    }
+}
+
+fn read_bounded_line(
+    reader: &mut BufReader<File>,
+    output: &mut Vec<u8>,
+    limit: usize,
+) -> std::io::Result<(usize, bool)> {
+    let mut total = 0;
+    let mut oversized = false;
+    loop {
+        let (consume_len, data_len, found_newline) = {
+            let available = reader.fill_buf()?;
+            if available.is_empty() {
+                return Ok((total, oversized));
+            }
+            match available.iter().position(|byte| *byte == b'\n') {
+                Some(position) => (position + 1, position, true),
+                None => (available.len(), available.len(), false),
+            }
+        };
+
+        {
+            let available = reader.fill_buf()?;
+            let remaining = limit.saturating_sub(output.len());
+            let copy_len = data_len.min(remaining);
+            output.extend_from_slice(&available[..copy_len]);
+            if copy_len < data_len {
+                oversized = true;
+            }
+        }
+        reader.consume(consume_len);
+        total += consume_len;
+        if found_newline {
+            return Ok((total, oversized));
+        }
+    }
+}
+
+fn trimmed_ascii_range(bytes: &[u8]) -> Option<(usize, usize)> {
+    let start = bytes.iter().position(|byte| !byte.is_ascii_whitespace())?;
+    let end = bytes.iter().rposition(|byte| !byte.is_ascii_whitespace())? + 1;
+    Some((start, end))
 }
 
 /// Convert a Claude project directory name back to its absolute path.
@@ -377,5 +464,20 @@ mod tests {
     fn read_jsonl_missing_file_returns_empty() {
         let rows: Vec<_> = read_jsonl(Path::new("/nonexistent/path/x.jsonl")).collect();
         assert!(rows.is_empty());
+    }
+
+    #[test]
+    fn read_jsonl_skips_oversized_line_and_keeps_following_rows() {
+        let tmp =
+            std::env::temp_dir().join(format!("lag-test-bounded-{}.jsonl", std::process::id()));
+        let oversized = format!("{{\"blob\":\"{}\"}}\n", "x".repeat(128));
+        std::fs::write(&tmp, format!("{oversized}{{\"kept\":true}}\n")).unwrap();
+
+        let rows = jsonl_rows_with_limit(&tmp, 64).collect::<Vec<_>>();
+
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].line_no, 2);
+        assert_eq!(rows[0].value["kept"], true);
+        std::fs::remove_file(&tmp).ok();
     }
 }

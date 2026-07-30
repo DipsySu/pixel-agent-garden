@@ -89,6 +89,18 @@ pub trait Adapter: Send + Sync {
     /// reports a structured warning while retaining healthy sources.
     fn collect(&self, ctx: &AdapterContext) -> Result<Vec<AgentEvent>, Error>;
 
+    /// Refresh this adapter while reusing its previous normalized partition
+    /// when possible. Most adapters are cheap enough to use the default full
+    /// collection. Large append-only sources can override this method and
+    /// validate individual cached rows before reparsing changed files.
+    fn collect_incremental(
+        &self,
+        ctx: &AdapterContext,
+        _previous: &[AgentEvent],
+    ) -> Result<Vec<AgentEvent>, Error> {
+        self.collect(ctx)
+    }
+
     /// Paths to watch for live updates. The Tauri layer subscribes to every
     /// path returned across all adapters and triggers a debounced rescan on
     /// change. Returning an empty Vec means this adapter doesn't support

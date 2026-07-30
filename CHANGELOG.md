@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased
+
+## v2.2.0 - 2026-07-30
+
+### Runtime hardening
+
+- Serialized in-process cache refreshes and gave every atomic write a unique,
+  exclusively created temp file, preventing startup, watcher, tray, and
+  WebView scans from racing over one PID-scoped path. Event JSON now streams
+  directly into that temp file instead of cloning the event vector and building
+  a second full-size string; settings use the same atomic writer.
+- Replaced the watcher's unbounded filesystem-event queue with a one-slot dirty
+  signal, stopped registration mismatches from triggering five-second full-scan
+  loops, and added a 60-second retry backoff for failed OS watches.
+- Added per-adapter cache fingerprints and an incremental adapter hook. A
+  changed Claude source no longer reparses unrelated Codex history, while the
+  Claude Code adapter reuses unchanged session files and the Codex adapter
+  reuses unchanged rollout rows by size/mtime; both reparse only changed files.
+- Streamed shared JSONL parsing with an 8 MiB per-record ceiling so malformed
+  tool-output rows cannot materialize an entire multi-gigabyte history in
+  memory; later valid rows remain readable.
+- Removed unused Codex thread titles, first-user-message fallbacks, session
+  index names, and Cowork titles from normalized events. Raw-event cache schema
+  v3 forces one rescan to purge older copies. New Unix state files are `0600`
+  and `~/.local-agent-garden/` is tightened to `0700` on the next state write.
+- Collapsed the classic wall's 366-image flowerbed into one persistent canvas
+  painted from the same hand-authored flower sprites. Watcher refreshes now
+  reuse that canvas and its decoded assets instead of rebuilding hundreds of
+  image nodes and hover listeners.
+
 ## v2.1.0 - 2026-07-12
 
 ### Adapters and pricing
