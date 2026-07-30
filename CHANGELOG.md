@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Runtime performance
+
+- Buffered atomic JSON serialization in 64 KiB chunks. Large `events.json`
+  refreshes no longer issue a tiny filesystem write for nearly every serialized
+  field; on a real 45.8 MiB cache this reduced an active Codex refresh from
+  roughly 60–90 seconds to about 3 seconds while preserving atomic rename and
+  owner-only state permissions.
+
 ## v2.2.0 - 2026-07-30
 
 ### Runtime hardening
