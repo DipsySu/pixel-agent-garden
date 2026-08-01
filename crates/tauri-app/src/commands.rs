@@ -19,13 +19,14 @@ use tauri_plugin_dialog::DialogExt;
 
 use crate::events::{ErrorPayload, GARDEN_ERROR};
 
-/// Return the current garden summary from cache when possible, falling back to
-/// a fresh scan that writes `~/.local-agent-garden/events.json`.
+/// Return the current garden summary from cache when possible. A stale cache
+/// is scanned immediately, while full-cache persistence follows the automatic
+/// write cadence in core.
 #[tauri::command]
 pub async fn garden_summary(app: tauri::AppHandle) -> Result<GardenSummary, String> {
     tokio::task::spawn_blocking(move || {
         let ctx = AdapterContext::from_env();
-        let refresh = cache::summary_from_cache_or_scan_with_failures(&ctx, None)
+        let refresh = cache::summary_from_cache_or_scan_throttled_with_failures(&ctx, None)
             .map_err(|e| e.to_string())?;
         emit_adapter_failures(&app, &refresh.failures);
         Ok(refresh.summary)
@@ -142,14 +143,15 @@ pub async fn save_prices(table: PriceTable) -> Result<PriceTable, String> {
 /// cost math, no second price load). The frontend's Cost tab and per-project
 /// Insight labels both read this one result.
 ///
-/// Cost reflects the LATEST cache summary (`summary_from_cache_or_scan`), not
-/// any paused/frozen view the UI may be showing: the honest "total spent"
-/// answer is over all data, and the cost tab is not gated on the paused view.
+/// Cost reflects the LATEST scanned summary, not any paused/frozen view the UI
+/// may be showing: the honest "total spent" answer is over all data, and the
+/// cost tab is not gated on the paused view.
 #[tauri::command]
 pub async fn cost_estimate() -> Result<SummaryCost, String> {
     tokio::task::spawn_blocking(|| {
         let ctx = AdapterContext::from_env();
-        let summary = cache::summary_from_cache_or_scan(&ctx, None).map_err(|e| e.to_string())?;
+        let summary =
+            cache::summary_from_cache_or_scan_throttled(&ctx, None).map_err(|e| e.to_string())?;
         let table = prices::load_effective(&prices::default_user_prices_path())
             .map_err(|e| e.to_string())?;
         Ok(prices::estimate_summary(&summary, &table))

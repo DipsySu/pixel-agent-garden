@@ -359,7 +359,7 @@ pub(crate) fn run_summary_blocking() -> Result<cache::RefreshResult, String> {
 
 fn run_incremental_summary_blocking() -> Result<cache::RefreshResult, String> {
     let ctx = AdapterContext::from_env();
-    cache::summary_from_cache_or_scan_with_failures(&ctx, None).map_err(|e| e.to_string())
+    cache::summary_from_cache_or_scan_throttled_with_failures(&ctx, None).map_err(|e| e.to_string())
 }
 
 // Keep `RecommendedWatcher` type referenced for clarity in docs. Without

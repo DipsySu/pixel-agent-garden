@@ -3,7 +3,8 @@
 //! Tauri and other long-lived shells should start from the persisted
 //! `events.json` cache when possible, then refresh it through the normal scan
 //! path when the cache is absent, unreadable, or **stale** relative to the
-//! agent logs on disk.
+//! agent logs on disk. Long-lived automatic callers can defer rewriting a
+//! healthy cache while still receiving the freshly scanned summary.
 //!
 //! Staleness is decided by a source fingerprint (total bytes + newest mtime +
 //! file count across every adapter's `watch_paths()`), compared metadata-only —
@@ -22,9 +23,16 @@ use crate::{scan, storage};
 use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard};
-use std::time::UNIX_EPOCH;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 static REFRESH_LOCK: Mutex<()> = Mutex::new(());
+const AUTOMATIC_CACHE_PERSIST_INTERVAL: Duration = Duration::from_secs(2 * 60 * 60);
+
+#[derive(Clone, Copy)]
+enum CachePersistence {
+    Always,
+    Throttled,
+}
 
 #[derive(Debug)]
 pub struct RefreshResult {
@@ -55,6 +63,30 @@ pub fn summary_from_cache_or_scan_with_failures(
     summary_from_cache_or_scan_at_with_failures(ctx, sources_filter, &default_events_path())
 }
 
+/// Load the latest summary for a long-lived automatic caller while limiting
+/// rewrites of the full event cache. Source changes are still scanned and
+/// returned immediately; only persistence of a healthy, recently written
+/// cache is deferred. Missing, unreadable, or legacy caches are repaired on
+/// the first scan.
+pub fn summary_from_cache_or_scan_throttled(
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+) -> Result<GardenSummary, Error> {
+    Ok(summary_from_cache_or_scan_throttled_with_failures(ctx, sources_filter)?.summary)
+}
+
+pub fn summary_from_cache_or_scan_throttled_with_failures(
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+) -> Result<RefreshResult, Error> {
+    summary_from_cache_or_scan_at_with_persistence(
+        ctx,
+        sources_filter,
+        &default_events_path(),
+        CachePersistence::Throttled,
+    )
+}
+
 /// Same as `summary_from_cache_or_scan`, but lets tests or callers pin the
 /// cache path.
 pub fn summary_from_cache_or_scan_at(
@@ -70,16 +102,32 @@ pub fn summary_from_cache_or_scan_at_with_failures(
     sources_filter: Option<&[String]>,
     cache_path: &Path,
 ) -> Result<RefreshResult, Error> {
+    summary_from_cache_or_scan_at_with_persistence(
+        ctx,
+        sources_filter,
+        cache_path,
+        CachePersistence::Always,
+    )
+}
+
+fn summary_from_cache_or_scan_at_with_persistence(
+    ctx: &AdapterContext,
+    sources_filter: Option<&[String]>,
+    cache_path: &Path,
+    persistence: CachePersistence,
+) -> Result<RefreshResult, Error> {
     let _guard = refresh_guard();
-    summary_from_cache_or_scan_locked(ctx, sources_filter, cache_path)
+    summary_from_cache_or_scan_locked(ctx, sources_filter, cache_path, persistence)
 }
 
 fn summary_from_cache_or_scan_locked(
     ctx: &AdapterContext,
     sources_filter: Option<&[String]>,
     cache_path: &Path,
+    persistence: CachePersistence,
 ) -> Result<RefreshResult, Error> {
-    if let Ok(cache) = storage::load_cache(cache_path) {
+    let cached = storage::load_cache(cache_path);
+    if let Ok(cache) = &cached {
         // Only trust the cache if it carries a fingerprint AND that fingerprint
         // still matches the source files. A `None` fingerprint (legacy cache or
         // CLI export) is treated as stale → refresh once.
@@ -100,7 +148,14 @@ fn summary_from_cache_or_scan_locked(
             }
         }
     }
-    refresh_summary_locked(ctx, sources_filter, cache_path, false)
+    let cache_needs_repair = cached.as_ref().map_or(true, |cache| {
+        cache.source_fingerprints.is_empty()
+            || cache.events.iter().any(|event| event.collector.is_none())
+    });
+    let persist_cache = cache_needs_repair
+        || matches!(persistence, CachePersistence::Always)
+        || automatic_cache_persistence_due(cache_path, SystemTime::now());
+    refresh_summary_locked(ctx, sources_filter, cache_path, false, persist_cache)
 }
 
 /// Force a scan, persist the normalized event cache (with a fresh fingerprint),
@@ -136,7 +191,7 @@ pub fn refresh_summary_at_with_failures(
     cache_path: &Path,
 ) -> Result<RefreshResult, Error> {
     let _guard = refresh_guard();
-    refresh_summary_locked(ctx, sources_filter, cache_path, true)
+    refresh_summary_locked(ctx, sources_filter, cache_path, true, true)
 }
 
 fn refresh_guard() -> MutexGuard<'static, ()> {
@@ -150,6 +205,7 @@ fn refresh_summary_locked(
     sources_filter: Option<&[String]>,
     cache_path: &Path,
     force_all: bool,
+    persist_cache: bool,
 ) -> Result<RefreshResult, Error> {
     // Fingerprint BEFORE scanning: if a source changes mid-scan, the stored
     // fingerprint will be slightly older than the data, so the next read sees
@@ -226,12 +282,14 @@ fn refresh_summary_locked(
     for failure in &result.failures {
         stored_source_fingerprints.remove(&failure.adapter);
     }
-    storage::save_events_with_fingerprints(
-        &retained_events,
-        stored_fingerprint,
-        &stored_source_fingerprints,
-        cache_path,
-    )?;
+    if persist_cache {
+        storage::save_events_with_fingerprints(
+            &retained_events,
+            stored_fingerprint,
+            &stored_source_fingerprints,
+            cache_path,
+        )?;
+    }
     let summary = summarize_filtered(&retained_events, sources_filter);
     Ok(RefreshResult {
         summary: rings::record_summary_best_effort(
@@ -241,6 +299,15 @@ fn refresh_summary_locked(
         ),
         failures: result.failures,
     })
+}
+
+fn automatic_cache_persistence_due(cache_path: &Path, now: SystemTime) -> bool {
+    let Ok(modified) = std::fs::metadata(cache_path).and_then(|metadata| metadata.modified())
+    else {
+        return true;
+    };
+    now.duration_since(modified)
+        .is_ok_and(|age| age >= AUTOMATIC_CACHE_PERSIST_INTERVAL)
 }
 
 /// Summarize `events`, optionally narrowed to a set of source (adapter) names.
@@ -558,6 +625,47 @@ mod tests {
     }
 
     #[test]
+    fn throttled_refresh_returns_latest_summary_without_rewriting_recent_cache() {
+        let home = std::env::temp_dir().join(format!(
+            "lag-cache-throttled-refresh-{}",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_dir_all(&home);
+        write_session(&home, "proj-a", "s1.jsonl", 10);
+        let ctx = AdapterContext::with_home(&home);
+        let path = tmp_path("throttled-refresh");
+        let _ = std::fs::remove_file(&path);
+
+        let first = refresh_summary_at(&ctx, None, &path).unwrap();
+        assert_eq!(first.total_tokens, 10);
+        let persisted_before = std::fs::read(&path).unwrap();
+
+        write_session(&home, "proj-b", "s2.jsonl", 20);
+        let latest = summary_from_cache_or_scan_at_with_persistence(
+            &ctx,
+            None,
+            &path,
+            CachePersistence::Throttled,
+        )
+        .unwrap();
+
+        assert_eq!(latest.summary.total_events, 2);
+        assert_eq!(latest.summary.total_tokens, 30);
+        assert_eq!(
+            std::fs::read(&path).unwrap(),
+            persisted_before,
+            "an automatic refresh should not rewrite a recently persisted cache"
+        );
+        let persisted = storage::load_cache(&path).unwrap();
+        assert_eq!(persisted.events.len(), 1);
+        assert_eq!(persisted.events[0].usage.total_tokens, 10);
+
+        std::fs::remove_file(rings::path_for_events_cache(&path)).ok();
+        std::fs::remove_file(&path).ok();
+        std::fs::remove_dir_all(&home).ok();
+    }
+
+    #[test]
     fn cache_refreshes_when_an_existing_file_is_appended() {
         // The append-only case: rows are written to the SAME session file, so
         // file_count never changes and the mtime may not advance within one
@@ -790,6 +898,48 @@ mod tests {
         let events = storage::load_events(&path).unwrap();
         assert!(events.is_empty());
         std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn throttled_refresh_still_creates_a_missing_cache() {
+        let path = tmp_path("throttled-missing");
+        let _ = std::fs::remove_file(&path);
+        let ctx = AdapterContext::with_home(
+            std::env::temp_dir().join("lag-cache-throttled-missing-home"),
+        );
+
+        let refresh = summary_from_cache_or_scan_at_with_persistence(
+            &ctx,
+            None,
+            &path,
+            CachePersistence::Throttled,
+        )
+        .unwrap();
+
+        assert_eq!(refresh.summary.total_events, 0);
+        assert!(path.exists(), "a missing cache must be written immediately");
+        std::fs::remove_file(rings::path_for_events_cache(&path)).ok();
+        std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn automatic_cache_persistence_uses_the_two_hour_cadence() {
+        let path = tmp_path("persistence-cadence");
+        let _ = std::fs::remove_file(&path);
+        std::fs::write(&path, b"cache").unwrap();
+        let modified = std::fs::metadata(&path).unwrap().modified().unwrap();
+
+        assert!(!automatic_cache_persistence_due(
+            &path,
+            modified + AUTOMATIC_CACHE_PERSIST_INTERVAL - Duration::from_secs(1)
+        ));
+        assert!(automatic_cache_persistence_due(
+            &path,
+            modified + AUTOMATIC_CACHE_PERSIST_INTERVAL
+        ));
+
+        std::fs::remove_file(&path).unwrap();
+        assert!(automatic_cache_persistence_due(&path, SystemTime::now()));
     }
 
     #[test]

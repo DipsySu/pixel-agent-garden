@@ -9,6 +9,11 @@
   field; on a real 45.8 MiB cache this reduced an active Codex refresh from
   roughly 60–90 seconds to about 3 seconds while preserving atomic rename and
   owner-only state permissions.
+- Automatic watcher, window, tray, and cost refreshes now persist the full
+  event cache at most once every two hours while still scanning and publishing
+  current summaries immediately. Missing or incompatible caches and explicit
+  manual scans continue to write through at once, preventing multi-gigabyte
+  overnight write amplification without sacrificing live garden updates.
 
 ## v2.2.0 - 2026-07-30
 
