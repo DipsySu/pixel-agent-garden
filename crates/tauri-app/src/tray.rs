@@ -98,7 +98,7 @@ pub fn setup(app: &mut App) -> tauri::Result<()> {
     let init_handle = app.handle().clone();
     std::thread::spawn(move || {
         let ctx = AdapterContext::from_env();
-        if let Ok(summary) = cache::summary_from_cache_or_scan(&ctx, None) {
+        if let Ok(summary) = cache::summary_from_cache_or_scan_throttled(&ctx, None) {
             refresh_tray_menu(&init_handle, summary);
         }
     });
@@ -123,7 +123,7 @@ pub fn setup(app: &mut App) -> tauri::Result<()> {
             };
             std::thread::sleep(wait);
             let ctx = AdapterContext::from_env();
-            if let Ok(summary) = cache::summary_from_cache_or_scan(&ctx, None) {
+            if let Ok(summary) = cache::summary_from_cache_or_scan_throttled(&ctx, None) {
                 refresh_tray_menu(&midnight_handle, summary);
             }
         }

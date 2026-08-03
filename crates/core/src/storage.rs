@@ -10,7 +10,7 @@ use crate::error::Error;
 use crate::event::AgentEvent;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -23,6 +23,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 pub const EVENTS_SCHEMA_VERSION: u32 = 3;
 
 static ATOMIC_WRITE_NONCE: AtomicU64 = AtomicU64::new(0);
+const JSON_WRITE_BUFFER_BYTES: usize = 64 * 1024;
 
 /// Fingerprint of the source files the cached events were built from. Used by
 /// `crate::cache` to decide whether a cache is stale relative to the agent
@@ -191,20 +192,25 @@ fn write_json_atomic<T: Serialize>(path: &Path, value: &T) -> Result<(), Error> 
         std::fs::create_dir_all(parent).map_err(|e| Error::io(parent, e))?;
         harden_state_dir(parent)?;
     }
-    let (tmp, mut file) = create_atomic_tmp(path)?;
-    if let Err(error) = serde_json::to_writer(&mut file, value) {
+    let (tmp, file) = create_atomic_tmp(path)?;
+    if let Err(error) = write_json_buffered(&tmp, file, value) {
         let _ = std::fs::remove_file(&tmp);
-        return Err(Error::json(path, error));
+        return Err(error);
     }
-    if let Err(error) = file.flush() {
-        let _ = std::fs::remove_file(&tmp);
-        return Err(Error::io(&tmp, error));
-    }
-    drop(file);
     std::fs::rename(&tmp, path).map_err(|error| {
         let _ = std::fs::remove_file(&tmp);
         Error::io(path, error)
     })
+}
+
+fn write_json_buffered<T: Serialize, W: Write>(
+    path: &Path,
+    writer: W,
+    value: &T,
+) -> Result<(), Error> {
+    let mut writer = BufWriter::with_capacity(JSON_WRITE_BUFFER_BYTES, writer);
+    serde_json::to_writer(&mut writer, value).map_err(|error| Error::json(path, error))?;
+    writer.flush().map_err(|error| Error::io(path, error))
 }
 
 /// Read the full cache envelope (events + fingerprint). Rejects any wrapped
@@ -252,6 +258,25 @@ mod tests {
     use super::*;
     use crate::event::AgentEvent;
     use chrono::TimeZone;
+    use std::cell::Cell;
+    use std::rc::Rc;
+
+    struct CountingWriter {
+        calls: Rc<Cell<usize>>,
+        bytes: Rc<Cell<usize>>,
+    }
+
+    impl Write for CountingWriter {
+        fn write(&mut self, buffer: &[u8]) -> std::io::Result<usize> {
+            self.calls.set(self.calls.get() + 1);
+            self.bytes.set(self.bytes.get() + buffer.len());
+            Ok(buffer.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
 
     fn tmp(suffix: &str) -> PathBuf {
         std::env::temp_dir().join(format!(
@@ -340,6 +365,26 @@ mod tests {
         assert_eq!(parsed["schema_version"], EVENTS_SCHEMA_VERSION);
         assert!(parsed["events"].is_array());
         std::fs::remove_file(&path).ok();
+    }
+
+    #[test]
+    fn json_serialization_batches_small_writes() {
+        let calls = Rc::new(Cell::new(0));
+        let bytes = Rc::new(Cell::new(0));
+        let writer = CountingWriter {
+            calls: Rc::clone(&calls),
+            bytes: Rc::clone(&bytes),
+        };
+        let payload = vec!["x".repeat(256); 4096];
+
+        write_json_buffered(Path::new("counted.json"), writer, &payload).unwrap();
+
+        assert!(bytes.get() > 1_000_000);
+        assert!(
+            calls.get() <= 32,
+            "1 MiB JSON should be emitted in buffered chunks, got {} writes",
+            calls.get()
+        );
     }
 
     #[test]
