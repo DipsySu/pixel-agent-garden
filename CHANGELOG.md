@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v2.2.1 - 2026-08-03
+
 ### Runtime performance
 
 - Buffered atomic JSON serialization in 64 KiB chunks. Large `events.json`

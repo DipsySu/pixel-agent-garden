@@ -1991,7 +1991,7 @@ checksum = "92daf443525c4cce67b150400bc2316076100ce0b3686209eb8cf3c31612e6f0"
 
 [[package]]
 name = "local-agent-garden-cli"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "chrono",
  "clap",
@@ -2001,7 +2001,7 @@ dependencies = [
 
 [[package]]
 name = "local-agent-garden-core"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "chrono",
  "rusqlite",
@@ -2013,7 +2013,7 @@ dependencies = [
 
 [[package]]
 name = "local-agent-garden-tauri"
-version = "2.2.0"
+version = "2.2.1"
 dependencies = [
  "chrono",
  "local-agent-garden-core",
