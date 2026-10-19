@@ -237,7 +237,8 @@ Use `CHANGELOG.md` as the current phase ledger. As of this file:
 
 | Rule | Enforced by |
 |---|---|
-| Peak-tier courtyard landmarks in addCourtyardObjects (bamboo, cherry, willow, lantern, cairn, pavilion) stay at least 0.5 scene-% apart | `node --test web/tests/courtyard-clearance.test.mjs` |
+| Every pair of peak-tier courtyard landmarks in addCourtyardObjects (bamboo, cherry, willow, lantern, cairn, pavilion, stone cat) stays at least 0.5 scene-% apart; only pairs in the test's `ALLOWED_OVERLAPS` (willow behind the pavilion, ≤ 2.5) may overlap | `node --test web/tests/courtyard-clearance.test.mjs` |
+| The verify harness tears down only runs it launched, and runs the CLI only against a disposable `HOME` / `XDG_DATA_HOME`. The real home comes from passwd and is matched by inode, with no `getent` | `bash .claude/skills/verify-pixel-agent-garden/tests/harness-regressions.sh` |
 
 ## 中文
 

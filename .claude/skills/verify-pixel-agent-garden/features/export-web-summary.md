@@ -30,5 +30,5 @@ Preconditions:
 - The CLI default `--out` is `web/data/garden-summary.json` relative to the current directory, which is the repository. This recipe always passes `--out {DATA_DIR}/garden-summary.json`. A drive that omits `--out` would overwrite the repo's demo summary.
 - The static server is `python3 -m http.server` bound to `127.0.0.1`, rooted at the run's scratch site. That is the documented browser fallback, and the JSON bytes come from `agent-garden export-web`.
 - `GET /web/index.html` does not execute the page. It proves the shell is served. The summary GET proves the document the page fetches. Pixel interaction inside the canvas is not driven here.
-- Re-running `export-web` appends ring memory. See [check-state.md](./check-state.md).
+- `export-web` records ring memory, but re-running it on an unchanged summary on the same UTC day adds no ring events. See [check-state.md](./check-state.md).
 - Every CLI call needs `HOME={DATA_DIR}/home` and `XDG_DATA_HOME={DATA_DIR}/xdg`.

@@ -29,13 +29,44 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v6
+        with:
+          # The clearance test replays fbe3847 from git history; a shallow
+          # clone would skip that replay.
+          fetch-depth: 0
       # Runner-preinstalled Node is enough: the web/ tests are plain ESM with
       # zero npm dependencies (repo rule: no bundler, no packages).
       - run: node --test "web/tests/**/*.test.mjs"
       # Landmark footprints in addCourtyardObjects. Kept as its own step so the
       # command that failed on the June 2026 overlaps is the command CI runs.
+      # COURTYARD_REPLAY_REQUIRED turns a missing fbe3847 into a failure.
       - name: Courtyard landmark clearance
         run: node --test web/tests/courtyard-clearance.test.mjs
+        env:
+          COURTYARD_REPLAY_REQUIRED: '1'
+
+  verify-harness:
+    name: verify harness regressions (${{ matrix.platform }})
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # macOS has no getent and symlinked /tmp; Linux has both. The harness
+        # must hold on each.
+        platform: [ubuntu-22.04, macos-latest]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Shell syntax
+        run: for f in .claude/skills/verify-pixel-agent-garden/scripts/*.sh .claude/skills/verify-pixel-agent-garden/tests/*.sh; do bash -n "$f"; done
+      - name: control.sh / launch-site.sh / agent-garden.sh regressions
+        run: bash .claude/skills/verify-pixel-agent-garden/tests/harness-regressions.sh
+      # A stock Mac resolves `#!/usr/bin/env bash` to /bin/bash 3.2, where an
+      # empty array under `set -u` is an error.
+      - name: Same regressions under stock macOS /bin/bash 3.2
+        if: runner.os == 'macOS'
+        run: |
+          shim="$(mktemp -d)"
+          ln -s /bin/bash "$shim/bash"
+          PATH="$shim:$PATH" /bin/bash .claude/skills/verify-pixel-agent-garden/tests/harness-regressions.sh
 
   supply-chain:
     name: supply-chain (zero-network gate)

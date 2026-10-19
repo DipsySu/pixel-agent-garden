@@ -14,6 +14,8 @@ web/sprite-experiment.html
 
 # Local editor / AI-tool state (per-user, not for the repo).
 # The verify skill is the shared way to drive the app, so it stays visible to git.
+# Reopen the parent even when a developer's global excludes ignore .claude/.
+!.claude/
 .claude/*
 !.claude/skills/
 .claude/skills/*

@@ -36,13 +36,17 @@ Drive $APP for verification. Run from anywhere; paths resolve to the repo root.
                                  run a command in the repo root; {DATA_DIR} {PORT} {BASE_URL} {RUN_ID}
                                  in ARGS become this run's values; evidence saved as NNN-ID-cli.json
   evidence [--copy-data]         write manifest.json (sha256 per file); --copy-data snapshots the data dir
-  cleanup                        stop only the process group this run started, delete scratch state, keep evidence
+  cleanup [--run ID --owner TOKEN]
+                                 stop only the process group this run started, delete scratch state, keep evidence;
+                                 with --run/--owner, only if run ID was launched with that owner token (prove uses it)
   status                         print the current run's state (read-only)
   prove [--feature ID] http|cli ...
-                                 launch, doctor, drive once, evidence --copy-data, cleanup, check evidence survived
+                                 launch, doctor, drive once, evidence --copy-data, cleanup, check evidence survived;
+                                 tears down only the run it launched, never an earlier one
 
 env: VERIFY_PORT, VERIFY_RUN_ID, VERIFY_STATE_DIR (default $STATE_ROOT),
-     VERIFY_ARTIFACTS_DIR (default $ARTIFACTS_ROOT), VERIFY_READY_TIMEOUT (default 30s)
+     VERIFY_ARTIFACTS_DIR (default $ARTIFACTS_ROOT), VERIFY_READY_TIMEOUT (default 60s),
+     VERIFY_OWNER_TOKEN (owner recorded by launch; prove sets it)
 EOF
 }
 
@@ -52,6 +56,10 @@ case "$LAUNCH_CMD$CLI_CHECK" in
   *TODO\(verify\)*) [[ "${1:-}" =~ ^(-h|--help|help|status)$ ]] || die "CONFIG still has unresolved TODO markers; edit $SCRIPT_DIR/control.sh first" ;;
 esac
 
+valid_run_id() { [[ "${1:-}" =~ ^[A-Za-z0-9._-]+$ && "$1" != . && "$1" != .. ]]; }
+drop_current() {  # remove the current marker only while it still names run $1
+  if [[ -f "$CURRENT" && "$(cat "$CURRENT")" == "$1" ]]; then rm -f "$CURRENT"; fi
+}
 pid_alive() { [[ -n "${1:-}" ]] && kill -0 "$1" 2>/dev/null && [[ "$(ps -o stat= -p "$1" 2>/dev/null)" != Z* ]]; }
 proc_started() {  # start identity: Linux boot id + start ticks; elsewhere (macOS) ps start time
   if [[ ! -r "/proc/${1:-x}/stat" ]]; then ps -o lstart= -p "$1" 2>/dev/null | sed 's/^ *//' || true; return 0; fi
@@ -88,9 +96,13 @@ except Exception:
 PY
 }
 
-load_run() {
-  [[ -f "$CURRENT" ]] || die "no active run; start one with: control.sh launch"
-  RUN_ID="$(cat "$CURRENT")"
+load_run() {  # [RUN_ID]: that run, or the one the current marker names
+  if [[ -n "${1:-}" ]]; then
+    RUN_ID="$1"
+  else
+    [[ -f "$CURRENT" ]] || die "no active run; start one with: control.sh launch"
+    RUN_ID="$(cat "$CURRENT")"
+  fi
   RUN_STATE="$STATE_ROOT/$RUN_ID"
   [[ -f "$RUN_STATE/env" ]] || die "run $RUN_ID has no state in $RUN_STATE; run control.sh cleanup, then launch"
   # shellcheck disable=SC1091
@@ -137,11 +149,18 @@ cmd_launch() {
     fi
   fi
   RUN_ID="${VERIFY_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
+  valid_run_id "$RUN_ID" || die "run id $RUN_ID must be letters, digits, '.', '_' or '-'"
   RUN_STATE="$STATE_ROOT/$RUN_ID"
   DATA_DIR="$RUN_STATE/data"
   EVIDENCE_DIR="$ARTIFACTS_ROOT/$RUN_ID"
-  [[ ! -e "$RUN_STATE" && ! -e "$EVIDENCE_DIR" ]] || die "run id $RUN_ID already has state or kept evidence; pick a new VERIFY_RUN_ID"
+  [[ ! -e "$EVIDENCE_DIR" ]] || die "run id $RUN_ID already has kept evidence; pick a new VERIFY_RUN_ID"
+  # mkdir without -p is the claim: it fails when the run dir exists, so no launch adopts a run it did
+  # not create. The owner file is what cleanup --run --owner checks before it deletes anything.
+  mkdir "$RUN_STATE" 2>/dev/null || die "run id $RUN_ID already has state; pick a new VERIFY_RUN_ID"
+  printf '%s\n' "${VERIFY_OWNER_TOKEN:-launch-$$}" > "$RUN_STATE/owner"
   mkdir -p "$DATA_DIR" "$EVIDENCE_DIR"
+  # {DATA_DIR} in recipes must be the physical path the CLI sees as HOME's parent; see launch-site.sh.
+  DATA_DIR="$(cd "$DATA_DIR" && pwd -P)"
   if [[ "$PORT_MODE" == fixed ]]; then PORT="${VERIFY_PORT:-$DEFAULT_PORT}"; else PORT="${VERIFY_PORT:-$(free_port)}"; fi
   BASE_URL="http://127.0.0.1:$PORT"
   {
@@ -162,7 +181,8 @@ cmd_launch() {
   (
     cd "$REPO_ROOT"
     export PORT DATA_DIR BASE_URL RUN_ID
-    exec "${starter[@]}" bash -c "$LAUNCH_CMD"
+    # ${a[@]+...}: macOS /bin/bash 3.2 calls an empty array unbound under set -u (no setsid there).
+    exec ${starter[@]+"${starter[@]}"} bash -c "$LAUNCH_CMD"
   ) > "$EVIDENCE_DIR/launch.log" 2>&1 < /dev/null &
   pid=$!
   set +m
@@ -339,11 +359,36 @@ PY
 }
 
 cmd_cleanup() {
-  if [[ ! -f "$CURRENT" ]]; then
+  local run="" owner=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --run) run="${2:?--run needs a run id}"; shift 2 ;;
+      --owner) owner="${2:?--owner needs a token}"; shift 2 ;;
+      *) die "usage: cleanup [--run ID --owner TOKEN]" ;;
+    esac
+  done
+  if [[ -n "$run$owner" ]]; then
+    [[ -n "$run" && -n "$owner" ]] || die "cleanup: --run and --owner go together"
+    valid_run_id "$run" || die "cleanup: bad run id $run"
+    # The owner file, not the current marker, decides. A launch that refused to start (an earlier run is
+    # alive, or the run id was taken) never wrote this token, so the earlier run keeps its process and state.
+    if [[ "$(cat "$STATE_ROOT/$run/owner" 2>/dev/null)" != "$owner" ]]; then
+      run_json run_id "$run" cleaned false reason "not launched by this owner"
+      return 0
+    fi
+    if [[ ! -f "$STATE_ROOT/$run/env" ]]; then  # launch stopped before it started anything
+      rm -rf "${STATE_ROOT:?}/$run"
+      drop_current "$run"
+      run_json run_id "$run" cleaned true killed false
+      return 0
+    fi
+    load_run "$run"
+  elif [[ ! -f "$CURRENT" ]]; then
     echo '{"cleaned": false, "reason": "no active run"}'
     return 0
+  else
+    load_run
   fi
-  load_run
   local killed=false pid=""
   [[ -f "$RUN_STATE/pid" ]] && pid="$(cat "$RUN_STATE/pid")"
   if pid_alive "$pid"; then
@@ -361,7 +406,7 @@ cmd_cleanup() {
     fi
   fi
   rm -rf "$RUN_STATE"
-  rm -f "$CURRENT"
+  drop_current "$RUN_ID"
   [[ -d "$EVIDENCE_DIR" ]] || die "evidence dir $EVIDENCE_DIR is missing after cleanup"
   local n; n="$(find "$EVIDENCE_DIR" -type f | wc -l | tr -d ' ')"
   run_json run_id "$RUN_ID" killed "$killed" evidence_dir "$EVIDENCE_DIR" evidence_files "$n"
@@ -376,18 +421,26 @@ cmd_status() {
   run_json active true run_id "$RUN_ID" pid "$pid" alive "$alive" port "$PORT" base_url "$BASE_URL" data_dir "$DATA_DIR" evidence_dir "$EVIDENCE_DIR"
 }
 
+prove_teardown() { "$SCRIPT_DIR/control.sh" cleanup --run "$PROVE_RUN" --owner "$PROVE_OWNER" >/dev/null 2>&1 || true; }
+
 cmd_prove() {
   [[ $# -gt 0 ]] || die "usage: prove [--feature ID] http METHOD PATH [JSON] | prove [--feature ID] cli -- CMD..."
   local self="$SCRIPT_DIR/control.sh" rc=0
-  "$self" launch || { "$self" cleanup >/dev/null 2>&1 || true; die "prove: launch failed"; }
-  trap '"$self" cleanup >/dev/null 2>&1 || true' EXIT
+  # prove owns only the run it launches: it fixes the run id and an owner token up front, and every
+  # teardown names both. If launch refuses because an earlier run is alive, that run, its state,
+  # and the current marker are left exactly as they were.
+  PROVE_RUN="${VERIFY_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
+  PROVE_OWNER="prove-$$-$RANDOM$RANDOM"
+  VERIFY_RUN_ID="$PROVE_RUN" VERIFY_OWNER_TOKEN="$PROVE_OWNER" "$self" launch \
+    || { prove_teardown; die "prove: launch failed"; }
+  trap prove_teardown EXIT
   "$self" doctor || { echo "control.sh: prove: doctor failed" >&2; rc=1; }
   if [[ "$rc" == 0 ]]; then "$self" drive "$@" || rc=$?; fi
-  load_run
+  load_run "$PROVE_RUN"
   local ev="$EVIDENCE_DIR"
   "$self" evidence --copy-data >/dev/null
   trap - EXIT
-  "$self" cleanup
+  "$self" cleanup --run "$PROVE_RUN" --owner "$PROVE_OWNER"
   local drives; drives="$(find "$ev" -maxdepth 1 -name '[0-9][0-9][0-9]-*-*.json' | wc -l | tr -d ' ')"
   [[ -f "$ev/manifest.json" && "$drives" -ge 1 ]] || die "prove: evidence did not survive cleanup in $ev"
   echo "prove: drive exit $rc; evidence kept in $ev ($drives drive record(s))" >&2

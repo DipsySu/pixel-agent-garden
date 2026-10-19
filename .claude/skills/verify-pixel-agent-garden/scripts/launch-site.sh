@@ -11,15 +11,13 @@ cd "$REPO_ROOT"
 : "${PORT:?verify: PORT is required}"
 : "${DATA_DIR:?verify: DATA_DIR is required}"
 
-real_home="$(getent passwd "$(id -un)" | awk -F: '{print $6}')"
-real_phys="$(cd "$real_home" && pwd -P)"
-data_phys="$(cd "$DATA_DIR" && pwd -P)"
-if [[ "$data_phys" == "$real_phys" || "$data_phys" == "$real_phys"/* ]]; then
-  echo "verify: DATA_DIR is inside the real user home; refusing" >&2
-  exit 2
-fi
-
-RUN_STATE="$(cd "$(dirname "$DATA_DIR")" && pwd -P)"
+# Physical paths from here on. agent-garden.sh exports the physical HOME, and the CLI keeps its
+# canonical rings.json only for its own default cache path; a /tmp or $TMPDIR symlink (macOS) in
+# --from-cache would otherwise send launch's garden memory to a sibling events.rings.json.
+# The site is written beside DATA_DIR, so its parent is checked too: a DATA_DIR symlink that sits
+# in the real home but points elsewhere would otherwise put site/ in that home.
+DATA_DIR="$("$SCRIPT_DIR/outside-real-home.sh" DATA_DIR "$DATA_DIR")" || exit 2
+RUN_STATE="$("$SCRIPT_DIR/outside-real-home.sh" 'DATA_DIR parent' "$(dirname "$DATA_DIR")")" || exit 2
 SITE="$RUN_STATE/site"
 HOME_DIR="$DATA_DIR/home"
 XDG_DIR="$DATA_DIR/xdg"
