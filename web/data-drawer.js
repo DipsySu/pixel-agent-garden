@@ -16,6 +16,7 @@ import { mountExportContent } from './export-panel.js';
 import { mountInsightContent } from './insight-panel.js';
 import { mountRingsContent } from './rings-panel.js';
 import { t } from './i18n.js';
+import { closeButton, escapeHtml } from './render-helpers.js';
 
 // Last-open tab survives restarts (§5.4-D: "打开默认回上次 tab").
 const TAB_STORAGE_KEY = 'pg6.drawer.tab';
@@ -81,10 +82,16 @@ export function mountDataDrawer({
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-label', t('drawer.dialogAria'));
   panel.hidden = true;
+  const heading = document.createElement('div');
+  heading.className = 'pg6-panel-heading';
+  heading.innerHTML = `<h2>${escapeHtml(t('drawer.button'))}</h2>${closeButton(t('drawer.closeAria'))}`;
+  heading.querySelector('button').addEventListener('click', closeAndRefocus);
+  panel.appendChild(heading);
 
   const tablist = document.createElement('div');
   tablist.className = 'pg6-drawer-tabs';
   tablist.setAttribute('role', 'tablist');
+  tablist.setAttribute('aria-label', t('drawer.dialogAria'));
 
   const tabButtons = new Map();
   const tabPanels = new Map();
@@ -166,11 +173,13 @@ export function mountDataDrawer({
   // ARIA tabs pattern: Left/Right arrows move + select within the tablist
   // (selection follows focus, wrapping across all tabs).
   tablist.addEventListener('keydown', (event) => {
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
     const ids = TABS.map((tab) => tab.id);
     const delta = event.key === 'ArrowRight' ? 1 : -1;
-    const next = ids[(ids.indexOf(activeTab) + delta + ids.length) % ids.length];
+    const next = event.key === 'Home' ? ids[0]
+      : event.key === 'End' ? ids[ids.length - 1]
+      : ids[(ids.indexOf(activeTab) + delta + ids.length) % ids.length];
     selectTab(next);
     tabButtons.get(next)?.focus();
   });

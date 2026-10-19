@@ -77,3 +77,33 @@ This avoids mixed edges where some hanging vines appear to carry their own roof 
 ## Courtyard Object Rule
 
 Large foreground structures should be sprites, not baked into the base SVG. The base SVG provides the wall, sky, and ground. Object sprites provide bamboo, path stones, and the compact pavilion so their scale can be tuned without rewriting scene geometry.
+
+## Resident Cat Motion
+
+Both renderers use `web/garden-cat.js`. They supply a ground projection,
+sprite URL and habitat from `web/cat-motion.js`; the controller owns the DOM,
+finite CSS action phases and teardown. It does not read summaries or settings
+files. Unlock selection stays with the renderer, and motion mode comes from
+the resolved scene attribute plus the system accessibility preference.
+
+- Habitat nodes form connected walkable lanes. New landmarks must update the
+  lanes and obstacle-clearance tests, not introduce per-frame repulsion.
+- Curved legs are sampled by projected arc length. One shared distance profile
+  drives CSS transforms and the eight walking frames, with gentle acceleration,
+  a constant-speed middle and braking. Direction stays fixed within a leg.
+- Direction reversals use crouch / flip / landing phases, never `scaleX(-1)`.
+  Rotation interpolates continuously; sprite cells always use `step-end`.
+- The scene-sized outer element provides a responsive translation plane. The
+  inner pose is anchored at the sheet's feet (68% of the square cell height).
+  First-run opacity belongs on this pose, not on the travel animation clock.
+- CSS owns playback. `animationend` chooses the next finite action; no cat rAF
+  loop, resize polling or interval survives in either renderer. Hidden documents
+  pause the clocks. Reduced motion breathes in place; off/system-reduced stays
+  still. Changing mode snapshots the current animation position before stopping.
+- Data repaints reuse the controller. Renderer teardown removes its resident,
+  generated stylesheet and listeners. Postcards export a seated frame from the
+  ground-anchored pose box, not the airborne/rotated sprite bounds.
+
+Run `node --test web/tests/cat-motion.test.mjs` for route/timing checks. Open
+`web/tests/garden-cat.html` through the local preview server for real-DOM CSS
+animation, motion-mode, first-run reveal and lifecycle checks.

@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+## v2.3.0 - 2026-10-19
+
+### Desktop UI
+
+- Give the header activity heatmap its own layout track so it cannot sit behind
+  the title; simplify the brand line and enlarge the footer action targets.
+- Use a taller, narrower data drawer with a persistent close button, larger
+  tabs and project labels, surface-aware chart colors, and consistent billion
+  token formatting across the overview, garden, and heatmap tooltips.
+- Align settings with the right-hand toolbar and keep the heading fixed while
+  controls scroll. Restore keyboard-accessible radio options, Escape dismissal,
+  focus return, and recorder focus after shortcut edits or cancellation.
+- Add dependency-free browser interaction checks at `web/tests/ui-shell.html`
+  plus Node regressions for overview formatting and heatmap empty states.
+
+### Garden Cat
+
+- Share one cat motion controller between the wall and 2.5D courtyard. Follow
+  connected, gently curved ground lanes instead of steering into props or
+  choosing unrelated destinations; accelerate and brake with distance-matched
+  walking frames.
+- Turn with a short crouch, airborne somersault and planted landing, with a
+  contact shadow. Keep quiet standing/sitting beats between strolls and use
+  discrete sprite frames rather than interpolating across the sprite sheet.
+- Replace both cat rAF loops with finite CSS actions. Pause when hidden, keep
+  the current ground anchor through motion setting changes, reuse the resident
+  on data refresh, and clean up its stylesheet/listeners on renderer teardown.
+- Keep postcard exports seated at the ground anchor, even during a flip. Add
+  route/gait unit tests and real-DOM animation checks in `tests/garden-cat.html`.
+
 ## v2.2.1 - 2026-08-03
 
 ### Runtime performance

@@ -8,6 +8,7 @@
 
 import { renderHeatmap, renderHourOfWeek } from './render-heatmap.js';
 import { t } from './i18n.js';
+import { fmtLocal as formatTokens } from './render-helpers.js';
 
 /**
  * @param {{
@@ -30,11 +31,8 @@ export function mountDashboardContent({ host, initialSummary, onRequestClose }) 
   });
   render();
 
-  // Unlike the old standalone panel (which rendered lazily on open), the
-  // content re-renders on every update even while its tab is hidden: the
-  // heatmap/punchcard SVGs are fixed-size (no layout measuring), and an
-  // always-warm tab means the drawer never has to signal visibility to its
-  // providers — the same policy the insight list already follows.
+  // The drawer delivers updates only to the visible tab, replaying the latest
+  // summary when this tab becomes active.
   function render() {
     renderKpis(host, currentSummary);
     const heatmapHost = host.querySelector('[data-slot="heatmap"]');
@@ -167,12 +165,6 @@ function kpiCard(label, value, sub) {
       <div class="pg6-dashboard-kpi-value">${escape(value)}</div>
       ${sub ? `<div class="pg6-dashboard-kpi-sub">${escape(sub)}</div>` : ''}
     </div>`;
-}
-
-function formatTokens(n) {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'k';
-  return String(n || 0);
 }
 
 function escape(s) {

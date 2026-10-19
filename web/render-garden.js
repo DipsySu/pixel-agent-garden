@@ -5,17 +5,13 @@ import { fmtLocal, escapeHtml, pick, pickByToken, namedSprite, jitter } from './
 import { sparklineSVG, windowTotal } from './render-insight.js';
 import { clearFlowerbed, renderFlowerbed } from './render-flowerbed.js';
 import { t } from './i18n.js';
+import { createGardenCat } from './garden-cat.js';
+import { WALL_CAT_HABITAT } from './cat-motion.js';
 
 let scene;
 let spriteRoot;
 let currentWallProjects = [];
-// Teardown handle for the JS-driven garden-cat wander loop. The cat element is
-// long-lived (see dynamicLayerSelector note); we only call this when actually
-// rebuilding the cat (kind change / unlock change). See addGardenCat.
-let catWanderStop = null;
-// Last known cat position/facing, persisted across rebuilds so a motion-mode
-// toggle (full ↔ reduced) doesn't snap the cat back to home.
-let catLastPos = null;
+let gardenCat = null;
 const dynamicLayerSelector = [
   '.pg6-sprite',
   '.pg6-wall-edge-cover',
@@ -25,11 +21,8 @@ const dynamicLayerSelector = [
   // this repaint clear-list avoids rebuilding 366 image nodes on every watcher
   // tick. renderFlowerbed updates the existing canvas; destroy handles teardown.
 ].join(', ');
-// NOTE: `.pg6-garden-cat` is deliberately NOT in the clear list. The cat owns a
-// long-lived rAF wander loop; tearing it down + recreating it at home on every
-// watcher tick / settings re-render made it teleport mid-stroll. addGardenCat
-// now reuses the live element across renders and only rebuilds it when the cat
-// either (un)locks or its motion "kind" changes.
+// The cat keeps its position and CSS action across watcher/settings repaints.
+// Only unlock changes and renderer teardown remove the resident.
 
 // --- S1/S2 entrance-animation bookkeeping ---------------------------------
 // `.is-new` is applied only the first time a project_key / trinket id is seen,
@@ -151,10 +144,8 @@ function clearDynamicLayers() {
 }
 
 function destroy() {
-  if (catWanderStop) {
-    catWanderStop();
-    catWanderStop = null;
-  }
+  gardenCat?.destroy();
+  gardenCat = null;
   scene.querySelectorAll(dynamicLayerSelector + ', .pg6-garden-cat').forEach((el) => el.remove());
   clearFlowerbed(scene);
   currentWallProjects = [];
@@ -658,336 +649,29 @@ function destroy() {
     );
   }
 
-  // --- Garden cat (五亿 token 住客) ---------------------------------------
-  // Roam box in scene-% coords: a wide courtyard band the cat strolls within.
-  // x spans most of the yard (was a fixed ±116px wander on the right only),
-  // y is a shallow ground band that also drives a subtle near/far scale.
-  // Band lifted onto the near/mid 2.5D plane (was y76..84): the cat now strolls
-  // the front lawn in FRONT of the pond (pond body ≈ x29..47 / y73..83), never on
-  // the water. yMin 83 keeps it below the pond's near edge; the y-driven scale
-  // (below) still makes it bigger when nearer the front.
-  const CAT_ROAM = { xMin: 30, xMax: 70, yMin: 83, yMax: 90 };
-  // Resting spot used by the static (reduced/off) fallback.
-  const CAT_HOME = { x: 55, y: 86 };
-  // 68px sprite cell (~58px of actual cat body with padding). Sized so the
-  // displayed cat body lands near the old ~55px width despite the square
-  // cell's vertical padding.
-  const CAT_W_FRAC = 64 / 680;
-  // Habit zones (Codex's #1 fix): real cats don't sample a rectangle uniformly —
-  // they revisit a handful of favored spots and graze the perimeter. Weighted
-  // anchors over the open grass / path; medium + cross-yard hops aim at these,
-  // while most legs are short local patrols that keep their heading. Aligned to
-  // courtyard landmarks: left grass, center, the worn path, the lantern, the
-  // pavilion apron, and a rare back-center point.
-  const CAT_ZONES = [
-    { x: 36, y: 88, w: 2 },   // left lawn, in front of the pond's near bank
-    { x: 50, y: 85, w: 3 },   // path / center
-    { x: 58, y: 87, w: 3 },   // near the lantern/cairn stone group
-    { x: 64, y: 84, w: 2 },   // toward the pavilion apron
-    { x: 68, y: 86, w: 2 },   // pavilion-side
-    { x: 46, y: 89, w: 1 }    // rare near-front center
-  ];
-
-  // Sprite sheet is 10 cols × 3 rows (background-size 1000% 300%). Authored as:
-  //   row 0 cols 0-7 → walk right    row 1 cols 0-7 → walk left
-  //   row 2 cols 0-3 → turn frames   row 2 cols 4-5 → sit / idle
-  function catFrameBg(col, row) {
-    return ((col * 100) / 9).toFixed(3) + '% ' + row * 50 + '%';
-  }
-
   function addGardenCat(groups, tiers) {
-    // The cat element is long-lived across re-renders. We only rebuild it when
-    // it (un)locks or its motion "kind" changes — otherwise we leave the live
-    // element + its wander loop running so the cat never teleports home.
-    const want = hasLiveGardenCat(groups, tiers);
-    const mode = sceneMotionMode();
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const full = mode !== 'off' && mode !== 'reduced' && !prefersReduced;
-    const kind = !want ? 'none' : full ? 'wander' : (mode === 'reduced' ? 'reduced' : 'static');
-
-    const existing = scene.querySelector('.pg6-garden-cat');
-    if (existing && existing.dataset.catKind === kind) return;  // nothing changed
-
-    // Kind changed (or first appearance / disappearance): tear the old one down.
-    if (catWanderStop) { catWanderStop(); catWanderStop = null; }
-    if (existing) existing.remove();
-    if (!want) return;
-
+    if (!hasLiveGardenCat(groups, tiers)) {
+      gardenCat?.destroy();
+      gardenCat = null;
+      return;
+    }
+    if (gardenCat) {
+      gardenCat.updateMotion();
+      return;
+    }
     const sprite = namedSprite(groups.garden_cat || [], 'garden_cat')
       || namedSprite(groups.garden_cat || [], 'garden_cat_walk')
       || groups.garden_cat[0];
     if (!sprite?.file) return;
-    const cat = document.createElement('span');
-    cat.className = 'pg6-garden-cat';
-    cat.dataset.catKind = kind;
-    cat.setAttribute('role', 'img');
-    cat.setAttribute('aria-label', '庭院猫');
-    cat.title = '庭院猫 · 五亿 token 住客';
-    cat.style.setProperty('--cat-sprite', `url("${spriteRoot + sprite.file}")`);
-    cat.style.setProperty('--cat-width', (CAT_W_FRAC * 100) + '%');
-    cat.style.zIndex = '64';
-
-    if (full) {
-      scene.append(cat);
-      catWanderStop = startCatWander(cat);
-      return;
-    }
-
-    // Static fallback. data-motion="reduced" keeps the CSS pg6-cat-idle blink
-    // (so leave background-position/animation to CSS); off / system-with-
-    // prefers-reduced sit still on a single idle frame. Sit wherever the cat
-    // last was so a mid-stroll motion toggle doesn't snap it home.
-    cat.style.setProperty('--cat-left', (catLastPos?.x ?? CAT_HOME.x) + '%');
-    cat.style.setProperty('--cat-top', (catLastPos?.y ?? CAT_HOME.y) + '%');
-    if (mode !== 'reduced') {
-      cat.style.animation = 'none';
-      cat.style.backgroundPosition = catFrameBg(4, 2);
-    }
-    scene.append(cat);
-  }
-
-  // JS-driven wander state machine over rAF. Position is transform-only (GPU, no
-  // per-frame layout) and recomputed against the live scene size, so the roam
-  // range scales with the display. Honors data-motion via the `full` gate in
-  // addGardenCat. The behavior model came out of an adversarial design pass with
-  // Codex — the goal is "a real cat strolling a yard", within a tiny sprite
-  // vocabulary (walk L/R, turn, sit). Highest-ROI moves, in order:
-  //   • destinations are weighted habit-zones + short heading-preserving patrols
-  //     (not uniform-random) — kills the "drone cutting across the yard" tell;
-  //   • subtle accel/decel ZONES per leg (never easing to zero → no moonwalk),
-  //     while the walk-frame cadence stays distance-driven so feet never slide;
-  //   • a turn + brief hesitation before walking (anticipation reads as life);
-  //   • an arrival "plant" frame before sitting, and a rest menu that is mostly
-  //     short beats with rare long sits and "alert" stillness (animals aren't
-  //     animated 100% of the time). Mid-walk pauses, when they happen, freeze a
-  //     planted WALK frame — never a SIT (sitting mid-stride is a visual lie).
-  function startCatWander(cat) {
-    const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
-    const lerp = (a, b, t) => a + (b - a) * t;
-    const smooth = (t) => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
-    const rand = (a, b) => a + Math.random() * (b - a);
-    const yspan = CAT_ROAM.yMax - CAT_ROAM.yMin;
-    const center = (CAT_ROAM.xMin + CAT_ROAM.xMax) / 2;
-    // STRIDE was 2.4, BASE_SPEED was lerp(7.5, 12.5). Slowed ~20% to a more
-    // contemplative pacing (user request: "动作稍微慢一些"). The slower base
-    // makes idle / sit / lie beats land in a calmer rhythm too, so the cat
-    // reads as a courtyard resident rather than a busy NPC.
-    const STRIDE = 2.0;   // % of scene width travelled per walk frame
-
-    const zoneTotal = CAT_ZONES.reduce((sum, z) => sum + z.w, 0);
-    function weightedZone() {
-      let r = Math.random() * zoneTotal;
-      for (const z of CAT_ZONES) { if ((r -= z.w) <= 0) return z; }
-      return CAT_ZONES[0];
-    }
-    function farZone() {
-      let best = CAT_ZONES[0], bestD = -1;
-      for (const z of CAT_ZONES) { const d = Math.abs(z.x - x); if (d > bestD) { bestD = d; best = z; } }
-      return best;
-    }
-
-    cat.style.left = '0px';
-    cat.style.top = '0px';
-    cat.style.animation = 'none';
-    // Hidden until the first frame positions it — avoids a corner flash when
-    // the scene hasn't been laid out yet at append time (clientWidth === 0).
-    cat.style.visibility = 'hidden';
-
-    let sceneW = 0, sceneH = 0, catWpx = 0;
-    function measure() {
-      const r = scene.getBoundingClientRect();
-      sceneW = scene.clientWidth || r.width || 0;
-      sceneH = scene.clientHeight || r.height || 0;
-      catWpx = CAT_W_FRAC * sceneW;
-    }
-    measure();
-
-    let x = catLastPos?.x ?? CAT_HOME.x;
-    let y = catLastPos?.y ?? CAT_HOME.y;
-    let facing = catLastPos?.facing ?? (Math.random() < 0.5 ? 'right' : 'left');
-    let lastDir = facing === 'right' ? 1 : -1;
-    let sx = x, sy = y, tx = x, ty = y;
-    let pendingFacing = facing;
-    let state = 'rest', timer = 600;
-    let legDist = 0, baseSpeed = 10, accelZone = 1, decelZone = 1, turnDur = 320;
-    let pauseAt = -1, paused = false;
-    // Rest "kind" picks WHICH row-2 cell pair to toggle between, so each
-    // rest length looks visually distinct:
-    //   alert  = stand & look (col 4↔5) — the "I heard something" pose
-    //   sit    = sit up (col 6↔7) — classic seated cat
-    //   lie    = settle on belly (col 8↔9) — long, relaxed rest
-    // `restAnimate=false` freezes a single frame (alert-stillness).
-    let restAnimate = true, restKind = 'sit', sitFrame = 6, toggleTimer = 0;
-    let rafId = 0, lastTs = 0, stopped = false;
-
-    function apply() {
-      if (!sceneW) measure();
-      if (!sceneW) return;
-      const leftPx = (x / 100) * sceneW - catWpx / 2;
-      const topPx = (y / 100) * sceneH;
-      const s = 0.95 + 0.1 * clamp((y - CAT_ROAM.yMin) / yspan, 0, 1);
-      cat.style.transform =
-        'translate3d(' + leftPx.toFixed(1) + 'px,' + topPx.toFixed(1) + 'px,0) scale(' + s.toFixed(3) + ')';
-      if (cat.style.visibility === 'hidden') cat.style.visibility = 'visible';
-      catLastPos = { x, y, facing };
-    }
-
-    // Walk frame is chosen by distance travelled this leg, NOT elapsed time, so
-    // the legs always match ground speed through accel/decel (no foot slide).
-    function walkFrameBg() {
-      const col = Math.floor(Math.abs(x - sx) / STRIDE) % 8;
-      return catFrameBg(col, facing === 'right' ? 0 : 1);
-    }
-
-    // 70% short local patrol that keeps its heading (commitment bias), 20%
-    // medium hop to a weighted habit zone, 10% cross-yard to the farthest zone.
-    function pickDestination() {
-      const r = Math.random();
-      let nx, ny;
-      if (r < 0.70) {
-        let dir = lastDir;
-        if (Math.random() > 0.65) dir = -dir;          // 35% reverse, else commit
-        nx = x + dir * rand(4, 13);
-        ny = y + rand(-1.2, 1.2);
-      } else if (r < 0.90) {
-        const z = weightedZone();
-        nx = z.x + rand(-4, 4);
-        ny = z.y + rand(-1.5, 1.5);
-      } else {
-        const z = farZone();
-        nx = z.x + rand(-4, 4);
-        ny = z.y + rand(-1.5, 1.5);
-      }
-      nx = clamp(nx, CAT_ROAM.xMin, CAT_ROAM.xMax);
-      ny = clamp(ny, CAT_ROAM.yMin, CAT_ROAM.yMax);
-      if (Math.abs(nx - x) < 3) nx = clamp(x + (x < center ? 6 : -6), CAT_ROAM.xMin, CAT_ROAM.xMax);
-      return { nx, ny };
-    }
-
-    // Set up the next leg: easing zones, optional micro-pause, and a turn or a
-    // small hesitation before the walk actually starts.
-    function beginLeg() {
-      const { nx, ny } = pickDestination();
-      sx = x; sy = y; tx = nx; ty = ny;
-      legDist = Math.abs(tx - sx);
-      baseSpeed = lerp(6.0, 10.0, clamp(legDist / 32, 0, 1)) * rand(0.9, 1.12);
-      accelZone = Math.min(0.18 * legDist, 2.5);
-      decelZone = Math.min(0.22 * legDist, 3.0);
-      pendingFacing = tx >= sx ? 'right' : 'left';
-      pauseAt = (legDist > 18 && Math.random() < 0.18) ? rand(0.35, 0.70) : -1;
-      paused = false;
-      if (pendingFacing !== facing) { state = 'preturn'; turnDur = rand(360, 480); timer = turnDur; }
-      else if (Math.random() < 0.35) { state = 'hesitate'; timer = rand(160, 380); }
-      else { facing = pendingFacing; lastDir = facing === 'right' ? 1 : -1; state = 'walk'; }
-    }
-
-    // Rest menu. Each branch picks a duration AND a posture (restKind) that
-    // matches the duration's mood. Slowed ~20% per the user's pacing request.
-    //
-    //   55% short stand-and-look (alert pose, col 4↔5 toggle) — the cat
-    //        paused mid-yard to listen / glance around
-    //   20% alert stillness — same alert pose, held on one frame (no toggle)
-    //   12% medium sit (col 6↔7 toggle) — actually sits down for a beat
-    //    8% long lie (col 8↔9 toggle) — settles on belly to rest
-    //    5% immediate next hop (no perceptible rest)
-    //
-    // The toggle pair is { col_a, col_b }: 4/5 (alert), 6/7 (sit), 8/9 (lie).
-    function beginRest() {
-      const r = Math.random();
-      if (r < 0.55) {
-        timer = rand(800, 2200);  restAnimate = true;  restKind = 'alert';
-      } else if (r < 0.75) {
-        timer = rand(1300, 2900); restAnimate = false; restKind = 'alert';
-      } else if (r < 0.87) {
-        timer = rand(2500, 5000); restAnimate = true;  restKind = 'sit';
-      } else if (r < 0.95) {
-        timer = rand(4500, 9000); restAnimate = true;  restKind = 'lie';
-      } else {
-        timer = rand(180, 450);   restAnimate = false; restKind = 'alert';
-      }
-      state = 'rest';
-      const baseCol = restKind === 'lie' ? 8 : restKind === 'sit' ? 6 : 4;
-      sitFrame = baseCol;
-      // Slower toggle on calmer rests — sit/lie ought to feel still.
-      toggleTimer = restKind === 'lie' ? rand(1400, 2600)
-                  : restKind === 'sit' ? rand(1100, 2200)
-                                       : rand(900, 2000);
-      cat.style.backgroundPosition = catFrameBg(sitFrame, 2);
-    }
-
-    function frame(ts) {
-      if (stopped) return;
-      if (!cat.isConnected) { stop(); return; }
-      if (!lastTs) lastTs = ts;
-      let dt = ts - lastTs; lastTs = ts;
-      if (dt < 0) dt = 0; if (dt > 50) dt = 50;
-
-      if (state === 'rest') {
-        timer -= dt;
-        if (restAnimate) {
-          toggleTimer -= dt;
-          if (toggleTimer <= 0) {
-            // Each rest kind toggles within its own pair: alert 4↔5,
-            // sit 6↔7, lie 8↔9. baseCol stays constant per rest, the
-            // toggle flips +/- 1.
-            const baseCol = restKind === 'lie' ? 8 : restKind === 'sit' ? 6 : 4;
-            sitFrame = sitFrame === baseCol ? baseCol + 1 : baseCol;
-            toggleTimer = restKind === 'lie' ? rand(1400, 2600)
-                        : restKind === 'sit' ? rand(1100, 2200)
-                                             : rand(900, 2000);
-            cat.style.backgroundPosition = catFrameBg(sitFrame, 2);
-          }
-        }
-        if (timer <= 0) beginLeg();
-      } else if (state === 'preturn') {
-        timer -= dt;
-        const p = clamp(1 - timer / turnDur, 0, 1);
-        cat.style.backgroundPosition = catFrameBg(Math.min(3, Math.floor(p * 4)), 2);
-        if (timer <= 0) { facing = pendingFacing; lastDir = facing === 'right' ? 1 : -1; state = 'hesitate'; timer = rand(120, 300); }
-      } else if (state === 'hesitate' || state === 'micropause') {
-        timer -= dt;                              // hold the current planted frame
-        if (timer <= 0) state = 'walk';
-      } else if (state === 'walk') {
-        const dir = facing === 'right' ? 1 : -1;
-        const traveled = Math.abs(x - sx);
-        const remaining = Math.max(0, legDist - traveled);
-        let m = 1;                                // subtle accel/decel, never → 0
-        if (traveled < accelZone && accelZone > 0) m = lerp(0.4, 1, smooth(traveled / accelZone));
-        else if (remaining < decelZone && decelZone > 0) m = lerp(0.5, 1, smooth(remaining / decelZone));
-        const step = (baseSpeed * m * dt) / 1000;
-        if (remaining <= step) {
-          x = tx; y = ty;
-          cat.style.backgroundPosition = walkFrameBg();
-          state = 'settle'; timer = rand(120, 220);
-        } else {
-          x += dir * step;
-          if (legDist > 0.001) y = sy + (ty - sy) * (Math.abs(x - sx) / legDist);
-          cat.style.backgroundPosition = walkFrameBg();
-          if (pauseAt >= 0 && !paused && legDist > 0 && (Math.abs(x - sx) / legDist) >= pauseAt) {
-            paused = true; state = 'micropause'; timer = rand(250, 700);
-          }
-        }
-      } else { // settle — hold the just-arrived planted frame, then sit
-        timer -= dt;
-        if (timer <= 0) beginRest();
-      }
-
-      apply();
-      rafId = requestAnimationFrame(frame);
-    }
-
-    function onResize() { measure(); apply(); }
-    function stop() {
-      stopped = true;
-      if (rafId) cancelAnimationFrame(rafId);
-      window.removeEventListener('resize', onResize);
-    }
-
-    window.addEventListener('resize', onResize);
-    beginRest();
-    apply();
-    rafId = requestAnimationFrame(frame);
-    return stop;
+    gardenCat = createGardenCat(scene, {
+      sprite: spriteRoot + sprite.file,
+      habitat: WALL_CAT_HABITAT,
+      width: 64,
+      project: ({ x, y }) => ({
+        x: x / 100 * 680, y: y / 100 * 440,
+        scale: 0.96 + (y - 89) * 0.025, z: 64,
+      }),
+    });
   }
 
   function pavilionInteriorPoint(tier, slotX, slotY) {

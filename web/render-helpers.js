@@ -1,3 +1,13 @@
+// Keep controller-owned residents attached while replacing the base scene.
+// Detaching a CSS-animated node cancels its clock even if it is reinserted.
+export function replaceSceneBase(scene, markup) {
+    for (const child of [...scene.childNodes]) {
+      if (child.nodeType === 1 && child.hasAttribute('data-scene-persistent')) continue;
+      child.remove();
+    }
+    scene.insertAdjacentHTML('afterbegin', markup);
+  }
+
 export function groupSprites(sprites) {
     const groups = {};
     for (const sprite of sprites) {

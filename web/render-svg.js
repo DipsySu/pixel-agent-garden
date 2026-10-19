@@ -1,5 +1,6 @@
 import { t } from './i18n.js';
 import { wallPattern, pathPattern } from './scene-tiles.js';
+import { replaceSceneBase } from './render-helpers.js';
 
 export function renderBaseScene(scene, assetRoot, options = {}) {
   const W = 680, H = 440;
@@ -416,7 +417,7 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
   }
   s += '</svg>';
 
-  scene.innerHTML = s +
+  replaceSceneBase(scene, s +
     '<div class="pg6-info" aria-live="polite" role="status">' +
       '<div class="pg6-info-label" id="garden-info-label">' + t('card.project.label') + '</div>' +
       '<div class="pg6-info-name" id="garden-info-name">' + t('card.project.defaultName') + '</div>' +
@@ -424,7 +425,7 @@ export function renderBaseScene(scene, assetRoot, options = {}) {
       '<div class="pg6-info-bar"><div class="pg6-info-fill" id="garden-info-fill"></div></div>' +
       '<div class="pg6-info-detail" id="garden-info-detail"></div>' +
       '<div class="pg6-info-spark" id="garden-info-spark" aria-hidden="true"></div>' +
-    '</div>';
+    '</div>');
   scene.dataset.timeMode = time.mode;
   scene.dataset.renderer = 'classic';
   scene.dataset.timeLabel = time.label;
