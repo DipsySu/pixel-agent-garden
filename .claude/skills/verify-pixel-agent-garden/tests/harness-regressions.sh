@@ -62,12 +62,12 @@ EOF
 SERVE='mkdir -p "$DATA_DIR/site/web/data"
 echo ok > "$DATA_DIR/site/web/index.html"
 echo "{}" > "$DATA_DIR/site/web/data/garden-summary.json"
-exec python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$DATA_DIR/site"'
+exec python3 -I -u -m http.server "$PORT" --bind 127.0.0.1 --directory "$DATA_DIR/site"'
 
 # ---- control.sh: prove must not tear down a run it did not launch --------------------------------
 R="$(mk_repo own)"; stub_launch "$R" "$SERVE"
 C="$R/.claude/skills/verify-pixel-agent-garden/scripts/control.sh"
-export VERIFY_STATE_DIR="$T/own-state" VERIFY_ARTIFACTS_DIR="$T/own-artifacts" VERIFY_READY_TIMEOUT=20
+export VERIFY_STATE_DIR="$T/own-state" VERIFY_ARTIFACTS_DIR="$T/own-artifacts" VERIFY_READY_TIMEOUT=60
 
 VERIFY_RUN_ID=old-run "$C" launch > "$T/old.json"
 old_pid="$(python3 -I -c 'import json,sys; print(json.load(open(sys.argv[1]))["pid"])' "$T/old.json")"
@@ -129,8 +129,11 @@ done
 # ---- the real launch-site.sh + agent-garden.sh under prove, with getent failing ------------------
 R="$(mk_repo site)"; stub_cli "$R"
 C="$R/.claude/skills/verify-pixel-agent-garden/scripts/control.sh"
-export VERIFY_STATE_DIR="$T/site-state" VERIFY_ARTIFACTS_DIR="$T/site-artifacts" VERIFY_READY_TIMEOUT=20
-if VERIFY_RUN_ID=site-run "$C" prove http GET /web/data/garden-summary.json --expect 200 > "$T/site.out" 2>&1; then
+export VERIFY_STATE_DIR="$T/site-state" VERIFY_ARTIFACTS_DIR="$T/site-artifacts" VERIFY_READY_TIMEOUT=60
+# Python tooling must use only stdlib, even if the invoking shell has startup hooks.
+mkdir -p "$T/pythonpath"
+printf 'raise SystemExit("ambient PYTHONPATH must not execute")\n' > "$T/pythonpath/sitecustomize.py"
+if PYTHONPATH="$T/pythonpath" VERIFY_RUN_ID=site-run "$C" prove http GET /web/data/garden-summary.json --expect 200 > "$T/site.out" 2>&1; then
   ok "prove passes through the real launch-site.sh"
 else
   bad "prove passes through the real launch-site.sh" "$T/site.out"

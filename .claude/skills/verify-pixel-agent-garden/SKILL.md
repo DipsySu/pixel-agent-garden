@@ -45,7 +45,7 @@ Primary surface: the `agent-garden` CLI (`target/debug/agent-garden`, package `l
 ## Helpers
 
 - `scripts/control.sh`: `launch | doctor | drive | evidence | cleanup | status | prove`. `.claude/skills/verify-pixel-agent-garden/scripts/control.sh --help` lists the arguments.
-- `scripts/launch-site.sh`: seeds the fixture, runs `scan` and `export-web`, and execs `python3 -m http.server` on `$PORT` bound to `127.0.0.1`. `control.sh launch` is the invocation.
+- `scripts/launch-site.sh`: seeds the fixture, runs `scan` and `export-web`, and execs `python3 -I -u -m http.server` on `$PORT` bound to `127.0.0.1`. `control.sh launch` is the invocation. Python tooling runs in isolated mode so ambient `PYTHONPATH` and user startup hooks cannot affect a proof; CI selects Python 3.13 explicitly.
 - `scripts/agent-garden.sh`: the only supported way to run the CLI from a recipe. It requires a disposable `HOME` and `XDG_DATA_HOME`. Invocation is the `env HOME={DATA_DIR}/home ... scripts/agent-garden.sh` form in each feature file.
 - `scripts/outside-real-home.sh LABEL PATH`: the shared guard behind `agent-garden.sh` and `launch-site.sh`. It prints PATH's physical form, or exits 2 when PATH is missing or inside the real user home. It resolves that home with Python's stdlib `pwd` module, because macOS has no `getent`. Containment is a device+inode check, so symlinks and other letter cases are caught. It refuses whenever the lookup fails.
 - One-shot proof: `.claude/skills/verify-pixel-agent-garden/scripts/control.sh prove --feature export-web-summary http GET /web/data/garden-summary.json` runs launch, doctor, drive, evidence, and cleanup, then checks the evidence survived. On any failure it tears down only the run it launched.

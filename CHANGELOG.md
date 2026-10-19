@@ -20,6 +20,8 @@
   macOS 上 launch 的 rings 才写到标准 `rings.json`。新增
   `tests/harness-regressions.sh`(CI 在 Linux + macOS 跑)和
   `scripts/skill-checks.sh`(定位可复用 checker,contract 永远带 `--require-proof`)。
+- Isolate verification Python from user startup hooks, select Python 3.13 in
+  harness CI, and align cold-start checks with the harness's 60-second budget.
 
 ## v2.3.0 - 2026-10-19
 

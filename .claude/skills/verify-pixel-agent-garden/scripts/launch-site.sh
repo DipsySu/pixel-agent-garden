@@ -64,4 +64,4 @@ export USERPROFILE="$HOME_DIR"
 ln -sfn "$SUMMARY" "$SITE/web/data/garden-summary.json"
 
 echo "verify: serving $SITE on 127.0.0.1:$PORT"
-exec python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$SITE"
+exec python3 -I -u -m http.server "$PORT" --bind 127.0.0.1 --directory "$SITE"

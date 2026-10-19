@@ -55,6 +55,9 @@ jobs:
         platform: [ubuntu-22.04, macos-latest]
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
       - name: Shell syntax
         run: for f in .claude/skills/verify-pixel-agent-garden/scripts/*.sh .claude/skills/verify-pixel-agent-garden/tests/*.sh; do bash -n "$f"; done
       - name: control.sh / launch-site.sh / agent-garden.sh regressions

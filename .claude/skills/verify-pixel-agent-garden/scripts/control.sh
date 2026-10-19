@@ -63,7 +63,7 @@ drop_current() {  # remove the current marker only while it still names run $1
 pid_alive() { [[ -n "${1:-}" ]] && kill -0 "$1" 2>/dev/null && [[ "$(ps -o stat= -p "$1" 2>/dev/null)" != Z* ]]; }
 proc_started() {  # start identity: Linux boot id + start ticks; elsewhere (macOS) ps start time
   if [[ ! -r "/proc/${1:-x}/stat" ]]; then ps -o lstart= -p "$1" 2>/dev/null | sed 's/^ *//' || true; return 0; fi
-  python3 - "$1" <<'PYID'
+  python3 -I - "$1" <<'PYID'
 from pathlib import Path
 import sys
 try:
@@ -75,15 +75,15 @@ PYID
 }
 
 free_port() {
-  python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()'
+  python3 -I -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()'
 }
 
 port_open() {
-  python3 -c 'import socket,sys; s=socket.socket(); s.settimeout(0.5); sys.exit(0 if s.connect_ex(("127.0.0.1", int(sys.argv[1]))) == 0 else 1)' "$1"
+  python3 -I -c 'import socket,sys; s=socket.socket(); s.settimeout(0.5); sys.exit(0 if s.connect_ex(("127.0.0.1", int(sys.argv[1]))) == 0 else 1)' "$1"
 }
 
 http_status() {  # URL -> prints the status code, 000 when unreachable
-  python3 - "$1" <<'PY'
+  python3 -I - "$1" <<'PY'
 import sys, urllib.error, urllib.request
 opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 try:
@@ -124,7 +124,7 @@ ready_check() {
 }
 
 run_json() {  # key value ... -> JSON object (ints, true/false, and "" -> null are typed)
-  python3 - "$@" <<'PY'
+  python3 -I - "$@" <<'PY'
 import json, sys
 
 def typed(v):
@@ -225,7 +225,7 @@ cmd_doctor() {
   fi
   if [[ -d "$DATA_DIR" ]]; then checks+=("data dir|1|$DATA_DIR"); else checks+=("data dir|0|$DATA_DIR missing"); ok=0; fi
   if [[ -d "$EVIDENCE_DIR" ]]; then checks+=("evidence dir|1|$EVIDENCE_DIR"); else checks+=("evidence dir|0|$EVIDENCE_DIR missing"); ok=0; fi
-  python3 - "$ok" "$RUN_ID" "${checks[@]}" <<'PY'
+  python3 -I - "$ok" "$RUN_ID" "${checks[@]}" <<'PY'
 import json, sys
 ok, run_id, rows = sys.argv[1] == "1", sys.argv[2], sys.argv[3:]
 checks = [dict(zip(("name", "ok", "detail"), r.split("|", 2))) for r in rows]
@@ -256,7 +256,7 @@ cmd_drive() {
       done
       path="${path//\{RUN_ID\}/$RUN_ID}"
       [[ -n "$BASE_URL" ]] || die "this run has no server; use: drive cli -- ..."
-      python3 - "$method" "$BASE_URL$path" "$body" "$out" "$feature" "$expect" <<'PY'
+      python3 -I - "$method" "$BASE_URL$path" "$body" "$out" "$feature" "$expect" <<'PY'
 import json, sys, time, urllib.error, urllib.request
 method, url, body, out, feature, expect = sys.argv[1:7]
 data = body.encode() if body else None
@@ -309,7 +309,7 @@ PY
       (cd "$REPO_ROOT" && PORT="$PORT" DATA_DIR="$DATA_DIR" BASE_URL="$BASE_URL" RUN_ID="$RUN_ID" "${argv[@]}") >"$so" 2>"$se" </dev/null
       rc=$?
       set -e
-      python3 - "$out" "$feature" "$rc" "$so" "$se" "${argv[@]}" <<'PY'
+      python3 -I - "$out" "$feature" "$rc" "$so" "$se" "${argv[@]}" <<'PY'
 import json, sys, time
 out, feature, rc, so, se, *argv = sys.argv[1:]
 rec = {"feature": feature, "kind": "cli", "argv": argv, "exit_code": int(rc),
@@ -337,7 +337,7 @@ cmd_evidence() {
     mkdir -p "$snap"
     cp -R "$DATA_DIR/." "$snap/"
   fi
-  python3 - "$EVIDENCE_DIR" "$RUN_ID" "$APP" <<'PY'
+  python3 -I - "$EVIDENCE_DIR" "$RUN_ID" "$APP" <<'PY'
 import hashlib, json, os, sys, time
 root, run_id, app = sys.argv[1:4]
 files = []
