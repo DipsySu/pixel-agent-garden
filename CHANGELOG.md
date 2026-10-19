@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v2.3.0 - 2026-10-19
+
 ### Desktop UI
 
 - Give the header activity heatmap its own layout track so it cannot sit behind
