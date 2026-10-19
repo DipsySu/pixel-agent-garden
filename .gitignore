@@ -12,12 +12,20 @@ garden-*.png
 pixel_garden_organic_vine.html
 web/sprite-experiment.html
 
-# Local editor / AI-tool state (per-user, not for the repo)
-.claude/
+# Local editor / AI-tool state (per-user, not for the repo).
+# The verify skill is the shared way to drive the app, so it stays visible to git.
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/verify-pixel-agent-garden/
+!.claude/skills/verify-pixel-agent-garden/**
 
 # Claude Design mockup exports — large (3MB+) reference artifacts, kept local.
 # (The garden's own UI lives in web/; docs/garden-ui-overview.md describes it.)
 docs/design/
+
+# Verification harness evidence (verify-pixel-agent-garden). Survives control.sh cleanup.
+artifacts/
 
 # Rust workspace
 target/
