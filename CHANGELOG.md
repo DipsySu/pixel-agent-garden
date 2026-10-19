@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Tests
+
+- Lock peak-tier clearance for the courtyard landmarks in
+  `addCourtyardObjects` (bamboo, cherry, willow, lantern, cairn, pavilion).
+  Repeated layout passes had stacked those footprints on the same scene-%.
+- 地标间距测试改为检查全部地标两两组合(含石猫),不再只看 5 对手选组合:
+  之前把 cairn 挪到 willow 的 x 上测试仍然通过。唯一放行的是 willow 在亭子后方
+  的深度遮挡,且重叠上限 2.5 scene-%。新增 cairn→willow、lantern→bamboo、
+  willow 深陷亭后三个变异回归,并从 git 历史回放 fbe3847(必须报出
+  bamboo/cherry、lantern/willow、cairn/pavilion);CI 拉全量历史并强制回放。
+- verify harness:`control.sh prove` 只清理自己 launch 出来的 run
+  (owner token + 原子 `mkdir` 认领),旧 run 还活着时不再被杀掉、删 state、
+  删 `current`;真实 home 改由 Python `pwd` 解析并按 inode 判断包含关系,
+  macOS 上没有 `getent` 也能跑,软链接和大小写变体(`/USERS/...`)也会被拒;
+  修复 macOS `/bin/bash` 3.2 下空数组导致 launch 失败;`{DATA_DIR}` 用物理路径,
+  macOS 上 launch 的 rings 才写到标准 `rings.json`。新增
+  `tests/harness-regressions.sh`(CI 在 Linux + macOS 跑)和
+  `scripts/skill-checks.sh`(定位可复用 checker,contract 永远带 `--require-proof`)。
+- Isolate verification Python from user startup hooks, select Python 3.13 in
+  harness CI, and align cold-start checks with the harness's 60-second budget.
+
 ## v2.3.0 - 2026-10-19
 
 ### Desktop UI

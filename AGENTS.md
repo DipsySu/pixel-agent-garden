@@ -233,6 +233,13 @@ Use `CHANGELOG.md` as the current phase ledger. As of this file:
 - Latest project state: read `CHANGELOG.md`.
 - Product tradeoff unclear: ask the user instead of silently choosing a path.
 
+## Rules
+
+| Rule | Enforced by |
+|---|---|
+| Every pair of peak-tier courtyard landmarks in addCourtyardObjects (bamboo, cherry, willow, lantern, cairn, pavilion, stone cat) stays at least 0.5 scene-% apart; only pairs in the test's `ALLOWED_OVERLAPS` (willow behind the pavilion, ≤ 2.5) may overlap | `node --test web/tests/courtyard-clearance.test.mjs` |
+| The verify harness tears down only runs it launched, and runs the CLI only against a disposable `HOME` / `XDG_DATA_HOME`. The real home comes from passwd and is matched by inode, with no `getent` | `bash .claude/skills/verify-pixel-agent-garden/tests/harness-regressions.sh` |
+
 ## 中文
 
 这是给 AI 编程 Agent 的仓库上手说明。它是 `CLAUDE.md` 的工具中立版本：
