@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Tests
+
+- Lock peak-tier clearance for the courtyard landmarks in
+  `addCourtyardObjects` (bamboo, cherry, willow, lantern, cairn, pavilion).
+  Repeated layout passes had stacked those footprints on the same scene-%.
+
 ## v2.3.0 - 2026-10-19
 
 ### Desktop UI

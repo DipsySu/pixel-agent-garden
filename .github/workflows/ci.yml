@@ -32,6 +32,10 @@ jobs:
       # Runner-preinstalled Node is enough: the web/ tests are plain ESM with
       # zero npm dependencies (repo rule: no bundler, no packages).
       - run: node --test "web/tests/**/*.test.mjs"
+      # Landmark footprints in addCourtyardObjects. Kept as its own step so the
+      # command that failed on the June 2026 overlaps is the command CI runs.
+      - name: Courtyard landmark clearance
+        run: node --test web/tests/courtyard-clearance.test.mjs
 
   supply-chain:
     name: supply-chain (zero-network gate)

@@ -233,6 +233,12 @@ Use `CHANGELOG.md` as the current phase ledger. As of this file:
 - Latest project state: read `CHANGELOG.md`.
 - Product tradeoff unclear: ask the user instead of silently choosing a path.
 
+## Rules
+
+| Rule | Enforced by |
+|---|---|
+| Peak-tier courtyard landmarks in addCourtyardObjects (bamboo, cherry, willow, lantern, cairn, pavilion) stay at least 0.5 scene-% apart | `node --test web/tests/courtyard-clearance.test.mjs` |
+
 ## 中文
 
 这是给 AI 编程 Agent 的仓库上手说明。它是 `CLAUDE.md` 的工具中立版本：
