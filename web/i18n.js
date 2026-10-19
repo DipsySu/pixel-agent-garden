@@ -5,9 +5,8 @@ const MESSAGES = {
   en: {
     'document.title': 'Local Agent Garden',
     'sr.description': 'Pixel garden: local AI agent activity grows into project vines hanging from the wall or climbing from the ground. Use Tab to enter the vine list, then Left and Right arrows to move between vines.',
-    'app.initial': 'Pixel Garden · Your local agent courtyard',
+    'app.initial': 'Pixel Agent Garden',
     'header.localTokens': 'local tokens',
-    'header.subtitle': 'Your local AI-agent token usage, grown into a courtyard',
     'locale.toggleAria': 'Switch language',
     'app.tokens': 'Pixel Garden · {total} local tokens',
     'footer.privacy': 'Reads local agent data only · zero network requests',
@@ -101,6 +100,7 @@ const MESSAGES = {
     'source.manual': 'Manual',
 
     'settings.aria': 'Settings',
+    'settings.closeAria': 'Close settings',
     'settings.readOnly': 'Read-only mode · open the desktop app to save settings',
     'settings.appearance': 'Appearance',
     'settings.time': 'Time',
@@ -143,6 +143,7 @@ const MESSAGES = {
     'drawer.button': 'Data',
     'drawer.openAria': 'Open the data drawer',
     'drawer.dialogAria': 'Data drawer',
+    'drawer.closeAria': 'Close data drawer',
     'drawer.tab.overview': 'Overview',
     'drawer.tab.projects': 'Projects',
     'drawer.tab.composition': 'Composition',
@@ -377,9 +378,8 @@ const MESSAGES = {
   zh: {
     'document.title': 'Local Agent Garden',
     'sr.description': '像素花园:本机 AI agent 活动化作墙沿垂落或墙根攀爬的项目藤。使用 Tab 进入项目藤列表,左右方向键在藤之间切换。',
-    'app.initial': '像素花园 · 你的数字庭院',
+    'app.initial': '像素花园',
     'header.localTokens': '本地 token',
-    'header.subtitle': '把本机 AI 编程 agent 的 token 用量,长成一座庭院',
     'locale.toggleAria': '切换语言',
     'app.tokens': '像素花园 · {total} local tokens',
     'footer.privacy': '仅读取本机 agent 数据 · 零网络请求',
@@ -473,6 +473,7 @@ const MESSAGES = {
     'source.manual': '手动',
 
     'settings.aria': '设置',
+    'settings.closeAria': '关闭设置',
     'settings.readOnly': '只读模式 · 在桌面 App 中打开以保存设置',
     'settings.appearance': '外观',
     'settings.time': '时间',
@@ -515,6 +516,7 @@ const MESSAGES = {
     'drawer.button': '数据',
     'drawer.openAria': '打开数据抽屉',
     'drawer.dialogAria': '数据抽屉',
+    'drawer.closeAria': '关闭数据抽屉',
     'drawer.tab.overview': '概览',
     'drawer.tab.projects': '项目',
     'drawer.tab.composition': '构成',

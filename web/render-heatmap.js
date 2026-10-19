@@ -8,18 +8,12 @@
 //                dashboard panel.
 //
 // The 5-step quantization (`level` 0..=4) is computed server-side, so the
-// client just maps level → color. Color palette is chosen to harmonize with
-// the existing pixel-garden tones (warm-brown frame, dark sky) — slightly
-// desaturated GitHub-dark greens with a transparent level-0 that lets the
-// underlying frame texture show through.
+// client maps level to a CSS color token supplied by the containing surface.
 
-const PALETTE_DARK = [
-  'rgba(255, 255, 255, 0.06)', // level 0 — empty day, faint placeholder
-  '#1f4a26',                    // level 1
-  '#2f7036',                    // level 2
-  '#46a347',                    // level 3
-  '#7ad36a',                    // level 4 — peak
-];
+import { fmtLocal as formatTokens } from './render-helpers.js';
+
+// CSS supplies surface-specific colors: dark header vs paper data drawer.
+const PALETTE = [0, 1, 2, 3, 4].map((level) => `var(--heatmap-${level})`);
 
 const WEEKDAY_INITIAL = ['M', '', 'W', '', 'F', '', ''];
 
@@ -42,14 +36,14 @@ export function renderHeatmap(container, entries, options = {}) {
   const showWeekdayLabels = isFull;
   const safeEntries = Array.isArray(entries) ? entries : [];
 
-  // Pack entries into 7-row columns Sunday-aligned, GitHub-style.
+  // Pack entries into 7-row columns Monday-aligned, matching core's day keys.
   // The first column gets a partial fill at the top if entries[0]'s weekday
-  // isn't Sunday — pad with nulls so columns stay 7-tall.
+  // isn't Monday — pad with nulls so columns stay 7-tall.
   const columns = buildColumns(safeEntries);
 
   const labelLeft = showWeekdayLabels ? 14 : 0;
   const labelTop = showMonthLabels ? 14 : 0;
-  const gridW = columns.length * cellStep - gap;
+  const gridW = Math.max(cell, columns.length * cellStep - gap);
   const gridH = 7 * cellStep - gap;
   const svgW = labelLeft + gridW;
   const svgH = labelTop + gridH;
@@ -86,8 +80,7 @@ export function renderHeatmap(container, entries, options = {}) {
       rect.setAttribute('y', String(y));
       rect.setAttribute('width', String(cell));
       rect.setAttribute('height', String(cell));
-      rect.setAttribute('rx', isFull ? '2' : '1');
-      rect.setAttribute('fill', PALETTE_DARK[entry.level] || PALETTE_DARK[0]);
+      rect.setAttribute('fill', PALETTE[entry.level] || PALETTE[0]);
       rect.setAttribute('class', 'pg6-heatmap-cell');
       rect.dataset.date = entry.date;
       rect.dataset.value = String(entry.value);
@@ -209,12 +202,6 @@ function nonZeroCount(entries) {
   return entries.filter((e) => e && e.value > 0).length;
 }
 
-function formatTokens(n) {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'k';
-  return String(n || 0);
-}
-
 function createSvg(tag) {
   return document.createElementNS('http://www.w3.org/2000/svg', tag);
 }
@@ -283,8 +270,7 @@ export function renderHourOfWeek(container, grid) {
       rect.setAttribute('y', String(labelTop + d * cellStep));
       rect.setAttribute('width', String(cell));
       rect.setAttribute('height', String(cell));
-      rect.setAttribute('rx', '2');
-      rect.setAttribute('fill', PALETTE_DARK[level]);
+      rect.setAttribute('fill', PALETTE[level]);
       rect.setAttribute('class', 'pg6-heatmap-cell');
       const title = createSvg('title');
       title.textContent = `${weekdayShort[d]} ${String(h6).padStart(2, '0')}:00 · ${value} events`;

@@ -3,6 +3,8 @@ import { unlockTier } from '../garden-tiers.js';
 import { fmtLocal, escapeHtml, pick, jitter } from '../render-helpers.js';
 import { sparklineSVG, windowTotal } from '../render-insight.js';
 import { t } from '../i18n.js';
+import { createGardenCat } from '../garden-cat.js';
+import { ISO_CAT_HABITAT } from '../cat-motion.js';
 import { isoToScreen, renderIsometricBase, wallSlotToScreen } from './isometric-base.js';
 
 const W = 680;
@@ -111,7 +113,7 @@ export function createIsometricRenderer(options) {
   }
 
   function destroy() {
-    stopIsoCat(options.scene);   // the wander rAF must not outlive the renderer
+    stopIsoCat();
     if (isoKoiStop) { isoKoiStop(); isoKoiStop = null; }   // nor the koi swim loop
     clearDynamic(options.scene);
     currentProjects = [];
@@ -351,179 +353,28 @@ function addIsoPavilionTrinkets(scene, spriteRoot, tiers, pavilionWidth) {
   });
 }
 
-// --- Live garden cat (五亿 token 住客), iso edition -------------------------
-// Same 500M unlock + 10×3 spritesheet as the classic view (row 0 walk-right,
-// row 1 walk-left, row 2 cols 4-5 sit/idle). The iso cat follows a handful of
-// courtyard patrol routes instead of sampling random points, then uses a small
-// steering layer to turn and avoid props. The element is long-lived across
-// repaints (clearDynamic's selector skips it) so watcher ticks never teleport
-// it; destroy() tears the loop down — exactly the renderer-switch contract
-// docs/19 added destroy() for. The stone-cat STATUE stays: that one is the
-// sessions-tier data object, this one is the resident.
-let isoCatStop = null;
+// The same resident/action controller as the wall, projected onto safe floor lanes.
+let isoCat = null;
 
-function stopIsoCat(scene) {
-  if (isoCatStop) { isoCatStop(); isoCatStop = null; }
-  scene.querySelector('.pg6-garden-cat')?.remove();
+function stopIsoCat() {
+  isoCat?.destroy();
+  isoCat = null;
 }
 
 function addIsoGardenCat(scene, spriteRoot, groups, tiers) {
-  const trinket = (CONFIG.pavilionTrinkets || []).find((item) => item.id === 'sleeping_cat');
-  const want = Boolean(groups.garden_cat?.length)
-    && (tiers.totalTokens || 0) >= (trinket?.threshold || 500_000_000);
-  const motion = scene.dataset.motion || 'system';
-  const prefersReduced = typeof window.matchMedia === 'function'
-    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const full = want && motion !== 'off' && motion !== 'reduced' && !prefersReduced;
-  const kind = !want ? 'none' : (full ? 'wander' : 'static');
-  const existing = scene.querySelector('.pg6-garden-cat');
-  if (existing && existing.dataset.catKind === kind) return;   // nothing changed
-  stopIsoCat(scene);
-  if (!want) return;
-
-  const sprite = groups.garden_cat.find((item) => (item.name || '').startsWith('garden_cat'))
-    || groups.garden_cat[0];
+  const want = groups.garden_cat?.length && tiers.pavilionTrinkets?.includes('sleeping_cat');
+  if (!want) { stopIsoCat(); return; }
+  if (isoCat) { isoCat.updateMotion(); return; }
+  const sprite = groups.garden_cat.find((item) => item.name === 'garden_cat') || groups.garden_cat[0];
   if (!sprite?.file) return;
-  const cat = document.createElement('span');
-  cat.className = 'pg6-garden-cat pg6-iso-cat';
-  cat.dataset.catKind = kind;
-  cat.setAttribute('role', 'img');
-  cat.setAttribute('aria-label', '庭院猫');
-  cat.title = '庭院猫 · 五亿 token 住客';
-  cat.style.setProperty('--cat-sprite', 'url("' + spriteRoot + sprite.file + '")');
-  scene.append(cat);
-
-  const frameBg = (col, row) => ((col * 100) / 9).toFixed(3) + '% ' + (row * 50) + '%';
-  const place = (uu, vv) => {
-    const p = isoToScreen(uu, vv);
-    const wpx = 58 * p.scale;
-    cat.style.left = ((p.x - wpx / 2) / W * 100).toFixed(3) + '%';
-    cat.style.top = ((p.y - wpx * 0.86) / H * 100).toFixed(3) + '%';
-    cat.style.width = (wpx / W * 100).toFixed(3) + '%';
-    cat.style.zIndex = String(p.z + 24);
-  };
-
-  if (!full) {
-    place(0.52, 0.74);
-    if (motion !== 'reduced') {   // reduced keeps the CSS pg6-cat-idle blink
-      cat.style.animation = 'none';
-      cat.style.backgroundPosition = frameBg(4, 2);
-    }
-    return;
-  }
-
-  // Route-first motion: waypoints trace plausible open lanes around the pond,
-  // statue, pavilion, and bamboo. Steering handles corners/avoidance, but the
-  // underlying route keeps the cat from looking like a randomly drifting dot.
-  const ROUTES = [
-    [{ u: 0.24, v: 0.93 }, { u: 0.43, v: 0.92 }, { u: 0.60, v: 0.88 }, { u: 0.72, v: 0.76 }],
-    [{ u: 0.17, v: 0.81 }, { u: 0.26, v: 0.91 }, { u: 0.48, v: 0.91 }, { u: 0.66, v: 0.82 }],
-    [{ u: 0.47, v: 0.63 }, { u: 0.58, v: 0.66 }, { u: 0.69, v: 0.61 }, { u: 0.75, v: 0.56 }],
-    [{ u: 0.63, v: 0.91 }, { u: 0.58, v: 0.82 }, { u: 0.66, v: 0.72 }, { u: 0.80, v: 0.60 }],
-  ];
-  const OBSTACLES = [
-    { u: 0.33, v: 0.75, r: 0.145, force: 2.2 },  // pond (mirrors pondSeat)
-    { u: 0.41, v: 0.54, r: 0.12, force: 1.8 },   // stone-cat statue
-    { u: 0.77, v: 0.48, r: 0.24, force: 1.6 },   // pavilion footprint
-    { u: 0.06, v: 0.56, r: 0.13, force: 1.4 },   // left bamboo grove
-    { u: 0.92, v: 0.43, r: 0.13, force: 1.4 },   // right bamboo grove
-  ];
-  const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
-  const wrapAngle = (a) => {
-    while (a > Math.PI) a -= Math.PI * 2;
-    while (a < -Math.PI) a += Math.PI * 2;
-    return a;
-  };
-  let u = 0.52;
-  let v = 0.74;
-  let heading = Math.random() * Math.PI * 2;
-  let target = null;
-  let route = [];
-  let routeIndex = 0;
-  let legLen = 1;
-  let restUntil = 0;
-  let restKind = 'sit';
-  let lastRow = 0;
-  let dist = 0;
-  let lastTs = 0;
-  const BASE = 0.048;   // peak amble speed, floor units / second
-  const TURN = 2.25;    // rad/s heading turn rate
-  const pickTarget = () => {
-    if (!route.length || routeIndex >= route.length) {
-      const base = ROUTES[Math.floor(Math.random() * ROUTES.length)];
-      route = Math.random() < 0.5 ? base : [...base].reverse();
-      routeIndex = 0;
-    }
-    const zone = route[routeIndex++];
-    target = {
-      u: clamp(zone.u + (Math.random() - 0.5) * 0.045, 0.14, 0.90),
-      v: clamp(zone.v + (Math.random() - 0.5) * 0.035, 0.34, 0.94),
-    };
-    if (Math.abs(target.u - u) + Math.abs(target.v - v) < 0.08) {
-      target = null;
-      return pickTarget();
-    }
-    legLen = Math.max(0.05, Math.hypot(target.u - u, target.v - v));
-  };
-  let raf = 0;
-  const tick = (ts) => {
-    const dt = Math.min(0.1, lastTs ? (ts - lastTs) / 1000 : 0.016);
-    lastTs = ts;
-    if (restUntil > ts) {
-      if (restKind === 'sit') {
-        cat.style.backgroundPosition = frameBg(4 + (Math.floor(ts / 900) % 2), 2);
-      }
-      // 'stand' keeps the planted walk frame set at arrival — a look-around
-      // pause, never a sit mid-stride (the classic renderer's rule).
-    } else {
-      if (!target) pickTarget();
-      const du = target.u - u;
-      const dv = target.v - v;
-      const len = Math.hypot(du, dv);
-      if (len < 0.02) {
-        target = null;
-        if (Math.random() < 0.68) {
-          restKind = 'sit';
-          restUntil = ts + 2800 + Math.random() * 5200;
-        } else {
-          restKind = 'stand';
-          restUntil = ts + 900 + Math.random() * 1500;
-          cat.style.backgroundPosition = frameBg(0, lastRow);   // planted stance
-        }
-      } else {
-        let steerU = du / len;
-        let steerV = dv / len;
-        for (const ob of OBSTACLES) {
-          const ou = u - ob.u;
-          const ov = v - ob.v;
-          const d = Math.hypot(ou, ov);
-          if (d < ob.r && d > 1e-4) {
-            const push = ((ob.r - d) / ob.r) * ob.force;
-            steerU += (ou / d) * push;
-            steerV += (ov / d) * push;
-          }
-        }
-        const want = Math.atan2(steerV, steerU);
-        heading += clamp(wrapAngle(want - heading), -TURN * dt, TURN * dt);
-        // ease in/out across the leg: launch gently, stride mid-leg, settle in
-        const prog = clamp(1 - len / legLen, 0, 1);
-        const ease = 0.35 + 0.65 * Math.sin(prog * Math.PI);
-        const step = BASE * ease * dt;
-        const prev = isoToScreen(u, v);
-        u = clamp(u + Math.cos(heading) * step, 0.12, 0.92);
-        v = clamp(v + Math.sin(heading) * step, 0.32, 0.94);
-        const now = isoToScreen(u, v);
-        dist += Math.hypot(now.x - prev.x, now.y - prev.y);
-        lastRow = now.x >= prev.x ? 0 : 1;
-        cat.style.backgroundPosition = frameBg(Math.floor(dist / 7) % 8, lastRow);
-      }
-    }
-    place(u, v);
-    raf = window.requestAnimationFrame(tick);
-  };
-  place(u, v);
-  raf = window.requestAnimationFrame(tick);
-  isoCatStop = () => window.cancelAnimationFrame(raf);
+  isoCat = createGardenCat(scene, {
+    sprite: spriteRoot + sprite.file,
+    habitat: ISO_CAT_HABITAT,
+    project: ({ x, y }) => {
+      const point = isoToScreen(x, y);
+      return { ...point, z: point.z + 24 };
+    },
+  });
 }
 
 // Seasonal ambient particles — the classic wall view has had these all along

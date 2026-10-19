@@ -1,5 +1,4 @@
-// Inline settings panel — lives inside the footer. Click the gear button
-// to expand a 4-control form. Changes are applied optimistically (onChange
+// Settings drawer — opened from the footer. Changes are applied optimistically (onChange
 // fires immediately) and persisted via setSettings() debounced 300ms.
 //
 // Browser fallback mode: all inputs render but disabled, with a note telling
@@ -9,6 +8,7 @@
 import { setSettings, isTauriRuntime } from './data-source.js';
 import { joinPopoverGroup } from './popover-group.js';
 import { t } from './i18n.js';
+import { closeButton } from './render-helpers.js';
 
 const SAVE_DEBOUNCE_MS = 300;
 
@@ -63,20 +63,44 @@ export function mountSettingsPanel({ hostFooter, initial, onChange }) {
   button.className = 'pg6-footer-gear';
   button.setAttribute('aria-label', t('settings.aria'));
   button.setAttribute('aria-expanded', 'false');
+  button.setAttribute('aria-controls', 'settings-panel');
+  button.title = t('settings.aria');
   button.innerHTML = gearSvg();
 
-  // Panel — appended after the footer. Hidden by default. Inline expansion
-  // keeps the scene unobstructed; mobile gets a stacked variant via CSS.
+  // Keep the heading stable while controls refresh, so focus has a safe home.
   const panel = document.createElement('div');
-  panel.className = 'pg6-settings-panel pg6-popover-scroll';
+  panel.className = 'pg6-settings-panel';
   panel.id = 'settings-panel';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-labelledby', 'settings-panel-title');
   panel.hidden = true;
-  panel.innerHTML = buildPanelHtml(current, canPersist);
+  panel.innerHTML = `<div class="pg6-panel-heading">
+    <h2 id="settings-panel-title">${escape(t('settings.aria'))}</h2>
+    ${closeButton(t('settings.closeAria'))}
+  </div>`;
+  const content = document.createElement('div');
+  content.className = 'pg6-settings-content pg6-popover-scroll';
+  content.innerHTML = buildPanelHtml(current, canPersist);
+  panel.appendChild(content);
+  const close = panel.querySelector('.pg6-insight-close');
+  close.addEventListener('click', closeAndRefocus);
 
   button.addEventListener('click', () => togglePanel());
   panel.addEventListener('change', (event) => handleControlChange(event));
   panel.addEventListener('click', (event) => handleShortcutClick(event));
-  panel.addEventListener('keydown', (event) => handleShortcutKeydown(event));
+  panel.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      if (recording) {
+        recording = false;
+        refreshControls('[data-shortcut-capture]');
+      } else {
+        closeAndRefocus();
+      }
+      return;
+    }
+    handleShortcutKeydown(event);
+  });
 
   hostFooter.appendChild(button);
   hostFooter.parentElement.appendChild(panel);
@@ -89,6 +113,23 @@ export function mountSettingsPanel({ hostFooter, initial, onChange }) {
     panel.hidden = !open;
     button.setAttribute('aria-expanded', open ? 'true' : 'false');
     button.classList.toggle('is-active', open);
+    if (open) close.focus();
+    if (!open && recording) {
+      recording = false;
+      refreshControls();
+    }
+  }
+
+  function closeAndRefocus() {
+    togglePanel(false);
+    button.focus();
+  }
+
+  function refreshControls(focusSelector) {
+    const focusedId = content.contains(document.activeElement) ? document.activeElement.id : '';
+    content.innerHTML = buildPanelHtml(current, canPersist);
+    if (focusSelector) content.querySelector(focusSelector)?.focus();
+    else if (focusedId) document.getElementById(focusedId)?.focus();
   }
 
   function handleControlChange(event) {
@@ -121,7 +162,7 @@ export function mountSettingsPanel({ hostFooter, initial, onChange }) {
     const next = cloneSettings(current);
     next.shortcuts.toggle_window = accel;
     current = next;
-    panel.innerHTML = buildPanelHtml(current, canPersist);
+    refreshControls('[data-shortcut-capture]');
     onChange(cloneSettings(current));
     schedulePersist();
   }
@@ -150,13 +191,7 @@ export function mountSettingsPanel({ hostFooter, initial, onChange }) {
       ? event.target.closest('[data-shortcut-capture]')
       : null;
     if (!btn) return;
-    // Escape cancels; a modifier-only press keeps waiting; a full combo commits.
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      recording = false;
-      panel.innerHTML = buildPanelHtml(current, canPersist);
-      return;
-    }
+    // A modifier-only press keeps waiting; a full combo commits.
     event.preventDefault();
     const accel = accelFromEvent(event);
     if (accel) setToggleShortcut(accel);
@@ -176,7 +211,8 @@ export function mountSettingsPanel({ hostFooter, initial, onChange }) {
     get: () => cloneSettings(current),
     update: (next) => {
       current = cloneSettings(next);
-      panel.innerHTML = buildPanelHtml(current, canPersist);
+      recording = false;
+      refreshControls();
     }
   };
 }
@@ -245,7 +281,7 @@ function shortcutRow(accel, canPersist) {
     '<div class="pg6-settings-row pg6-shortcut-row">' +
     '<span class="pg6-settings-label">' + escape(t('settings.toggleWindow')) + '</span>' +
     '<div class="pg6-shortcut-controls">' +
-    '<button type="button" class="pg6-shortcut-capture" data-shortcut-capture aria-label="' +
+    '<button type="button" id="pg6-shortcut-capture" class="pg6-shortcut-capture" data-shortcut-capture aria-label="' +
     escape(t('settings.shortcutRecordAria')) + '"' + disabledAttr + '>' + escape(display) + '</button>' +
     '<button type="button" class="pg6-shortcut-btn" data-shortcut-recommend' + disabledAttr + '>' +
     escape(t('settings.shortcutRecommend')) + '</button>' +
@@ -280,8 +316,8 @@ function radioGroup(name, label, options, value, disabledAttr) {
     })
     .join('');
   return (
-    '<div class="pg6-settings-row">' +
-    '<span class="pg6-settings-label">' + escape(label) + '</span>' +
+    '<div class="pg6-settings-row" role="group" aria-labelledby="pg6-label-' + name + '">' +
+    '<span class="pg6-settings-label" id="pg6-label-' + name + '">' + escape(label) + '</span>' +
     '<div class="pg6-settings-pills">' + opts + '</div>' +
     '</div>'
   );

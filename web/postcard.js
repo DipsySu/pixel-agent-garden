@@ -251,14 +251,15 @@ async function drawSprites(ctx, scene) {
   }
 }
 
-// The garden cat is a <span> backed by a 10×3 sprite sheet, animated over rAF.
-// For the postcard we draw a FIXED sit frame (row 2, col 4) at the cat's current
-// on-screen rect, so the export is deterministic — never a half-stride walk
-// frame — no matter when Export is pressed.
+// Export a fixed sit pose on the ground anchor, not the rotating sprite's
+// bounding box (which changes shape and height in the middle of a flip).
 async function drawGardenCat(ctx, scene) {
   const cat = scene.querySelector('.pg6-garden-cat');
   if (!(cat instanceof HTMLElement)) return;
-  const style = getComputedStyle(cat);
+  const sprite = cat.querySelector('.pg6-cat-sprite');
+  const pose = cat.querySelector('.pg6-cat-pose');
+  if (!(sprite instanceof HTMLElement) || !(pose instanceof HTMLElement)) return;
+  const style = getComputedStyle(sprite);
   if (style.display === 'none' || style.visibility === 'hidden') return;
   const alpha = parseCssAlpha(style.opacity);
   if (alpha <= 0) return;
@@ -268,7 +269,7 @@ async function drawGardenCat(ctx, scene) {
   try { sheet = await loadImage(new URL(match[1], document.baseURI).href); }
   catch (_) { return; }
   if (!sheet.naturalWidth || !sheet.naturalHeight) return;
-  const box = scaledBox(cat.getBoundingClientRect(), scene.getBoundingClientRect());
+  const box = scaledBox(pose.getBoundingClientRect(), scene.getBoundingClientRect());
   if (!box) return;
   const cols = 10, rows = 3;
   const fw = sheet.naturalWidth / cols, fh = sheet.naturalHeight / rows;
@@ -276,7 +277,7 @@ async function drawGardenCat(ctx, scene) {
   ctx.globalAlpha = alpha;
   ctx.imageSmoothingEnabled = false;
   if ('filter' in ctx) ctx.filter = 'none';
-  ctx.drawImage(sheet, 4 * fw, 2 * fh, fw, fh, box.x, box.y, box.w, box.h);
+  ctx.drawImage(sheet, 6 * fw, 2 * fh, fw, fh, box.x, box.y, box.w, box.h);
   ctx.restore();
 }
 

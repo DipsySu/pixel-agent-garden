@@ -88,25 +88,24 @@ body {
 }
 .pg6-header {
   align-items: center;
-  display: flex;
-  gap: 8px 14px;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, 320px) auto;
+  gap: 16px;
   left: var(--edge-pad);
   min-height: 32px;
   min-width: 0;
   position: absolute;
   right: var(--edge-pad);
-  top: 8px;
+  top: 12px;
   z-index: 120;
 }
 .pg6-head-left { align-items: flex-start; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.pg6-app { color: var(--color-text-primary); font-family: var(--font-pixel); font-size: 18px; font-weight: 400; letter-spacing: 0.5px; min-width: 0; text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55); }
-.pg6-subtitle { color: #e3d6b0; font-size: 12px; letter-spacing: 0.2px; margin: 3px 0 4px; max-width: 52ch; text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.55); }
+.pg6-app { color: var(--color-text-primary); font-family: var(--font-pixel); font-size: 16px; font-weight: 400; letter-spacing: 0; min-width: 0; text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55); }
 .pg6-headline { align-items: baseline; display: flex; gap: 5px; }
-.pg6-total { color: #ffe9a6; font-family: var(--font-num); font-size: 38px; line-height: 0.82; text-shadow: 2px 2px 0 #5a3c12; }
-.pg6-total-unit { color: var(--color-text-secondary); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+.pg6-total { color: #ffe9a6; font-family: var(--font-num); font-size: 32px; line-height: 1; text-shadow: 2px 2px 0 #5a3c12; }
+.pg6-total-unit { color: var(--color-text-secondary); font-size: 12px; letter-spacing: 0; text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
 .pg6-meta { align-items: flex-start; display: flex; flex-wrap: wrap; font-size: 12px; gap: 8px; justify-content: flex-end; min-width: 0; }
-.pg6-meta-item { align-items: center; background: var(--paper); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); color: var(--ink); display: flex; gap: 7px; padding: 4px 10px; }
+.pg6-meta-item { align-items: center; background: var(--paper); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); color: var(--ink); display: flex; gap: 7px; min-height: 40px; padding: 5px 10px; }
 .pg6-meta-text { display: flex; flex-direction: column; line-height: 1.05; }
 .pg6-meta-primary { font-size: 12px; font-weight: 600; }
 .pg6-meta-secondary { color: #7a6a4e; font-family: var(--font-num); font-size: 13px; line-height: 1; }
@@ -523,26 +522,91 @@ body {
   filter: saturate(0.45) brightness(1.08);
 }
 .pg6-garden-cat {
-  /* Cell is 68×68 (pixellab sprite). The 10×3 grid + percentage frame
-     positions are unchanged from the old 80×56 sheet — background-position is
-     relative, so the JS frame logic (catFrameBg) needs no change; only the
-     element's aspect-ratio must match the new square cell. */
+  /* Scene-sized translation plane: percentage keyframes remain responsive
+     without per-frame layout reads or resize-driven animation restarts. */
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+  pointer-events: none;
+  user-select: none;
+}
+.pg6-cat-pose {
+  position: absolute;
+  width: var(--cat-width);
   aspect-ratio: 1 / 1;
+  transform: translate(-50%, -68%);
+}
+.pg6-cat-sprite {
+  display: block;
+  width: 100%;
+  height: 100%;
   background-image: var(--cat-sprite);
-  background-position: 44.444% 100%;
+  background-position: 0 0;
   background-repeat: no-repeat;
   background-size: 1000% 300%;
   filter: saturate(1.06) brightness(1.08) contrast(1.04) drop-shadow(0 2px 0 rgba(28, 24, 20, 0.35));
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  left: var(--cat-left);
-  pointer-events: none;
+  transform-origin: 50% 58%;
+}
+.pg6-cat-shadow {
   position: absolute;
-  top: var(--cat-top);
-  transform: translate3d(0, 0, 0) scaleX(1);
-  transform-origin: 50% 62%;
-  user-select: none;
-  width: var(--cat-width);
+  width: calc(var(--cat-width) * 0.48);
+  aspect-ratio: 5 / 1;
+  background: rgba(25, 31, 20, 0.23);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.pg6-garden-cat[data-cat-kind="full"][data-action="flip"] .pg6-cat-sprite {
+  animation: pg6-cat-flip var(--cat-action-duration) linear both,
+    pg6-cat-turn-frames var(--cat-action-duration) step-end both;
+}
+.pg6-garden-cat[data-cat-kind="full"][data-action="flip"] .pg6-cat-shadow {
+  animation: pg6-cat-flip-shadow var(--cat-action-duration) ease-in-out both;
+}
+.pg6-garden-cat[data-action="rest"][data-cat-kind="full"] .pg6-cat-sprite,
+.pg6-garden-cat[data-cat-kind="reduced"] .pg6-cat-sprite {
+  animation: pg6-cat-breathe 3400ms ease-in-out infinite;
+}
+.pg6-garden-cat[data-action="rest"][data-rest="sit"][data-cat-kind="full"] .pg6-cat-sprite {
+  animation: pg6-cat-sit 2800ms step-end infinite;
+}
+.pg6-garden-cat[data-paused="true"],
+.pg6-garden-cat[data-paused="true"] *,
+.pg6-scene[data-motion="off"] .pg6-garden-cat,
+.pg6-scene[data-motion="reduced"] .pg6-garden-cat {
+  animation-play-state: paused !important;
+}
+@keyframes pg6-cat-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.006, 1.018); }
+}
+@keyframes pg6-cat-sit {
+  0%, 92%, 100% { background-position: 66.667% 100%; }
+  94% { background-position: 77.778% 100%; }
+}
+@keyframes pg6-cat-flip {
+  0% { transform: none; }
+  16% { transform: translateY(3%) scale(1.04, 0.90); }
+  20% { transform: translateY(0) rotate(0deg); }
+  38% { transform: translateY(-22%) rotate(calc(var(--cat-turn-angle) * 0.25)) scale(0.94); }
+  53% { transform: translateY(-29%) rotate(calc(var(--cat-turn-angle) * 0.5)) scale(0.92); }
+  68% { transform: translateY(-20%) rotate(calc(var(--cat-turn-angle) * 0.75)) scale(0.94); }
+  82% { transform: translateY(0) rotate(var(--cat-turn-angle)); }
+  90% { transform: translateY(3%) rotate(var(--cat-turn-angle)) scale(1.04, 0.93); }
+  100% { transform: translateY(0) rotate(var(--cat-turn-angle)); }
+}
+@keyframes pg6-cat-turn-frames {
+  0%, 20% { background-position: 0 var(--cat-from-row); }
+  38%, 68% { background-position: 11.111% 100%; }
+  82%, 100% { background-position: 0 var(--cat-to-row); }
+}
+@keyframes pg6-cat-flip-shadow {
+  0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  53% { opacity: 0.45; transform: translate(-50%, -50%) scale(0.65); }
 }
 /* motion="off" must STOP motion, not hide content. Sprites (project vines,
    courtyard objects) and the info card stay fully visible — only their
@@ -550,7 +614,7 @@ body {
    so those alone are removed entirely. */
 .pg6-scene[data-motion="off"] .pg6-sprite,
 .pg6-scene[data-motion="off"] .pg6-info,
-.pg6-scene[data-motion="off"] .pg6-garden-cat,
+.pg6-scene[data-motion="off"] .pg6-garden-cat *,
 .pg6-scene[data-motion="off"] .pg6-flower-tooltip {
   animation: none !important;
   transition-duration: 0ms !important;
@@ -571,11 +635,6 @@ body {
 .pg6-scene[data-motion="reduced"] .pg6-sprite.project.climbing.is-new { animation: pg6-vine-breathe 8s ease-in-out infinite; }
 .pg6-scene[data-motion="reduced"] .pg6-sprite.project.climbing.is-new { transform-origin: bottom center; }
 .pg6-scene[data-motion="reduced"] .pg6-trinket-sprite.is-new { animation: pg6-trinket-nod 8s ease-in-out infinite; }
-/* Reduced motion: a slow in-place sit/breathe blink. Full motion is owned by
-   JS (render-garden.js startCatWander) — it drives position + frames over rAF
-   for a scene-relative roam range and non-periodic, lifelike pacing, so there
-   is no full-motion CSS wander keyframe here. */
-.pg6-scene[data-motion="reduced"] .pg6-garden-cat { animation: pg6-cat-idle 2200ms step-end infinite; }
 @media (prefers-reduced-motion: no-preference) {
   .pg6-trinket-sprite { animation: pg6-trinket-nod 3600ms ease-in-out infinite; }
   .pg6-sprite.project.hanging { animation: pg6-vine-sway 4200ms ease-in-out infinite; }
@@ -625,12 +684,6 @@ body {
   @keyframes pg6-trinket-nod {
     0%, 100% { filter: saturate(0.97) brightness(0.98); }
     50%      { filter: saturate(1.05) brightness(1.06); }
-  }
-  /* Reduced-motion idle blink only: sit frames (row 2 col 4 / col 5). Full
-     motion's per-frame walk cycle is driven by JS, not a keyframe. */
-  @keyframes pg6-cat-idle {
-    0%, 49.99%  { background-position: 44.444% 100%; }
-    50%, 100%   { background-position: 55.555% 100%; }
   }
   @keyframes pg6-vine-sway {
     0%, 100% { filter: saturate(calc(0.78 * var(--vine-health-sat, 1))) brightness(calc(0.90 * var(--vine-health-bright, 1))) contrast(0.96) hue-rotate(var(--vine-hue-shift, 0deg)); }
@@ -707,7 +760,7 @@ body {
 .pg6-info-spark:empty { display: none; }
 .pg6-info-spark .pg6-spark-svg { display: block; width: 100%; height: 24px; }
 .pg6-info-spark .pg6-spark-svg rect { fill: currentColor; }
-.pg6-footer { align-items: center; bottom: 10px; color: var(--color-text-tertiary); display: flex; flex-wrap: wrap; font-size: 11px; gap: 5px; left: var(--edge-pad); margin-top: 0; padding: 0; position: absolute; right: var(--edge-pad); z-index: 130; }
+.pg6-footer { align-items: center; bottom: 12px; color: var(--color-text-secondary); display: flex; flex-wrap: wrap; font-size: 12px; gap: 8px; left: var(--edge-pad); margin-top: 0; padding: 0; position: absolute; right: var(--edge-pad); z-index: 130; }
 .pg6-footer-freshness { color: var(--color-text-tertiary); margin-left: auto; }
 .pg6-footer-freshness.is-stale { color: #d6a258; cursor: help; }
 .pg6-footer-freshness.is-scanning { color: #d6c58a; }
@@ -724,14 +777,14 @@ body {
   cursor: pointer;
   display: inline-flex;
   font-family: var(--font-pixel);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 400;
-  letter-spacing: 0.3px;
+  letter-spacing: 0;
   text-transform: uppercase;
   gap: 6px;
-  height: 26px;
-  margin-left: 8px;
-  padding: 0 10px;
+  height: 36px;
+  margin-left: 2px;
+  padding: 0 12px;
   transition: transform 90ms ease, box-shadow 90ms ease, background 90ms ease;
 }
 .pg6-footer-insight svg { flex: 0 0 auto; }
@@ -745,7 +798,7 @@ body {
   background: rgba(20, 24, 18, 0.93);
   border: 1px solid var(--color-border-tertiary);
   border-radius: var(--border-radius-md);
-  bottom: 76px;
+  bottom: 62px;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3);
   color: var(--color-text-primary);
   font-size: 12px;
@@ -883,13 +936,14 @@ body {
   animation: pg6-fr-in 600ms steps(5) forwards;
 }
 .pg6-firstrun .pg6-sprite,
-.pg6-firstrun .pg6-garden-cat,
+.pg6-firstrun .pg6-cat-pose,
 .pg6-firstrun .pg6-wall-edge-cover,
 .pg6-firstrun .pg6-season-particle {
   opacity: 0;
   animation: pg6-fr-in 280ms steps(4) forwards;
   animation-delay: var(--fr-delay, 2400ms);
 }
+.pg6-firstrun .pg6-cat-shadow { visibility: hidden; }
 @keyframes pg6-fr-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -933,37 +987,32 @@ body {
   .pg6-scan-curtain-card { animation: none; }
 }
 
-/* === Mini heatmap strip (sits between header and scene) ====================
-   ~50 px tall horizontal band — a quick at-a-glance view of the rolling
-   year of activity. Visually styled like a wood-eave plaque (the same wood
-   tones as the scene's awning) so it reads as part of the courtyard frame
-   rather than a separate widget. Whole strip is a button — click anywhere
-   to open the data drawer on its Overview tab. */
+/* Header activity strip: its own grid track, never underneath the title.
+   The entire strip opens the data drawer on Overview. */
 .pg6-mini-heatmap-strip {
-  background: linear-gradient(to bottom,
-    rgba(74, 56, 42, 0.55),
-    rgba(54, 40, 30, 0.45) 60%,
-    rgba(48, 36, 28, 0.30) 100%);
-  border: 1px solid rgba(140, 110, 78, 0.22);
-  border-radius: 4px;
+  --heatmap-0: #364131;
+  --heatmap-1: #49633c;
+  --heatmap-2: #648c4a;
+  --heatmap-3: #8ab360;
+  --heatmap-4: #b7d783;
+  background: #20281f;
+  border: 1px solid #495440;
+  border-radius: 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 6px 6px 8px;
-  min-height: 52px;
-  padding: 6px 10px;
-  width: calc(100% - 12px);
+  margin: 0;
+  height: 56px;
+  min-width: 0;
+  padding: 6px 8px;
+  width: 100%;
   transition: background 180ms ease, border-color 180ms ease;
 }
 .pg6-mini-heatmap-strip:hover,
 .pg6-mini-heatmap-strip:focus-visible {
-  background: linear-gradient(to bottom,
-    rgba(94, 70, 50, 0.72),
-    rgba(72, 54, 38, 0.55) 60%,
-    rgba(54, 40, 28, 0.40) 100%);
-  border-color: rgba(244, 216, 120, 0.40);
-  outline: none;
+  background: #2a3627;
+  border-color: #a2ba80;
 }
 .pg6-mini-heatmap-strip:empty::before {
   color: var(--color-text-tertiary);
@@ -972,9 +1021,20 @@ body {
 }
 
 /* === Heatmap SVG (shared mini/full + punchcard) ============================= */
-.pg6-heatmap-svg { display: block; }
+.pg6-heatmap-svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.pg6-dashboard-panel {
+  --heatmap-0: #e1d7bc;
+  --heatmap-1: #becd9b;
+  --heatmap-2: #8ca862;
+  --heatmap-3: #5e8041;
+  --heatmap-4: #355b32;
+}
 .pg6-heatmap-cell {
-  cursor: pointer;
+  cursor: default;
   transition: stroke 100ms ease;
 }
 .pg6-heatmap-cell:hover {
@@ -985,7 +1045,7 @@ body {
   fill: var(--color-text-tertiary);
   font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 10px;
-  letter-spacing: 0.2px;
+  letter-spacing: 0;
 }
 .pg6-heatmap--mini .pg6-heatmap-cell { cursor: pointer; }
 
@@ -1004,12 +1064,12 @@ body {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--color-border-tertiary);
   border-radius: 6px;
-  padding: 8px 10px;
+  padding: 10px 12px;
 }
 .pg6-dashboard-kpi-label {
   color: var(--color-text-tertiary);
-  font-size: 10px;
-  letter-spacing: 0.3px;
+  font-size: 12px;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 .pg6-dashboard-kpi-value {
@@ -1020,7 +1080,7 @@ body {
 }
 .pg6-dashboard-kpi-sub {
   color: var(--color-text-tertiary);
-  font-size: 10px;
+  font-size: 11px;
   margin-top: 2px;
 }
 .pg6-dashboard-section {
@@ -1037,13 +1097,13 @@ body {
 }
 .pg6-dashboard-h3 {
   color: var(--color-text-primary);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   margin: 0;
 }
 .pg6-dashboard-h3-hint {
   color: var(--color-text-tertiary);
-  font-size: 10px;
+  font-size: 11px;
 }
 .pg6-dashboard-heatmap-host,
 .pg6-dashboard-punchcard-host {
@@ -1059,16 +1119,16 @@ body {
   margin-top: 6px;
 }
 .pg6-heatmap-swatch {
-  border-radius: 2px;
+  border-radius: 0;
   display: inline-block;
   height: 10px;
   width: 10px;
 }
-.pg6-heatmap-swatch[data-level="0"] { background: rgba(255, 255, 255, 0.06); }
-.pg6-heatmap-swatch[data-level="1"] { background: #1f4a26; }
-.pg6-heatmap-swatch[data-level="2"] { background: #2f7036; }
-.pg6-heatmap-swatch[data-level="3"] { background: #46a347; }
-.pg6-heatmap-swatch[data-level="4"] { background: #7ad36a; }
+.pg6-heatmap-swatch[data-level="0"] { background: var(--heatmap-0); }
+.pg6-heatmap-swatch[data-level="1"] { background: var(--heatmap-1); }
+.pg6-heatmap-swatch[data-level="2"] { background: var(--heatmap-2); }
+.pg6-heatmap-swatch[data-level="3"] { background: var(--heatmap-3); }
+.pg6-heatmap-swatch[data-level="4"] { background: var(--heatmap-4); }
 .pg6-postcard-title { color: var(--color-text-primary); font-size: 13px; font-weight: 600; margin-bottom: 8px; }
 .pg6-postcard-toggle { align-items: center; color: var(--color-text-secondary); cursor: pointer; display: flex; gap: 8px; line-height: 1.4; }
 .pg6-postcard-toggle input { accent-color: #d6a258; flex: 0 0 auto; }
@@ -1163,19 +1223,22 @@ body {
 .pg6-return-diff-close:focus-visible { background: rgba(255, 255, 255, 0.06); color: var(--color-text-primary); outline: none; }
 .pg6-footer-gear {
   align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: 4px;
-  color: var(--color-text-tertiary);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  box-shadow: 2px 2px 0 var(--ink);
+  color: var(--ink);
   cursor: pointer;
   display: inline-flex;
-  margin-left: 8px;
-  padding: 4px;
+  justify-content: center;
+  flex: 0 0 36px;
+  height: 36px;
+  padding: 0;
   transition: color 140ms ease, background 140ms ease;
 }
 .pg6-footer-gear:hover,
-.pg6-footer-gear:focus-visible { color: var(--color-text-primary); background: rgba(255, 255, 255, 0.04); outline: none; }
-.pg6-footer-gear.is-active { color: var(--color-text-primary); background: rgba(244, 216, 120, 0.10); }
+.pg6-footer-gear:focus-visible { background: #fff6e2; }
+.pg6-footer-gear.is-active { background: #e8d8a8; }
 
 .pg6-insight-panel {
   background: rgba(20, 24, 18, 0.93);
@@ -1225,11 +1288,15 @@ body {
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 4px;
+  border-radius: 0;
   color: var(--color-text-tertiary);
   cursor: pointer;
   display: inline-flex;
-  padding: 4px;
+  justify-content: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
 }
 .pg6-insight-close:hover,
 .pg6-insight-close:focus-visible { background: rgba(255, 255, 255, 0.06); color: var(--color-text-primary); outline: none; }
@@ -1244,7 +1311,7 @@ body {
 }
 .pg6-insight-summary span { min-width: 0; }
 .pg6-insight-summary b { display: block; font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pg6-insight-summary small { color: var(--color-text-tertiary); display: block; font-size: 10px; margin-top: 1px; }
+.pg6-insight-summary small { color: var(--color-text-tertiary); display: block; font-size: 12px; margin-top: 2px; }
 .pg6-insight-list { display: flex; flex-direction: column; gap: 2px; }
 .pg6-insight-row-line { align-items: stretch; display: flex; gap: 2px; }
 /* Search box above the list. */
@@ -1299,7 +1366,7 @@ body {
   flex: 1 1 auto;
   font: inherit;
   grid-template-columns: 28px minmax(120px, 1fr) 104px 58px;
-  min-height: 38px;
+  min-height: 48px;
   min-width: 0;
   padding: 4px 6px;
   text-align: left;
@@ -1323,8 +1390,8 @@ body {
 .pg6-insight-row.is-active { background: rgba(255, 255, 255, 0.045); border-color: rgba(244, 216, 120, 0.20); color: var(--color-text-primary); outline: none; }
 .pg6-insight-rank { color: #a7c27c; font-variant-numeric: tabular-nums; }
 .pg6-insight-main { min-width: 0; }
-.pg6-insight-main strong { color: currentColor; display: block; font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pg6-insight-main small { color: var(--color-text-tertiary); display: block; font-size: 10px; margin-top: 1px; }
+.pg6-insight-main strong { color: currentColor; display: block; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg6-insight-main small { color: var(--color-text-tertiary); display: block; font-size: 11px; margin-top: 2px; }
 .pg6-insight-cost { color: #d6a258 !important; }
 .pg6-insight-path { color: var(--color-text-tertiary); font-size: 9px; opacity: 0.72; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pg6-insight-approx { color: #d6a258; display: inline-block; font-size: 9px; letter-spacing: 0.2px; margin-left: 6px; opacity: 0.9; vertical-align: 1px; }
@@ -1338,25 +1405,29 @@ body {
   background: rgba(20, 24, 18, 0.92);
   border: 1px solid var(--color-border-tertiary);
   border-radius: var(--border-radius-md);
-  bottom: 76px;
+  bottom: 62px;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.3);
   color: var(--color-text-primary);
-  font-size: 12px;
-  left: var(--edge-pad);
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  right: var(--edge-pad);
   margin-top: 0;
-  max-height: min(60vh, 420px);
-  overflow: auto;
-  padding: 12px 14px;
+  top: 88px;
+  max-height: 720px;
+  overflow: hidden;
+  padding: 16px;
   position: absolute;
-  width: min(680px, calc(100vw - var(--edge-pad) * 2));
+  width: min(600px, calc(100vw - var(--edge-pad) * 2));
   z-index: 150;
 }
 .pg6-settings-panel[hidden] { display: none; }
-.pg6-settings-section { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
-.pg6-settings-section + .pg6-settings-section { border-top: 1px dashed var(--color-border-tertiary); margin-top: 6px; padding-top: 10px; }
+.pg6-settings-content { min-height: 0; overflow-y: auto; padding: 2px 4px 4px; }
+.pg6-settings-section { display: flex; flex-direction: column; gap: 12px; padding: 8px 0; }
+.pg6-settings-section + .pg6-settings-section { border-top: 1px dashed var(--color-border-tertiary); margin-top: 8px; padding-top: 16px; }
 .pg6-settings-title { color: var(--color-text-secondary); font-size: 11px; font-weight: 500; letter-spacing: 0.4px; margin: 0; text-transform: uppercase; }
-.pg6-settings-row { align-items: center; column-gap: 12px; display: flex; flex-wrap: wrap; row-gap: 4px; }
-.pg6-settings-label { color: var(--color-text-secondary); flex: 0 0 132px; font-size: 11px; }
+.pg6-settings-row { align-items: center; column-gap: 12px; display: flex; flex-wrap: wrap; row-gap: 6px; }
+.pg6-settings-label { color: var(--color-text-secondary); flex: 0 0 94px; font-size: 13px; }
 .pg6-settings-pills { display: inline-flex; flex-wrap: wrap; gap: 4px; }
 .pg6-settings-pill {
   align-items: center;
@@ -1365,12 +1436,15 @@ body {
   border-radius: 12px;
   cursor: pointer;
   display: inline-flex;
-  font-size: 11px;
-  padding: 3px 10px;
+  font-size: 13px;
+  min-height: 34px;
+  padding: 5px 10px;
+  position: relative;
   transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
   user-select: none;
 }
-.pg6-settings-pill input { display: none; }
+.pg6-settings-pill input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.pg6-settings-pill:has(input:focus-visible) { outline: 2px solid #355b32; outline-offset: 3px; }
 .pg6-settings-pill:hover { background: rgba(255, 255, 255, 0.08); }
 .pg6-settings-pill:has(input:checked) {
   background: rgba(244, 216, 120, 0.16);
@@ -1378,34 +1452,35 @@ body {
   color: var(--color-text-primary);
 }
 .pg6-settings-pill:has(input:disabled),
-.pg6-settings-pill:has(input:disabled):hover { cursor: not-allowed; opacity: 0.55; }
+.pg6-settings-pill:has(input:disabled):hover { cursor: not-allowed; opacity: 0.7; }
 .pg6-settings-toggle { align-items: center; cursor: pointer; display: inline-flex; gap: 8px; }
+.pg6-settings-toggle .pg6-settings-label { flex: none; white-space: nowrap; }
 .pg6-settings-toggle input { accent-color: #d6a258; }
 .pg6-settings-toggle input:disabled { cursor: not-allowed; }
 .pg6-shortcut-controls { display: inline-flex; flex-wrap: wrap; gap: 6px; }
 .pg6-shortcut-capture, .pg6-shortcut-btn {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid transparent;
-  border-radius: 12px;
+  background: #fffaf0;
+  border: 2px solid var(--paper-edge);
+  border-radius: 0;
   color: inherit;
   cursor: pointer;
-  font-size: 11px;
-  padding: 3px 10px;
+  font-size: 12px;
+  min-height: 34px;
+  padding: 5px 10px;
   transition: background 140ms ease, border-color 140ms ease;
 }
 .pg6-shortcut-capture {
-  border-color: rgba(255, 255, 255, 0.18);
   font-family: var(--font-mono, ui-monospace, monospace);
   min-width: 72px;
 }
 .pg6-shortcut-capture:hover, .pg6-shortcut-btn:hover { background: rgba(255, 255, 255, 0.08); }
 .pg6-shortcut-capture.is-recording {
-  background: rgba(244, 216, 120, 0.16);
-  border-color: rgba(244, 216, 120, 0.55);
+  background: #e4efcf;
+  border-color: #355b32;
 }
 .pg6-shortcut-capture:disabled, .pg6-shortcut-btn:disabled { cursor: not-allowed; opacity: 0.55; }
 .pg6-settings-toggle:has(input:disabled) { cursor: not-allowed; opacity: 0.55; }
-.pg6-settings-hint { color: var(--color-text-tertiary); font-size: 10px; }
+.pg6-settings-hint { color: var(--color-text-tertiary); font-size: 12px; line-height: 1.5; }
 .pg6-settings-note {
   background: rgba(214, 162, 88, 0.08);
   border: 1px solid rgba(214, 162, 88, 0.3);
@@ -1419,11 +1494,15 @@ body {
 /* === Retro HUD panels (UI refresh wave 2) ==================================
    Paper shells + ink text for the popovers, applied as grouped overrides AFTER
    each panel's base rules (so they win at equal specificity without editing the
-   originals). Deliberately does NOT touch the global --color-text-* tokens —
-   the header, scene overlays and empty state keep their light-on-dark text. */
+   originals). Surface-local tokens keep charts and nested controls readable;
+   the header, scene overlays and empty state retain light-on-dark text. */
 .pg6-insight-panel,
 .pg6-settings-panel,
 .pg6-share-panel {
+  --color-text-primary: var(--ink);
+  --color-text-secondary: #5f5240;
+  --color-text-tertiary: #6c5e48;
+  --color-border-tertiary: var(--paper-edge);
   background: var(--paper);
   border: 2px solid var(--ink);
   border-radius: 0;
@@ -1431,7 +1510,7 @@ body {
   color: var(--ink);
 }
 .pg6-insight-label,
-.pg6-settings-title { color: #8a7656; font-family: var(--font-pixel); font-size: 9px; letter-spacing: 0.5px; }
+.pg6-settings-title { color: #6c5e48; font-family: var(--font-pixel); font-size: 11px; letter-spacing: 0; }
 .pg6-insight-title { color: var(--ink); font-weight: 700; }
 .pg6-insight-close { color: #8a7656; }
 .pg6-insight-close:hover,
@@ -1442,7 +1521,7 @@ body {
 .pg6-insight-path,
 .pg6-settings-label,
 .pg6-settings-hint,
-.pg6-postcard-status { color: #8a7656; }
+.pg6-postcard-status { color: #6c5e48; }
 .pg6-insight-search-input { background: #fffaf0; border: 2px solid var(--ink); border-radius: 0; color: var(--ink); }
 .pg6-insight-search-input::placeholder { color: #8a7656; }
 .pg6-insight-search-input:focus-visible { border-color: #6f9c3f; }
@@ -1451,7 +1530,7 @@ body {
 .pg6-insight-row:focus-visible,
 .pg6-insight-row.is-active { background: #ece1c6; border-color: var(--ink); color: var(--ink); }
 .pg6-insight-rank { color: #6f9c3f; }
-.pg6-insight-total { color: #3a2f25; font-family: var(--font-num); font-size: 15px; }
+.pg6-insight-total { color: #3a2f25; font-family: var(--font-num); font-size: 20px; }
 .pg6-insight-spark { color: #6b9c3f; }
 .pg6-insight-term,
 .pg6-insight-empty,
@@ -1504,8 +1583,8 @@ body {
 .pg6-dashboard-kpi { background: #fffaf0; border: 2px solid var(--paper-edge); border-radius: 0; }
 .pg6-dashboard-kpi-label,
 .pg6-dashboard-kpi-sub,
-.pg6-dashboard-h3-hint { color: #8a7656; }
-.pg6-dashboard-kpi-value { color: #3a2f25; font-family: var(--font-num); font-size: 28px; font-weight: 400; }
+.pg6-dashboard-h3-hint { color: #6c5e48; }
+.pg6-dashboard-kpi-value { color: #3a2f25; font-family: var(--font-num); font-size: 32px; font-weight: 400; }
 .pg6-dashboard-h3 { color: var(--ink); }
 .pg6-popover-scroll::-webkit-scrollbar-thumb { background: #c9b790; }
 /* Footer freshness: a status dot before the text (green = live). */
@@ -1527,13 +1606,19 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* The 720px the dashboard variant intends; restated here because the shared
-     shell's 520px width otherwise wins the cascade (it comes later in this
-     stylesheet than .pg6-dashboard-panel). */
-  max-width: min(720px, calc(100vw - var(--edge-pad) * 2));
-  width: min(720px, calc(100vw - var(--edge-pad) * 2));
+  top: 88px;
+  bottom: 62px;
+  max-height: none;
+  padding: 16px;
+  max-width: min(640px, calc(100vw - var(--edge-pad) * 2));
+  width: min(640px, calc(100vw - var(--edge-pad) * 2));
 }
-.pg6-drawer-tabs { display: flex; flex: 0 0 auto; gap: 6px; margin-bottom: 10px; }
+.pg6-panel-heading { align-items: center; display: flex; flex: 0 0 auto; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.pg6-panel-heading h2 { font-size: 16px; line-height: 1.3; margin: 0; }
+.pg6-drawer-tabs { display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid var(--paper-edge); padding-bottom: 12px; margin-bottom: 14px; }
+.pg6-drawer-tabpanel .pg6-insight-close { display: none; }
+.pg6-drawer-tabpanel .pg6-insight-label { display: none; }
+.pg6-drawer-tabpanel .pg6-insight-head { margin-bottom: 8px; }
 .pg6-drawer-tab {
   background: #ece1c6;
   border: 2px solid var(--ink);
@@ -1542,8 +1627,9 @@ body {
   color: var(--ink);
   cursor: pointer;
   font: inherit;
-  font-size: 11px;
-  padding: 3px 12px;
+  font-size: 13px;
+  min-height: 34px;
+  padding: 5px 12px;
   transition: transform 90ms ease, box-shadow 90ms ease, background 90ms ease;
   user-select: none;
 }
@@ -1557,7 +1643,7 @@ body {
 .pg6-drawer-tab[aria-selected="true"] { background: #6f9c3f; border-color: var(--ink); color: #f4ecd8; }
 .pg6-drawer-tab[aria-selected="true"]:hover,
 .pg6-drawer-tab[aria-selected="true"]:focus-visible { background: #7daf48; }
-.pg6-drawer-tabpanel { flex: 1 1 auto; min-height: 0; }
+.pg6-drawer-tabpanel { flex: 1 1 auto; min-height: 0; padding: 2px 4px 4px; }
 /* Overview (and any future plain tab) scrolls as one block; the Projects tab
    overrides this via its sticky-head class, where only the list scrolls. */
 .pg6-drawer-tabpanel:not(.pg6-insight-sticky-head) { overflow-y: auto; }
@@ -1802,13 +1888,22 @@ body {
   width: var(--particle-size, 4px);
 }
 @media (max-width: 900px) {
-  .pg6-header { align-items: flex-start; flex-direction: column; gap: 4px; top: 8px; }
-  .pg6-meta { justify-content: flex-start; }
+  .pg6-header { grid-template-columns: minmax(180px, 1fr) minmax(140px, 240px) auto; gap: 12px; }
+  .pg6-meta { gap: 6px; }
   .pg6-insight-row { grid-template-columns: 26px minmax(100px, 1fr) 86px 52px; }
 }
+/* Also respect the desktop shell's small-window limit without hiding actions. */
+@media (max-width: 780px) {
+  .pg6-header { grid-template-columns: minmax(0, 1fr) auto; }
+  .pg6-mini-heatmap-strip { display: none; }
+  .pg6-footer > [data-i18n="footer.privacy"] { display: none; }
+}
+.pg6-footer :is(button, [role="switch"]):focus-visible,
+.pg6-header button:focus-visible { outline: 2px solid #c2dc9d; outline-offset: 3px; }
+:is(.pg6-insight-panel, .pg6-settings-panel, .pg6-share-panel) :is(button, input):focus-visible { outline: 2px solid #355b32; outline-offset: 2px; }
 @media (max-width: 520px) {
-  .pg6-header { display: flex; }
-  .pg6-meta { gap: 8px; justify-content: flex-start; margin-top: 8px; }
+  .pg6-app { font-size: 14px; }
+  .pg6-meta { gap: 6px; }
   .pg6-return-diff { top: 78px; }
   /* On narrow screens, the bottom-left info card covers most of the wall.
      Move it to the top edge as a thin strip — it overlays the sky area
@@ -1827,11 +1922,12 @@ body {
   .pg6-sprite,
   .pg6-info,
   .pg6-season-particle,
-  .pg6-garden-cat,
+  .pg6-garden-cat *,
   .pg6-flower-tooltip {
     animation: none !important;
     transition-duration: 0ms !important;
   }
+  .pg6-garden-cat { animation-play-state: paused !important; }
 }
 </style>
 </head>
@@ -1843,23 +1939,22 @@ body {
   <div class="pg6-frame">
     <div class="pg6-header" id="window-drag-region" data-window-drag-region>
       <div class="pg6-head-left">
-        <div class="pg6-app" data-i18n="app.initial">Pixel Garden · Your local agent courtyard</div>
-        <div class="pg6-subtitle" data-i18n="header.subtitle">Your local AI-agent token usage, grown into a courtyard</div>
+        <div class="pg6-app" data-i18n="app.initial">Pixel Agent Garden</div>
         <div class="pg6-headline"><span class="pg6-total" id="meta-total">—</span><span class="pg6-total-unit" data-i18n="header.localTokens">local tokens</span></div>
       </div>
+      <button
+        type="button"
+        id="mini-heatmap-strip"
+        class="pg6-mini-heatmap-strip"
+        data-i18n-aria-label="dashboard.miniStripAria"
+        aria-controls="data-drawer-panel"
+      ></button>
       <div class="pg6-meta">
         <span class="pg6-meta-item"><svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7c2-5 7-3 6 2 5-1 7 4 2 6 3 4-1 8-5 5-2 5-7 3-6-2-5 1-7-4-2-6-3-4 1-8 5-5Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg><span class="pg6-meta-text"><span class="pg6-meta-primary" id="meta-season">—</span><span class="pg6-meta-secondary" id="meta-season-sub"></span></span></span>
         <span class="pg6-meta-item"><svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16h16M7 20h10M6 12a6 6 0 0 1 12 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="pg6-meta-text"><span class="pg6-meta-primary" id="meta-time">—</span><span class="pg6-meta-secondary" id="meta-time-sub"></span></span></span>
         <button type="button" id="locale-toggle" class="pg6-locale-toggle" data-i18n-aria-label="locale.toggleAria">EN</button>
       </div>
     </div>
-    <button
-      type="button"
-      id="mini-heatmap-strip"
-      class="pg6-mini-heatmap-strip"
-      data-i18n-aria-label="dashboard.miniStripAria"
-      aria-controls="data-drawer-panel"
-    ></button>
     <div class="pg6-scene" id="pg6-scene"></div>
     <div class="pg6-footer">
       <svg class="pg6-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6l8-3Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 12 3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
